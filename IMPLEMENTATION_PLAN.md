@@ -1,8 +1,8 @@
 # Tuxedo AI - Implementation Plan
 
-**Goal**: Add conversational AI interface for discovering Blend pools and executing trades
-**Approach**: TypeScript-only implementation (no MCP server complexity)
-**Timeline**: 2-3 days for MVP
+**Goal**: Add conversational AI interface for discovering and understanding Blend pools
+**Approach**: TypeScript-only, lean MVP focused on conversational money market exploration
+**Timeline**: 1 day for core demo
 **Status**: Ready to implement
 
 ---
@@ -10,62 +10,64 @@
 ## Table of Contents
 1. [Overview](#overview)
 2. [Phase 1: Setup & Dependencies](#phase-1-setup--dependencies)
-3. [Phase 2: Supabase Database](#phase-2-supabase-database)
-4. [Phase 3: Stellar Trading Tools](#phase-3-stellar-trading-tools)
-5. [Phase 4: AI Agent & LangChain](#phase-4-ai-agent--langchain)
-6. [Phase 5: Chat UI](#phase-5-chat-ui)
-7. [Phase 6: Integration & Testing](#phase-6-integration--testing)
-8. [Testing Checklist](#testing-checklist)
-9. [Deployment](#deployment)
+3. [Phase 2: AI Agent & Blend Tools](#phase-2-ai-agent--blend-tools)
+4. [Phase 3: Chat UI](#phase-3-chat-ui)
+5. [Phase 4: Integration & Testing](#phase-4-integration--testing)
+6. [Future Phases](#future-phases)
+7. [Deployment](#deployment)
 
 ---
 
 ## Overview
 
-### What We're Building
+### What We're Building (MVP)
 
 A conversational interface that allows users to:
-- Ask about Blend pool opportunities ("What's the best USDC yield?")
-- Understand risks in plain English
-- Execute XLM → USDC swaps via chat
-- Deposit into Blend pools (testnet only)
-- View conversation history
+- 💬 Ask about Blend pool opportunities ("What's the best USDC yield?")
+- 📊 Get current APY rates, utilization, and TVL explained in plain English
+- 🎓 Understand DeFi risks without jargon
+- 💡 Discover lending/borrowing opportunities across all Blend pools
 
-### Technology Stack
+**Not in MVP** (deferred to future phases):
+- ❌ XLM → USDC trading
+- ❌ Pool deposits
+- ❌ Conversation persistence (Supabase)
+- ❌ Reward token system & protocol fees
+
+**Note**: Wallet connection is already live (Scaffold Stellar + Freighter integration)
+
+### Technology Stack (MVP)
 
 ```
 Frontend (Browser)
 ├── React Components
-│   └── ChatInterface.tsx
+│   └── ChatInterface.tsx (local state only)
 ├── AI Integration
 │   ├── LangChain.js + AWS Bedrock (Claude 3.5 Sonnet)
-│   └── Custom Tools (TypeScript)
-├── Trading Layer
-│   ├── Stellar SDK (direct)
-│   └── Wallet Integration (Freighter)
-└── Persistence
-    └── Supabase Client (browser)
+│   └── Blend Pool Query Tool
+└── Existing Infrastructure (from Scaffold Stellar)
+    ├── WalletProvider + useWallet hook ✅
+    ├── Freighter integration ✅
+    ├── useBlendPools hook ✅
+    └── Blend SDK integration ✅
 
 External Services
 ├── AWS Bedrock API (Claude)
-├── Supabase Cloud (PostgreSQL)
-└── Stellar Network (Horizon + Soroban)
+└── Stellar Network (Soroban RPC for pool data)
 ```
 
 ### Why This Approach?
 
-**Rejected**: Python MCP Server with bridge
-- ❌ Requires running separate Python process
-- ❌ stdio transport doesn't work in browser
-- ❌ Need to build HTTP bridge server
-- ❌ More complex deployment
+**Focus on Core Value First:**
+- ✅ Get conversational pool discovery working in hours, not days
+- ✅ Prove AI + DeFi UX value before adding complexity
+- ✅ No database setup/management until it adds value
+- ✅ No transaction signing flow until core chat works
 
-**Chosen**: Direct TypeScript Implementation
-- ✅ Uses existing Stellar SDK + Blend SDK
-- ✅ Wallet signing already works (Freighter)
-- ✅ Single codebase to maintain
-- ✅ Better UX (no roundtrips to Python)
-- ✅ Simpler deployment (static site only)
+**Add Later When Valuable:**
+- 🔮 Trading tools (once users trust pool recommendations)
+- 🔮 Supabase (once users want conversation history)
+- 🔮 Portfolio tracking (once users have positions)
 
 ---
 
@@ -77,12 +79,10 @@ External Services
 npm install --save \
   @langchain/core \
   @langchain/aws \
-  @supabase/supabase-js \
   zod
-
-# Optional: For better type inference
-npm install --save-dev @types/node
 ```
+
+**Note**: Skipping `@supabase/supabase-js` for now - we'll add it in Phase 6 (Future).
 
 ### 1.2 Environment Variables
 
@@ -94,17 +94,10 @@ VITE_STELLAR_NETWORK=testnet
 VITE_HORIZON_URL=https://horizon-testnet.stellar.org
 VITE_RPC_URL=https://soroban-testnet.stellar.org
 
-# NEW: Supabase Cloud
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJ...your-anon-key
-
 # NEW: AWS Bedrock
 VITE_AWS_REGION=us-east-1
 VITE_AWS_ACCESS_KEY_ID=AKIA...
 VITE_AWS_SECRET_ACCESS_KEY=...
-
-# Service key (only for server-side, don't expose to browser)
-# Not needed for Vite app since we use anon key
 ```
 
 ### 1.3 AWS Bedrock Setup
@@ -133,389 +126,9 @@ VITE_AWS_SECRET_ACCESS_KEY=...
 
 ---
 
-## Phase 2: Supabase Database
+## Phase 2: AI Agent & Blend Tools
 
-### 2.1 Create Supabase Project
-
-1. Visit https://supabase.com
-2. Click "New Project"
-3. Choose region (closest to users)
-4. Set database password (save it!)
-5. Wait for provisioning (~2 minutes)
-
-### 2.2 Run Database Schema
-
-Go to SQL Editor in Supabase dashboard and run:
-
-```sql
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
--- Users table (wallet-based auth)
-CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  wallet_address TEXT UNIQUE NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  last_active TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Chat conversations
-CREATE TABLE conversations (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  title TEXT,
-  messages JSONB NOT NULL DEFAULT '[]'::jsonb,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Transaction tracking
-CREATE TABLE transactions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  conversation_id UUID REFERENCES conversations(id) ON DELETE SET NULL,
-  tx_type TEXT NOT NULL, -- 'swap', 'deposit', 'trustline'
-  tx_hash TEXT NOT NULL,
-  from_asset TEXT,
-  to_asset TEXT,
-  amount TEXT,
-  network TEXT NOT NULL DEFAULT 'testnet',
-  status TEXT NOT NULL DEFAULT 'pending', -- 'pending', 'confirmed', 'failed'
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Indexes for performance
-CREATE INDEX idx_users_wallet ON users(wallet_address);
-CREATE INDEX idx_conversations_user ON conversations(user_id);
-CREATE INDEX idx_conversations_updated ON conversations(updated_at DESC);
-CREATE INDEX idx_transactions_user ON transactions(user_id);
-CREATE INDEX idx_transactions_hash ON transactions(tx_hash);
-
--- Row Level Security (RLS)
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
-
--- Public read/write for demo (tighten for production)
-CREATE POLICY "Allow all operations" ON users FOR ALL USING (true);
-CREATE POLICY "Allow all operations" ON conversations FOR ALL USING (true);
-CREATE POLICY "Allow all operations" ON transactions FOR ALL USING (true);
-```
-
-### 2.3 Get Supabase Credentials
-
-1. Go to Project Settings → API
-2. Copy "Project URL" → `VITE_SUPABASE_URL`
-3. Copy "anon public" key → `VITE_SUPABASE_ANON_KEY`
-4. Update `.env.local`
-
----
-
-## Phase 3: Stellar Trading Tools
-
-### 3.1 Create Trading Utility
-
-**File**: `src/lib/stellar-trading.ts`
-
-```typescript
-import {
-  TransactionBuilder,
-  Operation,
-  Asset,
-  Networks,
-  Horizon,
-} from '@stellar/stellar-sdk';
-import { BLEND_CONTRACTS } from '../contracts/blend';
-
-// USDC issuer on testnet
-const USDC_ISSUER = BLEND_CONTRACTS.usdcToken;
-
-export interface SwapParams {
-  amount: string;
-  userAddress: string;
-  network: 'testnet' | 'mainnet';
-}
-
-/**
- * Build XLM → USDC swap transaction using path payment
- */
-export async function buildXLMtoUSDCSwap(params: SwapParams) {
-  const { amount, userAddress, network } = params;
-
-  const horizonUrl =
-    network === 'testnet'
-      ? 'https://horizon-testnet.stellar.org'
-      : 'https://horizon.stellar.org';
-  const server = new Horizon.Server(horizonUrl);
-
-  // Load user account
-  const account = await server.loadAccount(userAddress);
-
-  // Define assets
-  const xlm = Asset.native();
-  const usdc = new Asset('USDC', USDC_ISSUER);
-
-  // Build path payment operation
-  const pathPayment = Operation.pathPaymentStrictSend({
-    sendAsset: xlm,
-    sendAmount: amount,
-    destination: userAddress,
-    destAsset: usdc,
-    destMin: '0', // Accept any amount (for testnet demo)
-    path: [], // Let Stellar find best path automatically
-  });
-
-  // Build transaction
-  const transaction = new TransactionBuilder(account, {
-    fee: '100000', // 0.01 XLM max fee
-    networkPassphrase:
-      network === 'testnet' ? Networks.TESTNET : Networks.PUBLIC,
-  })
-    .addOperation(pathPayment)
-    .setTimeout(300) // 5 minutes
-    .build();
-
-  return {
-    xdr: transaction.toXDR(),
-    hash: transaction.hash().toString('hex'),
-  };
-}
-
-/**
- * Check if user has USDC trustline
- */
-export async function hasUSDCTrustline(
-  userAddress: string,
-  network: 'testnet' | 'mainnet'
-): Promise<boolean> {
-  const horizonUrl =
-    network === 'testnet'
-      ? 'https://horizon-testnet.stellar.org'
-      : 'https://horizon.stellar.org';
-  const server = new Horizon.Server(horizonUrl);
-
-  try {
-    const account = await server.loadAccount(userAddress);
-    const usdcBalance = account.balances.find(
-      (b) =>
-        'asset_code' in b &&
-        b.asset_code === 'USDC' &&
-        'asset_issuer' in b &&
-        b.asset_issuer === USDC_ISSUER
-    );
-    return !!usdcBalance;
-  } catch (err) {
-    console.error('Error checking trustline:', err);
-    return false;
-  }
-}
-
-/**
- * Build trustline creation transaction
- */
-export async function buildUSDCTrustline(
-  userAddress: string,
-  network: 'testnet' | 'mainnet'
-) {
-  const horizonUrl =
-    network === 'testnet'
-      ? 'https://horizon-testnet.stellar.org'
-      : 'https://horizon.stellar.org';
-  const server = new Horizon.Server(horizonUrl);
-
-  const account = await server.loadAccount(userAddress);
-  const usdc = new Asset('USDC', USDC_ISSUER);
-
-  const transaction = new TransactionBuilder(account, {
-    fee: '10000', // 0.001 XLM
-    networkPassphrase:
-      network === 'testnet' ? Networks.TESTNET : Networks.PUBLIC,
-  })
-    .addOperation(Operation.changeTrust({ asset: usdc }))
-    .setTimeout(300)
-    .build();
-
-  return {
-    xdr: transaction.toXDR(),
-    hash: transaction.hash().toString('hex'),
-  };
-}
-
-/**
- * Estimate swap output (query DEX orderbook)
- */
-export async function estimateSwapOutput(
-  amountXLM: string,
-  network: 'testnet' | 'mainnet'
-): Promise<string> {
-  const horizonUrl =
-    network === 'testnet'
-      ? 'https://horizon-testnet.stellar.org'
-      : 'https://horizon.stellar.org';
-  const server = new Horizon.Server(horizonUrl);
-
-  const xlm = Asset.native();
-  const usdc = new Asset('USDC', USDC_ISSUER);
-
-  try {
-    // Get orderbook for XLM/USDC
-    const orderbook = await server
-      .orderbook(xlm, usdc)
-      .limit(10)
-      .call();
-
-    // Simple estimation from best ask price
-    if (orderbook.asks.length > 0) {
-      const bestAsk = parseFloat(orderbook.asks[0].price);
-      const estimatedUSDC = parseFloat(amountXLM) * bestAsk;
-      return estimatedUSDC.toFixed(2);
-    }
-  } catch (err) {
-    console.error('Error estimating swap:', err);
-  }
-
-  return 'Unknown';
-}
-```
-
----
-
-## Phase 4: AI Agent & LangChain
-
-### 4.1 Create Supabase Client
-
-**File**: `src/lib/supabase.ts`
-
-```typescript
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL!;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY!;
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-// Database types
-export interface User {
-  id: string;
-  wallet_address: string;
-  created_at: string;
-  last_active: string;
-}
-
-export interface Message {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  timestamp: string;
-  transaction?: string; // XDR if message includes tx
-}
-
-export interface Conversation {
-  id: string;
-  user_id: string;
-  title: string | null;
-  messages: Message[];
-  created_at: string;
-  updated_at: string;
-}
-
-// Helper: Get or create user by wallet address
-export async function getOrCreateUser(walletAddress: string): Promise<User> {
-  // Try to get existing
-  const { data: existing } = await supabase
-    .from('users')
-    .select('*')
-    .eq('wallet_address', walletAddress)
-    .single();
-
-  if (existing) {
-    // Update last_active
-    await supabase
-      .from('users')
-      .update({ last_active: new Date().toISOString() })
-      .eq('id', existing.id);
-    return existing;
-  }
-
-  // Create new user
-  const { data: newUser, error } = await supabase
-    .from('users')
-    .insert({ wallet_address: walletAddress })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return newUser!;
-}
-
-// Helper: Save conversation
-export async function saveConversation(
-  userId: string,
-  messages: Message[],
-  conversationId?: string
-): Promise<Conversation> {
-  const title = messages[0]?.content.slice(0, 50) || 'New conversation';
-
-  if (conversationId) {
-    const { data, error } = await supabase
-      .from('conversations')
-      .update({ messages, updated_at: new Date().toISOString() })
-      .eq('id', conversationId)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data!;
-  }
-
-  const { data, error } = await supabase
-    .from('conversations')
-    .insert({ user_id: userId, title, messages })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data!;
-}
-
-// Helper: Get user's conversations
-export async function getUserConversations(
-  userId: string
-): Promise<Conversation[]> {
-  const { data, error } = await supabase
-    .from('conversations')
-    .select('*')
-    .eq('user_id', userId)
-    .order('updated_at', { ascending: false });
-
-  if (error) throw error;
-  return data || [];
-}
-
-// Helper: Track transaction
-export async function trackTransaction(
-  userId: string,
-  txType: string,
-  txHash: string,
-  details: {
-    fromAsset?: string;
-    toAsset?: string;
-    amount?: string;
-    network?: string;
-    conversationId?: string;
-  }
-) {
-  const { error } = await supabase.from('transactions').insert({
-    user_id: userId,
-    tx_type: txType,
-    tx_hash: txHash,
-    ...details,
-  });
-
-  if (error) throw error;
-}
-```
-
-### 4.2 Create LangChain Tools
+### 2.1 Create Blend Query Tool
 
 **File**: `src/lib/ai-tools.ts`
 
@@ -525,22 +138,12 @@ import { z } from 'zod';
 import { Backstop, PoolV2 } from '@blend-capital/blend-sdk';
 import { BLEND_CONTRACTS } from '../contracts/blend';
 import { network } from '../contracts/util';
-import {
-  buildXLMtoUSDCSwap,
-  buildUSDCTrustline,
-  hasUSDCTrustline,
-  estimateSwapOutput,
-} from './stellar-trading';
 
-export function createTuxedoTools(
-  userAddress: string,
-  networkType: 'testnet' | 'mainnet' = 'testnet'
-) {
-  // Tool 1: Get Blend Pools
+export function createBlendTools() {
   const getBlendPools = new DynamicStructuredTool({
     name: 'get_blend_pools',
     description:
-      'Get all active Blend lending pools with current APY rates, TVL, and utilization',
+      'Get all active Blend lending pools with current APY rates, total value locked (TVL), and utilization metrics. Use this to answer questions about yields, lending opportunities, and market conditions.',
     schema: z.object({}),
     func: async () => {
       try {
@@ -552,14 +155,16 @@ export function createTuxedoTools(
             const pool = await PoolV2.load(network, addr);
             return {
               name: pool.metadata.name,
-              address: addr,
+              address: addr.slice(0, 8) + '...',
               reserves: Array.from(pool.reserves.entries()).map(
                 ([assetId, reserve]) => ({
                   asset: assetId.slice(0, 8) + '...',
                   supplyApy: (reserve.estSupplyApy * 100).toFixed(2) + '%',
                   borrowApy: (reserve.estBorrowApy * 100).toFixed(2) + '%',
-                  utilization:
-                    (reserve.getUtilizationFloat() * 100).toFixed(1) + '%',
+                  totalSupplied: reserve.totalSupply,
+                  totalBorrowed: reserve.totalLiabilities,
+                  utilization: (reserve.getUtilizationFloat() * 100).toFixed(1) + '%',
+                  availableLiquidity: (reserve.totalSupply - reserve.totalLiabilities).toString(),
                 })
               ),
             };
@@ -573,107 +178,58 @@ export function createTuxedoTools(
     },
   });
 
-  // Tool 2: Swap XLM → USDC
-  const swapXLMtoUSDC = new DynamicStructuredTool({
-    name: 'swap_xlm_to_usdc',
-    description:
-      'Build a transaction to swap XLM for USDC on Stellar DEX. Returns transaction XDR for signing.',
-    schema: z.object({
-      amount: z.string().describe('Amount of XLM to swap (e.g., "10")'),
-    }),
-    func: async ({ amount }) => {
-      try {
-        // Check trustline
-        const hasTrustline = await hasUSDCTrustline(userAddress, networkType);
-
-        if (!hasTrustline) {
-          return JSON.stringify({
-            status: 'needs_trustline',
-            message:
-              'You need to establish a USDC trustline first. Would you like me to create it?',
-          });
-        }
-
-        // Estimate output
-        const estimatedUSDC = await estimateSwapOutput(amount, networkType);
-
-        // Build transaction
-        const { xdr, hash } = await buildXLMtoUSDCSwap({
-          amount,
-          userAddress,
-          network: networkType,
-        });
-
-        return JSON.stringify({
-          status: 'ready_to_sign',
-          transactionXDR: xdr,
-          hash,
-          estimatedOutput: estimatedUSDC,
-          message: `Ready to swap ${amount} XLM for approximately ${estimatedUSDC} USDC. Please review and sign the transaction.`,
-        });
-      } catch (err) {
-        return JSON.stringify({ error: String(err) });
-      }
-    },
-  });
-
-  // Tool 3: Create USDC Trustline
-  const createUSDCTrustline = new DynamicStructuredTool({
-    name: 'create_usdc_trustline',
-    description:
-      'Build a transaction to create a USDC trustline for the user. Required before receiving USDC.',
-    schema: z.object({}),
-    func: async () => {
-      try {
-        const { xdr, hash } = await buildUSDCTrustline(userAddress, networkType);
-
-        return JSON.stringify({
-          status: 'ready_to_sign',
-          transactionXDR: xdr,
-          hash,
-          message:
-            'Trustline transaction ready. This is a one-time setup to enable USDC on your account. Please sign to continue.',
-        });
-      } catch (err) {
-        return JSON.stringify({ error: String(err) });
-      }
-    },
-  });
-
-  return [getBlendPools, swapXLMtoUSDC, createUSDCTrustline];
+  return [getBlendPools];
 }
 ```
 
-### 4.3 Create AI Agent
+### 2.2 Create AI Agent
 
 **File**: `src/lib/ai-agent.ts`
 
 ```typescript
 import { ChatBedrock } from '@langchain/aws';
 import { HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages';
-import { createTuxedoTools } from './ai-tools';
+import { createBlendTools } from './ai-tools';
 
-const SYSTEM_PROMPT = `You are Tuxedo, an AI assistant that helps users discover and access high-yield lending opportunities on Stellar through the Blend Protocol.
+const SYSTEM_PROMPT = `You are Tuxedo, an AI assistant that helps users discover and understand lending opportunities on Stellar through the Blend Protocol.
 
 **Your Capabilities:**
-- Query Blend pools to find current APY rates
-- Explain DeFi concepts in simple, clear language
-- Help users swap XLM for USDC on Stellar DEX
-- Guide users through depositing into Blend pools (testnet only)
-- Provide risk assessments
+- Query all active Blend pools to find current APY rates
+- Explain DeFi lending concepts in simple, clear language
+- Compare different pools and assets
+- Assess risk based on utilization rates and pool metrics
+- Provide context about how yields are generated
 
 **Key Principles:**
-1. Always explain risks before recommending any financial action
-2. Use plain language - avoid DeFi jargon unless the user asks
-3. Only execute transactions on testnet (even though you can see mainnet data)
-4. Be transparent about how yields are generated (borrowers pay interest to lenders)
-5. Never promise returns - always say "current rate" or "estimated APY"
-6. When showing pools, include: APY, TVL, utilization, and risk level
+1. **Plain language first** - Avoid DeFi jargon unless the user asks for technical details
+2. **Always explain risks** - High APY usually means higher risk (utilization, volatility, liquidity)
+3. **Be transparent** - Yields come from borrowers paying interest to lenders
+4. **Never promise returns** - Always say "current rate" or "estimated APY based on today's data"
+5. **Show your work** - When comparing pools, show the numbers (APY, utilization, TVL)
+
+**Example Responses:**
+
+User: "What yields are available for USDC?"
+You: "Let me check the current Blend pools... [calls get_blend_pools]
+I found USDC lending in the Comet pool offering 12.5% APY. This rate is higher than traditional savings because:
+- Borrowers are paying 18% to borrow USDC
+- The pool is 65% utilized (good liquidity, moderate risk)
+- $2.3M currently lent, $850K available to withdraw
+
+The yield fluctuates based on borrowing demand. Higher utilization = higher rates but less liquidity."
+
+User: "Is 12% APY risky?"
+You: "It depends on context. Let me break it down:
+- **Smart contract risk**: All DeFi carries this risk. Blend is audited but not risk-free.
+- **Utilization risk**: At 65%, you can withdraw anytime. Above 90% gets concerning.
+- **Market risk**: USDC is a stablecoin, so less volatile than crypto assets.
+
+Compare this to XLM at 8% APY but 85% utilization - lower rate, higher withdrawal risk."
 
 **Current Context:**
-- User can see mainnet pool data (real APYs) but can only transact on testnet
-- This is a demo application for educational purposes
-- Always confirm with the user before building transactions`;
+- User is exploring Blend pools on Stellar mainnet
+- This is for educational/informational purposes
+- Focus on helping users understand opportunities and risks`;
 
 // Initialize Bedrock client
 const model = new ChatBedrock({
@@ -694,12 +250,10 @@ export interface ChatMessage {
 
 export async function chat(
   userMessage: string,
-  conversationHistory: ChatMessage[],
-  userAddress: string
-) {
+  conversationHistory: ChatMessage[]
+): Promise<string> {
   try {
-    // Create tools with user's address
-    const tools = createTuxedoTools(userAddress, 'testnet');
+    const tools = createBlendTools();
 
     // Build message history
     const messages = [
@@ -756,42 +310,24 @@ export async function chat(
 
 ---
 
-## Phase 5: Chat UI
+## Phase 3: Chat UI
 
-### 5.1 Create Chat Interface Component
+### 3.1 Create Chat Interface Component
 
 **File**: `src/components/ChatInterface.tsx`
 
 ```typescript
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, Text, Loader } from '@stellar/design-system';
+import { chat, type ChatMessage } from '../lib/ai-agent';
 import { useWallet } from '../hooks/useWallet';
-import { chat } from '../lib/ai-agent';
-import {
-  getOrCreateUser,
-  saveConversation,
-  trackTransaction,
-  type Message,
-} from '../lib/supabase';
 
 export const ChatInterface: React.FC = () => {
   const { data: wallet } = useWallet();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [conversationId, setConversationId] = useState<string | null>(null);
-  const [pendingTx, setPendingTx] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Initialize user when wallet connects
-  useEffect(() => {
-    if (wallet?.address) {
-      getOrCreateUser(wallet.address).then((user) => {
-        setUserId(user.id);
-      });
-    }
-  }, [wallet?.address]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -799,12 +335,11 @@ export const ChatInterface: React.FC = () => {
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading || !userId || !wallet?.address) return;
+    if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = {
+    const userMessage: ChatMessage = {
       role: 'user',
       content: input,
-      timestamp: new Date().toISOString(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -812,43 +347,14 @@ export const ChatInterface: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await chat(input, messages, wallet.address);
+      const response = await chat(input, messages);
 
-      // Check if response contains a transaction
-      let txData = null;
-      try {
-        const parsed = JSON.parse(response);
-        if (parsed.status === 'ready_to_sign') {
-          txData = parsed;
-        }
-      } catch {
-        // Not JSON, regular text response
-      }
-
-      const aiMessage: Message = {
+      const aiMessage: ChatMessage = {
         role: 'assistant',
-        content: txData ? txData.message : response,
-        timestamp: new Date().toISOString(),
-        transaction: txData?.transactionXDR,
+        content: response,
       };
 
-      const updatedMessages = [...messages, userMessage, aiMessage];
-      setMessages(updatedMessages);
-
-      // Save to Supabase
-      const saved = await saveConversation(
-        userId,
-        updatedMessages,
-        conversationId || undefined
-      );
-      if (!conversationId) {
-        setConversationId(saved.id);
-      }
-
-      // Set pending transaction if exists
-      if (txData) {
-        setPendingTx(txData.transactionXDR);
-      }
+      setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
       console.error('Chat error:', error);
       setMessages((prev) => [
@@ -856,73 +362,12 @@ export const ChatInterface: React.FC = () => {
         {
           role: 'assistant',
           content: 'Sorry, I encountered an error. Please try again.',
-          timestamp: new Date().toISOString(),
         },
       ]);
     } finally {
       setIsLoading(false);
     }
   };
-
-  const handleSignTransaction = async (xdr: string) => {
-    if (!wallet?.signTransaction || !wallet.networkPassphrase || !userId) return;
-
-    try {
-      // Sign with wallet
-      const signedXdr = await wallet.signTransaction(xdr, {
-        networkPassphrase: wallet.networkPassphrase,
-        address: wallet.address,
-      });
-
-      // Submit transaction (simplified - you'd use useSubmitRpcTx hook)
-      console.log('Signed XDR:', signedXdr);
-
-      // Track in database
-      await trackTransaction(userId, 'swap', 'pending-hash', {
-        network: 'testnet',
-        conversationId: conversationId || undefined,
-      });
-
-      // Show success message
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: '✅ Transaction signed and submitted!',
-          timestamp: new Date().toISOString(),
-        },
-      ]);
-
-      setPendingTx(null);
-    } catch (error) {
-      console.error('Signing failed:', error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: '❌ Transaction signing failed. Please try again.',
-          timestamp: new Date().toISOString(),
-        },
-      ]);
-    }
-  };
-
-  if (!wallet?.address) {
-    return (
-      <div
-        style={{
-          padding: '40px',
-          textAlign: 'center',
-          backgroundColor: '#f8f9fa',
-          borderRadius: '12px',
-        }}
-      >
-        <Text as="p" size="md">
-          Please connect your wallet to start chatting with Tuxedo
-        </Text>
-      </div>
-    );
-  }
 
   return (
     <div
@@ -933,6 +378,7 @@ export const ChatInterface: React.FC = () => {
         border: '1px solid #e0e0e0',
         borderRadius: '12px',
         overflow: 'hidden',
+        backgroundColor: '#fff',
       }}
     >
       {/* Messages */}
@@ -941,7 +387,6 @@ export const ChatInterface: React.FC = () => {
           flex: 1,
           overflowY: 'auto',
           padding: '20px',
-          backgroundColor: '#fff',
         }}
       >
         {messages.length === 0 && (
@@ -950,12 +395,27 @@ export const ChatInterface: React.FC = () => {
               👋 Hi! I'm Tuxedo
             </Text>
             <Text as="p" size="md" style={{ color: '#666' }}>
-              Ask me about Blend lending pools, yields, or how to swap XLM for USDC
+              Ask me about Blend lending pools, yields, and DeFi opportunities on Stellar
             </Text>
-            <div style={{ marginTop: '24px', fontSize: '14px', color: '#999' }}>
-              <p>Try asking:</p>
+            {wallet?.address && (
+              <Text as="p" size="sm" style={{ color: '#999', marginTop: '8px' }}>
+                Connected: {wallet.address.slice(0, 8)}...{wallet.address.slice(-4)}
+              </Text>
+            )}
+            <div
+              style={{
+                marginTop: '24px',
+                fontSize: '14px',
+                color: '#999',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}
+            >
+              <p style={{ fontWeight: '600', marginBottom: '4px' }}>Try asking:</p>
               <p>"What yields are available for USDC?"</p>
-              <p>"I want to swap 10 XLM for USDC"</p>
+              <p>"Which pool has the best APY?"</p>
+              <p>"Explain how Blend lending works"</p>
             </div>
           </div>
         )}
@@ -981,17 +441,6 @@ export const ChatInterface: React.FC = () => {
               <Text as="p" size="sm" style={{ whiteSpace: 'pre-wrap' }}>
                 {msg.content}
               </Text>
-
-              {msg.transaction && (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => handleSignTransaction(msg.transaction!)}
-                  style={{ marginTop: '12px' }}
-                >
-                  Sign Transaction
-                </Button>
-              )}
             </div>
           </div>
         ))}
@@ -1027,7 +476,7 @@ export const ChatInterface: React.FC = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Ask about yields, risks, or request a swap..."
+            placeholder="Ask about yields, pools, or DeFi concepts..."
             disabled={isLoading}
             style={{
               flex: 1,
@@ -1052,7 +501,7 @@ export const ChatInterface: React.FC = () => {
 };
 ```
 
-### 5.2 Add to Home Page
+### 3.2 Add to Home Page
 
 **File**: `src/pages/Home.tsx` (update)
 
@@ -1064,25 +513,19 @@ import { Text } from '@stellar/design-system';
 export default function Home() {
   return (
     <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '20px' }}>
-      {/* Demo Banner */}
-      <div
-        style={{
-          padding: '16px',
-          backgroundColor: '#fff3cd',
-          border: '1px solid #ffc107',
-          borderRadius: '8px',
-          marginBottom: '24px',
-        }}
-      >
-        <Text as="p" size="sm" style={{ margin: 0 }}>
-          <strong>Demo Mode:</strong> Showing mainnet pool data for accurate APYs.
-          All transactions are testnet-only.
+      {/* Hero Section */}
+      <section style={{ marginBottom: '48px', textAlign: 'center' }}>
+        <Text as="h1" size="xl" style={{ marginBottom: '8px' }}>
+          Tuxedo AI
         </Text>
-      </div>
+        <Text as="p" size="md" style={{ color: '#666' }}>
+          Your conversational guide to DeFi lending on Stellar
+        </Text>
+      </section>
 
       {/* Chat Interface */}
       <section style={{ marginBottom: '48px' }}>
-        <Text as="h2" size="xl" style={{ marginBottom: '16px' }}>
+        <Text as="h2" size="lg" style={{ marginBottom: '16px' }}>
           Ask Tuxedo
         </Text>
         <ChatInterface />
@@ -1090,6 +533,9 @@ export default function Home() {
 
       {/* Pool Dashboard */}
       <section>
+        <Text as="h2" size="lg" style={{ marginBottom: '16px' }}>
+          All Blend Pools
+        </Text>
         <PoolsDashboard />
       </section>
     </div>
@@ -1099,38 +545,177 @@ export default function Home() {
 
 ---
 
-## Phase 6: Integration & Testing
+## Phase 4: Integration & Testing
 
-### 6.1 Test Checklist
+### 4.1 Test Checklist
 
-- [ ] **Wallet Connection**
-  - Connect Freighter wallet
-  - Verify user created in Supabase
-  - Check localStorage persistence
+- [ ] **AI Chat Basics**
+  - [ ] Chat interface renders on home page
+  - [ ] Can send message and get response
+  - [ ] Loading state shows while waiting
+  - [ ] Messages display in correct bubbles (user right, AI left)
 
 - [ ] **Pool Queries**
-  - Ask "What yields are available?"
-  - Verify AI calls `get_blend_pools` tool
-  - Check pools displayed in response
+  - [ ] Ask "What yields are available?"
+  - [ ] Verify AI calls `get_blend_pools` tool (check console)
+  - [ ] Response includes APY rates and pool names
+  - [ ] Ask "Which pool has the best APY?"
+  - [ ] Response compares pools and explains context
 
-- [ ] **Trading Flow**
-  - Ask "Swap 10 XLM for USDC"
-  - Verify trustline check
-  - If no trustline, create one first
-  - Sign trustline transaction in Freighter
-  - Then retry swap
-  - Sign swap transaction
-  - Verify transaction submitted
-
-- [ ] **Conversation Persistence**
-  - Send 3-4 messages
-  - Refresh page
-  - Check if conversation persists (needs conversation loading feature)
+- [ ] **Educational Queries**
+  - [ ] Ask "What is Blend Protocol?"
+  - [ ] Ask "How does DeFi lending work?"
+  - [ ] Ask "Is high APY risky?"
+  - [ ] Verify responses are clear and non-technical
 
 - [ ] **Error Handling**
-  - Disconnect wallet mid-conversation
-  - Reject transaction in Freighter
-  - Invalid amounts (negative, too large)
+  - [ ] Disconnect AWS credentials (temporarily)
+  - [ ] Send message, verify error message appears
+  - [ ] Restore credentials, verify recovery
+  - [ ] Test with empty messages (should be disabled)
+
+### 4.2 Manual Testing Script
+
+```
+1. Open http://localhost:5173
+2. See "Ask Tuxedo" section with empty chat
+3. Type: "What yields are available for USDC?"
+4. Press Enter or click Send
+5. Wait 2-5 seconds (loading indicator should show)
+6. Expect response like:
+   "I found USDC lending in the Comet pool offering X% APY.
+    Here's what you should know:
+    - Borrowers are paying Y% to borrow USDC
+    - Pool is Z% utilized
+    - $N currently lent..."
+7. Type: "Is that risky?"
+8. Expect contextual explanation of utilization, smart contract risk, etc.
+9. Scroll down to Pool Dashboard
+10. Verify pool data matches what AI described
+```
+
+---
+
+## Future Phases
+
+### Phase 5: Trading Tools (Deferred)
+
+**When to add**: After users trust pool recommendations and want to act on them.
+
+**What to add**:
+- `src/lib/stellar-trading.ts` - XLM→USDC swap builder
+- `swap_xlm_to_usdc` tool for LangChain
+- `create_usdc_trustline` tool
+- Transaction signing flow in ChatInterface
+- Integration with existing `useSubmitRpcTx` hook
+
+**Estimated time**: 3-4 hours
+
+### Phase 6: Supabase Persistence (Deferred)
+
+**When to add**: After users request conversation history or want to resume chats.
+
+**What to add**:
+- Supabase project setup
+- Database schema (users, conversations, messages)
+- `src/lib/supabase.ts` client
+- Update ChatInterface to save/load conversations
+- Conversation list UI (sidebar or separate page)
+
+**Estimated time**: 2-3 hours
+
+### Phase 7: Advanced Features (Deferred)
+
+- Portfolio tracking (if user has deposits)
+- USD pricing via oracles
+- Historical APY charts
+- Mobile responsive design
+- Dark mode
+
+### Phase 8: Tokenomics & Revenue Model (Future)
+
+**When to add**: After achieving user scale and validating product-market fit.
+
+**Goals**:
+- Monetize the platform sustainably
+- Reward early users and active participants
+- Create network effects through token utility
+
+**What to build**:
+
+1. **Reward Token Smart Contract** (Soroban)
+   - Deploy ERC20-style token on Stellar
+   - Mint rewards to users based on activity:
+     - Depositing into Blend pools via Tuxedo
+     - Holding balances over time
+     - Referrals/social sharing
+   - Token distribution schedule (vesting, caps)
+
+2. **Protocol Fee System**
+   - Take small percentage of user yields (research: 5-15% is typical)
+   - Examples from DeFi:
+     - Aave: 10% protocol reserve fee
+     - Compound: 10% reserve factor
+     - Yearn: 2% management + 20% performance
+   - **Start at 0%**, increase gradually as value is proven
+   - Fees collected in treasury contract
+
+3. **Token Utility & Staking**
+   - Stake tokens → reduce/eliminate protocol fees
+   - Governance rights (protocol parameters, fee rates)
+   - Liquidity mining incentives
+   - Potential: Revenue sharing with stakers
+
+4. **Competitive Analysis Needed**
+   - Research what Blend Protocol charges (if anything)
+   - Check what users expect in DeFi aggregators
+   - Consider user retention vs. revenue tradeoff
+
+**Technical Implementation**:
+```rust
+// Soroban smart contract (pseudo-code)
+contract TuxedoRewards {
+    // Mint rewards based on user deposits
+    fn calculate_rewards(user: Address, deposit_amount: i128, duration: u64) -> i128;
+
+    // Staking for fee discounts
+    fn stake_tokens(user: Address, amount: i128);
+    fn get_fee_discount(user: Address) -> u32; // Returns discount % (0-100)
+
+    // Protocol fee collection
+    fn collect_fee(pool: Address, yield_earned: i128) -> i128;
+}
+```
+
+**AI Chat Integration**:
+- Explain token rewards when suggesting deposits
+- "You'd earn 12% APY on USDC, plus 50 TUX tokens per month"
+- Show staking benefits: "Stake 1000 TUX to reduce fees from 5% to 0%"
+
+**Revenue Projections** (hypothetical):
+```
+Assumptions:
+- 100 users with avg $10k deposited = $1M TVL
+- Average yield: 10% APY
+- Protocol fee: 5%
+
+Annual revenue = $1M × 10% × 5% = $5,000/year
+
+At scale (10,000 users, $100M TVL):
+Annual revenue = $100M × 10% × 5% = $500,000/year
+```
+
+**Estimated time**: 1-2 weeks
+- Smart contract development: 3-4 days
+- Testing & auditing: 3-4 days
+- Frontend integration: 2-3 days
+- Token distribution strategy: 1-2 days
+
+**Important**: DO NOT implement fees until:
+1. Product has proven value (users actually use it)
+2. Competitive analysis complete
+3. Token economics designed properly
+4. Legal review (token regulation varies by jurisdiction)
 
 ---
 
@@ -1157,9 +742,7 @@ netlify deploy --prod --dir=dist
 ```
 
 ### Environment Variables (Production)
-Remember to set in hosting platform:
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
+Set in hosting platform:
 - `VITE_AWS_REGION`
 - `VITE_AWS_ACCESS_KEY_ID`
 - `VITE_AWS_SECRET_ACCESS_KEY`
@@ -1169,40 +752,47 @@ Remember to set in hosting platform:
 ## Success Criteria
 
 ✅ **MVP Complete When:**
-1. User can connect wallet
-2. User can ask about pools and get responses
-3. User can swap XLM → USDC via chat
-4. Transactions sign via Freighter
-5. Conversations save to Supabase
-6. Error handling works gracefully
+1. User can open app and see chat interface
+2. User can ask about Blend pools and get AI responses
+3. AI can query live pool data and explain it clearly
+4. Conversation flows naturally with context retention
+5. Error handling works gracefully
 
 🎯 **Demo-Ready When:**
-1. All MVP features working
-2. UI is polished and responsive
-3. Error messages are helpful
-4. Transaction flow is smooth
-5. Can demo end-to-end in 3 minutes
+1. All MVP features working smoothly
+2. Can complete full demo in 2 minutes:
+   - "What yields are available?"
+   - "Which is best for low risk?"
+   - "Explain how this works"
+3. UI is clean and intuitive
+4. No console errors during happy path
 
 ---
 
 ## Timeline Estimate
 
-- **Phase 1-2**: 2 hours (setup + database)
-- **Phase 3**: 3 hours (trading tools)
-- **Phase 4**: 4 hours (AI agent + tools)
-- **Phase 5**: 4 hours (chat UI)
-- **Phase 6**: 3 hours (testing + polish)
+- **Phase 1**: 30 minutes (install dependencies, setup AWS)
+- **Phase 2**: 2 hours (AI agent + Blend tool)
+- **Phase 3**: 2 hours (chat UI)
+- **Phase 4**: 1 hour (testing + polish)
 
-**Total**: ~16 hours (2 working days)
+**Total**: ~5-6 hours (one focused session)
 
 ---
 
 ## Next Steps
 
-1. **Read this plan carefully**
-2. **Set up AWS Bedrock and Supabase accounts**
-3. **Start with Phase 1** (install dependencies)
-4. **Work through phases sequentially**
-5. **Test each phase before moving on**
+1. ✅ Install dependencies from Phase 1
+2. ✅ Set up AWS Bedrock credentials
+3. ✅ Create `src/lib/ai-tools.ts`
+4. ✅ Create `src/lib/ai-agent.ts`
+5. ✅ Create `src/components/ChatInterface.tsx`
+6. ✅ Update `src/pages/Home.tsx`
+7. ✅ Test with manual queries
+8. 🎉 Demo!
 
-Ready to implement! 🚀
+**Then Later**:
+- Phase 5 (Trading) when users ask for it
+- Phase 6 (Supabase) when users want history
+
+Ready to build the leanest possible AI × DeFi demo! 🚀
