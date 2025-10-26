@@ -1,0 +1,17 @@
+# Tuxedo Backend Dependencies
+# Use with: uv add fastapi uvicorn pydantic python-dotenv fastmcp langchain-openai
+
+[project]
+name = "tuxedo-backend"
+version = "0.1.0"
+description = "FastAPI backend for Tuxedo AI"
+dependencies = [
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "pydantic>=2.5.0",
+    "python-dotenv>=1.0.0",
+    "httpx>=0.25.0",
+    "fastmcp>=0.1.0",
+    "langchain>=0.1.0",
+    "langchain-openai>=0.1.0",
+]
