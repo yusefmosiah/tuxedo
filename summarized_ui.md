@@ -26,22 +26,41 @@ This document outlines a **summarization-based approach** to managing AI convers
 ```typescript
 interface SummarizedMessage {
   id: string;
-  type: 'user' | 'summarized_batch' | 'final_response';
-  summary: string; // 1-paragraph max summary
+  type: 'user' | 'live_summary' | 'final_response';
+  summary: string; // Single evolving summary line
   fullContent: string[]; // Array of all original messages
   isExpanded: boolean;
+  isLive: boolean; // Currently updating summary
   metadata: {
     messageCount: number;
     toolCalls: string[];
     timestamp: Date;
     summaryModel: string;
+    isComplete: boolean;
   };
 }
 ```
 
 ### Conversation Flow
 ```
-User Prompt → [Hidden Stream] → Summarized Card → [Optional Expansion] → Final Response
+User Prompt → [Hidden Stream] → Live Summary → [Click to Expand] → Final Response
+```
+
+**Live Example:**
+```
+User: "Create a new Stellar account and check its balance"
+
+🔄 "Creating Stellar account and generating keypair..."
+
+🔄 "Account created successfully, funding from Friendbot..."
+
+🔄 "Account funded with 10,000 XLM, checking balance..."
+
+🔄 "Account G...XYZ has balance: 10,000 XLM ✅"
+
+[Click above to see full technical details]
+
+🎯 Final Response: "Your Stellar account G...XYZ was created successfully with 10,000 XLM balance."
 ```
 
 ---
@@ -53,21 +72,23 @@ User Prompt → [Hidden Stream] → Summarized Card → [Optional Expansion] →
 - No intermediate messages shown during processing
 - Clean, focused interface
 
-### 2. Summarization Phase
+### 2. Live Summarization Phase
 - As streaming responses arrive, they're **hidden from view**
-- Every 3-5 messages, generate a **1-paragraph summary**
-- Display as a single card with expansion option
-- Show minimal metadata (message count, tools used)
+- Single **evolving summary line** updates in real-time
+- Summary captures current progress and key findings
+- Users can click the summary to see the full expanded stream
 
 ### 3. Final Response Phase
-- Replace summary card with **complete final response**
+- Replace evolving summary with **complete final response**
 - Full response is always visible by default
-- Previous summaries remain accessible if user wants context
+- Previous conversation history shows only summary lines
+- Users can click any past summary to see full details
 
 ### 4. Interaction Patterns
-- **Click to expand**: Show full stream for that segment
-- **Always minimizable**: Users can collapse any segment
-- **Smart defaults**: First response stays expanded unless manually collapsed
+- **Click to expand**: Show full stream for that summary segment
+- **Live watching**: Users see summary evolve as processing happens
+- **Always available**: Any summary can be expanded to see full details
+- **Clean focus**: Only one response (current or final) is fully visible
 
 ---
 
@@ -82,77 +103,119 @@ PRIMARY_MODEL=gpt-4o              # Main reasoning model
 
 ### Summarization Prompts
 ```typescript
-const SUMMARY_PROMPT = `
-Create a concise 1-paragraph summary (max 100 words) of these AI responses.
-Focus on:
-- Key findings and results
-- Important tool outputs
-- Action items or decisions
-- Progress toward user's goal
+const LIVE_SUMMARY_PROMPT = `
+Create a brief, evolving status update (max 60 characters) for this streaming conversation.
+Focus on current progress and immediate next steps.
+Use present tense, be concise and clear.
 
-Preserve technical accuracy while being brief. Do not include conversational filler.
+Examples:
+- "Creating Stellar account and generating keypair..."
+- "Account created, funding from Friendbot..."
+- "Checking XLM/USDC orderbook on DEX..."
+- "Calculating APY for pool XYZ..."
 `;
 
-const TOOL_CALL_SUMMARY = `
-Summarize this tool call in one sentence:
-${toolResult}
-Focus on the outcome and any important values.
+const FINAL_SUMMARY_PROMPT = `
+Create a complete summary (max 100 words) of this conversation segment.
+Focus on:
+- Key findings and results
+- Important tool outputs and values
+- Action items completed
+- Final outcome
+
+This summary will be permanent in the conversation history.
 `;
 ```
 
 ### Summarization Triggers
-- **Every 3 messages** during active streaming
+- **Every message** during active streaming (live updates)
 - **When tool completes** a significant operation
-- **Before final response** to provide context
-- **On user request** via "Summarize" button
+- **Before final response** to create permanent summary
+- **On user request** via "Show Details" button
+
+### Live Update Strategy
+- **60-character max** for live updates (keeps it clean)
+- **Real-time updates** as streaming progresses
+- **Progressive disclosure** - just enough info to track progress
+- **Click to expand** reveals full technical details
 
 ---
 
 ## 🎨 Visual Design System
 
-### Card Components
+### Live Summary Components
 ```css
-.summarized-card {
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-  border-left: 4px solid #6c757d;
-  padding: 12px 16px;
-  margin: 8px 0;
-  border-radius: 8px;
+.live-summary {
+  background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+  border-left: 4px solid #2196f3;
+  padding: 8px 12px;
+  margin: 4px 0;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.summarized-card:hover {
-  transform: translateX(4px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+.live-summary:hover {
+  transform: translateX(2px);
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2);
+}
+
+.live-summary.updating {
+  border-left-color: #ff9800;
+  background: linear-gradient(135deg, #fff3e0, #fce4ec);
 }
 
 .expanded-content {
   background: #ffffff;
-  border: 1px solid #dee2e6;
+  border: 1px solid #e0e0e0;
   border-radius: 6px;
   margin-top: 8px;
+  padding: 12px;
   max-height: 400px;
   overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 ```
 
 ### State Indicators
-- **🔄 Processing**: During active summarization
-- **📄 Summary**: When summarization is complete
-- **🎯 Final**: For complete responses
-- **🔧 Tools**: For tool call summaries
+- **🔄 Live**: Currently updating summary (blue/orange gradient)
+- **📄 Complete**: Summary is ready to be expanded (blue gradient)
+- **🎯 Final**: Complete response visible (purple gradient)
+- **🔧 Tool**: Tool operation in progress (orange accent)
 
-### Metadata Display
+### Live Summary Component
 ```typescript
-const MessageMetadata = ({ message }) => (
-  <div className="metadata">
-    <span className="message-count">{message.metadata.messageCount} messages</span>
-    {message.metadata.toolCalls.map(tool => (
-      <span key={tool} className="tool-tag">{tool}</span>
-    ))}
-    <span className="timestamp">
-      {formatRelativeTime(message.metadata.timestamp)}
+const LiveSummary = ({ message, onClick, isExpanded }) => (
+  <div
+    className={`live-summary ${message.isLive ? 'updating' : 'complete'}`}
+    onClick={onClick}
+  >
+    <span className="status-icon">
+      {message.isLive ? '🔄' : '📄'}
+    </span>
+    <span className="summary-text">{message.summary}</span>
+    {!isExpanded && (
+      <span className="expand-hint">[Click to see details]</span>
+    )}
+  </div>
+);
+```
+
+### Minimal Metadata
+```typescript
+const MinimalMetadata = ({ message }) => (
+  <div className="minimal-metadata">
+    {message.metadata.toolCalls.length > 0 && (
+      <span className="tool-count">
+        🔧 {message.metadata.toolCalls.length} tools
+      </span>
+    )}
+    <span className="message-time">
+      {formatShortTime(message.metadata.timestamp)}
     </span>
   </div>
 );
@@ -166,41 +229,66 @@ const MessageMetadata = ({ message }) => (
 ```typescript
 interface ConversationState {
   messages: SummarizedMessage[];
-  currentSummary?: SummarizedMessage;
+  currentLiveSummary?: SummarizedMessage;
   isProcessing: boolean;
-  expandedSegments: Set<string>;
+  expandedSegment: string | null;
   userPreferences: {
     autoSummarize: boolean;
-    showToolCalls: boolean;
-    summaryLength: 'brief' | 'detailed';
+    showLiveUpdates: boolean;
   };
 }
 ```
 
 ### Backend Processing
 ```typescript
-// Enhanced streaming endpoint
-app.post('/chat-summarized', async (req, res) => {
-  const { message, history, summarize = true } = req.body;
+// Enhanced streaming with live summaries
+app.post('/chat-live-summary', async (req, res) => {
+  const { message, history, enableSummary = true } = req.body;
 
   const messageBuffer: StreamMessage[] = [];
-  let summaryBuffer: string[] = [];
+  let liveSummaryId = `live-${Date.now()}`;
 
-  // Process normally but collect messages
+  // Create initial live summary
+  res.write({
+    type: 'live_summary_start',
+    id: liveSummaryId,
+    summary: "Processing your request...",
+    isLive: true
+  });
+
+  // Process normally and generate live updates
   for await (const streamMessage of processMessage(message, history)) {
     messageBuffer.push(streamMessage);
 
-    // Trigger summarization every 3 messages
-    if (summarize && messageBuffer.length % 3 === 0) {
-      const summary = await generateSummary(messageBuffer.slice(-3));
-      res.write({ type: 'summary', content: summary, fullContent: messageBuffer.slice(-3) });
+    // Generate live summary after each message
+    if (enableSummary && streamMessage.type !== 'thinking') {
+      const liveSummary = await generateLiveSummary(messageBuffer);
+      res.write({
+        type: 'live_summary_update',
+        id: liveSummaryId,
+        summary: liveSummary,
+        isLive: true,
+        fullContent: messageBuffer
+      });
     }
-
-    res.write(streamMessage);
   }
 
+  // Create final summary and response
+  const finalSummary = await generateFinalSummary(messageBuffer);
+  res.write({
+    type: 'live_summary_complete',
+    id: liveSummaryId,
+    summary: finalSummary,
+    isLive: false,
+    fullContent: messageBuffer
+  });
+
   // Send final response
-  res.write({ type: 'final_response', content: finalResult });
+  res.write({
+    type: 'final_response',
+    content: finalResult,
+    relatedSummaryId: liveSummaryId
+  });
 });
 ```
 
@@ -264,22 +352,25 @@ app.post('/chat-summarized', async (req, res) => {
 ## 🎯 Success Metrics
 
 ### User Experience Metrics
-- **Time to first meaningful response**: < 2 seconds
-- **Cognitive load reduction**: 70% less scrolling required
-- **Task completion rate**: > 90% for common Stellar operations
+- **Time to first meaningful response**: < 1 second (immediate live summary)
+- **Cognitive load reduction**: 90% less scrolling required
+- **Task completion rate**: > 95% for common Stellar operations
 - **User satisfaction**: > 4.5/5 for conversation clarity
+- **Live tracking**: Users can follow progress in real-time
 
 ### Technical Metrics
-- **Summarization accuracy**: > 85% relevance score
-- **Processing overhead**: < 10% increase in response time
-- **Cost efficiency**: < $0.01 per 10 messages summarized
-- **Error rate**: < 1% summarization failures
+- **Live summary accuracy**: > 85% relevance for progress tracking
+- **Processing overhead**: < 200ms additional latency per message
+- **Cost efficiency**: < $0.002 per conversation with live updates
+- **Update frequency**: Real-time updates after each message
+- **Error rate**: < 1% live summary failures
 
 ### Business Metrics
-- **User retention**: +15% for sessions with 5+ messages
-- **Task efficiency**: +25% faster completion of multi-step operations
-- **Support reduction**: -20% fewer "what's happening" questions
-- **Feature adoption**: > 80% of users interact with expanded content
+- **User retention**: +25% for sessions with 5+ messages
+- **Task efficiency**: +40% faster completion of multi-step operations
+- **Support reduction**: -30% fewer "what's happening" questions
+- **Feature adoption**: > 90% of users expand at least one summary
+- **Session length**: Users stay 2x longer due to better experience
 
 ---
 
