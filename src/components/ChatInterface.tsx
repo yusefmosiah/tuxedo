@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, Text } from '@stellar/design-system';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
 import { chatApi, ChatMessage, StreamMessage, type HealthResponse } from '../lib/api';
 import { useWallet } from '../hooks/useWallet';
 import { parseMessageForTransaction } from '../utils/transactionParser';
 import { TransactionCard } from './TransactionCard';
 import '../App.module.css';
+import 'highlight.js/styles/github.css';
 
 // Extended message type that includes streaming information
 interface ExtendedChatMessage extends ChatMessage {
@@ -601,18 +605,20 @@ export const ChatInterface: React.FC = () => {
                       </Text>
                     )}
                   </div>
-                  <Text
-                    as="p"
-                    size="sm"
+                  <div
                     style={{
-                      whiteSpace: 'pre-wrap',
-                      lineHeight: 1.4,
-                      margin: 0,
                       color: '#1565c0',
+                      fontSize: '14px',
+                      lineHeight: 1.4,
                     }}
                   >
-                    {msg.content}
-                  </Text>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeHighlight]}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               );
             }
@@ -763,21 +769,23 @@ export const ChatInterface: React.FC = () => {
                 >
                   {/* Text before transaction */}
                   {parsed.beforeTx && (
-                    <Text
-                      as="p"
-                      size="md"
+                    <div
                       style={{
-                        whiteSpace: 'pre-wrap',
-                        lineHeight: 1.6,
-                        margin: 0,
                         color: '#333',
                         fontSize: '16px',
                         fontWeight: '400',
+                        lineHeight: 1.6,
+                        margin: 0,
                         marginBottom: parsed.transaction ? '12px' : 0,
                       }}
                     >
-                      {parsed.beforeTx}
-                    </Text>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeHighlight]}
+                      >
+                        {parsed.beforeTx}
+                      </ReactMarkdown>
+                    </div>
                   )}
 
                   {/* Embedded transaction card */}
@@ -785,21 +793,23 @@ export const ChatInterface: React.FC = () => {
 
                   {/* Text after transaction */}
                   {parsed.afterTx && (
-                    <Text
-                      as="p"
-                      size="md"
+                    <div
                       style={{
-                        whiteSpace: 'pre-wrap',
-                        lineHeight: 1.6,
-                        margin: 0,
                         color: '#333',
                         fontSize: '16px',
                         fontWeight: '400',
+                        lineHeight: 1.6,
+                        margin: 0,
                         marginTop: parsed.transaction ? '12px' : 0,
                       }}
                     >
-                      {parsed.afterTx}
-                    </Text>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeHighlight]}
+                      >
+                        {parsed.afterTx}
+                      </ReactMarkdown>
+                    </div>
                   )}
                 </div>
               );

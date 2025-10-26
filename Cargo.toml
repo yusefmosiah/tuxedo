@@ -1,5 +1,11 @@
 [workspace]
-members = ["contracts/*"]
+members = [
+    "contracts/token",
+    "contracts/farming",
+    "contracts/fungible-token-interface",
+    "contracts/guess-the-number",
+    "contracts/nft-enumerable"
+]
 resolver = "2"
 
 [workspace.package]

@@ -327,6 +327,202 @@ except ImportError as e:
     get_defindex_vault_details = None
     prepare_defindex_deposit = None
 
+# Import TUX farming tools
+try:
+    from tux_farming import TuxFarmingTools
+    TUX_FARMING_AVAILABLE = True
+    logger.info("TUX farming tools loaded successfully")
+except ImportError as e:
+    logger.warning(f"TUX farming tools not available: {e}")
+    TUX_FARMING_AVAILABLE = False
+
+# ============================================================================
+# TUX YIELD FARMING TOOLS
+# ============================================================================
+
+@tool
+async def tux_farming_overview(
+    wallet_address: Optional[str] = None
+) -> str:
+    """
+    Get overview of TUX yield farming opportunities and user positions.
+
+    Args:
+        wallet_address: User's wallet address to show personalized positions
+
+    Returns comprehensive farming overview including:
+    - TUX token information
+    - Available farming pools with APYs
+    - User's positions (if wallet provided)
+    - Total pending rewards
+    """
+    try:
+        if not TUX_FARMING_AVAILABLE:
+            return "TUX farming tools are not available. Please check if contracts are deployed."
+
+        tools = TuxFarmingTools()
+        overview = tools.get_farming_overview(wallet_address)
+
+        if "error" in overview:
+            return f"Error getting farming overview: {overview['error']}"
+
+        response_parts = []
+
+        # Token info
+        token_info = overview.get('token_info', {})
+        if token_info:
+            response_parts.append("## TUX Token Information")
+            response_parts.append(f"**Name:** {token_info.get('name', 'N/A')}")
+            response_parts.append(f"**Symbol:** {token_info.get('symbol', 'N/A')}")
+            response_parts.append(f"**Total Supply:** {token_info.get('total_supply', 0):,} tokens")
+            response_parts.append(f"**Contract:** {token_info.get('contract_address', 'N/A')}")
+            response_parts.append("")
+
+        # Available pools
+        pools = overview.get('pools', [])
+        response_parts.append(f"## Available Farming Pools ({len(pools)} pools)")
+
+        for pool in pools:
+            response_parts.append(f"### {pool['pool_id']} Pool")
+            response_parts.append(f"- **Staking Token:** {pool['staking_token']}")
+            response_parts.append(f"- **APY:** {pool['apy']:.2f}%")
+            response_parts.append(f"- **Total Staked:** {pool['total_staked']:,}")
+            response_parts.append(f"- **Status:** {'Active' if pool['is_active'] else 'Inactive'}")
+
+            if wallet_address:
+                user_staked = pool.get('user_staked', 0)
+                pending = pool.get('formatted_pending_rewards', '0.00 TUX')
+                response_parts.append(f"- **Your Stake:** {user_staked:,}")
+                response_parts.append(f"- **Pending Rewards:** {pending}")
+
+            response_parts.append("")
+
+        # Summary if wallet provided
+        if wallet_address and overview.get('totals'):
+            totals = overview['totals']
+            response_parts.append("## Your Farming Summary")
+            response_parts.append(f"**Total Pending Rewards:** {totals.get('formatted_total_pending', '0.00 TUX')}")
+
+            active_positions = len([p for p in pools if p.get('user_staked', 0) > 0])
+            response_parts.append(f"**Active Positions:** {active_positions}")
+
+        return "\n".join(response_parts)
+
+    except Exception as e:
+        return f"Error getting TUX farming overview: {str(e)}"
+
+@tool
+async def tux_farming_pool_details(
+    pool_id: str,
+    wallet_address: Optional[str] = None
+) -> str:
+    """
+    Get detailed information about a specific TUX farming pool.
+
+    Args:
+        pool_id: Pool identifier (e.g., 'USDC', 'XLM')
+        wallet_address: User's wallet address to show personalized position
+
+    Returns detailed pool information including:
+    - Pool parameters and configuration
+    - APY and rewards calculation
+    - User's position in the pool (if wallet provided)
+    """
+    try:
+        if not TUX_FARMING_AVAILABLE:
+            return "TUX farming tools are not available."
+
+        tools = TuxFarmingTools()
+        details = tools.get_pool_details(pool_id, wallet_address)
+
+        if "error" in details:
+            return f"Error getting pool details: {details['error']}"
+
+        response_parts = []
+        response_parts.append(f"## {pool_id} Pool Details")
+        response_parts.append(f"**Staking Token:** {details.get('staking_token', 'N/A')}")
+        response_parts.append(f"**Allocation Points:** {details.get('allocation_points', 0)}")
+        response_parts.append(f"**Total Staked:** {details.get('total_staked', 0):,}")
+        response_parts.append(f"**APY:** {details.get('apy', 0):.2f}%")
+        response_parts.append(f"**Status:** {'Active' if details.get('is_active', False) else 'Inactive'}")
+        response_parts.append(f"**Last Updated:** {details.get('last_update_time', 'N/A')}")
+
+        if wallet_address:
+            response_parts.append("")
+            response_parts.append("### Your Position")
+            response_parts.append(f"**Amount Staked:** {details.get('user_staked', 0):,}")
+            response_parts.append(f"**Pending Rewards:** {details.get('formatted_pending_rewards', '0.00 TUX')}")
+
+            stake_time = details.get('user_stake_start_time', 0)
+            if stake_time > 0:
+                import datetime
+                stake_date = datetime.datetime.fromtimestamp(stake_time)
+                response_parts.append(f"**Stake Started:** {stake_date.strftime('%Y-%m-%d %H:%M:%S')}")
+
+        return "\n".join(response_parts)
+
+    except Exception as e:
+        return f"Error getting pool details: {str(e)}"
+
+@tool
+async def tux_farming_user_positions(
+    wallet_address: str
+) -> str:
+    """
+    Get all TUX farming positions for a user.
+
+    Args:
+        wallet_address: User's Stellar wallet address
+
+    Returns comprehensive user position information:
+    - All active and historical positions
+    - Pending rewards breakdown
+    - Position performance metrics
+    """
+    try:
+        if not TUX_FARMING_AVAILABLE:
+            return "TUX farming tools are not available."
+
+        if not wallet_address:
+            return "Wallet address is required to fetch positions."
+
+        tools = TuxFarmingTools()
+        positions = tools.get_user_positions(wallet_address)
+
+        if "error" in positions:
+            return f"Error getting user positions: {positions['error']}"
+
+        response_parts = []
+        response_parts.append(f"## TUX Farming Positions for {wallet_address}")
+        response_parts.append(f"**Total Pending Rewards:** {positions.get('formatted_total_pending', '0.00 TUX')}")
+        response_parts.append(f"**Active Positions:** {positions.get('active_positions', 0)}")
+        response_parts.append("")
+
+        # List positions
+        user_positions = positions.get('positions', [])
+        if user_positions:
+            response_parts.append("### Your Positions")
+            for pos in user_positions:
+                response_parts.append(f"#### {pos['pool_id']} Pool")
+                response_parts.append(f"- **Staked:** {pos['amount_staked']:,}")
+                response_parts.append(f"- **APY:** {pos['apy']:.2f}%")
+                response_parts.append(f"- **Pending Rewards:** {pos['formatted_pending_rewards']}")
+
+                if pos.get('stake_start_time', 0) > 0:
+                    import datetime
+                    stake_date = datetime.datetime.fromtimestamp(pos['stake_start_time'])
+                    response_parts.append(f"- **Stake Started:** {stake_date.strftime('%Y-%m-%d')}")
+
+                response_parts.append("")
+        else:
+            response_parts.append("You don't have any active farming positions yet.")
+            response_parts.append("Start staking to earn TUX rewards!")
+
+        return "\n".join(response_parts)
+
+    except Exception as e:
+        return f"Error getting user positions: {str(e)}"
+
 # List of all available tools
 STELLAR_TOOLS = [
     stellar_account_manager,
@@ -343,6 +539,14 @@ if DEFINDEX_TOOLS_AVAILABLE:
         discover_high_yield_vaults,
         get_defindex_vault_details,
         prepare_defindex_deposit
+    ])
+
+# Add TUX farming tools if available
+if TUX_FARMING_AVAILABLE:
+    STELLAR_TOOLS.extend([
+        tux_farming_overview,
+        tux_farming_pool_details,
+        tux_farming_user_positions
     ])
 
 @asynccontextmanager
@@ -1365,6 +1569,86 @@ async def test_stellar_tool(tool_name: str, arguments: dict = None, wallet_addre
         return {"tool": tool_name, "arguments": arguments, "wallet_address": wallet_address, "result": result, "success": True}
     except Exception as e:
         return {"tool": tool_name, "arguments": arguments, "wallet_address": wallet_address, "error": str(e), "success": False}
+
+# ============================================================================
+# TUX FARMING API ENDPOINTS
+# ============================================================================
+
+class TuxFarmingOverviewRequest(BaseModel):
+    wallet_address: Optional[str] = None
+
+class TuxFarmingPoolDetailsRequest(BaseModel):
+    pool_id: str
+    wallet_address: Optional[str] = None
+
+class TuxFarmingUserPositionsRequest(BaseModel):
+    wallet_address: str
+
+@app.post("/api/tux-farming/overview")
+async def tux_farming_overview_endpoint(request: TuxFarmingOverviewRequest):
+    """Get TUX farming overview"""
+    try:
+        if not TUX_FARMING_AVAILABLE:
+            raise HTTPException(status_code=503, detail="TUX farming tools not available")
+
+        tools = TuxFarmingTools()
+        overview = tools.get_farming_overview(request.wallet_address)
+
+        if "error" in overview:
+            raise HTTPException(status_code=400, detail=overview["error"])
+
+        return overview
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in TUX farming overview endpoint: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@app.post("/api/tux-farming/pool-details")
+async def tux_farming_pool_details_endpoint(request: TuxFarmingPoolDetailsRequest):
+    """Get TUX farming pool details"""
+    try:
+        if not TUX_FARMING_AVAILABLE:
+            raise HTTPException(status_code=503, detail="TUX farming tools not available")
+
+        tools = TuxFarmingTools()
+        details = tools.get_pool_details(request.pool_id, request.wallet_address)
+
+        if "error" in details:
+            raise HTTPException(status_code=404, detail=details["error"])
+
+        return details
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in TUX farming pool details endpoint: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@app.post("/api/tux-farming/user-positions")
+async def tux_farming_user_positions_endpoint(request: TuxFarmingUserPositionsRequest):
+    """Get TUX farming user positions"""
+    try:
+        if not TUX_FARMING_AVAILABLE:
+            raise HTTPException(status_code=503, detail="TUX farming tools not available")
+
+        if not request.wallet_address:
+            raise HTTPException(status_code=400, detail="Wallet address is required")
+
+        tools = TuxFarmingTools()
+        positions = tools.get_user_positions(request.wallet_address)
+
+        if "error" in positions:
+            raise HTTPException(status_code=400, detail=positions["error"])
+
+        return positions
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in TUX farming user positions endpoint: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

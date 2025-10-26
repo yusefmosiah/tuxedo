@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, Text } from '@stellar/design-system';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
 import { chatApi, ChatMessage, StreamMessage, type HealthResponse } from '../lib/api';
 import { useWallet } from '../hooks/useWallet';
 import { useChatThreads, ExtendedChatMessage } from '../hooks/useChatThreads';
@@ -7,6 +10,7 @@ import { ThreadSidebar } from './ThreadSidebar';
 import { parseMessageForTransaction } from '../utils/transactionParser';
 import { TransactionCard } from './TransactionCard';
 import '../App.module.css';
+import 'highlight.js/styles/github.css';
 import styles from './ChatInterfaceWithSidebar.module.css';
 
 
@@ -737,18 +741,21 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
                         </Text>
                       )}
                     </div>
-                    <Text
-                      as="p"
-                      size="sm"
+                    <div
                       style={{
-                        whiteSpace: 'pre-wrap',
+                        color: '#1565c0',
+                        fontSize: '14px',
                         lineHeight: 1.4,
                         margin: 0,
-                        color: '#1565c0',
                       }}
                     >
-                      {msg.content}
-                    </Text>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeHighlight]}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
                   </div>
                 );
               }
@@ -885,21 +892,23 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
                   >
                     {/* Text before transaction */}
                     {parsed.beforeTx && (
-                      <Text
-                        as="p"
-                        size="md"
+                      <div
                         style={{
-                          whiteSpace: 'pre-wrap',
-                          lineHeight: 1.6,
-                          margin: 0,
                           color: 'var(--color-ai-text)',
                           fontSize: '16px',
                           fontWeight: '400',
+                          lineHeight: 1.6,
+                          margin: 0,
                           marginBottom: parsed.transaction ? '12px' : 0,
                         }}
                       >
-                        {parsed.beforeTx}
-                      </Text>
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          rehypePlugins={[rehypeHighlight]}
+                        >
+                          {parsed.beforeTx}
+                        </ReactMarkdown>
+                      </div>
                     )}
 
                     {/* Embedded transaction card */}
@@ -907,21 +916,23 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
 
                     {/* Text after transaction */}
                     {parsed.afterTx && (
-                      <Text
-                        as="p"
-                        size="md"
+                      <div
                         style={{
-                          whiteSpace: 'pre-wrap',
-                          lineHeight: 1.6,
-                          margin: 0,
                           color: 'var(--color-ai-text)',
                           fontSize: '16px',
                           fontWeight: '400',
+                          lineHeight: 1.6,
+                          margin: 0,
                           marginTop: parsed.transaction ? '12px' : 0,
                         }}
                       >
-                        {parsed.afterTx}
-                      </Text>
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          rehypePlugins={[rehypeHighlight]}
+                        >
+                          {parsed.afterTx}
+                        </ReactMarkdown>
+                      </div>
                     )}
                   </div>
                 );
