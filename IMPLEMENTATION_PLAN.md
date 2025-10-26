@@ -42,21 +42,41 @@ A conversational interface that allows users to:
 Frontend (Browser)
 ├── React Components
 │   └── ChatInterface.tsx (local state only)
-├── AI Integration
-│   ├── LangChain.js + RedPill Qwen3-VL (Phala Cloud)
-│   └── Blend Pool Query Tool
+├── API Client
+│   └── FastAPI backend communication
 └── Existing Infrastructure (from Scaffold Stellar)
     ├── WalletProvider + useWallet hook ✅
     ├── Freighter integration ✅
     ├── useBlendPools hook ✅
     └── Blend SDK integration ✅
 
+Backend (FastAPI Server)
+├── FastAPI Application
+│   ├── Chat endpoint (/chat)
+│   └── Health check (/health)
+├── AI Integration
+│   ├── LangChain Python + OpenAI/RedPill
+│   └── MCP Client for py-stellar-mcp
+└── MCP Server Integration
+    └── py-stellar-mcp (existing repo)
+        ├── Account management tools
+        ├── Blend pool queries
+        ├── Stellar operations
+        └── Soroban contract interactions
+
 External Services
-├── RedPill Qwen3-VL via Phala Cloud (Private GPU TEE)
-└── Stellar Network (Soroban RPC for pool data)
+├── OpenAI GPT or RedPill Qwen3-VL via API
+└── Stellar Network (via py-stellar-mcp)
 ```
 
 ### Why This Approach?
+
+**Why FastAPI + MCP Server Approach:**
+- ✅ **Security**: API keys stay server-side, never exposed to browsers
+- ✅ **Rich Tools**: py-stellar-mcp provides comprehensive Stellar operations
+- ✅ **Future-Proof**: Easy to add more MCP servers and complex agent workflows
+- ✅ **Python Ecosystem**: Better LangChain/LangGraph support for agentic systems
+- ✅ **Type Safety**: End-to-end type safety from MCP server to frontend
 
 **Focus on Core Value First:**
 - ✅ Get conversational pool discovery working in hours, not days
@@ -68,44 +88,94 @@ External Services
 - 🔮 Trading tools (once users trust pool recommendations)
 - 🔮 Supabase (once users want conversation history)
 - 🔮 Portfolio tracking (once users have positions)
+- 🔮 LangGraph workflows (once users need complex multi-step operations)
 
 ---
 
 ## Phase 1: Setup & Dependencies
 
-### 1.1 Install NPM Packages
+### 1.1 Backend Setup (FastAPI)
+
+Create backend directory and install Python dependencies:
+
+```bash
+# Create backend directory
+mkdir backend
+cd backend
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install Python dependencies
+pip install fastapi uvicorn python-multipart \
+  langchain langchain-openai langchain-community \
+  pydantic python-dotenv httpx mcp
+
+# Create requirements.txt for future reference
+pip freeze > requirements.txt
+```
+
+### 1.2 Frontend Dependencies
 
 ```bash
 npm install --save \
-  @langchain/core \
-  @langchain/openai \
-  zod
+  axios
 ```
 
-**Note**: Skipping `@supabase/supabase-js` for now - we'll add it in Phase 6 (Future).
+**Note**: No LangChain.js needed - AI logic moved to FastAPI backend!
 
-### 1.2 Environment Variables
+### 1.3 Environment Variables
 
-Create/update `.env.local`:
-
+**Backend (.env):**
 ```bash
-# Existing Stellar Config
-VITE_STELLAR_NETWORK=testnet
-VITE_HORIZON_URL=https://horizon-testnet.stellar.org
-VITE_RPC_URL=https://soroban-testnet.stellar.org
+# OpenAI/RedPill Configuration
+OPENAI_API_KEY=sk-rp-34c7daeea1dcb00cab5acab8014b7efeb87b819cbee6b41f6d15a64d8f8dca86
+OPENAI_BASE_URL=https://api.redpill.ai/v1
 
-# NEW: RedPill API (OpenAI-compatible) via Phala Cloud
-VITE_OPENAI_API_KEY=...  # Your RedPill API key
-VITE_OPENAI_BASE_URL=https://www.redpill.ai/api/v1  # RedPill OpenAI-compatible endpoint
+# MCP Server Configuration
+MCP_SERVER_URL=http://localhost:8001  # py-stellar-mcp server address
+MCP_SERVER_TIMEOUT=30
 ```
 
-### 1.3 RedPill API Setup (Phala Cloud)
+**Frontend (.env - already exists):**
+```bash
+# Existing Stellar Config (no changes needed)
+PUBLIC_STELLAR_NETWORK="TESTNET"
+PUBLIC_STELLAR_RPC_URL="https://soroban-testnet.stellar.org"
+PUBLIC_STELLAR_HORIZON_URL="https://horizon-testnet.stellar.org"
+
+# Backend API URL
+PUBLIC_API_URL=http://localhost:8000
+```
+
+### 1.4 RedPill API Setup (Phala Cloud)
 
 **Get API Key**:
 1. Go to https://www.redpill.ai/
 2. Sign up and create an account
 3. Navigate to your API settings to get an API key
-4. Add it to your `.env.local` file
+4. Add it to your backend `.env` file (already done above!)
+
+### 1.5 Start py-stellar-mcp Server
+
+Clone and start your existing MCP server:
+
+```bash
+# Clone your repository (if not already done)
+git clone https://github.com/yusefmosiah/py-stellar-mcp.git
+cd py-stellar-mcp
+
+# Create virtual environment and install dependencies
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Start the MCP server
+python -m mcp.server.stdio stellar_mcp.server --port 8001
+```
+
+**Note**: This server should run continuously on port 8001, providing Stellar tools to your FastAPI backend.
 
 **About Phala Cloud GPU TEE**:
 - **Privacy**: All AI requests run in Trusted Execution Environments (TEEs)
@@ -132,79 +202,102 @@ VITE_OPENAI_BASE_URL=https://www.redpill.ai/api/v1  # RedPill OpenAI-compatible 
 
 ---
 
-## Phase 2: AI Agent & Blend Tools
+## Phase 2: FastAPI Backend & MCP Integration
 
-### 2.1 Create Blend Query Tool
+### 2.1 Create FastAPI Server
 
-**File**: `src/lib/ai-tools.ts`
+**File**: `backend/main.py`
 
-```typescript
-import { DynamicStructuredTool } from '@langchain/core/tools';
-import { z } from 'zod';
-import { Backstop, PoolV2 } from '@blend-capital/blend-sdk';
-import { BLEND_CONTRACTS } from '../contracts/blend';
-import { network } from '../contracts/util';
+```python
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import List, Optional
+import os
+import asyncio
+from contextlib import asynccontextmanager
 
-export function createBlendTools() {
-  const getBlendPools = new DynamicStructuredTool({
-    name: 'get_blend_pools',
-    description:
-      'Get all active Blend lending pools with current APY rates, total value locked (TVL), and utilization metrics. Use this to answer questions about yields, lending opportunities, and market conditions.',
-    schema: z.object({}),
-    func: async () => {
-      try {
-        const backstop = await Backstop.load(network, BLEND_CONTRACTS.backstop);
-        const poolAddresses = backstop.config.rewardZone;
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from langchain_core.tools import BaseTool
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+import json
 
-        const pools = await Promise.all(
-          poolAddresses.map(async (addr) => {
-            const pool = await PoolV2.load(network, addr);
-            return {
-              name: pool.metadata.name,
-              address: addr.slice(0, 8) + '...',
-              reserves: Array.from(pool.reserves.entries()).map(
-                ([assetId, reserve]) => ({
-                  asset: assetId.slice(0, 8) + '...',
-                  supplyApy: (reserve.estSupplyApy * 100).toFixed(2) + '%',
-                  borrowApy: (reserve.estBorrowApy * 100).toFixed(2) + '%',
-                  totalSupplied: reserve.totalSupply,
-                  totalBorrowed: reserve.totalLiabilities,
-                  utilization: (reserve.getUtilizationFloat() * 100).toFixed(1) + '%',
-                  availableLiquidity: (reserve.totalSupply - reserve.totalLiabilities).toString(),
-                })
-              ),
-            };
-          })
-        );
+# Configuration
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://localhost:8001")
 
-        return JSON.stringify(pools, null, 2);
-      } catch (err) {
-        return JSON.stringify({ error: String(err) });
-      }
-    },
-  });
+class ChatMessage(BaseModel):
+    role: str
+    content: str
 
-  return [getBlendPools];
-}
-```
+class ChatRequest(BaseModel):
+    message: str
+    history: List[ChatMessage] = []
 
-### 2.2 Create AI Agent
+class ChatResponse(BaseModel):
+    response: str
 
-**File**: `src/lib/ai-agent.ts`
+# Global MCP client session
+mcp_session = None
 
-```typescript
-import { ChatOpenAI } from '@langchain/openai';
-import { HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages';
-import { createBlendTools } from './ai-tools';
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    global mcp_session
+    print("Connecting to MCP server...")
 
-const SYSTEM_PROMPT = `You are Tuxedo, an AI assistant that helps users discover and understand lending opportunities on Stellar through the Blend Protocol.
+    # Connect to py-stellar-mcp server
+    server_params = StdioServerParameters(
+        command="python",
+        args=["-m", "mcp.server.stdio", "stellar_mcp.server"],
+        env=None
+    )
+
+    try:
+        mcp_session = await stdio_client(server_params)
+        print("Connected to MCP server successfully!")
+    except Exception as e:
+        print(f"Failed to connect to MCP server: {e}")
+        mcp_session = None
+
+    yield
+
+    # Shutdown
+    if mcp_session:
+        try:
+            await mcp_session[0].close()
+        except:
+            pass
+
+app = FastAPI(
+    title="Tuxedo AI Backend",
+    description="FastAPI backend for Tuxedo AI with MCP integration",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # Vite dev server
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# System prompt for the AI
+SYSTEM_PROMPT = """You are Tuxedo, an AI assistant that helps users discover and understand lending opportunities on Stellar through the Blend Protocol.
 
 **Your Capabilities:**
 - Query all active Blend pools to find current APY rates
+- Access Stellar account information and balances
+- Perform Stellar operations via MCP tools
 - Explain DeFi lending concepts in simple, clear language
 - Compare different pools and assets
 - Assess risk based on utilization rates and pool metrics
-- Provide context about how yields are generated
 
 **Key Principles:**
 1. **Plain language first** - Avoid DeFi jargon unless the user asks for technical details
@@ -213,118 +306,194 @@ const SYSTEM_PROMPT = `You are Tuxedo, an AI assistant that helps users discover
 4. **Never promise returns** - Always say "current rate" or "estimated APY based on today's data"
 5. **Show your work** - When comparing pools, show the numbers (APY, utilization, TVL)
 
-**Example Responses:**
-
-User: "What yields are available for USDC?"
-You: "Let me check the current Blend pools... [calls get_blend_pools]
-I found USDC lending in the Comet pool offering 12.5% APY. This rate is higher than traditional savings because:
-- Borrowers are paying 18% to borrow USDC
-- The pool is 65% utilized (good liquidity, moderate risk)
-- $2.3M currently lent, $850K available to withdraw
-
-The yield fluctuates based on borrowing demand. Higher utilization = higher rates but less liquidity."
-
-User: "Is 12% APY risky?"
-You: "It depends on context. Let me break it down:
-- **Smart contract risk**: All DeFi carries this risk. Blend is audited but not risk-free.
-- **Utilization risk**: At 65%, you can withdraw anytime. Above 90% gets concerning.
-- **Market risk**: USDC is a stablecoin, so less volatile than crypto assets.
-
-Compare this to XLM at 8% APY but 85% utilization - lower rate, higher withdrawal risk."
+**Available Tools:**
+- All tools provided by py-stellar-mcp server (account management, pool queries, trading, etc.)
+- Use these tools to get real-time Stellar data for accurate responses
 
 **Current Context:**
-- User is exploring Blend pools on Stellar mainnet
+- User is exploring Blend pools on Stellar testnet
 - This is for educational/informational purposes
-- Focus on helping users understand opportunities and risks`;
+- Focus on helping users understand opportunities and risks"""
 
-// Initialize OpenAI client with RedPill endpoint (Phala Cloud)
-const model = new ChatOpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  model: 'qwen/qwen3-vl-235b-a22b-instruct',
-  temperature: 0.7,
-  maxTokens: 2000,
-  configuration: {
-    baseURL: import.meta.env.VITE_OPENAI_BASE_URL,
-  },
-});
+# Initialize OpenAI client
+model = ChatOpenAI(
+    api_key=OPENAI_API_KEY,
+    base_url=OPENAI_BASE_URL,
+    model="gpt-4",  # or "qwen/qwen3-vl-235b-a22b-instruct" for RedPill
+    temperature=0.7,
+    max_tokens=2000,
+)
+
+@app.get("/")
+async def root():
+    return {"message": "Tuxedo AI Backend is running!"}
+
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "mcp_connected": mcp_session is not None,
+        "openai_configured": bool(OPENAI_API_KEY)
+    }
+
+@app.post("/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest):
+    """Process chat message with AI and MCP tools"""
+    try:
+        # Build message history
+        messages = [
+            SystemMessage(content=SYSTEM_PROMPT),
+            *[HumanMessage(content=msg.content) if msg.role == "user" else AIMessage(content=msg.content)
+              for msg in request.history],
+            HumanMessage(content=request.message),
+        ]
+
+        # For now, simple chat without MCP tools
+        # TODO: Integrate MCP tools in Phase 2.2
+        response = await model.ainvoke(messages)
+
+        return ChatResponse(response=response.content)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing chat: {str(e)}")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+```
+
+### 2.2 MCP Client Integration
+
+**File**: `backend/mcp_client.py`
+
+```python
+import asyncio
+import json
+from typing import Any, Dict, List, Optional
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+
+class StellarMCPClient:
+    """Client for interacting with py-stellar-mcp server"""
+
+    def __init__(self):
+        self.session = None
+        self._tools = []
+
+    async def connect(self, server_url: str = "http://localhost:8001"):
+        """Connect to MCP server"""
+        try:
+            server_params = StdioServerParameters(
+                command="python",
+                args=["-m", "mcp.server.stdio", "stellar_mcp.server"],
+                env=None
+            )
+
+            self.session = await stdio_client(server_params)
+            await self.session[0].initialize()
+
+            # List available tools
+            tools_result = await self.session[0].list_tools()
+            self._tools = tools_result.tools
+
+            print(f"Connected to MCP server. Available tools: {len(self._tools)}")
+            return True
+
+        except Exception as e:
+            print(f"Failed to connect to MCP server: {e}")
+            return False
+
+    async def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> str:
+        """Call a tool on the MCP server"""
+        if not self.session:
+            raise Exception("Not connected to MCP server")
+
+        try:
+            result = await self.session[0].call_tool(tool_name, arguments)
+            return result.content[0].text if result.content else "No content returned"
+        except Exception as e:
+            return f"Error calling tool {tool_name}: {str(e)}"
+
+    def get_available_tools(self) -> List[str]:
+        """Get list of available tool names"""
+        return [tool.name for tool in self._tools] if self._tools else []
+
+# Global MCP client instance
+mcp_client = StellarMCPClient()
+```
+
+---
+
+## Phase 3: Frontend Chat UI
+
+### 3.1 Create API Client
+
+**File**: `src/lib/api.ts`
+
+```typescript
+import axios from 'axios';
+
+const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
 }
 
-export async function chat(
-  userMessage: string,
-  conversationHistory: ChatMessage[]
-): Promise<string> {
-  try {
-    const tools = createBlendTools();
-
-    // Build message history
-    const messages = [
-      new SystemMessage(SYSTEM_PROMPT),
-      ...conversationHistory.map((msg) =>
-        msg.role === 'user'
-          ? new HumanMessage(msg.content)
-          : new AIMessage(msg.content)
-      ),
-      new HumanMessage(userMessage),
-    ];
-
-    // Bind tools to model
-    const modelWithTools = model.bindTools(
-      tools.map((tool) => ({
-        name: tool.name,
-        description: tool.description,
-        parameters: tool.schema,
-      }))
-    );
-
-    // First invocation
-    const response = await modelWithTools.invoke(messages);
-
-    // Check if tools were called
-    if (response.tool_calls && response.tool_calls.length > 0) {
-      const toolResults = [];
-
-      for (const toolCall of response.tool_calls) {
-        const tool = tools.find((t) => t.name === toolCall.name);
-        if (tool) {
-          const result = await tool.invoke(toolCall.args);
-          toolResults.push(result);
-        }
-      }
-
-      // Second invocation with tool results
-      const finalResponse = await model.invoke([
-        ...messages,
-        response,
-        new SystemMessage(`Tool results: ${toolResults.join('\n\n')}`),
-      ]);
-
-      return finalResponse.content as string;
-    }
-
-    return response.content as string;
-  } catch (error) {
-    console.error('AI Agent error:', error);
-    throw new Error('Failed to process message. Please try again.');
-  }
+export interface ChatRequest {
+  message: string;
+  history: ChatMessage[];
 }
+
+export interface ChatResponse {
+  response: string;
+}
+
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add request/response interceptors for debugging
+api.interceptors.request.use((config) => {
+  console.log('API Request:', config.method?.toUpperCase(), config.url);
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => {
+    console.log('API Response:', response.status, response.data);
+    return response;
+  },
+  (error) => {
+    console.error('API Error:', error.response?.data || error.message);
+    return Promise.reject(error);
+  }
+);
+
+export const chatApi = {
+  async sendMessage(request: ChatRequest): Promise<ChatResponse> {
+    const response = await api.post('/chat', request);
+    return response.data;
+  },
+
+  async healthCheck() {
+    const response = await api.get('/health');
+    return response.data;
+  },
+};
 ```
 
----
-
-## Phase 3: Chat UI
-
-### 3.1 Create Chat Interface Component
+### 3.2 Create Chat Interface Component
 
 **File**: `src/components/ChatInterface.tsx`
 
 ```typescript
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, Text, Loader } from '@stellar/design-system';
-import { chat, type ChatMessage } from '../lib/ai-agent';
+import { chatApi, type ChatMessage } from '../lib/api';
 import { useWallet } from '../hooks/useWallet';
 
 export const ChatInterface: React.FC = () => {
@@ -332,7 +501,26 @@ export const ChatInterface: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [apiStatus, setApiStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Check API health on mount
+  useEffect(() => {
+    const checkHealth = async () => {
+      try {
+        await chatApi.healthCheck();
+        setApiStatus('connected');
+      } catch (error) {
+        console.error('Backend health check failed:', error);
+        setApiStatus('disconnected');
+      }
+    };
+
+    checkHealth();
+    // Check health every 30 seconds
+    const interval = setInterval(checkHealth, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -340,7 +528,7 @@ export const ChatInterface: React.FC = () => {
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || apiStatus === 'disconnected') return;
 
     const userMessage: ChatMessage = {
       role: 'user',
@@ -352,11 +540,14 @@ export const ChatInterface: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await chat(input, messages);
+      const response = await chatApi.sendMessage({
+        message: input,
+        history: messages,
+      });
 
       const aiMessage: ChatMessage = {
         role: 'assistant',
-        content: response,
+        content: response.response,
       };
 
       setMessages((prev) => [...prev, aiMessage]);
@@ -366,11 +557,33 @@ export const ChatInterface: React.FC = () => {
         ...prev,
         {
           role: 'assistant',
-          content: 'Sorry, I encountered an error. Please try again.',
+          content: 'Sorry, I encountered an error. Please check if the backend is running and try again.',
         },
       ]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const getStatusIndicator = () => {
+    switch (apiStatus) {
+      case 'connected':
+        return '🟢';
+      case 'disconnected':
+        return '🔴';
+      case 'checking':
+        return '🟡';
+    }
+  };
+
+  const getStatusText = () => {
+    switch (apiStatus) {
+      case 'connected':
+        return 'Connected to backend';
+      case 'disconnected':
+        return 'Backend offline - Start FastAPI server';
+      case 'checking':
+        return 'Checking connection...';
     }
   };
 
@@ -386,6 +599,28 @@ export const ChatInterface: React.FC = () => {
         backgroundColor: '#fff',
       }}
     >
+      {/* Header with status */}
+      <div
+        style={{
+          padding: '16px 20px',
+          backgroundColor: '#f8f9fa',
+          borderBottom: '1px solid #e0e0e0',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <Text as="h3" size="md" weight="semi-bold">
+          💬 Tuxedo AI Assistant
+        </Text>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '12px' }}>{getStatusIndicator()}</span>
+          <Text as="p" size="sm" style={{ color: '#666' }}>
+            {getStatusText()}
+          </Text>
+        </div>
+      </div>
+
       {/* Messages */}
       <div
         style={{
@@ -407,6 +642,25 @@ export const ChatInterface: React.FC = () => {
                 Connected: {wallet.address.slice(0, 8)}...{wallet.address.slice(-4)}
               </Text>
             )}
+
+            {apiStatus === 'disconnected' && (
+              <div style={{
+                marginTop: '24px',
+                padding: '12px 16px',
+                backgroundColor: '#fff3cd',
+                border: '1px solid #ffeaa7',
+                borderRadius: '8px',
+                color: '#856404',
+              }}>
+                <Text as="p" size="sm">
+                  <strong>Backend not connected!</strong><br/>
+                  Run: <code style={{ backgroundColor: '#f8f9fa', padding: '2px 4px', borderRadius: '4px' }}>
+                    cd backend && python main.py
+                  </code>
+                </Text>
+              </div>
+            )}
+
             <div
               style={{
                 marginTop: '24px',
@@ -481,21 +735,27 @@ export const ChatInterface: React.FC = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Ask about yields, pools, or DeFi concepts..."
-            disabled={isLoading}
+            placeholder={
+              apiStatus === 'disconnected'
+                ? "Backend offline - check console"
+                : "Ask about yields, pools, or DeFi concepts..."
+            }
+            disabled={isLoading || apiStatus === 'disconnected'}
             style={{
               flex: 1,
               padding: '12px',
               border: '1px solid #ddd',
               borderRadius: '8px',
               fontSize: '14px',
+              backgroundColor: apiStatus === 'disconnected' ? '#f8f9fa' : '#fff',
+              cursor: apiStatus === 'disconnected' ? 'not-allowed' : 'text',
             }}
           />
           <Button
             variant="primary"
             size="md"
             onClick={handleSend}
-            disabled={isLoading || !input.trim()}
+            disabled={isLoading || !input.trim() || apiStatus === 'disconnected'}
           >
             Send
           </Button>
@@ -552,51 +812,66 @@ export default function Home() {
 
 ## Phase 4: Integration & Testing
 
-### 4.1 Test Checklist
+### 4.1 Development Setup
+
+**Start all services in order:**
+
+```bash
+# 1. Start MCP server (Terminal 1)
+cd py-stellar-mcp
+source venv/bin/activate
+python -m mcp.server.stdio stellar_mcp.server --port 8001
+
+# 2. Start FastAPI backend (Terminal 2)
+cd backend
+source venv/bin/activate
+python main.py
+
+# 3. Start frontend (Terminal 3)
+npm run dev
+# Visit http://localhost:5173
+```
+
+### 4.2 Test Checklist
+
+- [ ] **System Health**
+  - [ ] All three services start without errors
+  - [ ] FastAPI health check passes (`GET http://localhost:8000/health`)
+  - [ ] Frontend shows green "Connected to backend" status
+  - [ ] No CORS errors in browser console
 
 - [ ] **AI Chat Basics**
-  - [ ] Chat interface renders on home page
-  - [ ] Can send message and get response
+  - [ ] Chat interface renders on home page with status indicator
+  - [ ] Can send message and get response from backend
   - [ ] Loading state shows while waiting
   - [ ] Messages display in correct bubbles (user right, AI left)
-
-- [ ] **Pool Queries**
-  - [ ] Ask "What yields are available?"
-  - [ ] Verify AI calls `get_blend_pools` tool (check console)
-  - [ ] Response includes APY rates and pool names
-  - [ ] Ask "Which pool has the best APY?"
-  - [ ] Response compares pools and explains context
-
-- [ ] **Educational Queries**
-  - [ ] Ask "What is Blend Protocol?"
-  - [ ] Ask "How does DeFi lending work?"
-  - [ ] Ask "Is high APY risky?"
-  - [ ] Verify responses are clear and non-technical
+  - [ ] Response time is reasonable (2-5 seconds)
 
 - [ ] **Error Handling**
-  - [ ] Remove OpenAI API key (temporarily)
-  - [ ] Send message, verify error message appears
-  - [ ] Restore API key, verify recovery
+  - [ ] Stop FastAPI backend → Frontend shows "Backend offline"
+  - [ ] Restart backend → Connection restores automatically
   - [ ] Test with empty messages (should be disabled)
+  - [ ] Check browser console for API errors
 
-### 4.2 Manual Testing Script
+- [ ] **MCP Integration** (Phase 2.2 milestone)
+  - [ ] FastAPI connects to py-stellar-mcp server on startup
+  - [ ] Can call basic Stellar tools (account info, balances)
+  - [ ] AI has access to real-time Stellar data
+
+### 4.3 Manual Testing Script
 
 ```
-1. Open http://localhost:5173
-2. See "Ask Tuxedo" section with empty chat
-3. Type: "What yields are available for USDC?"
-4. Press Enter or click Send
-5. Wait 2-5 seconds (loading indicator should show)
-6. Expect response like:
-   "I found USDC lending in the Comet pool offering X% APY.
-    Here's what you should know:
-    - Borrowers are paying Y% to borrow USDC
-    - Pool is Z% utilized
-    - $N currently lent..."
-7. Type: "Is that risky?"
-8. Expect contextual explanation of utilization, smart contract risk, etc.
-9. Scroll down to Pool Dashboard
-10. Verify pool data matches what AI described
+1. Start all services (MCP, FastAPI, frontend)
+2. Open http://localhost:5173
+3. Verify green status "Connected to backend"
+4. Type: "Hello, what can you help me with?"
+5. Should get friendly response about Blend pools and DeFi
+6. Type: "What yields are available for USDC?"
+7. Wait 2-5 seconds (loading indicator should show)
+8. Expect response with current market information
+9. Test error case: Stop FastAPI, try to send message
+10. Verify "Backend offline" warning appears
+11. Restart FastAPI, verify connection auto-recovers
 ```
 
 ---
@@ -728,28 +1003,71 @@ Annual revenue = $100M × 10% × 5% = $500,000/year
 
 ### Local Development
 ```bash
+# Terminal 1: Start MCP server
+cd py-stellar-mcp
+source venv/bin/activate
+python -m mcp.server.stdio stellar_mcp.server --port 8001
+
+# Terminal 2: Start FastAPI backend
+cd backend
+source venv/bin/activate
+python main.py
+
+# Terminal 3: Start frontend
 npm run dev
 # Visit http://localhost:5173
 ```
 
-### Production Build
-```bash
-npm run build
-# Outputs to dist/
+### Production Deployment Options
 
-# Deploy to Vercel
+**Option 1: Separate Services (Recommended)**
+```bash
+# Frontend: Deploy to Vercel/Netlify
+npm run build
 vercel deploy
 
-# Or Netlify
-netlify deploy --prod --dir=dist
+# Backend: Deploy to Railway/Render/Heroku
+# Deploy backend/main.py as a web service
 
-# Or any static host
+# MCP Server: Deploy as separate service
+# Or bundle with FastAPI backend for simplicity
 ```
 
+**Option 2: All-in-One FastAPI**
+- Bundle frontend build into FastAPI static files
+- Run both from single server instance
+- Easier for small deployments
+
 ### Environment Variables (Production)
-Set in hosting platform:
-- `VITE_OPENAI_API_KEY` (your RedPill API key)
-- `VITE_OPENAI_BASE_URL` (set to `https://www.redpill.ai/api/v1`)
+
+**Frontend Environment:**
+- `PUBLIC_API_URL` (your FastAPI backend URL)
+
+**Backend Environment:**
+- `OPENAI_API_KEY` (your RedPill API key)
+- `OPENAI_BASE_URL` (set to `https://api.redpill.ai/v1`)
+- `MCP_SERVER_URL` (internal MCP server address)
+- `CORS_ORIGINS` (your frontend domain)
+
+### Production Considerations
+
+**Security:**
+- Use HTTPS for all API communication
+- Set proper CORS origins in production
+- Consider rate limiting on FastAPI endpoints
+- Use environment variables for all secrets
+
+**Performance:**
+- Deploy FastAPI with Gunicorn/Uvicorn workers
+- Consider Redis for caching if scaling
+- Monitor MCP server connection health
+- Set up proper logging and monitoring
+
+**Reliability:**
+- Auto-restart scripts for MCP server
+- Health checks for all services
+- Load balancing if scaling backend
+- Error monitoring (Sentry, etc.)
 
 ---
 
@@ -775,28 +1093,58 @@ Set in hosting platform:
 
 ## Timeline Estimate
 
-- **Phase 1**: 15 minutes (install dependencies, setup OpenAI API)
-- **Phase 2**: 2 hours (AI agent + Blend tool)
-- **Phase 3**: 2 hours (chat UI)
-- **Phase 4**: 1 hour (testing + polish)
+- **Phase 1**: 30 minutes (backend setup, Python env, dependencies)
+- **Phase 2**: 3 hours (FastAPI server + MCP integration)
+- **Phase 3**: 1.5 hours (updated chat UI with API client)
+- **Phase 4**: 1 hour (testing three-service setup + polish)
 
-**Total**: ~5-6 hours (one focused session)
+**Total**: ~5.5-6.5 hours (slightly longer due to backend complexity)
+
+**Why Slightly Longer Than Original:**
+- Added security and robustness with server-side LLM calls
+- MCP server integration provides much richer Stellar functionality
+- Architecture is more scalable and future-proof
+- Better separation of concerns for long-term maintenance
 
 ---
 
 ## Next Steps
 
-1. ✅ Install dependencies from Phase 1
-2. ✅ Set up RedPill API key (OpenAI-compatible)
-3. ✅ Create `src/lib/ai-tools.ts`
-4. ✅ Create `src/lib/ai-agent.ts`
-5. ✅ Create `src/components/ChatInterface.tsx`
-6. ✅ Update `src/pages/Home.tsx`
-7. ✅ Test with manual queries
-8. 🎉 Demo!
+### Phase 1 - Backend Foundation (Start Here)
+1. ✅ Set up Python backend environment
+2. ✅ Install FastAPI + LangChain + MCP dependencies
+3. ✅ Configure environment variables for API access
+4. ✅ Clone and start py-stellar-mcp server
 
-**Then Later**:
-- Phase 5 (Trading) when users ask for it
-- Phase 6 (Supabase) when users want history
+### Phase 2 - AI Integration (Core Work)
+5. ✅ Create `backend/main.py` with FastAPI server
+6. ✅ Create `backend/mcp_client.py` for Stellar integration
+7. ✅ Test basic chat functionality without MCP tools
+8. ✅ Integrate MCP tools for real-time Stellar data
 
-Ready to build the leanest possible AI × DeFi demo! 🚀
+### Phase 3 - Frontend Updates
+9. ✅ Create `src/lib/api.ts` for HTTP client
+10. ✅ Update `src/components/ChatInterface.tsx` for backend communication
+11. ✅ Add connection status indicators and error handling
+12. ✅ Test end-to-end flow: Frontend → FastAPI → LLM
+
+### Phase 4 - Integration & Polish
+13. ✅ Three-service setup: MCP server + FastAPI + Frontend
+14. ✅ Health checks and connection monitoring
+15. ✅ Error handling and recovery scenarios
+16. ✅ Performance testing and optimization
+17. 🎉 Demo with full architecture!
+
+**Then Later** (Future Phases):
+- Phase 5: Add LangGraph workflows for complex multi-step operations
+- Phase 6: Supabase integration for conversation persistence
+- Phase 7: Advanced features (trading, portfolio tracking)
+
+Ready to build a secure, scalable AI × DeFi platform! 🚀
+
+**Key Architectural Benefits:**
+- 🔒 API keys never exposed to browsers
+- 🛠️ Rich Stellar tools via py-stellar-mcp
+- 🚀 Easy to add more MCP servers and AI capabilities
+- 🔧 Python ecosystem for advanced agentic workflows
+- 📈 Future-proof for LangGraph and complex multi-agent systems
