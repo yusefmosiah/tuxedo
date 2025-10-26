@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button, Text } from '@stellar/design-system';
 import { useWallet } from '../hooks/useWallet';
 import { useSubmitRpcTx } from '../debug/hooks/useSubmitRpcTx';
@@ -14,6 +14,7 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ transaction })
   const [status, setStatus] = useState<'pending' | 'signing' | 'submitting' | 'success' | 'error'>('pending');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [txHash, setTxHash] = useState<string>('');
+  const autoTriggerAttempted = useRef(false);
 
   const handleSign = async () => {
     if (!wallet.address) {
@@ -68,6 +69,27 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ transaction })
     }
   };
 
+  // Auto-trigger wallet signing when component mounts
+  useEffect(() => {
+    // Only auto-trigger once, when wallet is connected, and status is pending
+    if (
+      !autoTriggerAttempted.current &&
+      wallet.address &&
+      wallet.signTransaction &&
+      status === 'pending'
+    ) {
+      autoTriggerAttempted.current = true;
+      console.log('🔐 Auto-triggering wallet signature request...');
+
+      // Small delay to let the UI render first
+      const timer = setTimeout(() => {
+        handleSign();
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [wallet.address, wallet.signTransaction, status]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const getExplorerUrl = () => {
     const network = transaction.network || 'testnet';
     const base = network === 'testnet'
@@ -118,15 +140,36 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ transaction })
       </div>
 
       {status === 'pending' && (
-        <Button
-          variant="primary"
-          size="md"
-          onClick={handleSign}
-          disabled={!wallet.address}
-          style={{ width: '100%' }}
-        >
-          {wallet.address ? '✍️ Sign Transaction' : '⚠️ Connect Wallet First'}
-        </Button>
+        <>
+          {wallet.address ? (
+            <div style={{ textAlign: 'center', padding: '8px' }}>
+              <Text as="div" size="sm" style={{ color: '#667eea', marginBottom: '8px' }}>
+                🔄 Opening wallet for signature...
+              </Text>
+              <Text as="div" size="xs" style={{ color: '#666' }}>
+                Check your wallet extension
+              </Text>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleSign}
+                style={{ width: '100%', marginTop: '8px' }}
+              >
+                Retry
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="primary"
+              size="md"
+              onClick={handleSign}
+              disabled={true}
+              style={{ width: '100%' }}
+            >
+              ⚠️ Connect Wallet First
+            </Button>
+          )}
+        </>
       )}
 
       {status === 'signing' && (

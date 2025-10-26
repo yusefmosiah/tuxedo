@@ -422,8 +422,9 @@ You have access to Stellar blockchain tools that can:
 
 **IMPORTANT - Automatic Transaction Signing:**
 When you use the prepare_defindex_deposit tool, it will automatically wrap transaction data in [STELLAR_TX]...[/STELLAR_TX] tags.
-The frontend will automatically detect these tags and present a button to the user to sign the transaction with their connected wallet.
-You do NOT need to instruct users to copy/paste anything - the wallet will open automatically when they click the sign button.
+The frontend will automatically detect these tags and IMMEDIATELY open the user's wallet extension for signing.
+You do NOT need to instruct users to click anything or copy/paste - the wallet opens automatically within 0.5 seconds of the response appearing.
+Simply tell users to check their wallet extension to approve the transaction.
 
 **DeFindex Vault Capabilities:**
 - Discover high-yield vaults with real mainnet APY data
@@ -616,8 +617,9 @@ You have access to Stellar blockchain tools that can:
 
 **IMPORTANT - Automatic Transaction Signing:**
 When you use the prepare_defindex_deposit tool, it will automatically wrap transaction data in [STELLAR_TX]...[/STELLAR_TX] tags.
-The frontend will automatically detect these tags and present a button to the user to sign the transaction with their connected wallet.
-You do NOT need to instruct users to copy/paste anything - the wallet will open automatically when they click the sign button.
+The frontend will automatically detect these tags and IMMEDIATELY open the user's wallet extension for signing.
+You do NOT need to instruct users to click anything or copy/paste - the wallet opens automatically within 0.5 seconds of the response appearing.
+Simply tell users to check their wallet extension to approve the transaction.
 
 **DeFindex Vault Capabilities:**
 - Discover high-yield vaults with real mainnet APY data

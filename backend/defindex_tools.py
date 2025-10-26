@@ -179,9 +179,9 @@ async def prepare_defindex_deposit(
                 'note': 'This is a testnet transaction for demonstration purposes using Soroban contracts'
             }
 
-            # Wrap in special format that frontend will parse and automatically present to wallet
+            # Wrap in special format that frontend will parse and automatically open wallet
             tx_json = json.dumps(tx_payload, indent=2)
-            return f"I've prepared a deposit transaction for you! Click the button below to sign it with your wallet.\n\n[STELLAR_TX]\n{tx_json}\n[/STELLAR_TX]\n\nThis transaction will be automatically presented to your connected wallet for signing."
+            return f"I've prepared your deposit transaction! Your wallet should open automatically in a moment to request your signature.\n\n[STELLAR_TX]\n{tx_json}\n[/STELLAR_TX]\n\nPlease check your wallet extension (Freighter, etc.) to approve this testnet transaction."
 
         except Exception as e:
             return f"Error building deposit transaction: {str(e)}"
