@@ -193,7 +193,7 @@ export const ChatInterface: React.FC = () => {
         const cleanup = chatApi.sendMessageWithLiveSummary(
           {
             message: input,
-            history: messages.filter(m => m.role !== 'user' || m.id !== `user-${streamId}`), // Filter out current user message
+            history: messages.filter(m => m.role !== 'user' || m.id !== `user-${streamId}`).map(({ role, content }) => ({ role, content })), // Filter and strip to only required fields
             wallet_address: wallet.address || null,
             enable_summary: true,
           },
@@ -229,7 +229,7 @@ export const ChatInterface: React.FC = () => {
         const cleanup = chatApi.sendMessageStream(
           {
             message: input,
-            history: messages.filter(m => m.role !== 'user' || m.id !== `user-${streamId}`), // Filter out current user message
+            history: messages.filter(m => m.role !== 'user' || m.id !== `user-${streamId}`).map(({ role, content }) => ({ role, content })), // Filter and strip to only required fields
             wallet_address: wallet.address || null,
           },
           (streamMessage: StreamMessage) => {
