@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, Text, Loader } from '@stellar/design-system';
+import { Button, Text } from '@stellar/design-system';
 import { chatApi, ChatMessage, StreamMessage, type HealthResponse } from '../lib/api';
 import { useWallet } from '../hooks/useWallet';
-import { LiveSummary } from './LiveSummary';
 import '../App.module.css';
 
 // Extended message type that includes streaming information
@@ -12,9 +11,7 @@ interface ExtendedChatMessage extends ChatMessage {
   toolName?: string;
   iteration?: number;
   isStreaming?: boolean;
-  isLive?: boolean;
-  isExpanded?: boolean;
-  fullContent?: StreamMessage[];
+  summary?: string;
 }
 
 export const ChatInterface: React.FC = () => {
@@ -24,8 +21,7 @@ export const ChatInterface: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [agentThinking, setAgentThinking] = useState(false);
   const [apiStatus, setApiStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
-  const [minimizedMessages, setMinimizedMessages] = useState<Set<string>>(new Set());
-  const [expandedSummaries, setExpandedSummaries] = useState<Set<string>>(new Set());
+  const [collapsedToolCalls, setCollapsedToolCalls] = useState<Set<string>>(new Set());
   const [useLiveSummary, setUseLiveSummary] = useState(true); // User preference
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -59,22 +55,15 @@ export const ChatInterface: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-minimize older responses when new ones come in
+  // Auto-collapse tool call results by default
   useEffect(() => {
-    if (messages.length > 3) {
-      const assistantMessages = messages.filter(m => m.role === 'assistant');
-      if (assistantMessages.length > 2) {
-        // Minimize all but the latest 2 assistant messages
-        const toMinimize = assistantMessages.slice(0, -2);
-        const newMinimized = new Set(minimizedMessages);
-        toMinimize.forEach(msg => {
-          if (msg.id) {
-            newMinimized.add(msg.id);
-          }
-        });
-        setMinimizedMessages(newMinimized);
+    const newCollapsed = new Set<string>();
+    messages.forEach(msg => {
+      if (msg.type === 'tool_result' && msg.id) {
+        newCollapsed.add(msg.id);
       }
-    }
+    });
+    setCollapsedToolCalls(newCollapsed);
   }, [messages]);
 
   // Auto-scroll to bottom - more reliable implementation
@@ -92,37 +81,15 @@ export const ChatInterface: React.FC = () => {
     scrollToBottom();
   }, [messages, agentThinking]); // Also scroll when thinking state changes
 
-  // Copy message content to clipboard
-  const copyMessage = (content: string) => {
-    navigator.clipboard.writeText(content).then(() => {
-      // Optional: Show a brief success indicator
-      console.log('Message copied to clipboard');
-    }).catch(err => {
-      console.error('Failed to copy message: ', err);
-    });
-  };
-
-  // Toggle message minimization
-  const toggleMinimize = (messageId: string) => {
-    setMinimizedMessages(prev => {
+  
+  // Toggle tool call expansion
+  const toggleToolCallExpansion = (toolCallId: string) => {
+    setCollapsedToolCalls(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(messageId)) {
-        newSet.delete(messageId);
+      if (newSet.has(toolCallId)) {
+        newSet.delete(toolCallId);
       } else {
-        newSet.add(messageId);
-      }
-      return newSet;
-    });
-  };
-
-  // Toggle summary expansion
-  const toggleSummaryExpansion = (summaryId: string) => {
-    setExpandedSummaries(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(summaryId)) {
-        newSet.delete(summaryId);
-      } else {
-        newSet.add(summaryId);
+        newSet.add(toolCallId);
       }
       return newSet;
     });
@@ -148,6 +115,7 @@ export const ChatInterface: React.FC = () => {
       toolName: streamMessage.tool_name,
       iteration: streamMessage.iteration,
       isStreaming: streamMessage.type !== 'final_response' && streamMessage.type !== 'error',
+      summary: streamMessage.summary,
     };
 
     setMessages((prev) => {
@@ -166,83 +134,7 @@ export const ChatInterface: React.FC = () => {
     });
   };
 
-  // Helper function to get message styling based on type
-  const getMessageStyling = (msg: ExtendedChatMessage) => {
-    if (msg.role === 'user') {
-      return {
-        backgroundColor: '#667eea',
-        color: '#fff',
-        border: 'none'
-      };
-    }
-
-    const baseStyles = {
-      border: '1px solid #e0e0e0',
-    };
-
-    switch (msg.type) {
-      case 'llm_response':
-        return {
-          ...baseStyles,
-          backgroundColor: '#e3f2fd',
-          color: '#1565c0',
-          border: '1px solid #90caf9'
-        };
-      case 'tool_result':
-        return {
-          ...baseStyles,
-          backgroundColor: '#e8f5e8',
-          color: '#2e7d32',
-          border: '1px solid #81c784'
-        };
-      case 'tool_error':
-        return {
-          ...baseStyles,
-          backgroundColor: '#ffebee',
-          color: '#c62828',
-          border: '1px solid #ef5350'
-        };
-      case 'final_response':
-        return {
-          ...baseStyles,
-          backgroundColor: '#f3e5f5',
-          color: '#4a148c',
-          border: '1px solid #ba68c8'
-        };
-      case 'error':
-        return {
-          ...baseStyles,
-          backgroundColor: '#ffebee',
-          color: '#c62828',
-          border: '1px solid #ef5350'
-        };
-      default:
-        return {
-          ...baseStyles,
-          backgroundColor: '#f0f0f0',
-          color: '#000'
-        };
-    }
-  };
-
-  // Helper function to get message indicator
-  const getMessageIndicator = (msg: ExtendedChatMessage) => {
-    switch (msg.type) {
-      case 'llm_response':
-        return '💭';
-      case 'tool_result':
-        return '✅';
-      case 'tool_error':
-        return '❌';
-      case 'final_response':
-        return '🎯';
-      case 'error':
-        return '⚠️';
-      default:
-        return msg.role === 'user' ? '👤' : '🤖';
-    }
-  };
-
+  
   const handleSend = async () => {
     if (!input.trim() || isLoading || apiStatus === 'disconnected') return;
 
@@ -269,7 +161,11 @@ export const ChatInterface: React.FC = () => {
       // Choose API based on live summary preference and availability
       const useLiveSummaryApi = useLiveSummary;
 
+      console.log('🔍 Debug: useLiveSummaryApi =', useLiveSummaryApi);
+      console.log('🔍 Debug: useLiveSummary state =', useLiveSummary);
+
       if (useLiveSummaryApi) {
+        console.log('🔍 Using live summary API...');
         // Use live summary streaming API
         const cleanup = chatApi.sendMessageWithLiveSummary(
           {
@@ -279,32 +175,7 @@ export const ChatInterface: React.FC = () => {
             enable_summary: true,
           },
           (streamMessage: StreamMessage) => {
-            // Handle live summary messages
-            if (streamMessage.type?.startsWith('live_summary')) {
-              const extendedMessage: ExtendedChatMessage = {
-                role: 'assistant',
-                content: streamMessage.content,
-                id: streamMessage.id || `live-${streamId}`,
-                type: streamMessage.type,
-                isLive: streamMessage.isLive,
-                isExpanded: expandedSummaries.has(streamMessage.id || ''),
-                fullContent: streamMessage.fullContent,
-                isStreaming: streamMessage.isLive || false,
-              };
-
-              setMessages((prev) => {
-                const existingMessageIndex = prev.findIndex(m => m.id === extendedMessage.id);
-                if (existingMessageIndex >= 0) {
-                  const updated = [...prev];
-                  updated[existingMessageIndex] = extendedMessage;
-                  return updated;
-                } else {
-                  return [...prev, extendedMessage];
-                }
-              });
-              return;
-            }
-
+            
             // Handle other message types normally
             handleRegularStreamMessage(streamMessage, streamId);
           },
@@ -357,6 +228,7 @@ export const ChatInterface: React.FC = () => {
               toolName: streamMessage.tool_name,
               iteration: streamMessage.iteration,
               isStreaming: streamMessage.type !== 'final_response' && streamMessage.type !== 'error',
+              summary: streamMessage.summary,
             };
 
             setMessages((prev) => {
@@ -535,8 +407,7 @@ export const ChatInterface: React.FC = () => {
         )}
 
               {messages.map((msg, idx) => {
-          // Only show user messages, live summaries, and final responses
-          // Hide all other streaming messages (llm_response, tool_result, tool_error, thinking, etc.)
+          // Show user messages
           if (msg.role === 'user') {
             return (
               <div
@@ -645,48 +516,230 @@ export const ChatInterface: React.FC = () => {
             );
           }
 
-          // Handle live summary messages with dedicated component
-          if (msg.type?.startsWith('live_summary')) {
-            return (
-              <LiveSummary
-                key={msg.id || idx}
-                message={msg as StreamMessage}
-                onToggleExpand={() => msg.id && toggleSummaryExpansion(msg.id)}
-                isExpanded={msg.id ? expandedSummaries.has(msg.id) : false}
-              />
-            );
-          }
-
-          // Handle final responses - plain text, left-aligned, no bubble
-          if (msg.type === 'final_response') {
-            return (
-              <div
-                key={msg.id || idx}
-                style={{
-                  textAlign: 'left',
-                  margin: '24px 0',
-                  padding: '0 20px',
-                }}
-              >
-                <Text
-                  as="p"
-                  size="md"
+          // Show all assistant messages as full conversation
+          if (msg.role === 'assistant') {
+            // AI Responses
+            if (msg.type === 'llm_response') {
+              return (
+                <div
+                  key={msg.id || idx}
                   style={{
-                    whiteSpace: 'pre-wrap',
-                    lineHeight: 1.6,
-                    margin: 0,
-                    color: '#333',
-                    fontSize: '16px',
-                    fontWeight: '400',
+                    marginBottom: '12px',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    backgroundColor: '#e3f2fd',
+                    border: '1px solid #90caf9',
+                    borderLeft: '4px solid #2196f3',
                   }}
                 >
-                  {msg.content}
-                </Text>
-              </div>
-            );
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    marginBottom: '8px'
+                  }}>
+                    <Text as="div" size="sm" style={{ fontWeight: 'bold', color: '#1565c0' }}>
+                      💭 AI Response
+                    </Text>
+                    {msg.iteration && (
+                      <Text as="div" size="xs" style={{ color: '#666' }}>
+                        Step {msg.iteration}
+                      </Text>
+                    )}
+                  </div>
+                  <Text
+                    as="p"
+                    size="sm"
+                    style={{
+                      whiteSpace: 'pre-wrap',
+                      lineHeight: 1.4,
+                      margin: 0,
+                      color: '#1565c0',
+                    }}
+                  >
+                    {msg.content}
+                  </Text>
+                </div>
+              );
+            }
+
+            // Tool Results - collapsible with LLM-generated summary
+            if (msg.type === 'tool_result') {
+              const isCollapsed = msg.id ? collapsedToolCalls.has(msg.id) : false;
+              // Use LLM-generated summary if available, otherwise fall back to truncation
+              const summary = msg.summary || (msg.content.split('\n')[0].substring(0, 100) + (msg.content.length > 100 ? '...' : ''));
+
+              return (
+                <div
+                  key={msg.id || idx}
+                  style={{
+                    marginBottom: '8px',
+                    border: '1px solid #81c784',
+                    borderRadius: '6px',
+                    backgroundColor: '#e8f5e8',
+                  }}
+                >
+                  <div
+                    onClick={() => msg.id && toggleToolCallExpansion(msg.id)}
+                    style={{
+                      padding: '8px 12px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      borderBottom: isCollapsed ? 'none' : '1px solid #c8e6c9',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f1f8e9';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#e8f5e8';
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Text as="div" size="sm" style={{ fontWeight: 'bold', color: '#2e7d32' }}>
+                        ✅ {msg.toolName || 'Tool'}
+                      </Text>
+                      <Text as="div" size="xs" style={{ color: '#666', fontStyle: 'italic' }}>
+                        {summary}
+                      </Text>
+                    </div>
+                    <Text as="div" size="xs" style={{ color: '#666' }}>
+                      {isCollapsed ? '▶' : '▼'}
+                    </Text>
+                  </div>
+
+                  {!isCollapsed && (
+                    <div style={{
+                      padding: '12px',
+                      borderTop: '1px solid #c8e6c9',
+                      backgroundColor: '#f1f8e9',
+                    }}>
+                      <Text
+                        as="div"
+                        size="xs"
+                        style={{
+                          fontFamily: 'monospace',
+                          whiteSpace: 'pre-wrap',
+                          margin: 0,
+                          color: '#2e7d32',
+                          maxHeight: '200px',
+                          overflowY: 'auto',
+                        }}
+                      >
+                        {msg.content}
+                      </Text>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            // Tool Errors
+            if (msg.type === 'tool_error') {
+              return (
+                <div
+                  key={msg.id || idx}
+                  style={{
+                    marginBottom: '12px',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    backgroundColor: '#ffebee',
+                    border: '1px solid #ef5350',
+                    borderLeft: '4px solid #f44336',
+                  }}
+                >
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    marginBottom: '8px'
+                  }}>
+                    <Text as="div" size="sm" style={{ fontWeight: 'bold', color: '#c62828' }}>
+                      ❌ Tool Error: {msg.toolName}
+                    </Text>
+                    {msg.iteration && (
+                      <Text as="div" size="xs" style={{ color: '#666' }}>
+                        Step {msg.iteration}
+                      </Text>
+                    )}
+                  </div>
+                  <Text
+                    as="p"
+                    size="sm"
+                    style={{
+                      whiteSpace: 'pre-wrap',
+                      lineHeight: 1.4,
+                      margin: 0,
+                      color: '#c62828',
+                    }}
+                  >
+                    {msg.content}
+                  </Text>
+                </div>
+              );
+            }
+
+            // Final Responses - plain text, left-aligned, no bubble
+            if (msg.type === 'final_response') {
+              return (
+                <div
+                  key={msg.id || idx}
+                  style={{
+                    textAlign: 'left',
+                    margin: '24px 0',
+                    padding: '0 20px',
+                  }}
+                >
+                  <Text
+                    as="p"
+                    size="md"
+                    style={{
+                      whiteSpace: 'pre-wrap',
+                      lineHeight: 1.6,
+                      margin: 0,
+                      color: '#333',
+                      fontSize: '16px',
+                      fontWeight: '400',
+                    }}
+                  >
+                    {msg.content}
+                  </Text>
+                </div>
+              );
+            }
+
+            // Generic error messages
+            if (msg.type === 'error') {
+              return (
+                <div
+                  key={msg.id || idx}
+                  style={{
+                    marginBottom: '12px',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    backgroundColor: '#ffebee',
+                    border: '1px solid #ef5350',
+                    borderLeft: '4px solid #f44336',
+                  }}
+                >
+                  <Text
+                    as="p"
+                    size="sm"
+                    style={{
+                      whiteSpace: 'pre-wrap',
+                      lineHeight: 1.4,
+                      margin: 0,
+                      color: '#c62828',
+                    }}
+                  >
+                    ⚠️ {msg.content}
+                  </Text>
+                </div>
+              );
+            }
           }
 
-          // Hide all other message types (llm_response, tool_result, tool_error, thinking, etc.)
           return null;
         })}
 

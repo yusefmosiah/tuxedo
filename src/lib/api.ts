@@ -31,6 +31,7 @@ export interface StreamMessage {
   isLive?: boolean;
   isExpanded?: boolean;
   fullContent?: StreamMessage[];
+  summary?: string;
 }
 
 export interface HealthResponse {

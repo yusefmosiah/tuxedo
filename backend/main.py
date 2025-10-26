@@ -759,13 +759,23 @@ The address is a Stellar public key starting with 'G'.
 
                             result = await tool_func.ainvoke(tool_args)
 
-                            # Yield tool result
+                            # Generate tool summary if service is available
+                            tool_summary = None
+                            try:
+                                summary_service = get_live_summary_service()
+                                tool_summary = await summary_service.generate_tool_summary(tool_name, str(result))
+                            except Exception as e:
+                                logger.warning(f"Failed to generate tool summary: {e}")
+                                tool_summary = None
+
+                            # Yield tool result with summary
                             yield {
                                 "type": "tool_result",
                                 "content": str(result),
                                 "tool_name": tool_name,
                                 "tool_args": tool_args,
-                                "iteration": iteration
+                                "iteration": iteration,
+                                "summary": tool_summary
                             }
 
                             # Format tool result for next LLM iteration

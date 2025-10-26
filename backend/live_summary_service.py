@@ -24,11 +24,11 @@ class LiveSummaryService:
         self.summarization_model = os.getenv('SUMMARIZATION_MODEL', 'gpt-4o-mini')
         self.primary_model = os.getenv('PRIMARY_MODEL', 'gpt-4o')
 
-        # Initialize the summarization LLM
+        # Initialize the live summary LLM (try same config as final summary)
         self.summary_llm = ChatOpenAI(
             model=self.summarization_model,
-            temperature=0.3,  # Lower temperature for consistent summaries
-            max_tokens=50,    # Very short for live updates
+            temperature=0.1,  # Even lower temperature for consistency
+            max_tokens=150,   # Same as final summary
         )
 
         # Initialize the final summary LLM
@@ -124,6 +124,63 @@ class LiveSummaryService:
             logger.error(f"Error generating final summary: {e}")
             return "Completed processing your request."
 
+    async def generate_tool_summary(self, tool_name: str, tool_content: str) -> str:
+        """
+        Generate a concise summary of a tool result for display in the chat interface.
+
+        Args:
+            tool_name: Name of the tool that was executed
+            tool_content: Raw content/output from the tool
+
+        Returns:
+            Concise summary of the tool result (max 80 characters)
+        """
+        if not tool_content:
+            return f"{tool_name} executed"
+
+        try:
+            # Create a focused prompt for tool summarization
+            prompt = f"""Tool: {tool_name}
+Output: {tool_content[:1000]}  # Limit content to prevent token overflow
+
+Create a very concise summary (max 80 characters) of what this tool accomplished.
+Focus on the key result or information obtained.
+Use present tense when possible.
+
+Examples:
+- "Account GABCD... created with 10,000 XLM"
+- "XLM/USDC price: $0.1234"
+- "Trustline for USDC established"
+- "Network status: active"
+
+Summary:"""
+
+            # Generate summary using a more focused model configuration
+            summary_llm = ChatOpenAI(
+                model=self.summarization_model,
+                temperature=0.1,
+                max_tokens=60,  # Very concise
+            )
+
+            response = await summary_llm.ainvoke([
+                SystemMessage(content="You are creating ultra-concise summaries of Stellar tool results. Maximum 80 characters. Focus on key outcomes only."),
+                HumanMessage(content=prompt)
+            ])
+
+            summary = response.content.strip()
+
+            # Ensure it's not too long
+            if len(summary) > 80:
+                summary = summary[:77] + "..."
+
+            logger.info(f"Generated tool summary for {tool_name}: {summary}")
+            return summary
+
+        except Exception as e:
+            logger.error(f"Error generating tool summary: {e}")
+            # Fallback to simple truncation
+            return f"{tool_name}: " + (tool_content[:40] + "..." if len(tool_content) > 40 else tool_content)
+
     def _extract_relevant_content(self, messages: List[Dict[str, Any]]) -> List[str]:
         """Extract relevant content from streaming messages."""
         relevant_content = []
@@ -148,17 +205,17 @@ class LiveSummaryService:
         """Create a prompt for live summary generation."""
         recent_content = content[-3:] if len(content) > 3 else content  # Focus on last 3 items
 
-        prompt = f"""Create a brief status update (max 60 characters) for this Stellar AI conversation:
+        prompt = f"""You are creating a brief status update for a Stellar AI assistant.
 
 Recent activity:
 {chr(10).join(f"- {item}" for item in recent_content)}
 
-Focus on current progress and what's happening right now. Use present tense.
-
-Examples:
-- "Creating Stellar account and funding it..."
-- "Checking XLM/USDC orderbook on DEX..."
-- "Account created successfully with 10,000 XLM"
+Create a status update following these rules:
+- Maximum 60 characters
+- Present tense (is/are verbs)
+- Focus on current action
+- Must be a complete phrase
+- Examples: "Creating account...", "Checking network status...", "Querying data..."
 
 Status update:"""
 
