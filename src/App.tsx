@@ -1,35 +1,57 @@
-import { Layout, Button } from "@stellar/design-system";
-import "./App.module.css";
 import ConnectAccount from "./components/ConnectAccount.tsx";
 import { Routes, Route, Outlet, NavLink } from "react-router-dom";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 
 const AppLayout: React.FC = () => (
-  <main>
-    <Layout.Header
-      projectId="Tuxedo AI"
-      projectTitle="Tuxedo AI"
-      contentRight={
-        <>
-          <NavLink
-            to="/dashboard"
-            style={{ textDecoration: "none", marginRight: "12px" }}
-          >
-            {({ isActive }) => (
-              <Button
-                variant={isActive ? "primary" : "tertiary"}
-                size="md"
-                onClick={() => (window.location.href = "/dashboard")}
-              >
-                📊 Dashboard
-              </Button>
-            )}
-          </NavLink>
-          <ConnectAccount />
-        </>
-      }
-    />
+  <main style={{
+    backgroundColor: 'var(--color-bg-primary)',
+    minHeight: '100vh',
+    color: 'var(--color-text-primary)'
+  }}>
+    {/* Custom Header */}
+    <header style={{
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: '12px 24px',
+      backgroundColor: 'var(--color-bg-surface)',
+      borderBottom: '1px solid var(--color-border)',
+      height: '60px'
+    }}>
+      <div style={{
+        fontFamily: 'var(--font-primary-serif)',
+        fontSize: '20px',
+        fontWeight: 'bold',
+        color: 'var(--color-text-primary)'
+      }}>
+        🤖 Tuxedo AI
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <NavLink
+          to="/dashboard"
+          style={{ textDecoration: "none" }}
+        >
+          {({ isActive }) => (
+            <button
+              className={isActive ? "btn-stellar" : "btn-secondary"}
+              style={{
+                fontSize: '12px',
+                fontFamily: 'var(--font-tertiary-mono)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                padding: '8px 16px'
+              }}
+            >
+              Dashboard
+            </button>
+          )}
+        </NavLink>
+        <ConnectAccount />
+      </div>
+    </header>
+
     <Outlet />
   </main>
 );

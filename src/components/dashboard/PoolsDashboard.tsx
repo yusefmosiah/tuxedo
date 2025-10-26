@@ -25,41 +25,51 @@ export const PoolsDashboard: React.FC = () => {
     <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "20px" }}>
       {/* Dashboard Header */}
       <div
+        className="card"
         style={{
           marginBottom: "32px",
           padding: "32px",
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-          borderRadius: "16px",
-          color: "white",
+          backgroundColor: "var(--color-bg-surface)",
+          border: "1px solid var(--color-border)",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
           <div>
-            <Text
-              as="h1"
-              size="xl"
-              style={{ margin: 0, marginBottom: "8px", color: "white", fontWeight: "800" }}
-            >
+            <h1 style={{
+              fontFamily: 'var(--font-primary-sans)',
+              fontSize: '32px',
+              margin: '0 0 8px 0',
+              color: 'var(--color-text-primary)',
+              fontWeight: '500'
+            }}>
               Blend Pools Dashboard
-            </Text>
-            <Text as="p" size="md" style={{ margin: 0, opacity: 0.9, color: "white" }}>
+            </h1>
+            <p style={{
+              fontFamily: 'var(--font-secondary-serif)',
+              fontSize: '16px',
+              margin: '0',
+              color: 'var(--color-text-secondary)',
+              fontStyle: 'italic',
+              lineHeight: '1.5'
+            }}>
               Real-time statistics for all Blend lending pools on Stellar Testnet
-            </Text>
+            </p>
           </div>
 
-          <Button
-            variant="secondary"
-            size="md"
+          <button
+            className="btn-stellar"
             onClick={refetch}
             disabled={loading}
             style={{
-              backgroundColor: "rgba(255, 255, 255, 0.2)",
-              color: "white",
-              border: "1px solid rgba(255, 255, 255, 0.3)",
+              fontSize: '12px',
+              fontFamily: 'var(--font-tertiary-mono)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              padding: '12px 20px'
             }}
           >
-            {loading ? "Refreshing..." : "🔄 Refresh"}
-          </Button>
+            {loading ? "Refreshing..." : "Refresh"}
+          </button>
         </div>
 
         {/* Summary Stats */}
@@ -68,54 +78,112 @@ export const PoolsDashboard: React.FC = () => {
             display: "grid",
             gridTemplateColumns: "repeat(3, 1fr)",
             gap: "20px",
-            marginTop: "24px",
+            marginTop: "32px",
           }}
         >
-          <div
-            style={{
-              padding: "20px",
-              backgroundColor: "rgba(255, 255, 255, 0.15)",
-              borderRadius: "12px",
-              backdropFilter: "blur(10px)",
-            }}
-          >
-            <div style={{ fontSize: "14px", opacity: 0.9, marginBottom: "8px" }}>
+          <div className="card" style={{
+            padding: "24px",
+            backgroundColor: "var(--color-bg-primary)",
+            border: "1px solid var(--color-border)",
+          }}>
+            <div style={{
+              fontFamily: 'var(--font-tertiary-mono)',
+              fontSize: "12px",
+              color: 'var(--color-text-tertiary)',
+              marginBottom: "12px",
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              fontWeight: 'bold'
+            }}>
               Total Pools
             </div>
-            <div style={{ fontSize: "36px", fontWeight: "800" }}>{totalPools}</div>
-            <div style={{ fontSize: "12px", opacity: 0.8, marginTop: "4px" }}>
+            <div style={{
+              fontFamily: 'var(--font-primary-sans)',
+              fontSize: "36px",
+              color: 'var(--color-text-primary)',
+              fontWeight: 'bold',
+              marginBottom: "8px"
+            }}>
+              {totalPools}
+            </div>
+            <div style={{
+              fontFamily: 'var(--font-secondary-serif)',
+              fontSize: "14px",
+              color: 'var(--color-text-secondary)',
+              fontStyle: 'italic'
+            }}>
               {activePools} active
             </div>
           </div>
 
-          <div
-            style={{
-              padding: "20px",
-              backgroundColor: "rgba(255, 255, 255, 0.15)",
-              borderRadius: "12px",
-              backdropFilter: "blur(10px)",
-            }}
-          >
-            <div style={{ fontSize: "14px", opacity: 0.9, marginBottom: "8px" }}>
+          <div className="card" style={{
+            padding: "24px",
+            backgroundColor: "var(--color-bg-primary)",
+            border: "1px solid var(--color-border)",
+          }}>
+            <div style={{
+              fontFamily: 'var(--font-tertiary-mono)',
+              fontSize: "12px",
+              color: 'var(--color-text-tertiary)',
+              marginBottom: "12px",
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              fontWeight: 'bold'
+            }}>
               Total Reserves
             </div>
-            <div style={{ fontSize: "36px", fontWeight: "800" }}>{totalReserves}</div>
-            <div style={{ fontSize: "12px", opacity: 0.8, marginTop: "4px" }}>
+            <div style={{
+              fontFamily: 'var(--font-primary-sans)',
+              fontSize: "36px",
+              color: 'var(--color-text-primary)',
+              fontWeight: 'bold',
+              marginBottom: "8px"
+            }}>
+              {totalReserves}
+            </div>
+            <div style={{
+              fontFamily: 'var(--font-secondary-serif)',
+              fontSize: "14px",
+              color: 'var(--color-text-secondary)',
+              fontStyle: 'italic'
+            }}>
               Across all pools
             </div>
           </div>
 
-          <div
-            style={{
-              padding: "20px",
-              backgroundColor: "rgba(255, 255, 255, 0.15)",
-              borderRadius: "12px",
-              backdropFilter: "blur(10px)",
-            }}
-          >
-            <div style={{ fontSize: "14px", opacity: 0.9, marginBottom: "8px" }}>Network</div>
-            <div style={{ fontSize: "36px", fontWeight: "800" }}>Testnet</div>
-            <div style={{ fontSize: "12px", opacity: 0.8, marginTop: "4px" }}>Stellar</div>
+          <div className="card" style={{
+            padding: "24px",
+            backgroundColor: "var(--color-bg-primary)",
+            border: "1px solid var(--color-border)",
+          }}>
+            <div style={{
+              fontFamily: 'var(--font-tertiary-mono)',
+              fontSize: "12px",
+              color: 'var(--color-text-tertiary)',
+              marginBottom: "12px",
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              fontWeight: 'bold'
+            }}>
+              Network
+            </div>
+            <div style={{
+              fontFamily: 'var(--font-primary-sans)',
+              fontSize: "36px",
+              color: 'var(--color-text-primary)',
+              fontWeight: 'bold',
+              marginBottom: "8px"
+            }}>
+              Testnet
+            </div>
+            <div style={{
+              fontFamily: 'var(--font-secondary-serif)',
+              fontSize: "14px",
+              color: 'var(--color-text-secondary)',
+              fontStyle: 'italic'
+            }}>
+              Stellar
+            </div>
           </div>
         </div>
       </div>
@@ -123,44 +191,84 @@ export const PoolsDashboard: React.FC = () => {
       {/* Loading State */}
       {loading && pools.length === 0 && (
         <div
+          className="card"
           style={{
             padding: "80px 20px",
             textAlign: "center",
-            backgroundColor: "#f8f9fa",
-            borderRadius: "12px",
+            backgroundColor: "var(--color-bg-surface)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "var(--border-radius-lg)",
           }}
         >
-          <Loader size="lg" />
-          <Text as="p" size="md" style={{ marginTop: "20px", color: "#666" }}>
+          <div style={{
+            fontSize: "48px",
+            marginBottom: "20px",
+            color: 'var(--color-stellar-glow-strong)'
+          }}>⏳</div>
+          <p style={{
+            fontFamily: 'var(--font-primary-sans)',
+            fontSize: '18px',
+            margin: '0 0 8px 0',
+            color: 'var(--color-text-primary)'
+          }}>
             Loading pools from the network...
-          </Text>
-          <Text as="p" size="sm" style={{ marginTop: "8px", color: "#999" }}>
+          </p>
+          <p style={{
+            fontFamily: 'var(--font-secondary-serif)',
+            fontSize: '14px',
+            color: 'var(--color-text-secondary)',
+            fontStyle: 'italic',
+            margin: '0'
+          }}>
             This may take a few seconds
-          </Text>
+          </p>
         </div>
       )}
 
       {/* Error State */}
       {error && !loading && (
         <div
+          className="card"
           style={{
             padding: "40px",
             textAlign: "center",
-            backgroundColor: "#fff3f3",
-            border: "2px solid #ffcdd2",
-            borderRadius: "12px",
+            backgroundColor: "rgba(239, 68, 68, 0.1)",
+            border: "1px solid var(--color-negative)",
+            borderRadius: "var(--border-radius-lg)",
           }}
         >
           <div style={{ fontSize: "48px", marginBottom: "16px" }}>⚠️</div>
-          <Text as="h3" size="lg" style={{ color: "#d32f2f", marginBottom: "12px" }}>
+          <h3 style={{
+            fontFamily: 'var(--font-primary-sans)',
+            fontSize: '24px',
+            color: 'var(--color-negative)',
+            margin: '0 0 12px 0',
+            fontWeight: 'bold'
+          }}>
             Failed to Load Pools
-          </Text>
-          <Text as="p" size="md" style={{ color: "#666", marginBottom: "20px" }}>
+          </h3>
+          <p style={{
+            fontFamily: 'var(--font-secondary-serif)',
+            fontSize: '16px',
+            color: 'var(--color-text-secondary)',
+            fontStyle: 'italic',
+            margin: '0 0 20px 0'
+          }}>
             {error}
-          </Text>
-          <Button variant="primary" size="md" onClick={refetch}>
+          </p>
+          <button
+            className="btn-stellar"
+            onClick={refetch}
+            style={{
+              fontSize: '12px',
+              fontFamily: 'var(--font-tertiary-mono)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              padding: '12px 20px'
+            }}
+          >
             Try Again
-          </Button>
+          </button>
         </div>
       )}
 
@@ -172,12 +280,18 @@ export const PoolsDashboard: React.FC = () => {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              marginBottom: "20px",
+              marginBottom: "24px",
             }}
           >
-            <Text as="h2" size="lg" style={{ margin: 0, fontWeight: "700" }}>
+            <h2 style={{
+              fontFamily: 'var(--font-primary-serif)',
+              fontSize: '24px',
+              margin: '0',
+              color: 'var(--color-text-primary)',
+              fontWeight: 'bold'
+            }}>
               Active Pools ({pools.length})
-            </Text>
+            </h2>
           </div>
 
           {pools.map((pool) => (
@@ -189,20 +303,34 @@ export const PoolsDashboard: React.FC = () => {
       {/* Empty State */}
       {!loading && !error && pools.length === 0 && (
         <div
+          className="card"
           style={{
             padding: "80px 20px",
             textAlign: "center",
-            backgroundColor: "#f8f9fa",
-            borderRadius: "12px",
+            backgroundColor: "var(--color-bg-surface)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "var(--border-radius-lg)",
           }}
         >
-          <div style={{ fontSize: "64px", marginBottom: "16px" }}>🏊</div>
-          <Text as="h3" size="lg" style={{ marginBottom: "12px" }}>
+          <div style={{ fontSize: "64px", marginBottom: "16px", color: 'var(--color-stellar-glow-strong)' }}>🏊</div>
+          <h3 style={{
+            fontFamily: 'var(--font-primary-serif)',
+            fontSize: '24px',
+            margin: '0 0 12px 0',
+            color: 'var(--color-text-primary)',
+            fontWeight: 'bold'
+          }}>
             No Pools Found
-          </Text>
-          <Text as="p" size="md" style={{ color: "#666" }}>
+          </h3>
+          <p style={{
+            fontFamily: 'var(--font-secondary-sans)',
+            fontSize: '16px',
+            color: 'var(--color-text-secondary)',
+            fontStyle: 'italic',
+            margin: '0'
+          }}>
             There are no active pools on this network yet.
-          </Text>
+          </p>
         </div>
       )}
     </div>

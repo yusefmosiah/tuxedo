@@ -444,53 +444,149 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
         <div className={styles.messagesArea}>
           {messages.length === 0 && (
             <div style={{ textAlign: 'center', marginTop: '40px' }}>
-              <Text as="p" size="lg" style={{ marginBottom: '16px' }}>
+              <h3 style={{
+                fontFamily: 'var(--font-primary-sans)',
+                fontSize: '24px',
+                margin: '0 0 16px 0',
+                color: 'var(--color-text-primary)',
+                fontWeight: '500'
+              }}>
                 🤖 Hi! I'm Tuxedo AI Agent
-              </Text>
-              <Text as="p" size="md" style={{ color: '#666' }}>
+              </h3>
+              <p style={{
+                fontFamily: 'var(--font-primary-sans)',
+                fontSize: '16px',
+                color: 'var(--color-text-primary)',
+                margin: '0 0 8px 0',
+                lineHeight: '1.6'
+              }}>
                 I can help you with Stellar blockchain operations, account management, trading, market data, and smart contracts
-              </Text>
+              </p>
               {wallet.address && (
-                <Text as="p" size="sm" style={{ color: '#999', marginTop: '8px' }}>
+                <p style={{
+                  fontFamily: 'var(--font-tertiary-mono)',
+                  fontSize: '12px',
+                  color: 'var(--color-text-tertiary)',
+                  margin: '8px 0',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  fontWeight: 'bold'
+                }}>
                   Connected: {wallet.address.slice(0, 8)}...{wallet.address.slice(-4)}
-                </Text>
+                </p>
               )}
 
               {apiStatus === 'disconnected' && (
-                <div style={{
+                <div className="card" style={{
                   marginTop: '24px',
-                  padding: '12px 16px',
-                  backgroundColor: '#fff3cd',
-                  border: '1px solid #ffeaa7',
-                  borderRadius: '8px',
-                  color: '#856404',
+                  padding: '16px 20px',
+                  border: '1px solid var(--color-negative)',
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                  borderRadius: 'var(--border-radius-lg)',
                 }}>
-                  <Text as="p" size="sm">
-                    <strong>Backend not connected!</strong><br/>
-                    Run: <code style={{ backgroundColor: '#f8f9fa', padding: '2px 4px', borderRadius: '4px' }}>
+                  <p style={{
+                    fontFamily: 'var(--font-tertiary-mono)',
+                    fontSize: '12px',
+                    color: 'var(--color-negative)',
+                    margin: '0',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    fontWeight: 'bold'
+                  }}>
+                    ⚠️ Backend not connected!
+                  </p>
+                  <p style={{
+                    fontFamily: 'var(--font-secondary-sans)',
+                    fontSize: '14px',
+                    color: 'var(--color-text-secondary)',
+                    margin: '8px 0 0 0',
+                    fontStyle: 'italic'
+                  }}>
+                    Run: <code style={{
+                      fontFamily: 'var(--font-tertiary-mono)',
+                      backgroundColor: 'var(--color-bg-surface)',
+                      padding: '4px 8px',
+                      borderRadius: 'var(--border-radius-sm)',
+                      border: '1px solid var(--color-border)',
+                      fontSize: '11px'
+                    }}>
                       cd backend && source .venv/bin/activate && python main.py
                     </code>
-                  </Text>
+                  </p>
                 </div>
               )}
 
               <div
                 style={{
-                  marginTop: '24px',
-                  fontSize: '14px',
-                  color: '#999',
+                  marginTop: '32px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '8px',
+                  gap: '12px',
                 }}
               >
-                <p style={{ fontWeight: '600', marginBottom: '4px' }}>Try asking:</p>
-                <p>"What's the current Stellar network status?"</p>
-                <p>"Create a new testnet account and fund it"</p>
-                <p>"Check the XLM/USDC orderbook on Stellar DEX"</p>
-                <p>"What's in my wallet?" (connect wallet first)</p>
-                <p>"Show me recent network transactions"</p>
-                <p>"Explain Stellar transaction fees"</p>
+                <p style={{
+                  fontFamily: 'var(--font-secondary-serif)',
+                  fontSize: '14px',
+                  color: 'var(--color-text-secondary)',
+                  margin: '0 0 12px 0',
+                  fontStyle: 'italic'
+                }}>
+                  Try asking:
+                </p>
+                <p style={{
+                  fontFamily: 'var(--font-primary-sans)',
+                  fontSize: '14px',
+                  color: 'var(--color-text-primary)',
+                  margin: '0',
+                  lineHeight: '1.6'
+                }}>
+                  "What's the current Stellar network status?"
+                </p>
+                <p style={{
+                  fontFamily: 'var(--font-primary-sans)',
+                  fontSize: '14px',
+                  color: 'var(--color-text-primary)',
+                  margin: '0',
+                  lineHeight: '1.6'
+                }}>
+                  "Create a new testnet account and fund it"
+                </p>
+                <p style={{
+                  fontFamily: 'var(--font-primary-sans)',
+                  fontSize: '14px',
+                  color: 'var(--color-text-primary)',
+                  margin: '0',
+                  lineHeight: '1.6'
+                }}>
+                  "Check the XLM/USDC orderbook on Stellar DEX"
+                </p>
+                <p style={{
+                  fontFamily: 'var(--font-primary-sans)',
+                  fontSize: '14px',
+                  color: 'var(--color-text-primary)',
+                  margin: '0',
+                  lineHeight: '1.6'
+                }}>
+                  "What's in my wallet?" (connect wallet first)
+                </p>
+                <p style={{
+                  fontFamily: 'var(--font-primary-sans)',
+                  fontSize: '14px',
+                  color: 'var(--color-text-primary)',
+                  margin: '0',
+                  lineHeight: '1.6'
+                }}>
+                  "Show me recent network transactions"
+                </p>
+                <p style={{
+                  fontFamily: 'var(--font-primary-sans)',
+                  fontSize: '14px',
+                  color: 'var(--color-text-primary)',
+                  margin: '0',
+                  lineHeight: '1.6'
+                }}>
+                  "Explain Stellar transaction fees"
+                </p>
               </div>
             </div>
           )}
@@ -522,24 +618,23 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
                   }}
                 >
                   <div
+                    className="card-minimal"
                     style={{
                       maxWidth: '75%',
-                      padding: '10px 14px',
-                      borderRadius: '12px',
-                      backgroundColor: '#667eea',
-                      color: '#fff',
-                      border: 'none',
+                      padding: '16px 20px',
+                      borderRadius: 'var(--border-radius-lg)',
+                      backgroundColor: 'var(--color-bg-surface)',
+                      border: '1px solid var(--color-border)',
                       position: 'relative',
-                      transition: 'all 0.2s ease-in-out',
+                      transition: 'var(--transition-fast)',
                       cursor: 'default',
-                      transform: 'scale(1)',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'scale(1.01)';
-                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                      e.currentTarget.style.borderColor = 'var(--color-stellar-glow-strong)';
+                      e.currentTarget.style.boxShadow = '0 0 12px var(--color-stellar-glow-subtle)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.borderColor = 'var(--color-border)';
                       e.currentTarget.style.boxShadow = 'none';
                     }}
                   >
@@ -567,22 +662,26 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
                             console.log('Message copied to clipboard');
                           });
                         }}
+                        className="btn-secondary"
                         style={{
-                          background: 'rgba(255,255,255,0.9)',
-                          border: '1px solid rgba(0,0,0,0.1)',
+                          background: 'var(--color-bg-surface)',
+                          border: '1px solid var(--color-border)',
                           cursor: 'pointer',
                           padding: '4px 6px',
-                          borderRadius: '4px',
+                          borderRadius: 'var(--border-radius-sm)',
                           fontSize: '11px',
-                          transition: 'all 0.2s',
+                          transition: 'var(--transition-fast)',
+                          color: 'var(--color-text-tertiary)'
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = 'rgba(255,255,255,1)';
-                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+                          e.currentTarget.style.backgroundColor = 'var(--color-deep-space)';
+                          e.currentTarget.style.borderColor = 'var(--color-stellar-glow-strong)';
+                          e.currentTarget.style.color = 'var(--color-stellar-glow-strong)';
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.9)';
-                          e.currentTarget.style.boxShadow = 'none';
+                          e.currentTarget.style.backgroundColor = 'var(--color-bg-surface)';
+                          e.currentTarget.style.borderColor = 'var(--color-border)';
+                          e.currentTarget.style.color = 'var(--color-text-tertiary)';
                         }}
                         title="Copy message"
                       >
@@ -590,17 +689,18 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
                       </button>
                     </div>
 
-                    <Text
-                      as="p"
-                      size="sm"
+                    <p
                       style={{
+                        fontFamily: 'var(--font-primary-sans)',
+                        fontSize: '16px',
+                        color: 'var(--color-text-primary)',
                         whiteSpace: 'pre-wrap',
-                        lineHeight: 1.4,
+                        lineHeight: 1.6,
                         margin: 0,
                       }}
                     >
                       {msg.content}
-                    </Text>
+                    </p>
                   </div>
                 </div>
               );
@@ -664,8 +764,8 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
                     style={{
                       marginBottom: '8px',
                       border: '1px solid #81c784',
-                      borderRadius: '6px',
-                      backgroundColor: '#e8f5e8',
+                      borderRadius: 'var(--border-radius-lg)',
+                      backgroundColor: 'var(--color-ai-bg)',
                     }}
                   >
                     <div
@@ -702,7 +802,7 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
                       <div style={{
                         padding: '12px',
                         borderTop: '1px solid #c8e6c9',
-                        backgroundColor: '#f1f8e9',
+                        backgroundColor: 'rgba(26, 35, 50, 0.2)', /* Slightly lighter blue for expanded content */
                       }}>
                         <Text
                           as="div"
@@ -711,7 +811,7 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
                             fontFamily: 'monospace',
                             whiteSpace: 'pre-wrap',
                             margin: 0,
-                            color: '#2e7d32',
+                            color: 'var(--color-ai-text)',
                             maxHeight: '200px',
                             overflowY: 'auto',
                           }}
@@ -792,7 +892,7 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
                           whiteSpace: 'pre-wrap',
                           lineHeight: 1.6,
                           margin: 0,
-                          color: '#333',
+                          color: 'var(--color-ai-text)',
                           fontSize: '16px',
                           fontWeight: '400',
                           marginBottom: parsed.transaction ? '12px' : 0,
@@ -814,7 +914,7 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
                           whiteSpace: 'pre-wrap',
                           lineHeight: 1.6,
                           margin: 0,
-                          color: '#333',
+                          color: 'var(--color-ai-text)',
                           fontSize: '16px',
                           fontWeight: '400',
                           marginTop: parsed.transaction ? '12px' : 0,

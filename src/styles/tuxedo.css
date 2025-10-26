@@ -1,0 +1,290 @@
+/*
+ * Tuxedo Design System
+ * OLED-optimized dark mode as default. Refined luxury through restraint.
+ * Color is information, not decoration.
+ */
+
+/* ===== CSS VARIABLES ===== */
+:root {
+  /* Dark Mode Foundation */
+  --color-bg-primary: #000000; /* true black - OLED power savings */
+  --color-bg-surface: #0A0A0A; /* cards, panels */
+  --color-border: #1A1D23; /* barely visible structure */
+
+  /* Typography */
+  --color-text-primary: #F4F1E8; /* "Electrum" - cream-gold tint, reads white at glance */
+  --color-text-secondary: #C4C1B8; /* dimmed electrum, 77% opacity */
+  --color-text-tertiary: #8B8980; /* 50% opacity */
+
+  /* Stellar Night Accents */
+  --color-deep-space: #2C3E50; /* hover states, inactive buttons */
+  --color-stellar-glow-subtle: rgba(0, 212, 255, 0.1); /* subtle highlights, focus rings */
+  --color-stellar-glow-medium: rgba(0, 212, 255, 0.25); /* active states */
+  --color-stellar-glow-strong: #00D4FF; /* strong accents */
+
+  /* Semantic Colors (APY/Numbers Only) */
+  --color-yield-high: #10B981; /* emerald green */
+  --color-yield-medium: #F59E0B; /* amber */
+  --color-yield-low: #6B7280; /* neutral grey */
+  --color-negative: #EF4444; /* red, use sparingly */
+
+  /* AI Response Colors */
+  --color-ai-text: #FFFFFF; /* bright white for AI responses */
+  --color-ai-bg: #1A2332; /* dark blue for AI response cards */
+
+  /* Typography System */
+  --font-primary-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-secondary-serif: 'Georgia', 'Times New Roman', serif;
+  --font-tertiary-mono: 'Inconsolata', 'SF Mono', Monaco, 'Cascadia Code', monospace;
+
+  /* Spacing & Sizing */
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+
+  /* Animation */
+  --transition-fast: 0.15s ease;
+  --transition-medium: 0.25s ease;
+}
+
+/* ===== GLOBAL STYLES ===== */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-primary-serif);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== TYPOGRAPHY HIERARCHY ===== */
+
+/* Primary (User prompts & AI responses) - Now Sans-serif */
+.text-primary {
+  font-family: var(--font-primary-sans);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.text-primary-large {
+  font-family: var(--font-primary-sans);
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+/* Secondary (UI labels, like "ask about yields...") - Now Serif */
+.text-secondary {
+  font-family: var(--font-secondary-serif);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+/* Tertiary (Labels, UI elements) */
+.text-tertiary {
+  font-family: var(--font-tertiary-mono);
+  font-weight: bold;
+  font-size: 12px;
+  line-height: 1.4;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.text-tertiary-large {
+  font-family: var(--font-tertiary-mono);
+  font-weight: bold;
+  font-size: 10px;
+  line-height: 1.4;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+/* ===== COMPONENT PATTERNS ===== */
+
+/* APY Display */
+.apy-display {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.apy-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--color-yield-high);
+}
+
+.apy-value.high {
+  color: var(--color-yield-high);
+}
+
+.apy-value.medium {
+  color: var(--color-yield-medium);
+}
+
+.apy-value.low {
+  color: var(--color-yield-low);
+}
+
+.apy-unit {
+  font-family: var(--font-tertiary-mono);
+  font-weight: bold;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+/* Chat Interface */
+.chat-bubble-user {
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  font-family: var(--font-primary-serif);
+}
+
+.chat-bubble-assistant {
+  color: var(--color-text-primary);
+  font-family: var(--font-primary-serif);
+}
+
+.chat-processing {
+  font-family: var(--font-secondary-sans);
+  font-style: italic;
+  color: var(--color-text-secondary);
+}
+
+/* Cards & Panels */
+.card {
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-lg);
+}
+
+.card-minimal {
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-lg);
+}
+
+/* Buttons */
+.btn-stellar {
+  background-color: transparent;
+  border: 1px solid var(--color-stellar-glow-strong);
+  color: var(--color-stellar-glow-strong);
+  font-family: var(--font-tertiary-mono);
+  font-weight: bold;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  border-radius: var(--border-radius-md);
+  transition: var(--transition-fast);
+  cursor: pointer;
+}
+
+.btn-stellar:hover {
+  box-shadow: 0 0 12px var(--color-stellar-glow-subtle);
+  background-color: var(--color-stellar-glow-subtle);
+}
+
+.btn-stellar:active {
+  border-color: color-mix(in srgb, var(--color-stellar-glow-strong) 80%, black);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  border: 1px solid var(--color-deep-space);
+  color: var(--color-text-secondary);
+  font-family: var(--font-tertiary-mono);
+  font-weight: bold;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  border-radius: var(--border-radius-md);
+  transition: var(--transition-fast);
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  color: var(--color-text-primary);
+  border-color: var(--color-text-tertiary);
+}
+
+/* Form Controls */
+.input-stellar {
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  font-family: var(--font-primary-serif);
+  font-size: 14px;
+  padding: 12px;
+  border-radius: var(--border-radius-md);
+  transition: var(--transition-fast);
+}
+
+.input-stellar:focus {
+  outline: none;
+  border-color: var(--color-stellar-glow-strong);
+  box-shadow: 0 0 8px var(--color-stellar-glow-subtle);
+}
+
+.input-stellar::placeholder {
+  color: var(--color-text-tertiary);
+  opacity: 0.7;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-deep-space);
+}
+
+/* ===== UTILITY CLASSES ===== */
+.text-electrum { color: var(--color-text-primary); }
+.text-electrum-dim { color: var(--color-text-secondary); }
+.text-electrum-dimmer { color: var(--color-text-tertiary); }
+
+.bg-primary { background-color: var(--color-bg-primary); }
+.bg-surface { background-color: var(--color-bg-surface); }
+
+.border-stellar { border-color: var(--color-stellar-glow-strong); }
+.border-subtle { border-color: var(--color-border); }
+
+.glow-stellar { box-shadow: 0 0 8px var(--color-stellar-glow-subtle); }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .text-primary {
+    font-size: 15px;
+  }
+
+  .text-primary-large {
+    font-size: 16px;
+  }
+
+  .apy-value {
+    font-size: 20px;
+  }
+}

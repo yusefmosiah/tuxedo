@@ -135,48 +135,61 @@ export const ThreadSidebar: React.FC<ThreadSidebarProps> = ({
         <div
           style={{
             padding: '16px',
-            borderBottom: '1px solid #e0e0e0',
+            borderBottom: '1px solid var(--color-border)',
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'center'
+            alignItems: 'center',
+            backgroundColor: 'var(--color-bg-surface)'
           }}
         >
-          <Text as="h3" size="md" weight="semi-bold">
+          <h3 style={{
+            fontFamily: 'var(--font-primary-sans)',
+            fontSize: '16px',
+            margin: '0',
+            color: 'var(--color-text-primary)',
+            fontWeight: '500'
+          }}>
             Chat History
-          </Text>
-          <Button
-            variant="tertiary"
-            size="sm"
+          </h3>
+          <button
+            className="btn-secondary"
             onClick={onToggle}
             style={{
-              padding: '4px',
+              padding: '4px 8px',
               minWidth: 'auto',
-              color: '#666'
+              fontSize: '12px',
+              fontFamily: 'var(--font-tertiary-mono)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
             }}
           >
             ✕
-          </Button>
+          </button>
         </div>
 
         {/* New Thread Button */}
         <div
           style={{
             padding: '12px 16px',
-            borderBottom: '1px solid #e0e0e0'
+            borderBottom: '1px solid var(--color-border)',
+            backgroundColor: 'var(--color-bg-surface)'
           }}
         >
-          <Button
-            variant="primary"
-            size="md"
+          <button
+            className="btn-stellar"
             onClick={handleNewThread}
             style={{
               width: '100%',
               justifyContent: 'flex-start',
-              gap: '8px'
+              padding: '12px 16px',
+              fontSize: '12px',
+              fontFamily: 'var(--font-tertiary-mono)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
             }}
           >
             + New Chat
-          </Button>
+          </button>
         </div>
 
         {/* Threads List */}
@@ -189,38 +202,53 @@ export const ThreadSidebar: React.FC<ThreadSidebarProps> = ({
         >
           {isLoading ? (
             <div style={{ padding: '16px', textAlign: 'center' }}>
-              <Text as="p" size="sm" style={{ color: '#666' }}>
+              <p style={{
+                fontFamily: 'var(--font-secondary-serif)',
+                fontSize: '14px',
+                color: 'var(--color-text-secondary)',
+                fontStyle: 'italic',
+                margin: '0'
+              }}>
                 Loading threads...
-              </Text>
+              </p>
             </div>
           ) : threads.length === 0 ? (
             <div style={{ padding: '16px', textAlign: 'center' }}>
-              <Text as="p" size="sm" style={{ color: '#999' }}>
+              <p style={{
+                fontFamily: 'var(--font-secondary-serif)',
+                fontSize: '14px',
+                color: 'var(--color-text-secondary)',
+                fontStyle: 'italic',
+                margin: '0'
+              }}>
                 No chat history yet
-              </Text>
+              </p>
             </div>
           ) : (
             threads.map((thread) => (
               <div
                 key={thread.id}
+                className="card-minimal"
                 style={{
                   margin: '0 12px 4px',
                   padding: '12px',
-                  borderRadius: '8px',
+                  borderRadius: 'var(--border-radius-lg)',
                   cursor: 'pointer',
-                  backgroundColor: currentThreadId === thread.id ? '#f0f4ff' : 'transparent',
-                  border: currentThreadId === thread.id ? '1px solid #2196f3' : '1px solid transparent',
-                  transition: 'all 0.2s ease',
+                  backgroundColor: currentThreadId === thread.id ? 'var(--color-stellar-glow-subtle)' : 'transparent',
+                  border: currentThreadId === thread.id ? '1px solid var(--color-stellar-glow-strong)' : '1px solid var(--color-border)',
+                  transition: 'var(--transition-fast)',
                   position: 'relative'
                 }}
                 onMouseEnter={(e) => {
                   if (currentThreadId !== thread.id) {
-                    e.currentTarget.style.backgroundColor = '#f8f9fa';
+                    e.currentTarget.style.backgroundColor = 'var(--color-bg-surface)';
+                    e.currentTarget.style.borderColor = 'var(--color-stellar-glow-strong)';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (currentThreadId !== thread.id) {
                     e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.borderColor = 'var(--color-border)';
                   }
                 }}
                 onClick={() => handleThreadClick(thread.id)}
@@ -239,13 +267,17 @@ export const ThreadSidebar: React.FC<ThreadSidebarProps> = ({
                           cancelEditing();
                         }
                       }}
+                      className="input-stellar"
                       style={{
                         width: '100%',
                         padding: '4px 8px',
-                        border: '1px solid #2196f3',
-                        borderRadius: '4px',
+                        border: '1px solid var(--color-stellar-glow-strong)',
+                        borderRadius: 'var(--border-radius-sm)',
                         fontSize: '14px',
-                        outline: 'none'
+                        outline: 'none',
+                        backgroundColor: 'var(--color-bg-primary)',
+                        color: 'var(--color-text-primary)',
+                        fontFamily: 'var(--font-primary-sans)'
                       }}
                       autoFocus
                     />
@@ -253,19 +285,19 @@ export const ThreadSidebar: React.FC<ThreadSidebarProps> = ({
                 ) : (
                   <>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <Text
-                        as="div"
-                        size="sm"
-                        weight={currentThreadId === thread.id ? 'semi-bold' : 'medium'}
+                      <div
                         style={{
                           flex: 1,
-                          color: currentThreadId === thread.id ? '#1565c0' : '#333',
-                          lineHeight: 1.4,
-                          marginBottom: '4px'
+                          color: currentThreadId === thread.id ? 'var(--color-stellar-glow-strong)' : 'var(--color-text-primary)',
+                          lineHeight: 1.6,
+                          marginBottom: '8px',
+                          fontFamily: 'var(--font-primary-sans)',
+                          fontSize: '14px',
+                          fontWeight: currentThreadId === thread.id ? '600' : '400'
                         }}
                       >
                         {truncateTitle(thread.title)}
-                      </Text>
+                      </div>
 
                       {/* Action buttons */}
                       <div
@@ -273,7 +305,7 @@ export const ThreadSidebar: React.FC<ThreadSidebarProps> = ({
                           display: 'flex',
                           gap: '4px',
                           opacity: 0,
-                          transition: 'opacity 0.2s'
+                          transition: 'var(--transition-fast)'
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.opacity = '1';
@@ -283,6 +315,7 @@ export const ThreadSidebar: React.FC<ThreadSidebarProps> = ({
                         }}
                       >
                         <button
+                          className="btn-secondary"
                           onClick={(e) => {
                             e.stopPropagation();
                             startEditingThread(thread.id, thread.title);
@@ -290,17 +323,21 @@ export const ThreadSidebar: React.FC<ThreadSidebarProps> = ({
                           style={{
                             padding: '2px 6px',
                             backgroundColor: 'transparent',
-                            border: 'none',
+                            border: '1px solid var(--color-border)',
                             cursor: 'pointer',
-                            color: '#666',
+                            color: 'var(--color-text-tertiary)',
                             fontSize: '12px',
-                            borderRadius: '3px'
+                            borderRadius: 'var(--border-radius-sm)',
+                            fontFamily: 'var(--font-tertiary-mono)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em'
                           }}
                           title="Edit title"
                         >
                           ✏️
                         </button>
                         <button
+                          className="btn-secondary"
                           onClick={(e) => {
                             e.stopPropagation();
                             deleteThread(thread.id);
@@ -309,11 +346,15 @@ export const ThreadSidebar: React.FC<ThreadSidebarProps> = ({
                           style={{
                             padding: '2px 6px',
                             backgroundColor: 'transparent',
-                            border: 'none',
+                            border: '1px solid var(--color-border)',
                             cursor: deletingThreadId === thread.id ? 'not-allowed' : 'pointer',
-                            color: deletingThreadId === thread.id ? '#ccc' : '#666',
+                            color: deletingThreadId === thread.id ? 'var(--color-text-tertiary)' : 'var(--color-negative)',
                             fontSize: '12px',
-                            borderRadius: '3px'
+                            borderRadius: 'var(--border-radius-sm)',
+                            fontFamily: 'var(--font-tertiary-mono)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            opacity: deletingThreadId === thread.id ? 0.6 : 1
                           }}
                           title="Delete thread"
                         >
@@ -322,16 +363,18 @@ export const ThreadSidebar: React.FC<ThreadSidebarProps> = ({
                       </div>
                     </div>
 
-                    <Text
-                      as="div"
-                      size="xs"
+                    <div
                       style={{
-                        color: '#999',
-                        fontSize: '11px'
+                        fontFamily: 'var(--font-tertiary-mono)',
+                        fontSize: '11px',
+                        color: 'var(--color-text-tertiary)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        fontWeight: 'bold'
                       }}
                     >
                       {formatDate(thread.updated_at)}
-                    </Text>
+                    </div>
                   </>
                 )}
               </div>
@@ -343,13 +386,22 @@ export const ThreadSidebar: React.FC<ThreadSidebarProps> = ({
         <div
           style={{
             padding: '12px 16px',
-            borderTop: '1px solid #e0e0e0',
-            backgroundColor: '#f8f9fa'
+            borderTop: '1px solid var(--color-border)',
+            backgroundColor: 'var(--color-bg-surface)'
           }}
         >
-          <Text as="p" size="xs" style={{ color: '#999', textAlign: 'center' }}>
+          <p style={{
+            fontFamily: 'var(--font-tertiary-mono)',
+            fontSize: '11px',
+            color: 'var(--color-text-tertiary)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            fontWeight: 'bold',
+            margin: '0',
+            textAlign: 'center'
+          }}>
             {wallet.address ? `Connected: ${wallet.address.slice(0, 6)}...` : 'Not connected'}
-          </Text>
+          </p>
         </div>
       </div>
     </>
