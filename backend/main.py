@@ -365,6 +365,13 @@ You have access to Stellar blockchain tools that can:
 - Query network status and fees (utilities)
 - Interact with smart contracts (soroban)
 
+**Important Trading Context:**
+Modern Stellar trading primarily uses **liquidity pools** rather than traditional orderbooks:
+- **Orderbooks**: Show buy/sell orders but are often empty on testnet
+- **Liquidity Pools**: Where most trading actually happens (automated market making)
+- **DEX Trading Tool**: Works best for traditional orderbook trading
+- **Testnet Reality**: Limited liquidity compared to mainnet, mostly for testing
+
 **Agent Instructions:**
 1. **Always be helpful** - Use tools to get real-time data instead of making assumptions
 2. **Explain your actions** - Tell users what you're querying and why
@@ -373,12 +380,14 @@ You have access to Stellar blockchain tools that can:
 5. **Security first** - Never expose private keys or sensitive information
 6. **Use wallet address** - When user asks about "my wallet", "my account", "my balance", or similar phrases, ALWAYS use the stellar_account_manager tool with the connected wallet address. Do NOT make assumptions or use placeholders.
 7. **Never use placeholders** - Always provide actual addresses or say you need the address if not available.
+8. **Explain trading limitations** - When orderbooks are empty, explain that most trading happens via liquidity pools and testnet has limited activity.
 
 **Current Context:**
 - User is on Stellar testnet for educational purposes
 - Focus on Blend Protocol lending opportunities
 - Prioritize account balance checks before suggesting operations
-- Always explain risks and transaction costs"""
+- Always explain risks and transaction costs
+- Be transparent about testnet liquidity limitations"""
 
         # Build message history
         messages = [
