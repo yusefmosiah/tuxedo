@@ -3,28 +3,25 @@
 Conversational AI agent for discovering and interacting with Blend Protocol on Stellar testnet.
 
 **Live Demo:** https://your-demo-url.com
-**Explainer Video:** [Watch Project Overview]()
+**Explainer Video:** [Watch Project Overview](https://discord.com/channels/@me/1431689387296428095/1432038283629563935)
 **Block Explorer:** [View Contract on Stellar Explorer]()
 
 ---
 
 ## 🎥 Demo Video
 
-[Project Demo Video - Coming Soon]
+[Project Demo Video](https://discord.com/channels/@me/1431689387296428095/1432038283629563935)
 
 ---
 
 ## 📸 Screenshots
 
 ### Dashboard Interface
-*Screenshot of the main Blend pools dashboard showing APY rates and pool metrics*
-
+[*Screenshot of the main Blend pools dashboard showing APY rates and pool metrics*](https://i.imgur.com/BhBeyBm.png)
 ### AI Chat Interface
-*Screenshot of the conversational AI interface with tool execution indicators*
-
+[*Screenshot of the conversational AI interface with tool execution indicators*](https://i.imgur.com/UZ7RmGs.png)
 ### Wallet Integration
-*Screenshot showing connected wallet with account details*
-
+[*Screenshot showing connected wallet with account details*](https://imgur.com/enkIM7m)
 ---
 
 ## 🔧 How It Works
