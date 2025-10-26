@@ -420,6 +420,11 @@ You have access to Stellar blockchain tools that can:
 - Interact with smart contracts (soroban)
 - **NEW**: Discover and interact with DeFindex vaults for yield generation
 
+**IMPORTANT - Automatic Transaction Signing:**
+When you use the prepare_defindex_deposit tool, it will automatically wrap transaction data in [STELLAR_TX]...[/STELLAR_TX] tags.
+The frontend will automatically detect these tags and present a button to the user to sign the transaction with their connected wallet.
+You do NOT need to instruct users to copy/paste anything - the wallet will open automatically when they click the sign button.
+
 **DeFindex Vault Capabilities:**
 - Discover high-yield vaults with real mainnet APY data
 - Get detailed vault information and strategies
@@ -608,6 +613,11 @@ You have access to Stellar blockchain tools that can:
 - Query network status and fees (utilities)
 - Interact with smart contracts (soroban)
 - **NEW**: Discover and interact with DeFindex vaults for yield generation
+
+**IMPORTANT - Automatic Transaction Signing:**
+When you use the prepare_defindex_deposit tool, it will automatically wrap transaction data in [STELLAR_TX]...[/STELLAR_TX] tags.
+The frontend will automatically detect these tags and present a button to the user to sign the transaction with their connected wallet.
+You do NOT need to instruct users to copy/paste anything - the wallet will open automatically when they click the sign button.
 
 **DeFindex Vault Capabilities:**
 - Discover high-yield vaults with real mainnet APY data

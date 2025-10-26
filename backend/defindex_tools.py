@@ -131,10 +131,13 @@ async def prepare_defindex_deposit(
 ) -> str:
     """Prepare a deposit transaction for a DeFindex vault using Soroban contracts.
 
-    This builds an UNSIGNED transaction that the frontend must sign.
+    This builds an UNSIGNED transaction that the frontend will automatically present to the user's wallet for signing.
     Use this when a user wants to deposit funds into a vault for testing.
 
     This uses testnet for safe demo transactions even though vault data comes from mainnet.
+
+    IMPORTANT: Always wrap the output in [STELLAR_TX]...[/STELLAR_TX] tags so the frontend
+    can automatically detect and present the transaction to the user's wallet for signing.
 
     Args:
         vault_address: The vault contract address (from mainnet discovery)
@@ -142,7 +145,7 @@ async def prepare_defindex_deposit(
         user_address: User's Stellar public key (G...)
 
     Returns:
-        JSON string with transaction details for frontend to sign
+        Transaction data wrapped in special format for frontend parsing
     """
     try:
         # Convert XLM to stroops (1 XLM = 10,000,000 stroops)
@@ -165,16 +168,20 @@ async def prepare_defindex_deposit(
                 user_address=user_address
             )
 
-            # Return structured data for backend to handle
-            return json.dumps({
-                'action': 'SIGN_TRANSACTION',
+            # Create transaction payload
+            tx_payload = {
                 'xdr': tx_data['xdr'],
                 'vault_address': testnet_vault,
                 'amount': amount_xlm,
                 'estimated_shares': tx_data.get('estimated_shares', '0'),
                 'description': tx_data['description'],
+                'network': 'testnet',
                 'note': 'This is a testnet transaction for demonstration purposes using Soroban contracts'
-            })
+            }
+
+            # Wrap in special format that frontend will parse and automatically present to wallet
+            tx_json = json.dumps(tx_payload, indent=2)
+            return f"I've prepared a deposit transaction for you! Click the button below to sign it with your wallet.\n\n[STELLAR_TX]\n{tx_json}\n[/STELLAR_TX]\n\nThis transaction will be automatically presented to your connected wallet for signing."
 
         except Exception as e:
             return f"Error building deposit transaction: {str(e)}"

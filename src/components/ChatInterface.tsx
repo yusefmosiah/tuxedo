@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button, Text } from '@stellar/design-system';
 import { chatApi, ChatMessage, StreamMessage, type HealthResponse } from '../lib/api';
 import { useWallet } from '../hooks/useWallet';
+import { parseMessageForTransaction } from '../utils/transactionParser';
+import { TransactionCard } from './TransactionCard';
 import '../App.module.css';
 
 // Extended message type that includes streaming information
@@ -211,8 +213,9 @@ export const ChatInterface: React.FC = () => {
             // Only send user messages and final assistant responses (filter out tool execution details)
             history: messages
               .filter(m =>
-                (m.role === 'user' && m.id !== `user-${streamId}`) ||
-                (m.role === 'assistant' && m.type === 'final_response')
+                ((m.role === 'user' && m.id !== `user-${streamId}`) ||
+                (m.role === 'assistant' && m.type === 'final_response')) &&
+                m.content && m.content.trim() !== '' // Ensure content exists and is not empty
               )
               .map(({ role, content }) => ({ role, content })),
             wallet_address: wallet.address || null,
@@ -253,8 +256,9 @@ export const ChatInterface: React.FC = () => {
             // Only send user messages and final assistant responses (filter out tool execution details)
             history: messages
               .filter(m =>
-                (m.role === 'user' && m.id !== `user-${streamId}`) ||
-                (m.role === 'assistant' && m.type === 'final_response')
+                ((m.role === 'user' && m.id !== `user-${streamId}`) ||
+                (m.role === 'assistant' && m.type === 'final_response')) &&
+                m.content && m.content.trim() !== '' // Ensure content exists and is not empty
               )
               .map(({ role, content }) => ({ role, content })),
             wallet_address: wallet.address || null,
@@ -732,6 +736,9 @@ export const ChatInterface: React.FC = () => {
 
             // Final Responses - plain text, left-aligned, no bubble
             if (msg.type === 'final_response') {
+              // Check if message contains an embedded transaction
+              const parsed = parseMessageForTransaction(msg.content);
+
               return (
                 <div
                   key={msg.id || idx}
@@ -742,20 +749,46 @@ export const ChatInterface: React.FC = () => {
                     padding: '0 20px',
                   }}
                 >
-                  <Text
-                    as="p"
-                    size="md"
-                    style={{
-                      whiteSpace: 'pre-wrap',
-                      lineHeight: 1.6,
-                      margin: 0,
-                      color: '#333',
-                      fontSize: '16px',
-                      fontWeight: '400',
-                    }}
-                  >
-                    {msg.content}
-                  </Text>
+                  {/* Text before transaction */}
+                  {parsed.beforeTx && (
+                    <Text
+                      as="p"
+                      size="md"
+                      style={{
+                        whiteSpace: 'pre-wrap',
+                        lineHeight: 1.6,
+                        margin: 0,
+                        color: '#333',
+                        fontSize: '16px',
+                        fontWeight: '400',
+                        marginBottom: parsed.transaction ? '12px' : 0,
+                      }}
+                    >
+                      {parsed.beforeTx}
+                    </Text>
+                  )}
+
+                  {/* Embedded transaction card */}
+                  {parsed.transaction && <TransactionCard transaction={parsed.transaction} />}
+
+                  {/* Text after transaction */}
+                  {parsed.afterTx && (
+                    <Text
+                      as="p"
+                      size="md"
+                      style={{
+                        whiteSpace: 'pre-wrap',
+                        lineHeight: 1.6,
+                        margin: 0,
+                        color: '#333',
+                        fontSize: '16px',
+                        fontWeight: '400',
+                        marginTop: parsed.transaction ? '12px' : 0,
+                      }}
+                    >
+                      {parsed.afterTx}
+                    </Text>
+                  )}
                 </div>
               );
             }
