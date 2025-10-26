@@ -45,6 +45,15 @@ except ImportError as e:
     logger.warning(f"Stellar tools not available: {e}")
     STELLAR_TOOLS_AVAILABLE = False
 
+# Import live summary service
+try:
+    from live_summary_service import get_live_summary_service, is_live_summary_enabled
+    LIVE_SUMMARY_AVAILABLE = is_live_summary_enabled()
+    logger.info(f"Live summary service available: {LIVE_SUMMARY_AVAILABLE}")
+except ImportError as e:
+    logger.warning(f"Live summary service not available: {e}")
+    LIVE_SUMMARY_AVAILABLE = False
+
 # Models
 class ChatMessage(BaseModel):
     role: str
@@ -54,6 +63,12 @@ class ChatRequest(BaseModel):
     message: str
     history: list[ChatMessage] = []
     wallet_address: Optional[str] = None
+
+class LiveSummaryChatRequest(BaseModel):
+    message: str
+    history: list[ChatMessage] = []
+    wallet_address: Optional[str] = None
+    enable_summary: bool = True
 
 class ChatResponse(BaseModel):
     response: str
@@ -65,6 +80,7 @@ class HealthResponse(BaseModel):
     stellar_tools_ready: bool
     defindex_tools_ready: bool
     openai_configured: bool
+    live_summary_ready: bool
 
 class StellarToolsResponse(BaseModel):
     available: bool
@@ -347,7 +363,8 @@ async def health_check():
         status="healthy",
         stellar_tools_ready=STELLAR_TOOLS_AVAILABLE,
         defindex_tools_ready=DEFINDEX_TOOLS_AVAILABLE,
-        openai_configured=bool(os.getenv("OPENAI_API_KEY"))
+        openai_configured=bool(os.getenv("OPENAI_API_KEY")),
+        live_summary_ready=LIVE_SUMMARY_AVAILABLE
     )
 
 @app.get("/stellar-tools/status")
@@ -895,6 +912,136 @@ async def chat_message_stream(request: ChatRequest):
 
     return StreamingResponse(
         generate_chat_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
+
+@app.post("/chat-live-summary")
+async def chat_live_summary_stream(request: LiveSummaryChatRequest):
+    """Enhanced streaming chat endpoint with live summaries"""
+    async def generate_live_summary_stream():
+        try:
+            logger.info(f"🔍 Started live summary streaming chat: wallet_address={request.wallet_address}, enable_summary={request.enable_summary}")
+
+            if not llm:
+                error_data = {
+                    "type": "error",
+                    "content": "LLM not initialized"
+                }
+                yield f"data: {json.dumps(error_data)}\n\n"
+                return
+
+            if not STELLAR_TOOLS_AVAILABLE:
+                error_data = {
+                    "type": "error",
+                    "content": "Stellar tools not available"
+                }
+                yield f"data: {json.dumps(error_data)}\n\n"
+                return
+
+            # Initialize live summary service if enabled
+            summary_service = None
+            if request.enable_summary and LIVE_SUMMARY_AVAILABLE:
+                summary_service = get_live_summary_service()
+                logger.info("Live summary service enabled")
+            else:
+                logger.info("Live summary disabled or not available")
+
+            # Create unique live summary ID
+            live_summary_id = f"live-{int(asyncio.get_event_loop().time())}"
+
+            # Buffer for collecting messages in this conversation segment
+            message_buffer = []
+
+            # Send initial live summary if enabled
+            if summary_service:
+                initial_summary = {
+                    "type": "live_summary_start",
+                    "id": live_summary_id,
+                    "summary": "Processing your request...",
+                    "isLive": True,
+                    "isExpanded": False
+                }
+                yield f"data: {json.dumps(initial_summary)}\n\n"
+
+            # Stream the agent response and collect messages
+            final_response_content = None
+            async for message_data in chat_with_tools_stream(
+                message=request.message,
+                history=request.history,
+                wallet_address=request.wallet_address
+            ):
+                # Collect all meaningful messages for summarization
+                if message_data.get('type') not in ['thinking']:
+                    message_buffer.append(message_data)
+
+                # Generate live summary updates
+                if (summary_service and
+                    message_data.get('type') in ['llm_response', 'tool_result', 'tool_error'] and
+                    len(message_buffer) > 0):
+
+                    try:
+                        # Generate live summary
+                        live_summary = await summary_service.generate_live_summary(message_buffer)
+
+                        summary_update = {
+                            "type": "live_summary_update",
+                            "id": live_summary_id,
+                            "summary": live_summary,
+                            "isLive": True,
+                            "isExpanded": False,
+                            "fullContent": message_buffer.copy()
+                        }
+                        yield f"data: {json.dumps(summary_update)}\n\n"
+
+                    except Exception as e:
+                        logger.error(f"Error generating live summary: {e}")
+                        # Continue without summary if it fails
+
+                # Always forward the original message
+                yield f"data: {json.dumps(message_data)}\n\n"
+
+                # Store final response when we get it
+                if message_data.get('type') == 'final_response':
+                    final_response_content = message_data.get('content')
+
+                await asyncio.sleep(0.01)
+
+            # Generate final summary if we have messages and summary service
+            if summary_service and message_buffer:
+                try:
+                    final_summary = await summary_service.generate_final_summary(message_buffer)
+
+                    summary_complete = {
+                        "type": "live_summary_complete",
+                        "id": live_summary_id,
+                        "summary": final_summary,
+                        "isLive": False,
+                        "isExpanded": False,
+                        "fullContent": message_buffer.copy()
+                    }
+                    yield f"data: {json.dumps(summary_complete)}\n\n"
+
+                    logger.info(f"Generated final summary: {final_summary}")
+
+                except Exception as e:
+                    logger.error(f"Error generating final summary: {e}")
+
+        except Exception as e:
+            logger.error(f"Error in live summary streaming chat endpoint: {e}")
+            error_data = {
+                "type": "error",
+                "content": f"Live summary stream error: {str(e)}"
+            }
+            yield f"data: {json.dumps(error_data)}\n\n"
+
+    return StreamingResponse(
+        generate_live_summary_stream(),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button, Text, Loader } from '@stellar/design-system';
 import { chatApi, ChatMessage, StreamMessage, type HealthResponse } from '../lib/api';
 import { useWallet } from '../hooks/useWallet';
+import { LiveSummary } from './LiveSummary';
 import '../App.module.css';
 
 // Extended message type that includes streaming information
@@ -11,6 +12,9 @@ interface ExtendedChatMessage extends ChatMessage {
   toolName?: string;
   iteration?: number;
   isStreaming?: boolean;
+  isLive?: boolean;
+  isExpanded?: boolean;
+  fullContent?: StreamMessage[];
 }
 
 export const ChatInterface: React.FC = () => {
@@ -21,6 +25,8 @@ export const ChatInterface: React.FC = () => {
   const [agentThinking, setAgentThinking] = useState(false);
   const [apiStatus, setApiStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
   const [minimizedMessages, setMinimizedMessages] = useState<Set<string>>(new Set());
+  const [expandedSummaries, setExpandedSummaries] = useState<Set<string>>(new Set());
+  const [useLiveSummary, setUseLiveSummary] = useState(true); // User preference
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Check API health on mount and setup interval
@@ -31,6 +37,10 @@ export const ChatInterface: React.FC = () => {
 
         if (health.status === 'healthy' && health.stellar_tools_ready) {
           setApiStatus('connected');
+          // Update live summary preference based on backend availability
+          if (!health.live_summary_ready) {
+            setUseLiveSummary(false);
+          }
         } else {
           setApiStatus('disconnected');
         }
@@ -102,6 +112,57 @@ export const ChatInterface: React.FC = () => {
         newSet.add(messageId);
       }
       return newSet;
+    });
+  };
+
+  // Toggle summary expansion
+  const toggleSummaryExpansion = (summaryId: string) => {
+    setExpandedSummaries(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(summaryId)) {
+        newSet.delete(summaryId);
+      } else {
+        newSet.add(summaryId);
+      }
+      return newSet;
+    });
+  };
+
+  // Helper function to handle regular stream messages
+  const handleRegularStreamMessage = (streamMessage: StreamMessage, streamId: string) => {
+    // Handle thinking states for loading indicator
+    if (streamMessage.type === 'thinking' || streamMessage.type === 'tool_call_start') {
+      setAgentThinking(true);
+      return; // Don't add these as visible messages when using live summary
+    }
+
+    // Clear thinking state when we get real content
+    setAgentThinking(false);
+
+    // Handle each streaming message
+    const extendedMessage: ExtendedChatMessage = {
+      role: 'assistant',
+      content: streamMessage.content,
+      id: `stream-${streamId}-${streamMessage.type}-${streamMessage.iteration || 0}`,
+      type: streamMessage.type,
+      toolName: streamMessage.tool_name,
+      iteration: streamMessage.iteration,
+      isStreaming: streamMessage.type !== 'final_response' && streamMessage.type !== 'error',
+    };
+
+    setMessages((prev) => {
+      // Check if we already have this exact message (by ID) to avoid duplicates
+      const existingMessageIndex = prev.findIndex(m => m.id === extendedMessage.id);
+
+      if (existingMessageIndex >= 0) {
+        // Update existing message if found
+        const updated = [...prev];
+        updated[existingMessageIndex] = extendedMessage;
+        return updated;
+      } else {
+        // Add new message
+        return [...prev, extendedMessage];
+      }
     });
   };
 
@@ -205,14 +266,79 @@ export const ChatInterface: React.FC = () => {
     setAgentThinking(false); // Reset thinking state for new message
 
     try {
-      // Use streaming API
-      const cleanup = chatApi.sendMessageStream(
-        {
-          message: input,
-          history: messages.filter(m => m.role !== 'user' || m.id !== `user-${streamId}`), // Filter out current user message
-          wallet_address: wallet.address || null,
-        },
-        (streamMessage: StreamMessage) => {
+      // Choose API based on live summary preference and availability
+      const useLiveSummaryApi = useLiveSummary;
+
+      if (useLiveSummaryApi) {
+        // Use live summary streaming API
+        const cleanup = chatApi.sendMessageWithLiveSummary(
+          {
+            message: input,
+            history: messages.filter(m => m.role !== 'user' || m.id !== `user-${streamId}`), // Filter out current user message
+            wallet_address: wallet.address || null,
+            enable_summary: true,
+          },
+          (streamMessage: StreamMessage) => {
+            // Handle live summary messages
+            if (streamMessage.type?.startsWith('live_summary')) {
+              const extendedMessage: ExtendedChatMessage = {
+                role: 'assistant',
+                content: streamMessage.content,
+                id: streamMessage.id || `live-${streamId}`,
+                type: streamMessage.type,
+                isLive: streamMessage.isLive,
+                isExpanded: expandedSummaries.has(streamMessage.id || ''),
+                fullContent: streamMessage.fullContent,
+                isStreaming: streamMessage.isLive || false,
+              };
+
+              setMessages((prev) => {
+                const existingMessageIndex = prev.findIndex(m => m.id === extendedMessage.id);
+                if (existingMessageIndex >= 0) {
+                  const updated = [...prev];
+                  updated[existingMessageIndex] = extendedMessage;
+                  return updated;
+                } else {
+                  return [...prev, extendedMessage];
+                }
+              });
+              return;
+            }
+
+            // Handle other message types normally
+            handleRegularStreamMessage(streamMessage, streamId);
+          },
+          (error: Error) => {
+            console.error('Live summary streaming error:', error);
+            setAgentThinking(false);
+            const errorMessage: ExtendedChatMessage = {
+              role: 'assistant',
+              content: `Live summary streaming error: ${error.message}`,
+              id: `error-${streamId}`,
+              type: 'error',
+              isStreaming: false,
+            };
+            setMessages((prev) => [...prev, errorMessage]);
+            setIsLoading(false);
+          },
+          () => {
+            setAgentThinking(false);
+            setIsLoading(false);
+          }
+        );
+
+        return () => {
+          cleanup();
+        };
+      } else {
+        // Use regular streaming API
+        const cleanup = chatApi.sendMessageStream(
+          {
+            message: input,
+            history: messages.filter(m => m.role !== 'user' || m.id !== `user-${streamId}`), // Filter out current user message
+            wallet_address: wallet.address || null,
+          },
+          (streamMessage: StreamMessage) => {
           // Handle thinking states for loading indicator
           if (streamMessage.type === 'thinking' || streamMessage.type === 'tool_call_start') {
             setAgentThinking(true);
@@ -408,6 +534,18 @@ export const ChatInterface: React.FC = () => {
         )}
 
         {messages.map((msg, idx) => {
+          // Handle live summary messages with dedicated component
+          if (msg.type?.startsWith('live_summary')) {
+            return (
+              <LiveSummary
+                key={msg.id || idx}
+                message={msg as StreamMessage}
+                onToggleExpand={() => msg.id && toggleSummaryExpansion(msg.id)}
+                isExpanded={msg.id ? expandedSummaries.has(msg.id) : false}
+              />
+            );
+          }
+
           const messageStyling = getMessageStyling(msg);
           const indicator = getMessageIndicator(msg);
           const isMinimized = msg.id ? minimizedMessages.has(msg.id) : false;
