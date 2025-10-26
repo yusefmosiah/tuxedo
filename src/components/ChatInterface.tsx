@@ -66,19 +66,42 @@ export const ChatInterface: React.FC = () => {
     setCollapsedToolCalls(newCollapsed);
   }, [messages]);
 
-  // Auto-scroll to bottom - more reliable implementation
+  // Smart scrolling - scroll to final responses instead of bottom
   useEffect(() => {
-    const scrollToBottom = () => {
+    const scrollToFinalResponse = () => {
       const messagesContainer = messagesEndRef.current?.parentElement;
-      if (messagesContainer) {
-        // Use setTimeout to ensure DOM has updated
-        setTimeout(() => {
+      if (!messagesContainer) return;
+
+      // Use setTimeout to ensure DOM has updated
+      setTimeout(() => {
+        // Find the last final response element
+        const finalResponseElements = messagesContainer.querySelectorAll('[data-final-response="true"]');
+
+        if (finalResponseElements.length > 0) {
+          // Scroll to the last final response
+          const lastFinalResponse = finalResponseElements[finalResponseElements.length - 1];
+
+          // Get the position of the final response
+          const rect = lastFinalResponse.getBoundingClientRect();
+          const containerRect = messagesContainer.getBoundingClientRect();
+
+          // If the final response is taller than the viewport, scroll to top
+          // If it's shorter, ensure it's fully visible starting from the top
+          if (rect.height > containerRect.height * 0.8) {
+            // For very long responses, show from the beginning
+            lastFinalResponse.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else {
+            // For shorter responses, position it nicely in view
+            lastFinalResponse.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        } else {
+          // Fallback: scroll to bottom for other messages (during tool execution, etc.)
           messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }, 50);
-      }
+        }
+      }, 100); // Slightly longer delay for final response detection
     };
 
-    scrollToBottom();
+    scrollToFinalResponse();
   }, [messages, agentThinking]); // Also scroll when thinking state changes
 
   
@@ -685,6 +708,7 @@ export const ChatInterface: React.FC = () => {
               return (
                 <div
                   key={msg.id || idx}
+                  data-final-response="true"
                   style={{
                     textAlign: 'left',
                     margin: '24px 0',
