@@ -3,12 +3,26 @@ import { Code, Layout, Text, Button } from "@stellar/design-system";
 import { PoolsDashboard } from "../components/dashboard/PoolsDashboard";
 import { BlendPoolViewer } from "../components/BlendPoolViewer";
 import { BlendPoolQuery } from "../components/BlendPoolQuery";
+import { ChatInterface } from "../components/ChatInterface";
 
 const Home: React.FC = () => (
   <Layout.Content>
     <Layout.Inset>
+      {/* Chat Interface */}
+      <section style={{ marginBottom: '48px' }}>
+        <Text as="h2" size="lg" style={{ marginBottom: '16px' }}>
+          Ask Tuxedo AI
+        </Text>
+        <ChatInterface />
+      </section>
+
       {/* Main Dashboard */}
-      <PoolsDashboard />
+      <section>
+        <Text as="h2" size="lg" style={{ marginBottom: '16px' }}>
+          All Blend Pools
+        </Text>
+        <PoolsDashboard />
+      </section>
 
       <div style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
         <Button
