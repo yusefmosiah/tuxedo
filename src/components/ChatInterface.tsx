@@ -82,6 +82,16 @@ export const ChatInterface: React.FC = () => {
     scrollToBottom();
   }, [messages, agentThinking]); // Also scroll when thinking state changes
 
+  // Copy message content to clipboard
+  const copyMessage = (content: string) => {
+    navigator.clipboard.writeText(content).then(() => {
+      // Optional: Show a brief success indicator
+      console.log('Message copied to clipboard');
+    }).catch(err => {
+      console.error('Failed to copy message: ', err);
+    });
+  };
+
   // Toggle message minimization
   const toggleMinimize = (messageId: string) => {
     setMinimizedMessages(prev => {
@@ -298,7 +308,7 @@ export const ChatInterface: React.FC = () => {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -411,7 +421,23 @@ export const ChatInterface: React.FC = () => {
                 marginBottom: '12px',
                 alignItems: 'flex-start',
               }}
-            >
+              onMouseEnter={(e) => {
+                if (msg.role === 'user') {
+                  const copyButton = e.currentTarget.querySelector('[data-user-copy-button]');
+                      if (copyButton) {
+                        (copyButton as HTMLElement).style.opacity = '1';
+                      }
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (msg.role === 'user') {
+                      const copyButton = e.currentTarget.querySelector('[data-user-copy-button]');
+                      if (copyButton) {
+                        (copyButton as HTMLElement).style.opacity = '0';
+                      }
+                    }
+                  }}
+                >
               <div
                 style={{
                   maxWidth: '75%',
@@ -421,59 +447,179 @@ export const ChatInterface: React.FC = () => {
                   position: 'relative',
                   opacity: msg.isStreaming ? 0.9 : 1,
                   transition: 'all 0.2s ease-in-out',
-                  cursor: msg.role === 'assistant' ? 'pointer' : 'default',
-                  transform: msg.role === 'assistant' ? 'scale(1)' : 'scale(1)',
+                  cursor: 'default',
+                  transform: 'scale(1)',
                 }}
                 onMouseEnter={(e) => {
                   if (msg.role === 'assistant') {
                     e.currentTarget.style.transform = 'scale(1.02)';
                     e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                  } else if (msg.role === 'user') {
+                    e.currentTarget.style.transform = 'scale(1.01)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (msg.role === 'assistant') {
+                  if (msg.role === 'assistant' || msg.role === 'user') {
                     e.currentTarget.style.transform = 'scale(1)';
                     e.currentTarget.style.boxShadow = 'none';
                   }
                 }}
-                onClick={() => msg.role === 'assistant' && msg.id && toggleMinimize(msg.id)}
               >
                 {/* Message header with indicator and type info */}
                 {msg.role === 'assistant' && msg.type && (
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
+                    justifyContent: 'space-between',
                     marginBottom: '6px',
                     fontSize: '11px',
                     fontWeight: '500',
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px',
                   }}>
-                    <span>{indicator}</span>
-                    <span>{msg.type.replace('_', ' ')}</span>
-                    {msg.iteration && (
-                      <span style={{ opacity: 0.6 }}>
-                        #{msg.iteration}
-                      </span>
-                    )}
-                    {msg.toolName && (
-                      <span style={{
-                        opacity: 0.8,
-                        fontFamily: 'monospace',
-                        fontSize: '10px',
-                        backgroundColor: 'rgba(0,0,0,0.1)',
-                        padding: '1px 4px',
-                        borderRadius: '3px'
-                      }}>
-                        {msg.toolName}
-                      </span>
-                    )}
-                    {msg.isStreaming && (
-                      <div style={{ marginLeft: '4px', display: 'inline-block' }}>
-                        <Loader size="sm" />
-                      </div>
-                    )}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}>
+                      <span>{indicator}</span>
+                      <span>{msg.type.replace('_', ' ')}</span>
+                      {msg.iteration && (
+                        <span style={{ opacity: 0.6 }}>
+                          #{msg.iteration}
+                        </span>
+                      )}
+                      {msg.toolName && (
+                        <span style={{
+                          opacity: 0.8,
+                          fontFamily: 'monospace',
+                          fontSize: '10px',
+                          backgroundColor: 'rgba(0,0,0,0.1)',
+                          padding: '1px 4px',
+                          borderRadius: '3px'
+                        }}>
+                          {msg.toolName}
+                        </span>
+                      )}
+                      {msg.isStreaming && (
+                        <div style={{ marginLeft: '4px', display: 'inline-block' }}>
+                          <Loader size="sm" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action buttons */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}>
+                      {/* Copy button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          copyMessage(msg.content);
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: '2px 4px',
+                          borderRadius: '3px',
+                          fontSize: '12px',
+                          opacity: 0.6,
+                          transition: 'opacity 0.2s',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.opacity = '1';
+                          e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.opacity = '0.6';
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                        title="Copy message"
+                      >
+                        📋
+                      </button>
+
+                      {/* Minimize button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (msg.id) toggleMinimize(msg.id);
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: '2px 4px',
+                          borderRadius: '3px',
+                          fontSize: '12px',
+                          opacity: 0.6,
+                          transition: 'opacity 0.2s',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.opacity = '1';
+                          e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.opacity = '0.6';
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                        title={isMinimized ? "Expand message" : "Minimize message"}
+                      >
+                        {isMinimized ? '📂' : '📁'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Copy button for user messages */}
+                {msg.role === 'user' && (
+                  <div
+                    data-user-copy-button
+                    style={{
+                      position: 'absolute',
+                      top: '6px',
+                      right: '6px',
+                      opacity: 0,
+                      transition: 'opacity 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.opacity = '1';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.opacity = '0';
+                    }}
+                  >
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        copyMessage(msg.content);
+                      }}
+                      style={{
+                        background: 'rgba(255,255,255,0.9)',
+                        border: '1px solid rgba(0,0,0,0.1)',
+                        cursor: 'pointer',
+                        padding: '4px 6px',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(255,255,255,1)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.9)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                      title="Copy message"
+                    >
+                      📋
+                    </button>
                   </div>
                 )}
 
@@ -488,7 +634,6 @@ export const ChatInterface: React.FC = () => {
                   }}>
                     <span>{msg.type === 'final_response' ? '🎯' : indicator}</span>
                     <span>{msg.type === 'final_response' ? 'Response' : msg.type?.replace('_', ' ')}</span>
-                    <span>📁</span>
                   </div>
                 ) : (
                   <>
@@ -585,7 +730,7 @@ export const ChatInterface: React.FC = () => {
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyDown}
             placeholder={
               apiStatus === 'disconnected'
                 ? "Backend offline - check console for errors"
