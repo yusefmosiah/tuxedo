@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-FastAPI + FastMCP backend for Tuxedo AI
+FastAPI + MCP backend for Tuxedo AI
 """
 
 import os
@@ -16,16 +16,26 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Import FastMCP
-try:
-    from fastmcp import FastMCP
-except ImportError:
-    print("FastMCP not installed. Install with: uv add fastmcp")
-    FastMCP = None
-
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# FastMCP removed - using local Stellar tools directly
+
+# Import LangChain
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+
+# Import local Stellar tools
+try:
+    from stellar_tools import account_manager, trading, market_data
+    from stellar_sdk import Server
+    from key_manager import KeyManager
+    STELLAR_TOOLS_AVAILABLE = True
+    logger.info("Local Stellar tools loaded successfully")
+except ImportError as e:
+    logger.warning(f"Stellar tools not available: {e}")
+    STELLAR_TOOLS_AVAILABLE = False
 
 # Models
 class ChatMessage(BaseModel):
@@ -43,29 +53,36 @@ class ChatResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
-    fastmcp_ready: bool
+    stellar_tools_ready: bool
     openai_configured: bool
 
 # Global variables
-mcp_server: Optional[FastMCP] = None
+llm: Optional[ChatOpenAI] = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager"""
-    global mcp_server
+    global llm
 
     logger.info("Starting Tuxedo AI backend...")
 
-    # Initialize FastMCP server
-    if FastMCP is not None:
-        mcp_server = FastMCP("Tuxedo AI 🚀")
+    # Initialize LLM
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    openai_base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
 
-        # Add Stellar tools
-        setup_stellar_tools(mcp_server)
-
-        logger.info("FastMCP server initialized")
+    if openai_api_key:
+        llm = ChatOpenAI(
+            api_key=openai_api_key,
+            base_url=openai_base_url,
+            model="gpt-4",
+            temperature=0.7,
+            max_tokens=2000,
+        )
+        logger.info("LLM initialized successfully")
     else:
-        logger.warning("FastMCP not available")
+        logger.warning("OpenAI API key not configured")
+
+    logger.info("Stellar tools loaded locally")
 
     yield
 
@@ -98,54 +115,55 @@ async def health_check():
     """Health check endpoint"""
     return HealthResponse(
         status="healthy",
-        fastmcp_ready=mcp_server is not None,
+        stellar_tools_ready=STELLAR_TOOLS_AVAILABLE,
         openai_configured=bool(os.getenv("OPENAI_API_KEY"))
     )
 
 @app.post("/chat")
 async def chat_message(request: ChatRequest):
-    """Chat endpoint - simple version without tool calling for now"""
+    """Chat endpoint with LLM integration"""
     try:
-        # For now, return a simple response
-        # TODO: Integrate with LLM and FastMCP tools
-
-        if not os.getenv("OPENAI_API_KEY"):
+        if not llm:
             raise HTTPException(
                 status_code=503,
-                detail="OpenAI API key not configured"
+                detail="LLM not initialized"
             )
 
-        # Simple rule-based responses for development
-        message_lower = request.message.lower()
+        # System prompt for Tuxedo AI
+        system_prompt = """You are Tuxedo, an AI assistant that helps users discover and understand lending opportunities on Stellar through the Blend Protocol.
 
-        if any(word in message_lower for word in ["hello", "hi", "hey"]):
-            response = "👋 Hello! I'm Tuxedo, your AI assistant for Stellar DeFi. Ask me about Blend pools, yields, or lending opportunities!"
-        elif any(word in message_lower for word in ["pool", "apy", "yield", "lending"]):
-            response = """I can help you find the best lending opportunities on Stellar!
+**Your Capabilities:**
+- Query all active Blend pools to find current APY rates
+- Access Stellar account information and balances
+- Perform Stellar operations via available tools
+- Explain DeFi lending concepts in simple, clear language
+- Compare different pools and assets
+- Assess risk based on utilization rates and pool metrics
 
-Currently, I'm in development mode, but here's what I'll be able to do:
-- 🏊‍♂️ Query all Blend pools for current APY rates
-- 📊 Compare pools by yield, utilization, and risk
-- 🎓 Explain DeFi concepts in plain language
-- ⚠️ Help you understand the risks involved
+**Key Principles:**
+1. **Plain language first** - Avoid DeFi jargon unless the user asks for technical details
+2. **Always explain risks** - High APY usually means higher risk (utilization, volatility, liquidity)
+3. **Be transparent** - Yields come from borrowers paying interest to lenders
+4. **Never promise returns** - Always say "current rate" or "estimated APY based on today's data"
+5. **Show your work** - When comparing pools, show the numbers (APY, utilization, TVL)
 
-Would you like to know more about how Blend lending works, or shall we look at current yields?"""
-        elif any(word in message_lower for word in ["risk", "risky", "safe"]):
-            response = """Great question! Here are the main risks to consider:
+**Current Context:**
+- User is exploring Blend pools on Stellar testnet
+- This is for educational/informational purposes
+- Focus on helping users understand opportunities and risks"""
 
-**🔒 Smart Contract Risk**: All DeFi carries some smart contract risk. Blend has been audited but no system is 100% risk-free.
+        # Build message history
+        messages = [
+            SystemMessage(content=system_prompt),
+            *[HumanMessage(content=msg.content) if msg.role == "user" else AIMessage(content=msg.content)
+              for msg in request.history],
+            HumanMessage(content=request.message),
+        ]
 
-**📈 Utilization Risk**: When pools are highly utilized (>90%), withdrawals might be delayed. Lower utilization = safer but lower yields.
+        # Get LLM response
+        response = await llm.ainvoke(messages)
 
-**💰 Market Risk**: Stablecoins like USDC are less volatile, but crypto assets can have large price swings.
-
-**🏦 Protocol Risk**: Changes to the Blend protocol could affect your positions.
-
-My recommendation: Start with stablecoin lending to learn the system before taking on more risk!"""
-        else:
-            response = f"I received your message: '{request.message}'. I'm currently in development mode, but soon I'll be able to help you with:\n\n- Finding the best Blend pool yields\n- Understanding DeFi risks\n- Comparing lending opportunities\n- Account analysis and recommendations\n\nFor now, try asking about 'pools', 'yields', or 'risks'!"
-
-        return ChatResponse(response=response, success=True)
+        return ChatResponse(response=response.content, success=True)
 
     except Exception as e:
         logger.error(f"Error in chat endpoint: {e}")
@@ -154,55 +172,53 @@ My recommendation: Start with stablecoin lending to learn the system before taki
             detail=f"Error processing message: {str(e)}"
         )
 
-def setup_stellar_tools(mcp: FastMCP):
-    """Setup Stellar-related tools for FastMCP"""
+async def call_stellar_tool(tool_name: str, arguments: dict) -> str:
+    """Call Stellar tools directly"""
+    if not STELLAR_TOOLS_AVAILABLE:
+        return "Stellar tools not available. Please check dependencies."
 
-    @mcp.tool
-    def get_blend_pools() -> str:
-        """Get all active Blend lending pools with current APY rates and metrics"""
-        # TODO: Implement actual Blend pool data fetching
-        return """{
-  "pools": [
-    {
-      "name": "Comet Pool",
-      "address": "CD5Z7O...H3K2L",
-      "reserves": [
-        {
-          "asset": "USDC",
-          "supply_apy": "12.5%",
-          "borrow_apy": "18.2%",
-          "total_supplied": "2,345,678.90",
-          "total_borrowed": "1,523,456.78",
-          "utilization": "65.0%"
-        }
-      ]
-    }
-  ]
-}"""
+    try:
+        logger.info(f"Calling Stellar tool: {tool_name} with args: {arguments}")
 
-    @mcp.tool
-    def get_account_info(account_id: str) -> str:
-        """Get account information for a Stellar address"""
-        # TODO: Implement actual account info fetching
-        return f"""{{
-  "account_id": "{account_id}",
-  "balance": "1000.00",
-  "sequence": 12345,
-  "signers": 1,
-  "status": "found"
-}}"""
+        # Initialize Stellar components
+        horizon = Server("https://horizon-testnet.stellar.org")
+        key_manager = KeyManager()
 
-    @mcp.tool
-    def calculate_risk_score(utilization: float, asset_type: str) -> str:
-        """Calculate risk score for a lending opportunity"""
-        if utilization > 90:
-            return "HIGH RISK: Very high utilization may delay withdrawals"
-        elif utilization > 75:
-            return "MEDIUM-HIGH RISK: High utilization, monitor closely"
-        elif utilization > 50:
-            return "MEDIUM RISK: Normal utilization for active pools"
+        if tool_name == "account_manager_tool":
+            return account_manager(
+                horizon=horizon,
+                key_manager=key_manager,
+                **arguments
+            )
+        elif tool_name == "trading_tool":
+            return trading(
+                horizon=horizon,
+                key_manager=key_manager,
+                **arguments
+            )
+        elif tool_name == "market_data_tool":
+            return market_data(
+                horizon=horizon,
+                **arguments
+            )
         else:
-            return "LOW RISK: Good liquidity, safer for new lenders"
+            return f"Unknown tool: {tool_name}. Available tools: account_manager_tool, trading_tool, market_data_tool"
+
+    except Exception as e:
+        logger.error(f"Error calling Stellar tool {tool_name}: {e}")
+        return f"Error calling Stellar tool {tool_name}: {str(e)}"
+
+@app.post("/stellar-tool/{tool_name}")
+async def test_stellar_tool(tool_name: str, arguments: dict = None):
+    """Test a Stellar tool call directly"""
+    if arguments is None:
+        arguments = {}
+
+    try:
+        result = await call_stellar_tool(tool_name, arguments)
+        return {"tool": tool_name, "arguments": arguments, "result": result, "success": True}
+    except Exception as e:
+        return {"tool": tool_name, "arguments": arguments, "error": str(e), "success": False}
 
 if __name__ == "__main__":
     import uvicorn
