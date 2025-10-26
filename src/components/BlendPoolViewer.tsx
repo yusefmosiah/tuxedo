@@ -27,121 +27,127 @@ export const BlendPoolViewer: React.FC = () => {
         Blend Protocol - Testnet
       </Text>
 
-      <Card style={{ marginTop: "20px", padding: "20px" }}>
-        <Text as="h3" size="md">
-          Core Contracts
-        </Text>
-        <div style={{ marginTop: "10px" }}>
-          <ContractRow
-            name="Pool Factory"
-            address={BLEND_CONTRACTS.poolFactory}
-          />
-          <ContractRow name="Backstop" address={BLEND_CONTRACTS.backstop} />
-          <ContractRow name="Emitter" address={BLEND_CONTRACTS.emitter} />
-        </div>
-      </Card>
-
-      <Card style={{ marginTop: "20px", padding: "20px" }}>
-        <Text as="h3" size="md">
-          Tokens
-        </Text>
-        <div style={{ marginTop: "10px" }}>
-          <ContractRow name="BLND Token" address={BLEND_CONTRACTS.blndToken} />
-          <ContractRow name="USDC Token" address={BLEND_CONTRACTS.usdcToken} />
-          <ContractRow name="XLM Token" address={BLEND_CONTRACTS.xlmToken} />
-        </div>
-      </Card>
-
-      <Card style={{ marginTop: "20px", padding: "20px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ marginTop: "20px", padding: "20px" }}>
+        <Card>
           <Text as="h3" size="md">
-            Comet Pool (BLND:USDC)
+            Core Contracts
           </Text>
-          {poolData.loading && (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <Loader size="sm" />
-              <Text as="span" size="sm" style={{ color: "#666" }}>
-                Connecting...
+          <div style={{ marginTop: "10px" }}>
+            <ContractRow
+              name="Pool Factory"
+              address={BLEND_CONTRACTS.poolFactory}
+            />
+            <ContractRow name="Backstop" address={BLEND_CONTRACTS.backstop} />
+            <ContractRow name="Emitter" address={BLEND_CONTRACTS.emitter} />
+          </div>
+        </Card>
+      </div>
+
+      <div style={{ marginTop: "20px", padding: "20px" }}>
+        <Card>
+          <Text as="h3" size="md">
+            Tokens
+          </Text>
+          <div style={{ marginTop: "10px" }}>
+            <ContractRow name="BLND Token" address={BLEND_CONTRACTS.blndToken} />
+            <ContractRow name="USDC Token" address={BLEND_CONTRACTS.usdcToken} />
+            <ContractRow name="XLM Token" address={BLEND_CONTRACTS.xlmToken} />
+          </div>
+        </Card>
+      </div>
+
+      <div style={{ marginTop: "20px", padding: "20px" }}>
+        <Card>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Text as="h3" size="md">
+              Comet Pool (BLND:USDC)
+            </Text>
+            {poolData.loading && (
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <Loader size="sm" />
+                <Text as="span" size="sm" style={{ color: "#666" }}>
+                  Connecting...
+                </Text>
+              </div>
+            )}
+            {poolData.error && (
+              <Text as="span" size="sm" style={{ color: "#d32f2f" }}>
+                Connection failed
               </Text>
-            </div>
-          )}
-          {poolData.error && (
-            <Text as="span" size="sm" style={{ color: "#d32f2f" }}>
-              Connection failed
+            )}
+            {!poolData.loading && !poolData.error && (
+              <Text as="span" size="sm" style={{ color: "#2e7d32" }}>
+                ✓ Connected to Testnet
+              </Text>
+            )}
+          </div>
+
+          <ContractRow name="Pool Address" address={BLEND_CONTRACTS.cometPool} />
+
+          <div style={{ marginTop: "20px" }}>
+            <Text as="p" size="sm">
+              To interact with this pool, you can:
             </Text>
-          )}
-          {!poolData.loading && !poolData.error && (
-            <Text as="span" size="sm" style={{ color: "#2e7d32" }}>
-              ✓ Connected to Testnet
+            <ul style={{ fontSize: "14px", lineHeight: "1.6" }}>
+              <li>
+                <strong>View pool data:</strong> Query reserves, rates, and
+                positions
+              </li>
+              <li>
+                <strong>Supply assets:</strong> Deposit USDC or other supported
+                tokens
+              </li>
+              <li>
+                <strong>Borrow:</strong> Take loans against your collateral
+              </li>
+              <li>
+                <strong>Manage positions:</strong> Withdraw, repay, or liquidate
+              </li>
+            </ul>
+          </div>
+
+          <div
+            style={{
+              marginTop: "20px",
+              padding: "15px",
+              backgroundColor: "#f5f5f5",
+              borderRadius: "8px",
+            }}
+          >
+            <Text as="p" size="sm" style={{ fontWeight: "bold" }}>
+              Next Steps:
             </Text>
-          )}
-        </div>
+            <ol style={{ fontSize: "14px", lineHeight: "1.8", marginTop: "10px" }}>
+              <li>
+                Install Blend SDK:{" "}
+                <code style={{ background: "#e0e0e0", padding: "2px 6px" }}>
+                  npm install @blend-capital/blend-sdk
+                </code>
+              </li>
+              <li>Or generate TypeScript bindings using Stellar CLI</li>
+              <li>Connect your wallet using the WalletProvider</li>
+              <li>Fund your testnet account using Friendbot</li>
+              <li>
+                Build transactions to interact with the pool contracts
+              </li>
+            </ol>
+          </div>
 
-        <ContractRow name="Pool Address" address={BLEND_CONTRACTS.cometPool} />
-
-        <div style={{ marginTop: "20px" }}>
-          <Text as="p" size="sm">
-            To interact with this pool, you can:
-          </Text>
-          <ul style={{ fontSize: "14px", lineHeight: "1.6" }}>
-            <li>
-              <strong>View pool data:</strong> Query reserves, rates, and
-              positions
-            </li>
-            <li>
-              <strong>Supply assets:</strong> Deposit USDC or other supported
-              tokens
-            </li>
-            <li>
-              <strong>Borrow:</strong> Take loans against your collateral
-            </li>
-            <li>
-              <strong>Manage positions:</strong> Withdraw, repay, or liquidate
-            </li>
-          </ul>
-        </div>
-
-        <div
-          style={{
-            marginTop: "20px",
-            padding: "15px",
-            backgroundColor: "#f5f5f5",
-            borderRadius: "8px",
-          }}
-        >
-          <Text as="p" size="sm" style={{ fontWeight: "bold" }}>
-            Next Steps:
-          </Text>
-          <ol style={{ fontSize: "14px", lineHeight: "1.8", marginTop: "10px" }}>
-            <li>
-              Install Blend SDK:{" "}
-              <code style={{ background: "#e0e0e0", padding: "2px 6px" }}>
-                npm install @blend-capital/blend-sdk
-              </code>
-            </li>
-            <li>Or generate TypeScript bindings using Stellar CLI</li>
-            <li>Connect your wallet using the WalletProvider</li>
-            <li>Fund your testnet account using Friendbot</li>
-            <li>
-              Build transactions to interact with the pool contracts
-            </li>
-          </ol>
-        </div>
-
-        <Button
-          variant="tertiary"
-          size="md"
-          style={{ marginTop: "15px" }}
-          onClick={() => {
-            window.open(
-              "https://docs.blend.capital/tech-docs/integrations/integrate-pool",
-              "_blank"
-            );
-          }}
-        >
-          View Blend Integration Docs
-        </Button>
-      </Card>
+          <Button
+            variant="tertiary"
+            size="md"
+            style={{ marginTop: "15px" }}
+            onClick={() => {
+              window.open(
+                "https://docs.blend.capital/tech-docs/integrations/integrate-pool",
+                "_blank"
+              );
+            }}
+          >
+            View Blend Integration Docs
+          </Button>
+        </Card>
+      </div>
     </div>
   );
 };

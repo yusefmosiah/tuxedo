@@ -10,8 +10,11 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
+import json
+import asyncio
 
 # Load environment variables
 load_dotenv()
@@ -567,6 +570,255 @@ The address is a Stellar public key starting with 'G'.
         logger.error(f"Error in agent loop: {e}")
         return f"I encountered an error while processing your request: {str(e)}"
 
+async def chat_with_tools_stream(
+    message: str,
+    history: list[ChatMessage],
+    wallet_address: Optional[str] = None
+):
+    """
+    Streaming agent loop that yields intermediate results for real-time UI updates.
+    """
+    try:
+        # Enhanced system prompt for the agent
+        system_prompt = """You are Tuxedo, an AI assistant that helps users discover and understand DeFi opportunities on Stellar including Blend Protocol and DeFindex vaults.
+
+**Your Available Tools:**
+You have access to Stellar blockchain tools that can:
+- Create and manage accounts (account_manager)
+- Query market data and orderbooks (market_data)
+- Execute trades on the Stellar DEX (trading)
+- Manage trustlines for assets (trustline_manager)
+- Query network status and fees (utilities)
+- Interact with smart contracts (soroban)
+- **NEW**: Discover and interact with DeFindex vaults for yield generation
+
+**DeFindex Vault Capabilities:**
+- Discover high-yield vaults with real mainnet APY data
+- Get detailed vault information and strategies
+- Prepare testnet deposit transactions for safe testing
+- Note: Vault yields come from mainnet, transactions use testnet for safety
+
+**Important Trading Context:**
+Modern Stellar trading primarily uses **liquidity pools** rather than traditional orderbooks:
+- **Orderbooks**: Show buy/sell orders but are often empty on testnet
+- **Liquidity Pools**: Where most trading actually happens (automated market making)
+- **DEX Trading Tool**: Works best for traditional orderbook trading
+- **Testnet Reality**: Limited liquidity compared to mainnet, mostly for testing
+
+**Agent Instructions:**
+1. **Always be helpful** - Use tools to get real-time data instead of making assumptions
+2. **Explain your actions** - Tell users what you're querying and why
+3. **Interpret results clearly** - Translate blockchain data into understandable insights
+4. **Handle gracefully** - If tools fail, explain the issue and suggest alternatives
+5. **Security first** - Never expose private keys or sensitive information
+6. **Use wallet address** - When user asks about "my wallet", "my account", "my balance", "check balance", "what's in my wallet", or similar phrases, ALWAYS use the stellar_account_manager tool with action='get' and the connected wallet address as account_id. Do NOT make assumptions or use placeholders.
+7. **Never use placeholders** - Always provide actual addresses or say you need the address if not available.
+8. **Explain trading limitations** - When orderbooks are empty, explain that most trading happens via liquidity pools and testnet has limited activity.
+9. **Balance check priority** - When users mention balance or wallet without being specific, check their account balance first using stellar_account_manager with action='get'.
+
+**Current Context:**
+- User is on Stellar testnet for educational purposes
+- Focus on Blend Protocol lending opportunities
+- Prioritize account balance checks before suggesting operations
+- Always explain risks and transaction costs
+- Be transparent about testnet liquidity limitations"""
+
+        # Build message history
+        messages = [
+            SystemMessage(content=system_prompt),
+        ]
+
+        # Add wallet context if available
+        if wallet_address:
+            wallet_context = f"""
+**Connected Wallet Context:**
+The user has connected their wallet with address: {wallet_address}
+When users ask about "my wallet", "my account", "my balance", "check balance", "what's in my wallet", or similar phrases:
+- Use stellar_account_manager tool with action='get'
+- Use this exact address: {wallet_address}
+- This is required for balance checks and account queries
+The address is a Stellar public key starting with 'G'.
+"""
+            messages.append(SystemMessage(content=wallet_context))
+
+        # Add conversation history
+        messages.extend([
+            *[HumanMessage(content=msg.content) if msg.role == "user" else AIMessage(content=msg.content)
+              for msg in history],
+            HumanMessage(content=message),
+        ])
+
+        # Convert tools to OpenAI tool format
+        tool_schemas = [convert_to_openai_function(t) for t in STELLAR_TOOLS]
+
+        # Convert to newer tool format
+        tools = [{"type": "function", "function": schema} for schema in tool_schemas]
+
+        # Create LLM with tools (using newer format)
+        llm_with_tools = llm.bind(tools=tools)
+
+        # Agent loop with streaming
+        max_iterations = 100
+        iteration = 0
+
+        while iteration < max_iterations:
+            iteration += 1
+            logger.info(f"Agent iteration {iteration}")
+
+            # Yield thinking indicator
+            yield {
+                "type": "thinking",
+                "content": f"Thinking... (iteration {iteration})",
+                "iteration": iteration
+            }
+
+            # Get LLM response with potential tool calls
+            response = await llm_with_tools.ainvoke(messages)
+
+            # Check if LLM wants to call tools
+            tool_calls = []
+
+            # New LangChain format
+            if hasattr(response, 'tool_calls') and response.tool_calls:
+                tool_calls = response.tool_calls
+                logger.info(f"LLM wants to call {len(tool_calls)} tools (new format)")
+            # Old LangChain format with function_call in additional_kwargs
+            elif (hasattr(response, 'additional_kwargs') and
+                  response.additional_kwargs.get('function_call')):
+                function_call = response.additional_kwargs['function_call']
+                tool_calls = [{
+                    "name": function_call["name"],
+                    "args": json.loads(function_call["arguments"]),
+                    "id": f"call_{function_call['name']}"
+                }]
+                logger.info(f"LLM wants to call {len(tool_calls)} tools (old format)")
+
+            if tool_calls:
+                # Yield LLM reasoning before tool calls
+                if hasattr(response, 'content') and response.content:
+                    yield {
+                        "type": "llm_response",
+                        "content": response.content,
+                        "iteration": iteration
+                    }
+                    # Add to message history for next iteration
+                    messages.append(response)
+
+                # Execute each tool call and stream results
+                for tool_call in tool_calls:
+                    tool_name = tool_call["name"]
+                    tool_args = tool_call["args"]
+
+                    # Yield tool call start
+                    yield {
+                        "type": "tool_call_start",
+                        "content": f"🔧 Calling {tool_name}...",
+                        "tool_name": tool_name,
+                        "tool_args": tool_args,
+                        "iteration": iteration
+                    }
+
+                    # Find and execute the tool
+                    tool_func = None
+                    for t in STELLAR_TOOLS:
+                        if t.name == tool_name:
+                            tool_func = t
+                            break
+
+                    if tool_func:
+                        try:
+                            # Auto-inject wallet address for account-related operations
+                            if wallet_address:
+                                if "account_id" in tool_args:
+                                    current_account_id = tool_args.get("account_id")
+                                    if (not current_account_id or
+                                        current_account_id in ["", None, "your_connected_wallet_address", "YOUR_WALLET_PUBLIC_KEY"] or
+                                        (isinstance(current_account_id, str) and
+                                         ("your_wallet" in current_account_id.lower() or "placeholder" in current_account_id.lower()))):
+                                        tool_args["account_id"] = wallet_address
+                                        logger.info(f"Auto-injected wallet address {wallet_address} for {tool_name}")
+
+                                tool_func._wallet_address = wallet_address
+
+                            result = await tool_func.ainvoke(tool_args)
+
+                            # Yield tool result
+                            yield {
+                                "type": "tool_result",
+                                "content": str(result),
+                                "tool_name": tool_name,
+                                "tool_args": tool_args,
+                                "iteration": iteration
+                            }
+
+                            # Format tool result for next LLM iteration
+                            tool_message = {
+                                "role": "tool",
+                                "tool_call_id": tool_call["id"],
+                                "name": tool_name,
+                                "content": str(result)
+                            }
+
+                            logger.info(f"Tool {tool_name} executed successfully")
+
+                        except Exception as e:
+                            logger.error(f"Tool {tool_name} failed: {e}")
+                            error_msg = f"Error: {str(e)}"
+
+                            # Yield tool error
+                            yield {
+                                "type": "tool_error",
+                                "content": error_msg,
+                                "tool_name": tool_name,
+                                "tool_args": tool_args,
+                                "iteration": iteration
+                            }
+
+                            # Format tool error for next LLM iteration
+                            tool_message = {
+                                "role": "tool",
+                                "tool_call_id": tool_call["id"],
+                                "name": tool_name,
+                                "content": error_msg
+                            }
+
+                        # Add tool result to message history for next iteration
+                        messages.append(tool_message)
+                    else:
+                        logger.error(f"Tool {tool_name} not found")
+                        yield {
+                            "type": "tool_error",
+                            "content": f"Tool {tool_name} not found",
+                            "tool_name": tool_name,
+                            "iteration": iteration
+                        }
+
+            else:
+                # LLM provided final response without tool calls
+                logger.info("Agent completed with final response")
+                final_content = response.content if hasattr(response, 'content') else str(response)
+
+                yield {
+                    "type": "final_response",
+                    "content": final_content,
+                    "iteration": iteration
+                }
+                return
+
+        # Max iterations reached
+        yield {
+            "type": "error",
+            "content": "I apologize, but I reached the maximum number of iterations. Let me try a different approach or you can rephrase your question.",
+            "iteration": iteration
+        }
+
+    except Exception as e:
+        logger.error(f"Error in streaming agent loop: {e}")
+        yield {
+            "type": "error",
+            "content": f"I encountered an error while processing your request: {str(e)}"
+        }
+
 @app.post("/chat")
 async def chat_message(request: ChatRequest):
     """Chat endpoint with agent integration"""
@@ -600,6 +852,57 @@ async def chat_message(request: ChatRequest):
             status_code=500,
             detail=f"Error processing message: {str(e)}"
         )
+
+@app.post("/chat-stream")
+async def chat_message_stream(request: ChatRequest):
+    """Streaming chat endpoint using Server-Sent Events"""
+    async def generate_chat_stream():
+        try:
+            logger.info(f"🔍 Started streaming chat request: wallet_address={request.wallet_address}")
+
+            if not llm:
+                error_data = {
+                    "type": "error",
+                    "content": "LLM not initialized"
+                }
+                yield f"data: {json.dumps(error_data)}\n\n"
+                return
+
+            if not STELLAR_TOOLS_AVAILABLE:
+                error_data = {
+                    "type": "error",
+                    "content": "Stellar tools not available"
+                }
+                yield f"data: {json.dumps(error_data)}\n\n"
+                return
+
+            # Stream the agent response
+            async for message_data in chat_with_tools_stream(
+                message=request.message,
+                history=request.history,
+                wallet_address=request.wallet_address
+            ):
+                yield f"data: {json.dumps(message_data)}\n\n"
+                await asyncio.sleep(0.01)  # Small delay to prevent overwhelming
+
+        except Exception as e:
+            logger.error(f"Error in streaming chat endpoint: {e}")
+            error_data = {
+                "type": "error",
+                "content": f"Stream error: {str(e)}"
+            }
+            yield f"data: {json.dumps(error_data)}\n\n"
+
+    return StreamingResponse(
+        generate_chat_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
 
 async def call_stellar_tool(tool_name: str, arguments: dict, wallet_address: Optional[str] = None) -> str:
     """Call Stellar tools directly with optional wallet address"""

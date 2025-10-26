@@ -208,3 +208,5 @@ export const PoolsDashboard: React.FC = () => {
     </div>
   );
 };
+
+export default PoolsDashboard;

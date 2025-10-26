@@ -1,14 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, Text, Loader } from '@stellar/design-system';
-import { chatApi, ChatMessage, type HealthResponse } from '../lib/api';
+import { chatApi, ChatMessage, StreamMessage, type HealthResponse } from '../lib/api';
 import { useWallet } from '../hooks/useWallet';
+import '../App.module.css';
+
+// Extended message type that includes streaming information
+interface ExtendedChatMessage extends ChatMessage {
+  id?: string;
+  type?: StreamMessage['type'];
+  toolName?: string;
+  iteration?: number;
+  isStreaming?: boolean;
+}
 
 export const ChatInterface: React.FC = () => {
   const wallet = useWallet();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ExtendedChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [agentThinking, setAgentThinking] = useState(false);
   const [apiStatus, setApiStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
+  const [minimizedMessages, setMinimizedMessages] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Check API health on mount and setup interval
@@ -37,10 +49,128 @@ export const ChatInterface: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-scroll to bottom
+  // Auto-minimize older responses when new ones come in
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length > 3) {
+      const assistantMessages = messages.filter(m => m.role === 'assistant');
+      if (assistantMessages.length > 2) {
+        // Minimize all but the latest 2 assistant messages
+        const toMinimize = assistantMessages.slice(0, -2);
+        const newMinimized = new Set(minimizedMessages);
+        toMinimize.forEach(msg => {
+          if (msg.id) {
+            newMinimized.add(msg.id);
+          }
+        });
+        setMinimizedMessages(newMinimized);
+      }
+    }
   }, [messages]);
+
+  // Auto-scroll to bottom - more reliable implementation
+  useEffect(() => {
+    const scrollToBottom = () => {
+      const messagesContainer = messagesEndRef.current?.parentElement;
+      if (messagesContainer) {
+        // Use setTimeout to ensure DOM has updated
+        setTimeout(() => {
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }, 50);
+      }
+    };
+
+    scrollToBottom();
+  }, [messages, agentThinking]); // Also scroll when thinking state changes
+
+  // Toggle message minimization
+  const toggleMinimize = (messageId: string) => {
+    setMinimizedMessages(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(messageId)) {
+        newSet.delete(messageId);
+      } else {
+        newSet.add(messageId);
+      }
+      return newSet;
+    });
+  };
+
+  // Helper function to get message styling based on type
+  const getMessageStyling = (msg: ExtendedChatMessage) => {
+    if (msg.role === 'user') {
+      return {
+        backgroundColor: '#667eea',
+        color: '#fff',
+        border: 'none'
+      };
+    }
+
+    const baseStyles = {
+      border: '1px solid #e0e0e0',
+    };
+
+    switch (msg.type) {
+      case 'llm_response':
+        return {
+          ...baseStyles,
+          backgroundColor: '#e3f2fd',
+          color: '#1565c0',
+          border: '1px solid #90caf9'
+        };
+      case 'tool_result':
+        return {
+          ...baseStyles,
+          backgroundColor: '#e8f5e8',
+          color: '#2e7d32',
+          border: '1px solid #81c784'
+        };
+      case 'tool_error':
+        return {
+          ...baseStyles,
+          backgroundColor: '#ffebee',
+          color: '#c62828',
+          border: '1px solid #ef5350'
+        };
+      case 'final_response':
+        return {
+          ...baseStyles,
+          backgroundColor: '#f3e5f5',
+          color: '#4a148c',
+          border: '1px solid #ba68c8'
+        };
+      case 'error':
+        return {
+          ...baseStyles,
+          backgroundColor: '#ffebee',
+          color: '#c62828',
+          border: '1px solid #ef5350'
+        };
+      default:
+        return {
+          ...baseStyles,
+          backgroundColor: '#f0f0f0',
+          color: '#000'
+        };
+    }
+  };
+
+  // Helper function to get message indicator
+  const getMessageIndicator = (msg: ExtendedChatMessage) => {
+    switch (msg.type) {
+      case 'llm_response':
+        return '💭';
+      case 'tool_result':
+        return '✅';
+      case 'tool_error':
+        return '❌';
+      case 'final_response':
+        return '🎯';
+      case 'error':
+        return '⚠️';
+      default:
+        return msg.role === 'user' ? '👤' : '🤖';
+    }
+  };
 
   const handleSend = async () => {
     if (!input.trim() || isLoading || apiStatus === 'disconnected') return;
@@ -51,42 +181,97 @@ export const ChatInterface: React.FC = () => {
       isConnected: !!wallet.address
     });
 
-    const userMessage: ChatMessage = {
+    const streamId = Date.now().toString();
+
+    const userMessage: ExtendedChatMessage = {
       role: 'user',
       content: input,
+      id: `user-${streamId}`,
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+    setAgentThinking(false); // Reset thinking state for new message
 
     try {
-      const response = await chatApi.sendMessage({
-        message: input,
-        history: messages,
-        wallet_address: wallet.address || null,
-      });
+      // Use streaming API
+      const cleanup = chatApi.sendMessageStream(
+        {
+          message: input,
+          history: messages.filter(m => m.role !== 'user' || m.id !== `user-${streamId}`), // Filter out current user message
+          wallet_address: wallet.address || null,
+        },
+        (streamMessage: StreamMessage) => {
+          // Handle thinking states for loading indicator
+          if (streamMessage.type === 'thinking' || streamMessage.type === 'tool_call_start') {
+            setAgentThinking(true);
+            return; // Don't add these as visible messages
+          }
 
-      const aiMessage: ChatMessage = {
-        role: 'assistant',
-        content: response.response,
+          // Clear thinking state when we get real content
+          setAgentThinking(false);
+
+          // Handle each streaming message
+          const extendedMessage: ExtendedChatMessage = {
+            role: 'assistant',
+            content: streamMessage.content,
+            id: `stream-${streamId}-${streamMessage.type}-${streamMessage.iteration || 0}`,
+            type: streamMessage.type,
+            toolName: streamMessage.tool_name,
+            iteration: streamMessage.iteration,
+            isStreaming: streamMessage.type !== 'final_response' && streamMessage.type !== 'error',
+          };
+
+          setMessages((prev) => {
+            // Check if we already have this exact message (by ID) to avoid duplicates
+            const existingMessageIndex = prev.findIndex(m => m.id === extendedMessage.id);
+
+            if (existingMessageIndex >= 0) {
+              // Update existing message if found
+              const updated = [...prev];
+              updated[existingMessageIndex] = extendedMessage;
+              return updated;
+            } else {
+              // Add new message
+              return [...prev, extendedMessage];
+            }
+          });
+        },
+        (error: Error) => {
+          console.error('Streaming chat error:', error);
+          setAgentThinking(false); // Clear thinking state on error
+          const errorMessage: ExtendedChatMessage = {
+            role: 'assistant',
+            content: `Streaming error: ${error.message}`,
+            id: `error-${streamId}`,
+            type: 'error',
+            isStreaming: false,
+          };
+          setMessages((prev) => [...prev, errorMessage]);
+          setIsLoading(false);
+        },
+        () => {
+          // Stream closed
+          setAgentThinking(false); // Clear thinking state on close
+          setIsLoading(false);
+        }
+      );
+
+      // Store cleanup function
+      return () => {
+        cleanup();
       };
-
-      setMessages((prev) => [...prev, aiMessage]);
     } catch (error: any) {
       console.error('Chat error:', error);
-
-      const errorMessage = error.response?.data?.detail ||
-                          error.message ||
-                          'Sorry, I encountered an error. Please try again.';
-
-      const aiMessage: ChatMessage = {
+      const errorMessage: ExtendedChatMessage = {
         role: 'assistant',
-        content: errorMessage,
+        content: error.message || 'Sorry, I encountered an error. Please try again.',
+        id: `error-${streamId}`,
+        type: 'error',
+        isStreaming: false,
       };
-
-      setMessages((prev) => [...prev, aiMessage]);
-    } finally {
+      setMessages((prev) => [...prev, errorMessage]);
       setIsLoading(false);
     }
   };
@@ -113,8 +298,9 @@ export const ChatInterface: React.FC = () => {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
       handleSend();
     }
   };
@@ -124,10 +310,7 @@ export const ChatInterface: React.FC = () => {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        height: '600px',
-        border: '1px solid #e0e0e0',
-        borderRadius: '12px',
-        overflow: 'hidden',
+        height: 'calc(100vh - 60px)', // Account for app header
         backgroundColor: '#fff',
       }}
     >
@@ -214,148 +397,175 @@ export const ChatInterface: React.FC = () => {
           </div>
         )}
 
-        {messages.map((msg, idx) => (
-          <div
-            key={idx}
-            style={{
-              display: 'flex',
-              justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
-              marginBottom: '16px',
-            }}
-          >
+        {messages.map((msg, idx) => {
+          const messageStyling = getMessageStyling(msg);
+          const indicator = getMessageIndicator(msg);
+          const isMinimized = msg.id ? minimizedMessages.has(msg.id) : false;
+
+          return (
             <div
+              key={msg.id || idx}
               style={{
-                maxWidth: '75%',
-                padding: '12px 16px',
-                borderRadius: '12px',
-                backgroundColor: msg.role === 'user' ? '#667eea' : '#f0f0f0',
-                color: msg.role === 'user' ? '#fff' : '#000',
-                border: msg.role === 'assistant' && msg.content.includes('🔧') ? '1px solid #e1f5fe' : 'none',
+                display: 'flex',
+                justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                marginBottom: '12px',
+                alignItems: 'flex-start',
               }}
             >
-              <Text as="p" size="sm" style={{ whiteSpace: 'pre-wrap' }}>
-                {msg.content}
-              </Text>
+              <div
+                style={{
+                  maxWidth: '75%',
+                  padding: isMinimized ? '6px 10px' : '10px 14px',
+                  borderRadius: '12px',
+                  ...messageStyling,
+                  position: 'relative',
+                  opacity: msg.isStreaming ? 0.9 : 1,
+                  transition: 'all 0.2s ease-in-out',
+                  cursor: msg.role === 'assistant' ? 'pointer' : 'default',
+                  transform: msg.role === 'assistant' ? 'scale(1)' : 'scale(1)',
+                }}
+                onMouseEnter={(e) => {
+                  if (msg.role === 'assistant') {
+                    e.currentTarget.style.transform = 'scale(1.02)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (msg.role === 'assistant') {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }
+                }}
+                onClick={() => msg.role === 'assistant' && msg.id && toggleMinimize(msg.id)}
+              >
+                {/* Message header with indicator and type info */}
+                {msg.role === 'assistant' && msg.type && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    marginBottom: '6px',
+                    fontSize: '11px',
+                    fontWeight: '500',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                  }}>
+                    <span>{indicator}</span>
+                    <span>{msg.type.replace('_', ' ')}</span>
+                    {msg.iteration && (
+                      <span style={{ opacity: 0.6 }}>
+                        #{msg.iteration}
+                      </span>
+                    )}
+                    {msg.toolName && (
+                      <span style={{
+                        opacity: 0.8,
+                        fontFamily: 'monospace',
+                        fontSize: '10px',
+                        backgroundColor: 'rgba(0,0,0,0.1)',
+                        padding: '1px 4px',
+                        borderRadius: '3px'
+                      }}>
+                        {msg.toolName}
+                      </span>
+                    )}
+                    {msg.isStreaming && (
+                      <div style={{ marginLeft: '4px', display: 'inline-block' }}>
+                        <Loader size="sm" />
+                      </div>
+                    )}
+                  </div>
+                )}
 
-              {/* Show tool execution indicator */}
-              {msg.role === 'assistant' && msg.content.includes('🔧') && (
-                <div style={{
-                  marginTop: '8px',
-                  padding: '6px 8px',
-                  backgroundColor: '#e3f2fd',
-                  borderRadius: '6px',
-                  fontSize: '11px',
-                  color: '#1565c0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}>
-                  <span>🔧</span>
-                  <span>Stellar tool executed</span>
-                </div>
-              )}
+                {/* Minimized or full message content */}
+                {isMinimized ? (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '12px',
+                    opacity: 0.7,
+                  }}>
+                    <span>{msg.type === 'final_response' ? '🎯' : indicator}</span>
+                    <span>{msg.type === 'final_response' ? 'Response' : msg.type?.replace('_', ' ')}</span>
+                    <span>📁</span>
+                  </div>
+                ) : (
+                  <>
+                    {/* Message content */}
+                    <Text
+                      as="p"
+                      size="sm"
+                      style={{
+                        whiteSpace: 'pre-wrap',
+                        lineHeight: 1.4,
+                        margin: 0,
+                      }}
+                    >
+                      {msg.content}
+                    </Text>
+                  </>
+                )}
 
-              {/* Show transaction indicator */}
-              {msg.role === 'assistant' && (
-                msg.content.includes('Transaction successful') ||
-                msg.content.includes('✅ Transaction') ||
-                msg.content.includes('Hash:')
-              ) && (
-                <div style={{
-                  marginTop: '8px',
-                  padding: '6px 8px',
-                  backgroundColor: '#e8f5e8',
-                  borderRadius: '6px',
-                  fontSize: '11px',
-                  color: '#2e7d32',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}>
-                  <span>✅</span>
-                  <span>Transaction completed</span>
-                </div>
-              )}
+                {/* Special formatting for certain message types - only show when not minimized */}
+                {!isMinimized && (
+                  <>
+                    {msg.type === 'tool_result' && (
+                      <div style={{
+                        marginTop: '8px',
+                        padding: '8px',
+                        backgroundColor: 'rgba(46, 125, 50, 0.1)',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontFamily: 'monospace',
+                        border: '1px solid rgba(46, 125, 50, 0.2)',
+                      }}>
+                        <Text as="span" size="xs" style={{ color: '#2e7d32' }}>
+                          📊 Tool Result
+                        </Text>
+                      </div>
+                    )}
 
-              {/* Show account creation indicator */}
-              {msg.role === 'assistant' && (
-                msg.content.includes('account created') ||
-                msg.content.includes('Account created') ||
-                msg.content.includes('Testnet account')
-              ) && (
-                <div style={{
-                  marginTop: '8px',
-                  padding: '6px 8px',
-                  backgroundColor: '#fff3e0',
-                  borderRadius: '6px',
-                  fontSize: '11px',
-                  color: '#ef6c00',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}>
-                  <span>👤</span>
-                  <span>Account operation</span>
-                </div>
-              )}
-
-              {/* Show network info indicator */}
-              {msg.role === 'assistant' && (
-                msg.content.includes('Network status') ||
-                msg.content.includes('fee') ||
-                msg.content.includes('ledgers')
-              ) && (
-                <div style={{
-                  marginTop: '8px',
-                  padding: '6px 8px',
-                  backgroundColor: '#f3e5f5',
-                  borderRadius: '6px',
-                  fontSize: '11px',
-                  color: '#7b1fa2',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}>
-                  <span>📊</span>
-                  <span>Network information</span>
-                </div>
-              )}
-
-              {/* Show market data indicator */}
-              {msg.role === 'assistant' && (
-                msg.content.includes('orderbook') ||
-                msg.content.includes('trades') ||
-                msg.content.includes('market')
-              ) && (
-                <div style={{
-                  marginTop: '8px',
-                  padding: '6px 8px',
-                  backgroundColor: '#fce4ec',
-                  borderRadius: '6px',
-                  fontSize: '11px',
-                  color: '#c2185b',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}>
-                  <span>📈</span>
-                  <span>Market data</span>
-                </div>
-              )}
+                    {msg.type === 'error' || msg.type === 'tool_error' ? (
+                      <div style={{
+                        marginTop: '8px',
+                        padding: '8px',
+                        backgroundColor: 'rgba(198, 40, 40, 0.1)',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        border: '1px solid rgba(198, 40, 40, 0.2)',
+                      }}>
+                        <Text as="span" size="xs" style={{ color: '#c62828' }}>
+                          ⚠️ Error Details
+                        </Text>
+                      </div>
+                    ) : null}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
-        {isLoading && (
+        {agentThinking && (
           <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
             <div
               style={{
                 padding: '12px 16px',
                 borderRadius: '12px',
-                backgroundColor: '#f0f0f0',
+                backgroundColor: '#f8f9fa',
+                border: '1px solid #e9ecef',
+                color: '#6c757d',
+                fontSize: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
               }}
             >
               <Loader size="sm" />
+              <span className="thinking-text">
+                Thinking...
+              </span>
             </div>
           </div>
         )}

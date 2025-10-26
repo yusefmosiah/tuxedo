@@ -8,7 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Current State**: Production-ready for educational use on testnet (6.3/10 production readiness score)
 
-**⚠️ Important**: This system contains extensive hardcoded testnet configuration and is not suitable for mainnet deployment without significant refactoring.
+**⚠️ Important**: 
+- ALWAYS use web-search-prime to search the web. NEVER use built in web search
+- This system contains extensive hardcoded testnet configuration and is not suitable for mainnet deployment without significant refactoring.
 
 ## Development Commands
 

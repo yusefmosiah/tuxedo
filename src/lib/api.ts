@@ -21,6 +21,14 @@ export interface ChatResponse {
   error?: string | null;
 }
 
+export interface StreamMessage {
+  type: 'thinking' | 'llm_response' | 'tool_call_start' | 'tool_result' | 'tool_error' | 'final_response' | 'error';
+  content: string;
+  tool_name?: string;
+  tool_args?: any;
+  iteration?: number;
+}
+
 export interface HealthResponse {
   status: string;
   stellar_tools_ready: boolean;
@@ -91,6 +99,99 @@ export const chatApi = {
 
       throw new Error(errorMessage);
     }
+  },
+
+  /**
+   * Send a streaming chat message using Server-Sent Events
+   */
+  sendMessageStream(
+    request: ChatRequest,
+    onMessage: (message: StreamMessage) => void,
+    onError: (error: Error) => void,
+    onClose: () => void
+  ): () => void {
+    console.log('🔍 Starting streaming chat request:', {
+      message: request.message,
+      hasWalletAddress: !!request.wallet_address,
+      walletAddress: request.wallet_address
+    });
+
+    // Use fetch with streaming response
+    const controller = new AbortController();
+
+    fetch(`${API_BASE_URL}/chat-stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+      },
+      body: JSON.stringify(request),
+      signal: controller.signal
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('Response body is not readable');
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      function processText(text: string) {
+        buffer += text;
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data.trim()) {
+              try {
+                const message: StreamMessage = JSON.parse(data);
+                onMessage(message);
+              } catch (e) {
+                console.error('Error parsing SSE message:', e, 'Raw data:', data);
+              }
+            }
+          }
+        }
+      }
+
+      function read() {
+        if (!reader) return;
+        reader.read().then(({ done, value }) => {
+          if (done) {
+            processText(''); // Process any remaining data
+            onClose();
+            return;
+          }
+
+          const text = decoder.decode(value, { stream: true });
+          processText(text);
+          read();
+        }).catch(error => {
+          if (error.name !== 'AbortError') {
+            console.error('Stream read error:', error);
+            onError(error);
+          }
+        });
+      }
+
+      read();
+    })
+    .catch(error => {
+      console.error('Stream error:', error);
+      onError(error);
+    });
+
+    // Return cleanup function
+    return () => {
+      controller.abort();
+    };
   },
 
   /**

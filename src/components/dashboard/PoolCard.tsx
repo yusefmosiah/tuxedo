@@ -42,14 +42,16 @@ export const PoolCard: React.FC<PoolCardProps> = ({ pool }) => {
   );
 
   return (
-    <Card
+    <div
       style={{
         marginBottom: "24px",
         padding: "0",
         overflow: "hidden",
-        border: "1px solid #e0e0e0",
+        border: "1px solid #e5e7eb",
+        borderRadius: "8px",
       }}
     >
+      <Card>
       {/* Pool Header */}
       <div
         style={{
@@ -250,6 +252,7 @@ export const PoolCard: React.FC<PoolCardProps> = ({ pool }) => {
       >
         Last updated: {new Date(pool.timestamp).toLocaleString()}
       </div>
-    </Card>
+      </Card>
+    </div>
   );
 };

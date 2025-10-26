@@ -51,10 +51,11 @@ export const BlendPoolQuery: React.FC = () => {
   };
 
   return (
-    <Card style={{ marginTop: "20px", padding: "20px" }}>
-      <Text as="h3" size="md">
-        Interactive Pool Query
-      </Text>
+    <div style={{ marginTop: "20px", padding: "20px" }}>
+      <Card>
+        <Text as="h3" size="md">
+          Interactive Pool Query
+        </Text>
 
       <div style={{ marginTop: "15px" }}>
         <Text as="p" size="sm" style={{ marginBottom: "10px" }}>
@@ -144,7 +145,8 @@ export const BlendPoolQuery: React.FC = () => {
             Example code is in <code>src/hooks/useBlendPool.ts</code>
           </p>
         </div>
-      </div>
-    </Card>
+        </div>
+      </Card>
+    </div>
   );
 };
