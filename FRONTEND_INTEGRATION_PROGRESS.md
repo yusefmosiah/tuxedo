@@ -163,11 +163,11 @@ The Tuxedo AI Agent now has access to 6 fully functional Stellar tools:
 - **Frontend**: http://localhost:5173/ (React + Vite)
 - **Backend**: http://localhost:8002/ (FastAPI + LangChain)
 - **Agent**: Multi-step tool calling with 6 Stellar tools
-- **LLM**: GPT-4 integration with proper tool binding
+- **LLM**: gpt-oss 120b integration with proper tool binding
 
 ### **🔧 Configuration Details**
 - **Network**: Stellar Testnet (educational purposes)
-- **LLM Provider**: Redpill AI (GPT-4 compatible)
+- **LLM Provider**: Redpill AI (gpt-oss 120b compatible)
 - **Authentication**: None required for testnet operations
 - **CORS**: Properly configured for frontend-backend communication
 

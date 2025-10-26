@@ -39,7 +39,7 @@ The Tuxedo AI Agent is a **functional DeFi conversational assistant** built on S
 │  │ - Real-time chat UI                 │  │ - AI Agent Loop   │ │
 │  │ - Wallet integration                │  │ - LangChain       │ │
 │  │ - Tool execution indicators         │  │ - 6 Stellar Tools │ │
-│  │ - Visual feedback                   │  │ - OpenAI GPT-4    │ │
+│  │ - Visual feedback                   │  │ - OpenAI gpt-oss 120b    │ │
 │  └─────────────────────────────────────┘  └───────────────────┘ │
 ├─────────────────────────────────────────────────────────────────┤
 │                    STELLAR BLOCKCHAIN LAYER                      │
@@ -217,7 +217,7 @@ Frontend (ChatInterface.tsx)
         ↓ (HTTP POST /chat with wallet_address)
 Backend AI Agent (main.py)
         ↓ (Agent Loop with LangChain)
-LLM (GPT-4) + Tool Selection
+LLM (gpt-oss 120b) + Tool Selection
         ↓ (Tool Execution)
 Stellar Tools (stellar_tools.py)
         ↓ (Stellar SDK Calls)
@@ -366,4 +366,4 @@ The Tuxedo AI Agent represents a **significant achievement** in conversational D
 
 **Architecture Document Generated**: October 26, 2025
 **System State**: Functional with Production Limitations
-**Recommendation**: Address configuration management before production deployment
+**Recommendation**: Address configuration management before production deploymentbe

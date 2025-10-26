@@ -319,7 +319,7 @@ SYSTEM_PROMPT = """You are Tuxedo, an AI assistant that helps users discover and
 model = ChatOpenAI(
     api_key=OPENAI_API_KEY,
     base_url=OPENAI_BASE_URL,
-    model="gpt-4",  # or "qwen/qwen3-vl-235b-a22b-instruct" for RedPill
+    model="gpt-oss 120b",  # or "qwen/qwen3-vl-235b-a22b-instruct" for RedPill
     temperature=0.7,
     max_tokens=2000,
 )

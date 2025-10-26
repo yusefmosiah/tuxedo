@@ -50,7 +50,7 @@ async def discover_high_yield_vaults(min_apy: Optional[float] = 30.0) -> str:
             result += f"{i}. {v['name']} ({v['symbol']})\n"
             result += f"   APY: {v['apy']:.1f}%\n"
             result += f"   TVL: ${v['tvl']:,.0f}\n"
-            result += f"   Address: {v['address'][:8]}...{v['address'][-8:]}\n\n"
+            result += f"   Address: {v['address']}\n\n"
 
         result += "\n💡 Note: These are real mainnet vaults with live yields. For testing, I can prepare demo deposits on testnet."
 
@@ -107,7 +107,16 @@ async def get_defindex_vault_details(vault_address: str) -> str:
 
     except ValueError as e:
         if "not found" in str(e):
-            return f"Error: Vault not found at address {vault_address}"
+            # Try to find similar vaults
+            defindex = get_defindex_soroban(network='mainnet')
+            available_vaults = defindex.get_available_vaults(min_apy=0)
+
+            result = f"Error: Vault not found at address {vault_address}\n\n"
+            result += "Available vaults:\n"
+            for i, v in enumerate(available_vaults[:5], 1):
+                result += f"{i}. {v['name']} - {v['address']}\n"
+
+            return result
         else:
             return f"Error fetching vault details: {str(e)}"
     except Exception as e:

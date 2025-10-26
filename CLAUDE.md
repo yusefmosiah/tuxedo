@@ -138,7 +138,7 @@ This system contains **13+ categories of hardcoded values** limiting it to testn
 
 ### Tech Stack
 - FastAPI + Pydantic
-- LangChain + OpenAI GPT-4 (via Redpill AI or OpenAI directly)
+- LangChain + OpenAI gpt-oss 120b (via Redpill AI or openrouter exacto)
 - Stellar SDK 13.1.0+ with async support
 - uvicorn ASGI server
 - python-dotenv for environment management

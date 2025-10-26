@@ -130,7 +130,7 @@ Visit http://localhost:5173 to chat with Tuxedo AI!
 **Backend** ✅ **Fully Implemented**
 - FastAPI (Python)
 - LangChain with tool integration
-- GPT-4 via Redpill AI
+- gpt-oss 120b via Redpill AI
 - 6 Stellar tools with async support
 
 **Blockchain**
