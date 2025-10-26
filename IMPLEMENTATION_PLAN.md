@@ -43,7 +43,7 @@ Frontend (Browser)
 ├── React Components
 │   └── ChatInterface.tsx (local state only)
 ├── AI Integration
-│   ├── LangChain.js + AWS Bedrock (Claude 3.5 Sonnet)
+│   ├── LangChain.js + RedPill Qwen3-VL (Phala Cloud)
 │   └── Blend Pool Query Tool
 └── Existing Infrastructure (from Scaffold Stellar)
     ├── WalletProvider + useWallet hook ✅
@@ -52,7 +52,7 @@ Frontend (Browser)
     └── Blend SDK integration ✅
 
 External Services
-├── AWS Bedrock API (Claude)
+├── RedPill Qwen3-VL via Phala Cloud (Private GPU TEE)
 └── Stellar Network (Soroban RPC for pool data)
 ```
 
@@ -78,7 +78,7 @@ External Services
 ```bash
 npm install --save \
   @langchain/core \
-  @langchain/aws \
+  @langchain/openai \
   zod
 ```
 
@@ -94,35 +94,41 @@ VITE_STELLAR_NETWORK=testnet
 VITE_HORIZON_URL=https://horizon-testnet.stellar.org
 VITE_RPC_URL=https://soroban-testnet.stellar.org
 
-# NEW: AWS Bedrock
-VITE_AWS_REGION=us-east-1
-VITE_AWS_ACCESS_KEY_ID=AKIA...
-VITE_AWS_SECRET_ACCESS_KEY=...
+# NEW: RedPill API (OpenAI-compatible) via Phala Cloud
+VITE_OPENAI_API_KEY=...  # Your RedPill API key
+VITE_OPENAI_BASE_URL=https://www.redpill.ai/api/v1  # RedPill OpenAI-compatible endpoint
 ```
 
-### 1.3 AWS Bedrock Setup
+### 1.3 RedPill API Setup (Phala Cloud)
 
-**Required Permissions** (IAM):
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "bedrock:InvokeModel",
-        "bedrock:InvokeModelWithResponseStream"
-      ],
-      "Resource": "arn:aws:bedrock:*::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0"
-    }
-  ]
-}
-```
+**Get API Key**:
+1. Go to https://www.redpill.ai/
+2. Sign up and create an account
+3. Navigate to your API settings to get an API key
+4. Add it to your `.env.local` file
 
-**Enable Model Access**:
-1. Go to AWS Bedrock console
-2. Navigate to "Model access"
-3. Enable "Claude 3.5 Sonnet v2"
+**About Phala Cloud GPU TEE**:
+- **Privacy**: All AI requests run in Trusted Execution Environments (TEEs)
+- **Security**: Your data and prompts never leave the secure enclave
+- **Performance**: GPU-accelerated inference with low latency
+- **Open Source**: Uses Qwen3-VL, a powerful open-source multimodal model
+
+**Model Details**:
+- **Model**: Qwen3-VL-235B-A22B-Instruct
+- **Architecture**: 235B parameter multimodal model
+- **Context Window**: 131K tokens
+- **Capabilities**:
+  - Text generation with visual understanding (images and video)
+  - Agentic interaction and tool use
+  - Complex multi-image dialogues
+  - Visual coding workflows
+  - Document AI and multilingual OCR
+  - Software/UI assistance
+  - Spatial and embodied tasks
+- **Technology**: GPU TEE protected with strong text performance comparable to flagship Qwen3 language models
+- **Features**: 2D/3D grounding and long-form visual comprehension
+- **Pricing**: $0.30/M input tokens, $1.49/M output tokens
+- **Benchmark Performance**: Competitive with leading models on perception and reasoning tasks
 
 ---
 
@@ -187,7 +193,7 @@ export function createBlendTools() {
 **File**: `src/lib/ai-agent.ts`
 
 ```typescript
-import { ChatBedrock } from '@langchain/aws';
+import { ChatOpenAI } from '@langchain/openai';
 import { HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages';
 import { createBlendTools } from './ai-tools';
 
@@ -231,16 +237,15 @@ Compare this to XLM at 8% APY but 85% utilization - lower rate, higher withdrawa
 - This is for educational/informational purposes
 - Focus on helping users understand opportunities and risks`;
 
-// Initialize Bedrock client
-const model = new ChatBedrock({
-  region: import.meta.env.VITE_AWS_REGION || 'us-east-1',
-  model: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
-  credentials: {
-    accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID!,
-    secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY!,
-  },
+// Initialize OpenAI client with RedPill endpoint (Phala Cloud)
+const model = new ChatOpenAI({
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  model: 'qwen/qwen3-vl-235b-a22b-instruct',
   temperature: 0.7,
   maxTokens: 2000,
+  configuration: {
+    baseURL: import.meta.env.VITE_OPENAI_BASE_URL,
+  },
 });
 
 export interface ChatMessage {
@@ -569,9 +574,9 @@ export default function Home() {
   - [ ] Verify responses are clear and non-technical
 
 - [ ] **Error Handling**
-  - [ ] Disconnect AWS credentials (temporarily)
+  - [ ] Remove OpenAI API key (temporarily)
   - [ ] Send message, verify error message appears
-  - [ ] Restore credentials, verify recovery
+  - [ ] Restore API key, verify recovery
   - [ ] Test with empty messages (should be disabled)
 
 ### 4.2 Manual Testing Script
@@ -743,9 +748,8 @@ netlify deploy --prod --dir=dist
 
 ### Environment Variables (Production)
 Set in hosting platform:
-- `VITE_AWS_REGION`
-- `VITE_AWS_ACCESS_KEY_ID`
-- `VITE_AWS_SECRET_ACCESS_KEY`
+- `VITE_OPENAI_API_KEY` (your RedPill API key)
+- `VITE_OPENAI_BASE_URL` (set to `https://www.redpill.ai/api/v1`)
 
 ---
 
@@ -771,7 +775,7 @@ Set in hosting platform:
 
 ## Timeline Estimate
 
-- **Phase 1**: 30 minutes (install dependencies, setup AWS)
+- **Phase 1**: 15 minutes (install dependencies, setup OpenAI API)
 - **Phase 2**: 2 hours (AI agent + Blend tool)
 - **Phase 3**: 2 hours (chat UI)
 - **Phase 4**: 1 hour (testing + polish)
@@ -783,7 +787,7 @@ Set in hosting platform:
 ## Next Steps
 
 1. ✅ Install dependencies from Phase 1
-2. ✅ Set up AWS Bedrock credentials
+2. ✅ Set up RedPill API key (OpenAI-compatible)
 3. ✅ Create `src/lib/ai-tools.ts`
 4. ✅ Create `src/lib/ai-agent.ts`
 5. ✅ Create `src/components/ChatInterface.tsx`
