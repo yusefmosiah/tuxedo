@@ -4,7 +4,7 @@ import { chatApi, ChatMessage, type HealthResponse } from '../lib/api';
 import { useWallet } from '../hooks/useWallet';
 
 export const ChatInterface: React.FC = () => {
-  const { data: wallet } = useWallet();
+  const wallet = useWallet();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -45,6 +45,12 @@ export const ChatInterface: React.FC = () => {
   const handleSend = async () => {
     if (!input.trim() || isLoading || apiStatus === 'disconnected') return;
 
+    console.log('🔍 Wallet state:', {
+      wallet: wallet,
+      address: wallet.address,
+      isConnected: !!wallet.address
+    });
+
     const userMessage: ChatMessage = {
       role: 'user',
       content: input,
@@ -58,7 +64,7 @@ export const ChatInterface: React.FC = () => {
       const response = await chatApi.sendMessage({
         message: input,
         history: messages,
-        wallet_address: wallet?.address || null,
+        wallet_address: wallet.address || null,
       });
 
       const aiMessage: ChatMessage = {
@@ -163,7 +169,7 @@ export const ChatInterface: React.FC = () => {
             <Text as="p" size="md" style={{ color: '#666' }}>
               I can help you with Stellar blockchain operations, account management, trading, market data, and smart contracts
             </Text>
-            {wallet?.address && (
+            {wallet.address && (
               <Text as="p" size="sm" style={{ color: '#999', marginTop: '8px' }}>
                 Connected: {wallet.address.slice(0, 8)}...{wallet.address.slice(-4)}
               </Text>

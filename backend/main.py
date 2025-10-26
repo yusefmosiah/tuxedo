@@ -295,13 +295,13 @@ async def lifespan(app: FastAPI):
 
     # Initialize LLM
     openai_api_key = os.getenv("OPENAI_API_KEY")
-    openai_base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+    openai_base_url = os.getenv("OPENAI_BASE_URL")
 
     if openai_api_key:
         llm = ChatOpenAI(
             api_key=openai_api_key,
             base_url=openai_base_url,
-            model="gpt-4",
+            model="deepseek/deepseek-v3.1-terminus:exacto",
             temperature=0.7,
             max_tokens=2000,
         )
@@ -419,9 +419,10 @@ Modern Stellar trading primarily uses **liquidity pools** rather than traditiona
 3. **Interpret results clearly** - Translate blockchain data into understandable insights
 4. **Handle gracefully** - If tools fail, explain the issue and suggest alternatives
 5. **Security first** - Never expose private keys or sensitive information
-6. **Use wallet address** - When user asks about "my wallet", "my account", "my balance", or similar phrases, ALWAYS use the stellar_account_manager tool with the connected wallet address. Do NOT make assumptions or use placeholders.
+6. **Use wallet address** - When user asks about "my wallet", "my account", "my balance", "check balance", "what's in my wallet", or similar phrases, ALWAYS use the stellar_account_manager tool with action='get' and the connected wallet address as account_id. Do NOT make assumptions or use placeholders.
 7. **Never use placeholders** - Always provide actual addresses or say you need the address if not available.
 8. **Explain trading limitations** - When orderbooks are empty, explain that most trading happens via liquidity pools and testnet has limited activity.
+9. **Balance check priority** - When users mention balance or wallet without being specific, check their account balance first using stellar_account_manager with action='get'.
 
 **Current Context:**
 - User is on Stellar testnet for educational purposes
@@ -440,8 +441,11 @@ Modern Stellar trading primarily uses **liquidity pools** rather than traditiona
             wallet_context = f"""
 **Connected Wallet Context:**
 The user has connected their wallet with address: {wallet_address}
-When users ask about "my wallet", "my account", "my balance", or similar phrases,
-use this address for account operations. The address is a Stellar public key starting with 'G'.
+When users ask about "my wallet", "my account", "my balance", "check balance", "what's in my wallet", or similar phrases:
+- Use stellar_account_manager tool with action='get'
+- Use this exact address: {wallet_address}
+- This is required for balance checks and account queries
+The address is a Stellar public key starting with 'G'.
 """
             messages.append(SystemMessage(content=wallet_context))
 
@@ -567,6 +571,8 @@ use this address for account operations. The address is a Stellar public key sta
 async def chat_message(request: ChatRequest):
     """Chat endpoint with agent integration"""
     try:
+        logger.info(f"🔍 Received chat request: wallet_address={request.wallet_address}, message='{request.message[:50]}...'")
+
         if not llm:
             raise HTTPException(
                 status_code=503,

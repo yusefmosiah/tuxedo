@@ -73,6 +73,11 @@ export const chatApi = {
    */
   async sendMessage(request: ChatRequest): Promise<ChatResponse> {
     try {
+      console.log('🔍 Sending chat request:', {
+        message: request.message,
+        hasWalletAddress: !!request.wallet_address,
+        walletAddress: request.wallet_address
+      });
       const response = await api.post('/chat', request);
       return response.data;
     } catch (error: any) {
