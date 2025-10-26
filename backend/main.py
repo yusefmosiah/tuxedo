@@ -54,6 +54,15 @@ except ImportError as e:
     logger.warning(f"Live summary service not available: {e}")
     LIVE_SUMMARY_AVAILABLE = False
 
+# Import database
+try:
+    from database import db
+    DATABASE_AVAILABLE = True
+    logger.info("Database initialized successfully")
+except ImportError as e:
+    logger.warning(f"Database not available: {e}")
+    DATABASE_AVAILABLE = False
+
 # Models
 class ChatMessage(BaseModel):
     role: str
@@ -81,12 +90,43 @@ class HealthResponse(BaseModel):
     defindex_tools_ready: bool
     openai_configured: bool
     live_summary_ready: bool
+    database_ready: bool
 
 class StellarToolsResponse(BaseModel):
     available: bool
     tools_count: int
     tools: list[str]
     last_check: str
+
+# Thread Management Models
+class Thread(BaseModel):
+    id: str
+    title: str
+    wallet_address: Optional[str] = None
+    created_at: str
+    updated_at: str
+    is_archived: bool = False
+
+class ThreadCreate(BaseModel):
+    title: str
+    wallet_address: Optional[str] = None
+
+class ThreadUpdate(BaseModel):
+    title: Optional[str] = None
+
+class MessageWithMetadata(BaseModel):
+    id: str
+    thread_id: str
+    role: str
+    content: str
+    metadata: Optional[dict] = None
+    created_at: str
+
+class ChatRequestWithThread(BaseModel):
+    message: str
+    history: list[ChatMessage] = []
+    wallet_address: Optional[str] = None
+    thread_id: Optional[str] = None
 
 # Global variables
 llm: Optional[ChatOpenAI] = None
@@ -364,7 +404,8 @@ async def health_check():
         stellar_tools_ready=STELLAR_TOOLS_AVAILABLE,
         defindex_tools_ready=DEFINDEX_TOOLS_AVAILABLE,
         openai_configured=bool(os.getenv("OPENAI_API_KEY")),
-        live_summary_ready=LIVE_SUMMARY_AVAILABLE
+        live_summary_ready=LIVE_SUMMARY_AVAILABLE,
+        database_ready=DATABASE_AVAILABLE
     )
 
 @app.get("/stellar-tools/status")
@@ -397,6 +438,160 @@ async def stellar_tools_status():
         tools=tools,
         last_check=datetime.now().isoformat()
     )
+
+# ============================================================================
+# THREAD MANAGEMENT ENDPOINTS
+# ============================================================================
+
+@app.post("/threads", response_model=Thread)
+async def create_thread(thread_data: ThreadCreate):
+    """Create a new chat thread"""
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        thread_id = db.create_thread(
+            title=thread_data.title,
+            wallet_address=thread_data.wallet_address
+        )
+
+        thread = db.get_thread(thread_id)
+        if not thread:
+            raise HTTPException(status_code=500, detail="Failed to create thread")
+
+        return Thread(**thread)
+    except Exception as e:
+        logger.error(f"Error creating thread: {e}")
+        raise HTTPException(status_code=500, detail=f"Error creating thread: {str(e)}")
+
+@app.get("/threads", response_model=list[Thread])
+async def get_threads(wallet_address: Optional[str] = None, limit: int = 50):
+    """Get all threads for a wallet"""
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        threads = db.get_threads(wallet_address=wallet_address, limit=limit)
+        return [Thread(**thread) for thread in threads]
+    except Exception as e:
+        logger.error(f"Error getting threads: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting threads: {str(e)}")
+
+@app.get("/threads/{thread_id}", response_model=Thread)
+async def get_thread(thread_id: str):
+    """Get a specific thread"""
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        thread = db.get_thread(thread_id)
+        if not thread:
+            raise HTTPException(status_code=404, detail="Thread not found")
+
+        return Thread(**thread)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting thread {thread_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting thread: {str(e)}")
+
+@app.put("/threads/{thread_id}", response_model=Thread)
+async def update_thread(thread_id: str, thread_data: ThreadUpdate):
+    """Update a thread title"""
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        success = db.update_thread(thread_id, title=thread_data.title)
+        if not success:
+            raise HTTPException(status_code=404, detail="Thread not found")
+
+        thread = db.get_thread(thread_id)
+        return Thread(**thread)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating thread {thread_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error updating thread: {str(e)}")
+
+@app.delete("/threads/{thread_id}")
+async def delete_thread(thread_id: str):
+    """Delete a thread"""
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        success = db.delete_thread(thread_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Thread not found")
+
+        return {"message": "Thread deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting thread {thread_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error deleting thread: {str(e)}")
+
+@app.post("/threads/{thread_id}/archive")
+async def archive_thread(thread_id: str):
+    """Archive a thread"""
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        success = db.archive_thread(thread_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Thread not found")
+
+        return {"message": "Thread archived successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error archiving thread {thread_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error archiving thread: {str(e)}")
+
+@app.get("/threads/{thread_id}/messages", response_model=list[MessageWithMetadata])
+async def get_thread_messages(thread_id: str):
+    """Get all messages for a thread"""
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        # First check if thread exists
+        thread = db.get_thread(thread_id)
+        if not thread:
+            raise HTTPException(status_code=404, detail="Thread not found")
+
+        messages = db.get_messages(thread_id)
+        return [MessageWithMetadata(**msg) for msg in messages]
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting messages for thread {thread_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting messages: {str(e)}")
+
+@app.post("/threads/{thread_id}/messages")
+async def save_thread_messages(thread_id: str, messages: list[dict]):
+    """Save messages to a thread"""
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        # First check if thread exists
+        thread = db.get_thread(thread_id)
+        if not thread:
+            raise HTTPException(status_code=404, detail="Thread not found")
+
+        success = db.update_thread_from_chat_messages(thread_id, messages)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to save messages")
+
+        return {"message": "Messages saved successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error saving messages for thread {thread_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error saving messages: {str(e)}")
 
 async def chat_with_tools(
     message: str,

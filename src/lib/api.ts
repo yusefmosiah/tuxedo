@@ -40,6 +40,7 @@ export interface HealthResponse {
   openai_configured: boolean;
   live_summary_ready: boolean;
   defindex_tools_ready: boolean;
+  database_ready: boolean;
 }
 
 export interface LiveSummaryChatRequest {
@@ -54,6 +55,40 @@ export interface StellarToolsStatus {
   tools_count: number;
   tools: string[];
   last_check: string;
+}
+
+// Thread Management Interfaces
+export interface Thread {
+  id: string;
+  title: string;
+  wallet_address?: string | null;
+  created_at: string;
+  updated_at: string;
+  is_archived: boolean;
+}
+
+export interface ThreadCreate {
+  title: string;
+  wallet_address?: string | null;
+}
+
+export interface ThreadUpdate {
+  title?: string;
+}
+
+export interface MessageWithMetadata {
+  id: string;
+  thread_id: string;
+  role: string;
+  content: string;
+  metadata?: {
+    type?: string;
+    toolName?: string;
+    iteration?: number;
+    isStreaming?: boolean;
+    summary?: string;
+  } | null;
+  created_at: string;
 }
 
 // Create Axios instance with default configuration
@@ -352,6 +387,117 @@ export const chatApi = {
       return response.data;
     } catch (error: any) {
       console.error('Stellar Tool Call Error:', error);
+      throw error;
+    }
+  }
+};
+
+// Thread Management API
+export const threadsApi = {
+  /**
+   * Create a new chat thread
+   */
+  async createThread(threadData: ThreadCreate): Promise<Thread> {
+    try {
+      const response = await api.post('/threads', threadData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Create Thread Error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get all threads for a wallet
+   */
+  async getThreads(walletAddress?: string | null, limit: number = 50): Promise<Thread[]> {
+    try {
+      const params: any = { limit };
+      if (walletAddress) {
+        params.wallet_address = walletAddress;
+      }
+      const response = await api.get('/threads', { params });
+      return response.data;
+    } catch (error: any) {
+      console.error('Get Threads Error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get a specific thread
+   */
+  async getThread(threadId: string): Promise<Thread> {
+    try {
+      const response = await api.get(`/threads/${threadId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Get Thread Error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update a thread title
+   */
+  async updateThread(threadId: string, threadData: ThreadUpdate): Promise<Thread> {
+    try {
+      const response = await api.put(`/threads/${threadId}`, threadData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Update Thread Error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Delete a thread
+   */
+  async deleteThread(threadId: string): Promise<{ message: string }> {
+    try {
+      const response = await api.delete(`/threads/${threadId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Delete Thread Error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Archive a thread
+   */
+  async archiveThread(threadId: string): Promise<{ message: string }> {
+    try {
+      const response = await api.post(`/threads/${threadId}/archive`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Archive Thread Error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get all messages for a thread
+   */
+  async getThreadMessages(threadId: string): Promise<MessageWithMetadata[]> {
+    try {
+      const response = await api.get(`/threads/${threadId}/messages`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Get Thread Messages Error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Save messages to a thread
+   */
+  async saveThreadMessages(threadId: string, messages: any[]): Promise<{ message: string }> {
+    try {
+      const response = await api.post(`/threads/${threadId}/messages`, messages);
+      return response.data;
+    } catch (error: any) {
+      console.error('Save Thread Messages Error:', error);
       throw error;
     }
   }
