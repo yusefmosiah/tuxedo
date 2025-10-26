@@ -64,28 +64,45 @@ class DeFindexClient:
             List of vault objects with basic info
         """
         try:
-            response = self.session.get(
+            # Try different endpoint patterns based on documentation
+            endpoints_to_try = [
                 f"{self.base_url}/vaults",
-                params={'network': self.network, 'limit': limit},
-                timeout=15
-            )
-            response.raise_for_status()
-            data = response.json()
+                f"{self.base_url}/api/vaults",
+                f"{self.base_url}/v1/vaults"
+            ]
 
-            # Handle different response formats
-            if isinstance(data, dict) and 'vaults' in data:
-                return data['vaults']
-            elif isinstance(data, list):
-                return data
-            else:
-                logger.warning(f"Unexpected response format: {type(data)}")
-                return []
+            for endpoint in endpoints_to_try:
+                try:
+                    response = self.session.get(
+                        endpoint,
+                        params={'network': self.network, 'limit': limit},
+                        timeout=15
+                    )
+                    response.raise_for_status()
+                    data = response.json()
+
+                    # Handle different response formats
+                    if isinstance(data, dict) and 'vaults' in data:
+                        return data['vaults']
+                    elif isinstance(data, list):
+                        return data
+                    elif isinstance(data, dict) and 'data' in data:
+                        return data['data']
+                    else:
+                        logger.warning(f"Unexpected response format from {endpoint}: {type(data)}")
+                        continue
+
+                except requests.HTTPError as e:
+                    if e.response.status_code == 404:
+                        continue  # Try next endpoint
+                    else:
+                        raise
+
+            raise ValueError("All vault endpoints returned 404 - API structure may have changed")
 
         except requests.HTTPError as e:
             if e.response.status_code == 403:
                 raise ValueError("DeFindex API authentication failed - check API key")
-            elif e.response.status_code == 404:
-                raise ValueError("Vaults endpoint not found - incorrect base URL")
             raise
         except requests.Timeout:
             raise ValueError("DeFindex API timeout - please try again")
@@ -103,19 +120,34 @@ class DeFindexClient:
             Vault details including APY, TVL, strategies, etc.
         """
         try:
-            response = self.session.get(
+            # Try different endpoint patterns
+            endpoints_to_try = [
                 f"{self.base_url}/vault/{vault_address}",
-                params={'network': self.network},
-                timeout=10
-            )
-            response.raise_for_status()
-            return response.json()
+                f"{self.base_url}/api/vault/{vault_address}",
+                f"{self.base_url}/v1/vault/{vault_address}"
+            ]
+
+            for endpoint in endpoints_to_try:
+                try:
+                    response = self.session.get(
+                        endpoint,
+                        params={'network': self.network},
+                        timeout=10
+                    )
+                    response.raise_for_status()
+                    return response.json()
+
+                except requests.HTTPError as e:
+                    if e.response.status_code == 404:
+                        continue  # Try next endpoint
+                    else:
+                        raise
+
+            raise ValueError(f"Vault not found with any endpoint: {vault_address}")
 
         except requests.HTTPError as e:
             if e.response.status_code == 403:
                 raise ValueError("DeFindex API authentication failed")
-            elif e.response.status_code == 404:
-                raise ValueError(f"Vault not found: {vault_address}")
             raise
         except Exception as e:
             raise ValueError(f"Error fetching vault info: {str(e)}")
@@ -163,19 +195,36 @@ class DeFindexClient:
         try:
             data = {
                 'amounts': [amount_stroops],
-                'caller': caller,
+                'from': caller,  # Based on docs example
                 'invest': invest,
                 'slippageBps': 50  # 0.5% slippage tolerance
             }
 
-            response = self.session.post(
+            # Try different endpoint patterns
+            endpoints_to_try = [
                 f"{self.base_url}/vault/{vault_address}/deposit",
-                json=data,
-                params={'network': self.network},
-                timeout=30
-            )
-            response.raise_for_status()
-            return response.json()
+                f"{self.base_url}/api/vault/{vault_address}/deposit",
+                f"{self.base_url}/v1/vault/{vault_address}/deposit"
+            ]
+
+            for endpoint in endpoints_to_try:
+                try:
+                    response = self.session.post(
+                        endpoint,
+                        json=data,
+                        params={'network': self.network},
+                        timeout=30
+                    )
+                    response.raise_for_status()
+                    return response.json()
+
+                except requests.HTTPError as e:
+                    if e.response.status_code == 404:
+                        continue  # Try next endpoint
+                    else:
+                        raise
+
+            raise ValueError(f"Deposit endpoint not found for vault: {vault_address}")
 
         except Exception as e:
             raise ValueError(f"Error building deposit transaction: {str(e)}")
