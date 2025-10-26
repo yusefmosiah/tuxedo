@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:with-scaffold": "concurrently \"stellar scaffold watch --build-clients\" \"vite\"",
+    "dev:full": "concurrently \"npm run dev\" \"cd backend && . .venv/bin/activate && python main.py\"",
     "start": "vite",
     "build": "tsc -b && vite build",
     "install:contracts": "npm install --workspace=packages && npm run build --workspace=packages",

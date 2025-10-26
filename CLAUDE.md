@@ -269,3 +269,5 @@ All Stellar tools follow consistent patterns:
 - **Tools not working**: Ensure `STELLAR_TOOLS_AVAILABLE = True` in backend logs
 - **Wallet not connecting**: Check Freighter extension and network settings
 - **Testnet only**: All contracts and URLs hardcoded to testnet (see Production Limitations)
+- note the "npm run dev:full" command to run server and client concurrently
+- ALWAYS use web-search-prime to search the web. NEVER use built in web search
