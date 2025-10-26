@@ -657,13 +657,13 @@ export const ChatInterface: React.FC = () => {
             );
           }
 
-          // Handle final responses - plain text, centered, no bubble
+          // Handle final responses - plain text, left-aligned, no bubble
           if (msg.type === 'final_response') {
             return (
               <div
                 key={msg.id || idx}
                 style={{
-                  textAlign: 'center',
+                  textAlign: 'left',
                   margin: '24px 0',
                   padding: '0 20px',
                 }}

@@ -17,29 +17,35 @@ export const LiveSummary: React.FC<LiveSummaryProps> = ({
   isExpanded
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [currentSummary, setCurrentSummary] = useState(message.content);
+  const [isFading, setIsFading] = useState(false);
+
+  // Handle summary changes with smooth fade transitions
+  React.useEffect(() => {
+    if (currentSummary !== message.content) {
+      setIsFading(true);
+      const timer = setTimeout(() => {
+        setCurrentSummary(message.content);
+        setIsFading(false);
+      }, 200); // Fade out duration
+
+      return () => clearTimeout(timer);
+    }
+  }, [message.content, currentSummary]);
 
   if (!message.type?.startsWith('live_summary')) {
     return null;
   }
 
   const isLive = message.isLive ?? false;
-  const summary = message.content;
   const fullContent = message.fullContent || [];
 
-  // Determine status icon and styling
+  // Determine status icon
   const getStatusIcon = () => {
     if (isLive) {
       return '🔄';
     }
     return '📄';
-  };
-
-  const getContainerClass = () => {
-    const baseClass = 'live-summary';
-    if (isLive) {
-      return `${baseClass} updating`;
-    }
-    return `${baseClass} complete`;
   };
 
   const getToolCount = () => {
@@ -56,38 +62,38 @@ export const LiveSummary: React.FC<LiveSummaryProps> = ({
 
   return (
     <div className="live-summary-container">
-      {/* Main summary line */}
+      {/* Plain text summary with smooth fade transition */}
       <div
-        className={getContainerClass()}
         onClick={onToggleExpand}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         style={{
-          background: isLive
-            ? 'linear-gradient(135deg, #fff3e0, #fce4ec)'
-            : 'linear-gradient(135deg, #e3f2fd, #f3e5f5)',
-          borderLeft: `4px solid ${isLive ? '#ff9800' : '#2196f3'}`,
-          padding: '8px 12px',
+          padding: '8px 0',
           margin: '4px 0',
-          borderRadius: '6px',
           cursor: 'pointer',
-          transition: 'all 0.2s ease',
+          transition: 'opacity 0.3s ease-in-out',
           fontSize: '14px',
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
-          transform: isHovered ? 'translateX(2px)' : 'translateX(0)',
-          boxShadow: isHovered
-            ? '0 2px 8px rgba(33, 150, 243, 0.2)'
-            : 'none',
+          opacity: isFading ? 0 : (isLive ? 1 : 0.9),
+          transform: isFading ? 'translateY(2px)' : 'translateY(0)',
         }}
       >
-        <span className="status-icon" style={{ fontSize: '16px' }}>
+        <span className="status-icon" style={{
+          fontSize: '14px',
+          opacity: 0.7,
+          minWidth: '20px'
+        }}>
           {getStatusIcon()}
         </span>
 
-        <span className="summary-text" style={{ flex: 1 }}>
-          {summary}
+        <span className="summary-text" style={{
+          flex: 1,
+          color: '#666',
+          fontStyle: isLive ? 'italic' : 'normal'
+        }}>
+          {currentSummary}
         </span>
 
         {!isExpanded && (
@@ -95,11 +101,13 @@ export const LiveSummary: React.FC<LiveSummaryProps> = ({
             className="expand-hint"
             style={{
               fontSize: '11px',
-              opacity: 0.7,
-              fontStyle: 'italic'
+              opacity: isHovered ? 0.7 : 0.5,
+              fontStyle: 'italic',
+              color: '#999',
+              transition: 'opacity 0.2s ease',
             }}
           >
-            [Click to see details]
+            [details]
           </span>
         )}
 
@@ -109,13 +117,27 @@ export const LiveSummary: React.FC<LiveSummaryProps> = ({
             style={{
               fontSize: '11px',
               opacity: 0.7,
-              fontStyle: 'italic'
+              fontStyle: 'italic',
+              color: '#999',
             }}
           >
-            [Click to hide details]
+            [hide]
           </span>
         )}
       </div>
+
+      {/* Add global styles for fade animations */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeOut {
+          from { opacity: 1; transform: translateY(0); }
+          to { opacity: 0; transform: translateY(-4px); }
+        }
+      `}</style>
 
       {/* Expanded content */}
       {isExpanded && fullContent.length > 0 && (
