@@ -45,7 +45,7 @@ Once MCP is authenticated, you can deploy using these MCP tools:
 9. Add environment variables:
    - `OPENAI_API_KEY` (your OpenAI API key)
    - `OPENAI_BASE_URL`: `https://openrouter.ai/api/v1`
-   - `OPENAI_API_KEY`: `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`
+   - `OPENAI_API_KEY`: `sk-f`
 
 #### Option B: Use render.yaml (Recommended)
 1. Copy `render.yaml` to your repository root
