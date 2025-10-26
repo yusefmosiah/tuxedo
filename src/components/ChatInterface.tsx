@@ -126,6 +126,21 @@ export const ChatInterface: React.FC = () => {
       return; // Don't add these as visible messages when using live summary
     }
 
+    // Handle live_summary_complete - store as the history-ready assistant message
+    if (streamMessage.type === 'live_summary_complete') {
+      setAgentThinking(false);
+      // Store the complete summary with tool execution context for history
+      const summaryMessage: ExtendedChatMessage = {
+        role: 'assistant',
+        content: streamMessage.summary || streamMessage.content,
+        id: `summary-${streamId}`,
+        type: 'final_response', // Mark as final_response so it gets sent in history
+        isStreaming: false,
+      };
+      setMessages((prev) => [...prev, summaryMessage]);
+      return;
+    }
+
     // Clear thinking state when we get real content
     setAgentThinking(false);
 
@@ -193,7 +208,13 @@ export const ChatInterface: React.FC = () => {
         const cleanup = chatApi.sendMessageWithLiveSummary(
           {
             message: input,
-            history: messages.filter(m => m.role !== 'user' || m.id !== `user-${streamId}`).map(({ role, content }) => ({ role, content })), // Filter and strip to only required fields
+            // Only send user messages and final assistant responses (filter out tool execution details)
+            history: messages
+              .filter(m =>
+                (m.role === 'user' && m.id !== `user-${streamId}`) ||
+                (m.role === 'assistant' && m.type === 'final_response')
+              )
+              .map(({ role, content }) => ({ role, content })),
             wallet_address: wallet.address || null,
             enable_summary: true,
           },
@@ -229,7 +250,13 @@ export const ChatInterface: React.FC = () => {
         const cleanup = chatApi.sendMessageStream(
           {
             message: input,
-            history: messages.filter(m => m.role !== 'user' || m.id !== `user-${streamId}`).map(({ role, content }) => ({ role, content })), // Filter and strip to only required fields
+            // Only send user messages and final assistant responses (filter out tool execution details)
+            history: messages
+              .filter(m =>
+                (m.role === 'user' && m.id !== `user-${streamId}`) ||
+                (m.role === 'assistant' && m.type === 'final_response')
+              )
+              .map(({ role, content }) => ({ role, content })),
             wallet_address: wallet.address || null,
           },
           (streamMessage: StreamMessage) => {
