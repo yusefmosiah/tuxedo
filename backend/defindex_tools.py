@@ -129,23 +129,22 @@ async def prepare_defindex_deposit(
     amount_xlm: float,
     user_address: str
 ) -> str:
-    """Prepare a deposit transaction for a DeFindex vault using Soroban contracts.
+    """Prepare a DEMO deposit transaction that simulates depositing into a DeFindex vault.
 
-    This builds an UNSIGNED transaction that the frontend will automatically present to the user's wallet for signing.
-    Use this when a user wants to deposit funds into a vault for testing.
+    This builds a testnet transaction that demonstrates the wallet signing flow.
+    The transaction is a simple XLM payment to a testnet address (not a real vault deposit).
 
-    This uses testnet for safe demo transactions even though vault data comes from mainnet.
-
-    IMPORTANT: Always wrap the output in [STELLAR_TX]...[/STELLAR_TX] tags so the frontend
-    can automatically detect and present the transaction to the user's wallet for signing.
+    IMPORTANT: This tool's output is ALREADY properly formatted with [STELLAR_TX] tags.
+    The frontend will AUTOMATICALLY detect these tags and open the user's wallet for signing.
+    You do NOT need to instruct users to click anything - the wallet opens automatically.
 
     Args:
-        vault_address: The vault contract address (from mainnet discovery)
+        vault_address: The mainnet vault contract address (used for metadata/reference only)
         amount_xlm: Amount to deposit in XLM (e.g., 10.5)
         user_address: User's Stellar public key (G...)
 
     Returns:
-        Transaction data wrapped in special format for frontend parsing
+        Formatted message with embedded transaction data in [STELLAR_TX] tags
     """
     try:
         # Convert XLM to stroops (1 XLM = 10,000,000 stroops)
@@ -154,38 +153,28 @@ async def prepare_defindex_deposit(
         # Use testnet for SAFE demo transactions
         defindex = get_defindex_soroban(network='testnet')
 
-        # Use a testnet vault for demo
-        testnet_vaults = list(TESTNET_VAULTS.values())
-        if not testnet_vaults:
-            return "Error: No testnet vaults configured"
+        # Build the demo transaction
+        tx_data = defindex.build_deposit_transaction(
+            vault_address=vault_address,  # Pass mainnet address for metadata
+            amount_stroops=amount_stroops,
+            user_address=user_address
+        )
 
-        testnet_vault = testnet_vaults[0]  # Use first testnet vault
+        # Create transaction payload
+        tx_payload = {
+            'xdr': tx_data['xdr'],
+            'vault_address': vault_address,  # Mainnet vault for reference
+            'amount': amount_xlm,
+            'estimated_shares': tx_data.get('estimated_shares', '0'),
+            'description': tx_data['description'],
+            'network': 'testnet',
+            'note': tx_data.get('note', 'Testnet demo transaction')
+        }
 
-        try:
-            tx_data = defindex.build_deposit_transaction(
-                vault_address=testnet_vault,
-                amount_stroops=amount_stroops,
-                user_address=user_address
-            )
-
-            # Create transaction payload
-            tx_payload = {
-                'xdr': tx_data['xdr'],
-                'vault_address': testnet_vault,
-                'amount': amount_xlm,
-                'estimated_shares': tx_data.get('estimated_shares', '0'),
-                'description': tx_data['description'],
-                'network': 'testnet',
-                'note': 'This is a testnet transaction for demonstration purposes using Soroban contracts'
-            }
-
-            # Wrap in special format that frontend will parse and automatically open wallet
-            tx_json = json.dumps(tx_payload, indent=2)
-            return f"I've prepared your deposit transaction! Your wallet should open automatically in a moment to request your signature.\n\n[STELLAR_TX]\n{tx_json}\n[/STELLAR_TX]\n\nPlease check your wallet extension (Freighter, etc.) to approve this testnet transaction."
-
-        except Exception as e:
-            return f"Error building deposit transaction: {str(e)}"
+        # Wrap in special format that frontend will parse and automatically open wallet
+        tx_json = json.dumps(tx_payload)  # Single line JSON for better parsing
+        return f"[STELLAR_TX]\n{tx_json}\n[/STELLAR_TX]\n\nI've prepared a demo deposit transaction for {amount_xlm:,.0f} XLM to the {vault_address[:8]}... vault. Your wallet should open automatically in a moment to request your signature.\n\n⚠️ **Note:** This is a testnet demo transaction that simulates a mainnet vault deposit. The actual transaction sends XLM to a testnet address for demonstration purposes."
 
     except Exception as e:
         logger.error(f"Error in prepare_defindex_deposit: {e}")
-        return f"Error: Unable to prepare deposit transaction: {str(e)}"
+        return f"Error: Unable to prepare demo deposit transaction: {str(e)}"

@@ -121,22 +121,63 @@ class DeFindexSoroban:
         amount_stroops: int,
         user_address: str
     ) -> Dict:
-        """Build a deposit transaction using Soroban contract invocation"""
+        """Build a demo deposit transaction for testnet purposes
 
-        # In a real implementation, this would:
-        # 1. Load the vault contract
-        # 2. Build a deposit transaction with the correct function call
-        # 3. Return the unsigned XDR
+        This creates a simple XLM payment to a testnet address to demonstrate
+        the wallet signing flow. The vault_address parameter is used for metadata
+        only - the actual transaction sends to a known testnet account.
+        """
+        from stellar_sdk import TransactionBuilder, Network, Account
+        from stellar_sdk.operation import Payment
+        from stellar_sdk import Asset
 
-        # For now, return a mock transaction structure
-        return {
-            'xdr': 'AAAAAgAAAADSI3AAAAAAA',  # Mock XDR - would be real transaction
-            'description': f'Deposit to DeFindex vault {vault_address[:8]}...',
-            'amount': amount_stroops / 10_000_000,
-            'estimated_shares': str(int(amount_stroops * 0.95)),  # Mock share calculation
-            'vault_address': vault_address,
-            'user_address': user_address
-        }
+        # Use a valid testnet destination (Stellar testnet friendbot address)
+        # This ensures the transaction is always valid for demo purposes
+        demo_destination = 'GAIH3ULLFQ4DGSECF2AR555KZ4KNDGEKN4AFI4SU2M7B43MGK3QJZNSR'
+
+        try:
+            # Fetch user account from network to get sequence number
+            account = self.horizon.accounts().account_id(user_address).call()
+            sequence = int(account['sequence'])  # Convert sequence to int
+            source_account = Account(user_address, sequence)
+
+            # Calculate amount in XLM
+            amount_xlm = amount_stroops / 10_000_000
+
+            # Build a simple payment transaction for demo
+            transaction = (
+                TransactionBuilder(
+                    source_account=source_account,
+                    network_passphrase=Network.TESTNET_NETWORK_PASSPHRASE,
+                    base_fee=100000,  # 0.01 XLM base fee
+                )
+                .append_payment_op(
+                    destination=demo_destination,
+                    amount=f"{amount_xlm:.7f}",  # Format as string with 7 decimal places
+                    asset=Asset.native(),
+                )
+                .set_timeout(300)  # 5 minute timeout
+                .add_text_memo(f"Demo deposit to {vault_address[:8]}...")
+                .build()
+            )
+
+            # Get XDR
+            xdr = transaction.to_xdr()
+
+            return {
+                'xdr': xdr,
+                'description': f'🎭 DEMO: Deposit {amount_xlm:.2f} XLM to DeFindex vault (testnet simulation)',
+                'amount': amount_xlm,
+                'estimated_shares': str(int(amount_stroops * 0.95)),  # Mock share calculation
+                'vault_address': vault_address,  # Original mainnet vault for reference
+                'demo_destination': demo_destination,
+                'user_address': user_address,
+                'note': 'This is a testnet demo transaction that simulates a mainnet vault deposit'
+            }
+
+        except Exception as e:
+            logger.error(f"Error building deposit transaction: {e}")
+            raise ValueError(f"Could not build demo transaction: {str(e)}")
 
 def get_defindex_soroban(network: str = 'mainnet') -> DeFindexSoroban:
     """Get DeFindex Soroban client"""
