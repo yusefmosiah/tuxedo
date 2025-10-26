@@ -17,7 +17,7 @@ export const ChatInterface: React.FC = () => {
       try {
         const health: HealthResponse = await chatApi.healthCheck();
 
-        if (health.status === 'healthy' && health.fastmcp_ready) {
+        if (health.status === 'healthy' && health.stellar_tools_ready) {
           setApiStatus('connected');
         } else {
           setApiStatus('disconnected');

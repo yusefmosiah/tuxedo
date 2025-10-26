@@ -56,6 +56,12 @@ class HealthResponse(BaseModel):
     stellar_tools_ready: bool
     openai_configured: bool
 
+class StellarToolsResponse(BaseModel):
+    available: bool
+    tools_count: int
+    tools: list[str]
+    last_check: str
+
 # Global variables
 llm: Optional[ChatOpenAI] = None
 
@@ -117,6 +123,28 @@ async def health_check():
         status="healthy",
         stellar_tools_ready=STELLAR_TOOLS_AVAILABLE,
         openai_configured=bool(os.getenv("OPENAI_API_KEY"))
+    )
+
+@app.get("/stellar-tools/status")
+async def stellar_tools_status():
+    """Get available Stellar tools and their status"""
+    from datetime import datetime
+
+    tools = []
+    if STELLAR_TOOLS_AVAILABLE:
+        tools = [
+            "account_manager_tool",
+            "trading_tool",
+            "trustline_manager_tool",
+            "market_data_tool",
+            "utilities_tool"
+        ]
+
+    return StellarToolsResponse(
+        available=STELLAR_TOOLS_AVAILABLE,
+        tools_count=len(tools),
+        tools=tools,
+        last_check=datetime.now().isoformat()
     )
 
 @app.post("/chat")

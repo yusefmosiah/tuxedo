@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 
 // API Configuration
-const API_BASE_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8001';
+const API_BASE_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8002';
 
 // API Interfaces
 export interface ChatMessage {
@@ -22,12 +22,12 @@ export interface ChatResponse {
 
 export interface HealthResponse {
   status: string;
-  fastmcp_ready: boolean;
+  stellar_tools_ready: boolean;
   openai_configured: boolean;
 }
 
-export interface MCPServerStatus {
-  connected: boolean;
+export interface StellarToolsStatus {
+  available: boolean;
   tools_count: number;
   tools: string[];
   last_check: string;
@@ -100,29 +100,42 @@ export const chatApi = {
       // Return degraded status on error
       return {
         status: 'unhealthy',
-        fastmcp_ready: false,
+        stellar_tools_ready: false,
         openai_configured: false
       };
     }
   },
 
   /**
-   * Get MCP server connection status and available tools
+   * Get Stellar tools status and available functions
    */
-  async getMCPStatus(): Promise<MCPServerStatus> {
+  async getStellarToolsStatus(): Promise<StellarToolsStatus> {
     try {
-      const response = await api.get('/chat/mcp-status');
+      const response = await api.get('/stellar-tools/status');
       return response.data;
     } catch (error: any) {
-      console.error('MCP Status Error:', error);
+      console.error('Stellar Tools Status Error:', error);
 
-      // Return disconnected status on error
+      // Return unavailable status on error
       return {
-        connected: false,
+        available: false,
         tools_count: 0,
         tools: [],
         last_check: new Date().toISOString()
       };
+    }
+  },
+
+  /**
+   * Call a Stellar tool directly
+   */
+  async callStellarTool(toolName: string, args: any = {}): Promise<any> {
+    try {
+      const response = await api.post(`/stellar-tool/${toolName}`, args);
+      return response.data;
+    } catch (error: any) {
+      console.error('Stellar Tool Call Error:', error);
+      throw error;
     }
   }
 };
