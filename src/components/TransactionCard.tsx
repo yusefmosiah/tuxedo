@@ -16,6 +16,16 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ transaction })
   const [txHash, setTxHash] = useState<string>('');
   const autoTriggerAttempted = useRef(false);
 
+  console.log('🔐 TransactionCard rendered:', {
+    hasWalletAddress: !!wallet.address,
+    hasSignFunction: !!wallet.signTransaction,
+    walletIsPending: wallet.isPending,
+    status,
+    autoTriggerAttempted: autoTriggerAttempted.current,
+    walletAddress: wallet.address,
+    signTransactionType: typeof wallet.signTransaction
+  });
+
   const handleSign = async () => {
     if (!wallet.address) {
       setStatus('error');
@@ -71,24 +81,43 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ transaction })
 
   // Auto-trigger wallet signing when component mounts
   useEffect(() => {
-    // Only auto-trigger once, when wallet is connected, and status is pending
+    console.log('🔐 Auto-trigger useEffect fired:', {
+      autoTriggerAttempted: autoTriggerAttempted.current,
+      hasWalletAddress: !!wallet.address,
+      hasSignFunction: !!wallet.signTransaction,
+      walletIsPending: wallet.isPending,
+      status,
+      allConditionsMet: !autoTriggerAttempted.current && !!wallet.address && !!wallet.signTransaction && !wallet.isPending && status === 'pending'
+    });
+
+    // Only auto-trigger once, when wallet is connected and loaded, and status is pending
     if (
       !autoTriggerAttempted.current &&
       wallet.address &&
       wallet.signTransaction &&
+      !wallet.isPending && // Wait for wallet to finish loading
       status === 'pending'
     ) {
       autoTriggerAttempted.current = true;
-      console.log('🔐 Auto-triggering wallet signature request...');
+      console.log('✅ Auto-triggering wallet signature request in 500ms...');
 
       // Small delay to let the UI render first
       const timer = setTimeout(() => {
+        console.log('🚀 Calling handleSign()...');
         handleSign();
       }, 500);
 
       return () => clearTimeout(timer);
+    } else {
+      console.log('❌ Auto-trigger conditions not met:', {
+        attempted: autoTriggerAttempted.current,
+        hasAddress: !!wallet.address,
+        hasSignFn: !!wallet.signTransaction,
+        notPending: !wallet.isPending,
+        isPending: status === 'pending'
+      });
     }
-  }, [wallet.address, wallet.signTransaction, status]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [wallet.address, wallet.signTransaction, wallet.isPending, status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getExplorerUrl = () => {
     const network = transaction.network || 'testnet';

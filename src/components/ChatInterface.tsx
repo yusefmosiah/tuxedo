@@ -737,7 +737,19 @@ export const ChatInterface: React.FC = () => {
             // Final Responses - plain text, left-aligned, no bubble
             if (msg.type === 'final_response') {
               // Check if message contains an embedded transaction
+              console.log('🔍 Checking message for embedded transaction:', {
+                hasContent: !!msg.content,
+                contentLength: msg.content?.length,
+                containsStellarTx: msg.content?.includes('[STELLAR_TX]'),
+                contentPreview: msg.content?.substring(0, 200)
+              });
               const parsed = parseMessageForTransaction(msg.content);
+              console.log('🔍 Parsed result:', {
+                hasTransaction: !!parsed.transaction,
+                transaction: parsed.transaction,
+                beforeTxLength: parsed.beforeTx.length,
+                afterTxLength: parsed.afterTx.length
+              });
 
               return (
                 <div
