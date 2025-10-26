@@ -1,0 +1,297 @@
+#!/usr/bin/env python3
+"""
+FastAPI + FastMCP backend for Tuxedo AI
+"""
+
+import os
+import logging
+from contextlib import asynccontextmanager
+from typing import Optional
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Import FastMCP
+from fastmcp import FastMCP
+
+# Import LangChain
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+
+# Import MCP Client
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Models
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+class ChatRequest(BaseModel):
+    message: str
+    history: list[ChatMessage] = []
+
+class ChatResponse(BaseModel):
+    response: str
+    success: bool = True
+    error: Optional[str] = None
+
+class HealthResponse(BaseModel):
+    status: str
+    fastmcp_ready: bool
+    openai_configured: bool
+
+# Global variables
+mcp_server: Optional[FastMCP] = None
+mcp_client_session: Optional[ClientSession] = None
+llm: Optional[ChatOpenAI] = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan manager"""
+    global mcp_server, llm
+
+    logger.info("Starting Tuxedo AI backend...")
+
+    # Initialize LLM
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    openai_base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+
+    if openai_api_key:
+        llm = ChatOpenAI(
+            api_key=openai_api_key,
+            base_url=openai_base_url,
+            model="gpt-4",
+            temperature=0.7,
+            max_tokens=2000,
+        )
+        logger.info("LLM initialized successfully")
+    else:
+        logger.warning("OpenAI API key not configured")
+
+    # Initialize local FastMCP for tool definitions
+    mcp_server = FastMCP("Tuxedo AI 🚀")
+    logger.info("FastMCP initialized")
+
+    yield
+
+    logger.info("Shutting down Tuxedo AI backend...")
+
+# Create FastAPI app
+app = FastAPI(
+    title="Tuxedo AI Backend",
+    description="FastAPI + FastMCP backend for Tuxedo AI conversational DeFi assistant",
+    version="0.1.0",
+    lifespan=lifespan
+)
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Routes
+@app.get("/")
+async def root():
+    return {"message": "Tuxedo AI Backend is running!"}
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return HealthResponse(
+        status="healthy",
+        fastmcp_ready=mcp_server is not None,
+        openai_configured=bool(os.getenv("OPENAI_API_KEY"))
+    )
+
+@app.get("/stellar-tools")
+async def get_stellar_tools():
+    """Get list of available Stellar tools"""
+    if not mcp_client_session:
+        return {"tools": [], "connected": False}
+
+    try:
+        tools_result = await mcp_client_session[0].list_tools()
+        return {
+            "tools": [
+                {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "input_schema": tool.inputSchema
+                }
+                for tool in tools_result.tools
+            ],
+            "connected": True
+        }
+    except Exception as e:
+        logger.error(f"Error listing Stellar tools: {e}")
+        return {"tools": [], "connected": False, "error": str(e)}
+
+@app.post("/stellar-tool/{tool_name}")
+async def test_stellar_tool(tool_name: str, arguments: dict = None):
+    """Test a Stellar tool call directly"""
+    if arguments is None:
+        arguments = {}
+
+    try:
+        result = await call_stellar_tool(tool_name, arguments)
+        return {"tool": tool_name, "arguments": arguments, "result": result, "success": True}
+    except Exception as e:
+        return {"tool": tool_name, "arguments": arguments, "error": str(e), "success": False}
+
+@app.post("/chat")
+async def chat_message(request: ChatRequest):
+    """Chat endpoint with LLM integration"""
+    try:
+        if not llm:
+            raise HTTPException(
+                status_code=503,
+                detail="LLM not initialized"
+            )
+
+        # System prompt for Tuxedo AI
+        system_prompt = """You are Tuxedo, an AI assistant that helps users discover and understand lending opportunities on Stellar through the Blend Protocol.
+
+**Your Capabilities:**
+- Query all active Blend pools to find current APY rates
+- Access Stellar account information and balances
+- Perform Stellar operations via available tools
+- Explain DeFi lending concepts in simple, clear language
+- Compare different pools and assets
+- Assess risk based on utilization rates and pool metrics
+
+**Key Principles:**
+1. **Plain language first** - Avoid DeFi jargon unless the user asks for technical details
+2. **Always explain risks** - High APY usually means higher risk (utilization, volatility, liquidity)
+3. **Be transparent** - Yields come from borrowers paying interest to lenders
+4. **Never promise returns** - Always say "current rate" or "estimated APY based on today's data"
+5. **Show your work** - When comparing pools, show the numbers (APY, utilization, TVL)
+
+**Current Context:**
+- User is exploring Blend pools on Stellar testnet
+- This is for educational/informational purposes
+- Focus on helping users understand opportunities and risks"""
+
+        # Build message history
+        messages = [
+            SystemMessage(content=system_prompt),
+            *[HumanMessage(content=msg.content) if msg.role == "user" else AIMessage(content=msg.content)
+              for msg in request.history],
+            HumanMessage(content=request.message),
+        ]
+
+        # Get LLM response
+        response = await llm.ainvoke(messages)
+
+        return ChatResponse(response=response.content, success=True)
+
+    except Exception as e:
+        logger.error(f"Error in chat endpoint: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing message: {str(e)}"
+        )
+
+async def call_stellar_tool(tool_name: str, arguments: dict) -> str:
+    """Call a tool on the py-stellar-mcp server"""
+    try:
+        # Set up environment for the subprocess
+        env = os.environ.copy()
+        env["PYTHONPATH"] = "/home/ubuntu/blend-pools/py-stellar-mcp"
+
+        server_params = StdioServerParameters(
+            command="/home/ubuntu/blend-pools/py-stellar-mcp/.venv/bin/python",
+            args=["/home/ubuntu/blend-pools/py-stellar-mcp/server.py"],
+            env=env
+        )
+
+        async with stdio_client(server_params) as (read, write):
+            session = ClientSession(read, write)
+            await session.initialize()
+
+            # List tools first to see what's available
+            tools_result = await session.list_tools()
+            logger.info(f"Available tools: {[tool.name for tool in tools_result.tools]}")
+
+            # Call the specific tool
+            result = await session.call_tool(tool_name, arguments)
+            return result.content[0].text if result.content else "No content returned"
+
+    except Exception as e:
+        logger.error(f"Error calling tool {tool_name}: {e}")
+        return f"Error calling tool {tool_name}: {str(e)}"
+
+def setup_stellar_tools(mcp: FastMCP):
+    """Setup Stellar-related tools for FastMCP"""
+
+    @mcp.tool
+    def get_blend_pools() -> str:
+        """Get all active Blend lending pools with current APY rates and metrics"""
+        # TODO: Implement actual Blend pool data fetching
+        return """{
+  "pools": [
+    {
+      "name": "Comet Pool",
+      "address": "CD5Z7O...H3K2L",
+      "reserves": [
+        {
+          "asset": "USDC",
+          "supply_apy": "12.5%",
+          "borrow_apy": "18.2%",
+          "total_supplied": "2,345,678.90",
+          "total_borrowed": "1,523,456.78",
+          "utilization": "65.0%"
+        }
+      ]
+    }
+  ]
+}"""
+
+    @mcp.tool
+    def get_account_info(account_id: str) -> str:
+        """Get account information for a Stellar address"""
+        # TODO: Implement actual account info fetching
+        return f"""{{
+  "account_id": "{account_id}",
+  "balance": "1000.00",
+  "sequence": 12345,
+  "signers": 1,
+  "status": "found"
+}}"""
+
+    @mcp.tool
+    def calculate_risk_score(utilization: float, asset_type: str) -> str:
+        """Calculate risk score for a lending opportunity"""
+        if utilization > 90:
+            return "HIGH RISK: Very high utilization may delay withdrawals"
+        elif utilization > 75:
+            return "MEDIUM-HIGH RISK: High utilization, monitor closely"
+        elif utilization > 50:
+            return "MEDIUM RISK: Normal utilization for active pools"
+        else:
+            return "LOW RISK: Good liquidity, safer for new lenders"
+
+if __name__ == "__main__":
+    import uvicorn
+
+    # Run FastAPI server
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8002,
+        reload=True,
+        log_level="info"
+    )

@@ -371,27 +371,36 @@ You have access to Stellar blockchain tools that can:
 3. **Interpret results clearly** - Translate blockchain data into understandable insights
 4. **Handle gracefully** - If tools fail, explain the issue and suggest alternatives
 5. **Security first** - Never expose private keys or sensitive information
-6. **Use wallet address** - When provided, use the user's connected wallet for operations
+6. **Use wallet address** - When user asks about "my wallet", "my account", "my balance", or similar phrases, ALWAYS use the stellar_account_manager tool with the connected wallet address. Do NOT make assumptions or use placeholders.
+7. **Never use placeholders** - Always provide actual addresses or say you need the address if not available.
 
 **Current Context:**
 - User is on Stellar testnet for educational purposes
 - Focus on Blend Protocol lending opportunities
 - Prioritize account balance checks before suggesting operations
-- Always explain risks and transaction costs
-
-**Tool Usage Guidelines:**
-- Check account status before operations with account_manager
-- Use market_data to get current rates before trades
-- Return unsigned transactions for user wallet signing
-- Use soroban for Blend Protocol contract interactions"""
+- Always explain risks and transaction costs"""
 
         # Build message history
         messages = [
             SystemMessage(content=system_prompt),
+        ]
+
+        # Add wallet context if available
+        if wallet_address:
+            wallet_context = f"""
+**Connected Wallet Context:**
+The user has connected their wallet with address: {wallet_address}
+When users ask about "my wallet", "my account", "my balance", or similar phrases,
+use this address for account operations. The address is a Stellar public key starting with 'G'.
+"""
+            messages.append(SystemMessage(content=wallet_context))
+
+        # Add conversation history
+        messages.extend([
             *[HumanMessage(content=msg.content) if msg.role == "user" else AIMessage(content=msg.content)
               for msg in history],
             HumanMessage(content=message),
-        ]
+        ])
 
         # Convert tools to OpenAI tool format
         tool_schemas = [convert_to_openai_function(t) for t in STELLAR_TOOLS]
@@ -451,12 +460,19 @@ You have access to Stellar blockchain tools that can:
 
                     if tool_func:
                         try:
-                            # Add wallet address to tool args if provided and account_id is expected but not given
-                            if wallet_address and "account_id" in tool_args and not tool_args.get("account_id"):
-                                tool_args["account_id"] = wallet_address
-
-                            # Set wallet address context on the tool function
+                            # Auto-inject wallet address for account-related operations
                             if wallet_address:
+                                # If account_id parameter exists but is empty/None/placeholder, inject real wallet address
+                                if "account_id" in tool_args:
+                                    current_account_id = tool_args.get("account_id")
+                                    if (not current_account_id or
+                                        current_account_id in ["", None, "your_connected_wallet_address", "YOUR_WALLET_PUBLIC_KEY"] or
+                                        (isinstance(current_account_id, str) and
+                                         ("your_wallet" in current_account_id.lower() or "placeholder" in current_account_id.lower()))):
+                                        tool_args["account_id"] = wallet_address
+                                        logger.info(f"Auto-injected wallet address {wallet_address} for {tool_name}")
+
+                                # Set wallet address context on the tool function for additional logic
                                 tool_func._wallet_address = wallet_address
 
                             result = await tool_func.ainvoke(tool_args)
