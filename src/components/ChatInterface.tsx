@@ -339,65 +339,66 @@ export const ChatInterface: React.FC = () => {
             wallet_address: wallet.address || null,
           },
           (streamMessage: StreamMessage) => {
-          // Handle thinking states for loading indicator
-          if (streamMessage.type === 'thinking' || streamMessage.type === 'tool_call_start') {
-            setAgentThinking(true);
-            return; // Don't add these as visible messages
-          }
-
-          // Clear thinking state when we get real content
-          setAgentThinking(false);
-
-          // Handle each streaming message
-          const extendedMessage: ExtendedChatMessage = {
-            role: 'assistant',
-            content: streamMessage.content,
-            id: `stream-${streamId}-${streamMessage.type}-${streamMessage.iteration || 0}`,
-            type: streamMessage.type,
-            toolName: streamMessage.tool_name,
-            iteration: streamMessage.iteration,
-            isStreaming: streamMessage.type !== 'final_response' && streamMessage.type !== 'error',
-          };
-
-          setMessages((prev) => {
-            // Check if we already have this exact message (by ID) to avoid duplicates
-            const existingMessageIndex = prev.findIndex(m => m.id === extendedMessage.id);
-
-            if (existingMessageIndex >= 0) {
-              // Update existing message if found
-              const updated = [...prev];
-              updated[existingMessageIndex] = extendedMessage;
-              return updated;
-            } else {
-              // Add new message
-              return [...prev, extendedMessage];
+            // Handle thinking states for loading indicator
+            if (streamMessage.type === 'thinking' || streamMessage.type === 'tool_call_start') {
+              setAgentThinking(true);
+              return; // Don't add these as visible messages
             }
-          });
-        },
-        (error: Error) => {
-          console.error('Streaming chat error:', error);
-          setAgentThinking(false); // Clear thinking state on error
-          const errorMessage: ExtendedChatMessage = {
-            role: 'assistant',
-            content: `Streaming error: ${error.message}`,
-            id: `error-${streamId}`,
-            type: 'error',
-            isStreaming: false,
-          };
-          setMessages((prev) => [...prev, errorMessage]);
-          setIsLoading(false);
-        },
-        () => {
-          // Stream closed
-          setAgentThinking(false); // Clear thinking state on close
-          setIsLoading(false);
-        }
-      );
+
+            // Clear thinking state when we get real content
+            setAgentThinking(false);
+
+            // Handle each streaming message
+            const extendedMessage: ExtendedChatMessage = {
+              role: 'assistant',
+              content: streamMessage.content,
+              id: `stream-${streamId}-${streamMessage.type}-${streamMessage.iteration || 0}`,
+              type: streamMessage.type,
+              toolName: streamMessage.tool_name,
+              iteration: streamMessage.iteration,
+              isStreaming: streamMessage.type !== 'final_response' && streamMessage.type !== 'error',
+            };
+
+            setMessages((prev) => {
+              // Check if we already have this exact message (by ID) to avoid duplicates
+              const existingMessageIndex = prev.findIndex(m => m.id === extendedMessage.id);
+
+              if (existingMessageIndex >= 0) {
+                // Update existing message if found
+                const updated = [...prev];
+                updated[existingMessageIndex] = extendedMessage;
+                return updated;
+              } else {
+                // Add new message
+                return [...prev, extendedMessage];
+              }
+            });
+          },
+          (error: Error) => {
+            console.error('Streaming chat error:', error);
+            setAgentThinking(false); // Clear thinking state on error
+            const errorMessage: ExtendedChatMessage = {
+              role: 'assistant',
+              content: `Streaming error: ${error.message}`,
+              id: `error-${streamId}`,
+              type: 'error',
+              isStreaming: false,
+            };
+            setMessages((prev) => [...prev, errorMessage]);
+            setIsLoading(false);
+          },
+          () => {
+            // Stream closed
+            setAgentThinking(false); // Clear thinking state on close
+            setIsLoading(false);
+          }
+        );
 
       // Store cleanup function
       return () => {
         cleanup();
       };
+      }
     } catch (error: any) {
       console.error('Chat error:', error);
       const errorMessage: ExtendedChatMessage = {
