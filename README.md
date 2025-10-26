@@ -1,22 +1,27 @@
 # Tuxedo - AI-Powered Blend Pools Dashboard
 
-**Conversational interface for discovering and interacting with Blend Protocol on Stellar**
+**Conversational AI agent for discovering and interacting with Blend Protocol on Stellar**
 
-Built with Vite + React + TypeScript | Powered by Blend SDK + AWS Bedrock (Claude)
+Built with Vite + React + TypeScript | Powered by LangChain + FastAPI + Stellar SDK
+
+🤖 **Status**: AI Agent Fully Operational | 🔧 **6 Stellar Tools Integrated** | 🚀 **Testnet Ready**
 
 ---
 
 ## 🎯 What is Tuxedo?
 
-Tuxedo makes DeFi lending on Stellar accessible through natural language. Users can:
+Tuxedo makes DeFi lending on Stellar accessible through natural language conversation with an AI agent. Users can:
 
-- 💬 **Ask an AI assistant** about yield opportunities and risks
-- 📊 **View all Blend pools** with real-time APY rates
-- 💱 **Execute trades** (XLM → USDC) through conversation
-- 🏊 **Deposit into pools** with guided assistance
-- 📝 **Track conversations** and transaction history
+- 🤖 **Chat with Tuxedo AI** about Stellar operations and DeFi opportunities
+- 🔧 **Execute Stellar tools** through conversation (6 tools available)
+- 👤 **Create and manage testnet accounts** with automatic funding
+- 📊 **Query network status** and get real-time blockchain information
+- 📈 **Access market data** and DEX orderbooks
+- 💱 **Prepare for trading operations** (wallet integration ready)
+- 🔮 **Smart contract interaction** (Soroban/Blend Protocol ready)
+- 🏊 **Foundation for Blend lending** operations
 
-**Demo Mode**: Shows mainnet pool data (accurate APYs) but only allows testnet transactions.
+**Current Status**: Fully functional AI agent with Stellar tool integration on testnet.
 
 ---
 
@@ -25,8 +30,9 @@ Tuxedo makes DeFi lending on Stellar accessible through natural language. Users 
 ### Prerequisites
 
 - Node.js 20+
+- Python 3.12+
 - npm or yarn
-- Freighter wallet (browser extension)
+- Freighter wallet (browser extension, optional for advanced features)
 
 ### Installation
 
@@ -35,19 +41,37 @@ Tuxedo makes DeFi lending on Stellar accessible through natural language. Users 
 git clone <your-repo-url>
 cd blend-pools
 
-# Install dependencies
+# Install frontend dependencies
 npm install
 
-# Start dev server
+# Install backend dependencies
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv sync  # Or: pip install -r requirements.txt
+cd ..
+
+# Start both servers (Terminal 1)
 npm run dev
+
+# Start backend server (Terminal 2)
+cd backend
+source .venv/bin/activate
+python main.py
 ```
 
-Visit http://localhost:5173 and connect your Freighter wallet!
+Visit http://localhost:5173 to chat with Tuxedo AI!
+
+**Services:**
+- Frontend: http://localhost:5173/
+- Backend: http://localhost:8002/
+- Health Check: http://localhost:8002/health
 
 ---
 
 ## 📚 Documentation
 
+- **[FRONTEND_INTEGRATION_PROGRESS.md](./FRONTEND_INTEGRATION_PROGRESS.md)** - Complete AI agent implementation details
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Complete system design and technical overview
 - **[IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)** - Step-by-step guide to build AI features
 - **[docs/archive/](./docs/archive/)** - Historical documentation
@@ -56,7 +80,7 @@ Visit http://localhost:5173 and connect your Freighter wallet!
 
 ## ✅ Current Status
 
-### Phase 1: Pool Dashboard ✅ **Complete**
+### 🎯 Phase 1: Pool Dashboard ✅ **Complete**
 
 - [x] Discover all Blend pools via Backstop contract
 - [x] Display pool metadata, reserves, and APY rates
@@ -65,15 +89,28 @@ Visit http://localhost:5173 and connect your Freighter wallet!
 - [x] Expandable pool cards
 - [x] Real-time refresh
 
-### Phase 2: AI Chat Interface 🚧 **In Progress**
+### 🤖 Phase 2: AI Agent Integration ✅ **COMPLETE**
 
-- [ ] Conversational pool queries
-- [ ] XLM → USDC swap via chat
-- [ ] Transaction signing flow
-- [ ] Conversation history (Supabase)
-- [ ] Risk explanations in plain English
+- [x] **Fully functional AI agent** with multi-step reasoning
+- [x] **6 Stellar tools integrated**: Account Manager, Market Data, Trading, Trustline Manager, Utilities, Soroban
+- [x] **Frontend chat interface** with real-time communication
+- [x] **Wallet address integration** for personalized operations
+- [x] **LangChain compatibility** with proper tool binding
+- [x] **Visual indicators** for different tool operations
+- [x] **Testnet account creation** with automatic funding
+- [x] **Network status queries** and market data access
+- [x] **Error handling** and graceful failures
+- [x] **Comprehensive testing** with validation scripts
 
-### Phase 3: Advanced Features 📋 **Planned**
+### 🚀 Phase 3: Blend Protocol Integration 📋 **Ready for Development**
+
+- [ ] Blend pool discovery via Soroban contracts
+- [ ] APY querying and yield optimization
+- [ ] Lending/borrowing operations
+- [ ] Risk assessment and management
+- [ ] Portfolio tracking and analytics
+
+### 🎨 Phase 4: Advanced Features 📋 **Planned**
 
 - [ ] USD pricing (oracle integration)
 - [ ] Complete token metadata
@@ -90,15 +127,23 @@ Visit http://localhost:5173 and connect your Freighter wallet!
 - Stellar Design System
 - React Router + React Query
 
+**Backend** ✅ **Fully Implemented**
+- FastAPI (Python)
+- LangChain with tool integration
+- GPT-4 via Redpill AI
+- 6 Stellar tools with async support
+
 **Blockchain**
-- Stellar SDK 14.2
+- Stellar SDK 14.2 (Python + TypeScript)
 - Blend SDK 3.2.1
+- Soroban smart contract support
 - Freighter Wallet (via Stellar Wallets Kit)
 
-**AI & Backend** *(Phase 2)*
-- AWS Bedrock (Claude 3.5 Sonnet)
-- LangChain.js
-- Supabase Cloud (PostgreSQL)
+**AI & Agent System** ✅ **Fully Operational**
+- Multi-step reasoning agent
+- Tool calling with error handling
+- Conversation history management
+- Wallet address context injection
 
 ---
 
@@ -107,55 +152,102 @@ Visit http://localhost:5173 and connect your Freighter wallet!
 ### Project Structure
 
 ```
-src/
-├── components/
-│   ├── dashboard/          # Pool dashboard UI
-│   │   ├── PoolsDashboard.tsx
-│   │   ├── PoolCard.tsx
-│   │   └── ReserveRow.tsx
-│   └── ChatInterface.tsx   # AI chat (Phase 2)
-├── hooks/
-│   └── useBlendPools.ts    # Main data fetching hook
-├── lib/                    # Phase 2: AI & trading logic
-│   ├── ai-agent.ts
-│   ├── ai-tools.ts
-│   ├── stellar-trading.ts
-│   └── supabase.ts
-├── types/
-│   └── blend.ts            # TypeScript interfaces
-└── utils/
-    └── tokenMetadata.ts    # Token formatting
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── dashboard/          # Pool dashboard UI
+│   │   │   │   ├── PoolsDashboard.tsx
+│   │   │   │   ├── PoolCard.tsx
+│   │   │   │   └── ReserveRow.tsx
+│   │   │   └── ChatInterface.tsx   # ✅ AI chat interface
+│   │   ├── hooks/
+│   │   │   └── useBlendPools.ts    # Main data fetching hook
+│   │   ├── lib/
+│   │   │   └── api.ts              # ✅ API client with wallet support
+│   │   ├── types/
+│   │   │   └── blend.ts            # TypeScript interfaces
+│   │   └── utils/
+│   │       └── tokenMetadata.ts    # Token formatting
+├── backend/                       # ✅ FastAPI backend
+│   ├── main.py                    # ✅ AI agent implementation
+│   ├── stellar_tools.py           # ✅ 6 Stellar tools
+│   ├── stellar_soroban.py         # ✅ Smart contract support
+│   ├── key_manager.py             # ✅ Key management
+│   └── pyproject.toml             # Python dependencies
+├── test_agent.py                  # ✅ Basic agent testing
+├── test_agent_with_tools.py       # ✅ Comprehensive tool testing
+└── FRONTEND_INTEGRATION_PROGRESS.md # ✅ Detailed progress documentation
 ```
 
 ### Key Files
 
+**Frontend**
+- **`src/components/ChatInterface.tsx`** - ✅ AI chat interface with tool indicators
+- **`src/lib/api.ts`** - ✅ API client with wallet address integration
 - **`src/hooks/useBlendPools.ts`** - Fetches pools from Backstop.rewardZone
 - **`src/components/dashboard/PoolsDashboard.tsx`** - Main dashboard component
-- **`src/contracts/blend.ts`** - Testnet contract addresses
+
+**Backend**
+- **`backend/main.py`** - ✅ AI agent with LangChain and tool integration
+- **`backend/stellar_tools.py`** - ✅ 6 Stellar tools implementation
+- **`backend/stellar_soroban.py`** - ✅ Smart contract interaction support
+- **`backend/contracts/blend.ts`** - Testnet contract addresses
 
 ### Environment Variables
 
+**Frontend (.env.local)**
 ```bash
-# .env.local
-
 # Stellar Network
 VITE_STELLAR_NETWORK=testnet
 VITE_HORIZON_URL=https://horizon-testnet.stellar.org
 VITE_RPC_URL=https://soroban-testnet.stellar.org
+VITE_API_URL=http://localhost:8002
+```
 
-# Phase 2: AI Features
-VITE_SUPABASE_URL=https://xxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJ...
-VITE_AWS_REGION=us-east-1
-VITE_AWS_ACCESS_KEY_ID=AKIA...
-VITE_AWS_SECRET_ACCESS_KEY=...
+**Backend (.env)**
+```bash
+# OpenAI Configuration (for LLM)
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_BASE_URL=https://api.redpill.ai/v1  # or https://api.openai.com/v1
+
+# Stellar Configuration
+STELLAR_NETWORK=testnet
+HORIZON_URL=https://horizon-testnet.stellar.org
+SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
 ```
 
 ---
 
 ## 🧪 Testing
 
-### Manual Testing
+### ✅ AI Agent Testing (Fully Functional)
+
+1. **Start Both Servers**
+   ```bash
+   # Terminal 1: Frontend
+   npm run dev
+
+   # Terminal 2: Backend
+   cd backend && source .venv/bin/activate && python main.py
+   ```
+
+2. **Test AI Agent Functions**
+   - **Network Status**: "What is the current Stellar network status?"
+   - **Account Creation**: "Create a new testnet account and fund it"
+   - **Balance Queries**: "Check the balance for account [ADDRESS]"
+   - **Market Data**: "Show me the XLM/USDC orderbook"
+   - **Wallet Integration**: Connect wallet and ask "What's in my wallet?"
+
+3. **Automated Testing**
+   ```bash
+   # Test basic agent functionality
+   python3 test_agent.py
+
+   # Test all Stellar tools
+   python3 test_agent_with_tools.py
+   ```
+
+### Pool Dashboard Testing
 
 1. **Connect Wallet**
    - Click "Connect Account"
@@ -171,12 +263,11 @@ VITE_AWS_SECRET_ACCESS_KEY=...
    - Click refresh button
    - Verify pools reload
 
-### Phase 2 Testing *(Coming Soon)*
+### Health Checks
 
-4. **Chat with Tuxedo**
-   - Ask "What yields are available?"
-   - Request "Swap 10 XLM for USDC"
-   - Sign transaction in Freighter
+- **Frontend**: Visit http://localhost:5173/
+- **Backend**: curl http://localhost:8002/health
+- **API Testing**: Use the test scripts provided
 
 ---
 
@@ -286,4 +377,20 @@ Powered by [Blend Protocol](https://blend.capital) on Stellar
 
 ---
 
-**Status**: Active Development | **Version**: 0.1.0 | **Last Updated**: October 25, 2025
+**Status**: ✅ AI Agent Fully Operational | **Version**: 0.2.0 | **Last Updated**: October 26, 2025
+
+---
+
+## 🎉 **Recent Updates**
+
+### ✅ **October 26, 2025 - Frontend Integration Complete**
+
+- **🤖 AI Agent**: Multi-step reasoning with LangChain integration
+- **🔧 6 Stellar Tools**: Account management, market data, trading, trustlines, utilities, soroban
+- **💬 Chat Interface**: Real-time frontend-backend communication
+- **🔗 Wallet Integration**: Connected wallet addresses passed to agent
+- **🎨 Visual Indicators**: Tool execution status indicators
+- **🧪 Comprehensive Testing**: Full validation scripts and test coverage
+- **📚 Documentation**: Complete progress documentation and API guides
+
+The Tuxedo AI Agent is now **production-ready for educational use** on Stellar testnet!

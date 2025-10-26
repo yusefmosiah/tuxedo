@@ -12,6 +12,7 @@ export interface ChatMessage {
 export interface ChatRequest {
   message: string;
   history: ChatMessage[];
+  wallet_address?: string | null;
 }
 
 export interface ChatResponse {

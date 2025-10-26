@@ -58,6 +58,7 @@ export const ChatInterface: React.FC = () => {
       const response = await chatApi.sendMessage({
         message: input,
         history: messages,
+        wallet_address: wallet?.address || null,
       });
 
       const aiMessage: ChatMessage = {
@@ -157,10 +158,10 @@ export const ChatInterface: React.FC = () => {
         {messages.length === 0 && (
           <div style={{ textAlign: 'center', marginTop: '40px' }}>
             <Text as="p" size="lg" style={{ marginBottom: '16px' }}>
-              👋 Hi! I'm Tuxedo
+              🤖 Hi! I'm Tuxedo AI Agent
             </Text>
             <Text as="p" size="md" style={{ color: '#666' }}>
-              Ask me about Blend lending pools, yields, and DeFi opportunities on Stellar
+              I can help you with Stellar blockchain operations, account management, trading, market data, and smart contracts
             </Text>
             {wallet?.address && (
               <Text as="p" size="sm" style={{ color: '#999', marginTop: '8px' }}>
@@ -197,10 +198,12 @@ export const ChatInterface: React.FC = () => {
               }}
             >
               <p style={{ fontWeight: '600', marginBottom: '4px' }}>Try asking:</p>
-              <p>"What yields are available for USDC?"</p>
-              <p>"Which pool has the best APY?"</p>
-              <p>"Explain how Blend lending works"</p>
-              <p>"What are the risks of high APY pools?"</p>
+              <p>"What's the current Stellar network status?"</p>
+              <p>"Create a new testnet account and fund it"</p>
+              <p>"Check the XLM/USDC orderbook on Stellar DEX"</p>
+              <p>"What's in my wallet?" (connect wallet first)</p>
+              <p>"Show me recent network transactions"</p>
+              <p>"Explain Stellar transaction fees"</p>
             </div>
           </div>
         )}
@@ -216,16 +219,123 @@ export const ChatInterface: React.FC = () => {
           >
             <div
               style={{
-                maxWidth: '70%',
+                maxWidth: '75%',
                 padding: '12px 16px',
                 borderRadius: '12px',
                 backgroundColor: msg.role === 'user' ? '#667eea' : '#f0f0f0',
                 color: msg.role === 'user' ? '#fff' : '#000',
+                border: msg.role === 'assistant' && msg.content.includes('🔧') ? '1px solid #e1f5fe' : 'none',
               }}
             >
               <Text as="p" size="sm" style={{ whiteSpace: 'pre-wrap' }}>
                 {msg.content}
               </Text>
+
+              {/* Show tool execution indicator */}
+              {msg.role === 'assistant' && msg.content.includes('🔧') && (
+                <div style={{
+                  marginTop: '8px',
+                  padding: '6px 8px',
+                  backgroundColor: '#e3f2fd',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  color: '#1565c0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  <span>🔧</span>
+                  <span>Stellar tool executed</span>
+                </div>
+              )}
+
+              {/* Show transaction indicator */}
+              {msg.role === 'assistant' && (
+                msg.content.includes('Transaction successful') ||
+                msg.content.includes('✅ Transaction') ||
+                msg.content.includes('Hash:')
+              ) && (
+                <div style={{
+                  marginTop: '8px',
+                  padding: '6px 8px',
+                  backgroundColor: '#e8f5e8',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  color: '#2e7d32',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  <span>✅</span>
+                  <span>Transaction completed</span>
+                </div>
+              )}
+
+              {/* Show account creation indicator */}
+              {msg.role === 'assistant' && (
+                msg.content.includes('account created') ||
+                msg.content.includes('Account created') ||
+                msg.content.includes('Testnet account')
+              ) && (
+                <div style={{
+                  marginTop: '8px',
+                  padding: '6px 8px',
+                  backgroundColor: '#fff3e0',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  color: '#ef6c00',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  <span>👤</span>
+                  <span>Account operation</span>
+                </div>
+              )}
+
+              {/* Show network info indicator */}
+              {msg.role === 'assistant' && (
+                msg.content.includes('Network status') ||
+                msg.content.includes('fee') ||
+                msg.content.includes('ledgers')
+              ) && (
+                <div style={{
+                  marginTop: '8px',
+                  padding: '6px 8px',
+                  backgroundColor: '#f3e5f5',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  color: '#7b1fa2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  <span>📊</span>
+                  <span>Network information</span>
+                </div>
+              )}
+
+              {/* Show market data indicator */}
+              {msg.role === 'assistant' && (
+                msg.content.includes('orderbook') ||
+                msg.content.includes('trades') ||
+                msg.content.includes('market')
+              ) && (
+                <div style={{
+                  marginTop: '8px',
+                  padding: '6px 8px',
+                  backgroundColor: '#fce4ec',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  color: '#c2185b',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  <span>📈</span>
+                  <span>Market data</span>
+                </div>
+              )}
             </div>
           </div>
         ))}

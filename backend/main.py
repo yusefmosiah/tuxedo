@@ -393,11 +393,14 @@ You have access to Stellar blockchain tools that can:
             HumanMessage(content=message),
         ]
 
-        # Convert tools to OpenAI function format
+        # Convert tools to OpenAI tool format
         tool_schemas = [convert_to_openai_function(t) for t in STELLAR_TOOLS]
 
-        # Create LLM with tools
-        llm_with_tools = llm.bind(functions=tool_schemas)
+        # Convert to newer tool format
+        tools = [{"type": "function", "function": schema} for schema in tool_schemas]
+
+        # Create LLM with tools (using newer format)
+        llm_with_tools = llm.bind(tools=tools)
 
         # Agent loop
         max_iterations = 10
@@ -413,12 +416,27 @@ You have access to Stellar blockchain tools that can:
             # Add response to message history
             messages.append(response)
 
-            # Check if LLM wants to call tools
-            if hasattr(response, 'tool_calls') and response.tool_calls:
-                logger.info(f"LLM wants to call {len(response.tool_calls)} tools")
+            # Check if LLM wants to call tools (handle both old and new LangChain formats)
+            tool_calls = []
 
+            # New LangChain format
+            if hasattr(response, 'tool_calls') and response.tool_calls:
+                tool_calls = response.tool_calls
+                logger.info(f"LLM wants to call {len(tool_calls)} tools (new format)")
+            # Old LangChain format with function_call in additional_kwargs
+            elif (hasattr(response, 'additional_kwargs') and
+                  response.additional_kwargs.get('function_call')):
+                function_call = response.additional_kwargs['function_call']
+                tool_calls = [{
+                    "name": function_call["name"],
+                    "args": json.loads(function_call["arguments"]),
+                    "id": f"call_{function_call['name']}"
+                }]
+                logger.info(f"LLM wants to call {len(tool_calls)} tools (old format)")
+
+            if tool_calls:
                 # Execute each tool call
-                for tool_call in response.tool_calls:
+                for tool_call in tool_calls:
                     tool_name = tool_call["name"]
                     tool_args = tool_call["args"]
 
@@ -470,7 +488,7 @@ You have access to Stellar blockchain tools that can:
             else:
                 # LLM provided final response without tool calls
                 logger.info("Agent completed with final response")
-                return response.content
+                return response.content if hasattr(response, 'content') else str(response)
 
         # Max iterations reached
         return "I apologize, but I'm having trouble completing your request. Let me try a different approach or you can rephrase your question."
