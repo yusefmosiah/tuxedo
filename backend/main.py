@@ -60,6 +60,7 @@ class ChatResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     stellar_tools_ready: bool
+    defindex_tools_ready: bool
     openai_configured: bool
 
 class StellarToolsResponse(BaseModel):
@@ -251,6 +252,22 @@ async def stellar_soroban(
         "limit": limit
     })
 
+# Import DeFindex tools
+try:
+    from defindex_tools import (
+        discover_high_yield_vaults,
+        get_defindex_vault_details,
+        prepare_defindex_deposit
+    )
+    DEFINDEX_TOOLS_AVAILABLE = True
+    logger.info("DeFindex tools loaded successfully")
+except ImportError as e:
+    logger.warning(f"DeFindex tools not available: {e}")
+    DEFINDEX_TOOLS_AVAILABLE = False
+    discover_high_yield_vaults = None
+    get_defindex_vault_details = None
+    prepare_defindex_deposit = None
+
 # List of all available tools
 STELLAR_TOOLS = [
     stellar_account_manager,
@@ -260,6 +277,14 @@ STELLAR_TOOLS = [
     stellar_utilities,
     stellar_soroban
 ]
+
+# Add DeFindex tools if available
+if DEFINDEX_TOOLS_AVAILABLE:
+    STELLAR_TOOLS.extend([
+        discover_high_yield_vaults,
+        get_defindex_vault_details,
+        prepare_defindex_deposit
+    ])
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -318,6 +343,7 @@ async def health_check():
     return HealthResponse(
         status="healthy",
         stellar_tools_ready=STELLAR_TOOLS_AVAILABLE,
+        defindex_tools_ready=DEFINDEX_TOOLS_AVAILABLE,
         openai_configured=bool(os.getenv("OPENAI_API_KEY"))
     )
 
@@ -337,6 +363,14 @@ async def stellar_tools_status():
             "soroban_tool"
         ]
 
+    # Add DeFindex tools if available
+    if DEFINDEX_TOOLS_AVAILABLE:
+        tools.extend([
+            "discover_high_yield_vaults",
+            "get_defindex_vault_details",
+            "prepare_defindex_deposit"
+        ])
+
     return StellarToolsResponse(
         available=STELLAR_TOOLS_AVAILABLE,
         tools_count=len(tools),
@@ -354,7 +388,7 @@ async def chat_with_tools(
     """
     try:
         # Enhanced system prompt for the agent
-        system_prompt = """You are Tuxedo, an AI assistant that helps users discover and understand lending opportunities on Stellar through the Blend Protocol.
+        system_prompt = """You are Tuxedo, an AI assistant that helps users discover and understand DeFi opportunities on Stellar including Blend Protocol and DeFindex vaults.
 
 **Your Available Tools:**
 You have access to Stellar blockchain tools that can:
@@ -364,6 +398,13 @@ You have access to Stellar blockchain tools that can:
 - Manage trustlines for assets (trustline_manager)
 - Query network status and fees (utilities)
 - Interact with smart contracts (soroban)
+- **NEW**: Discover and interact with DeFindex vaults for yield generation
+
+**DeFindex Vault Capabilities:**
+- Discover high-yield vaults with real mainnet APY data
+- Get detailed vault information and strategies
+- Prepare testnet deposit transactions for safe testing
+- Note: Vault yields come from mainnet, transactions use testnet for safety
 
 **Important Trading Context:**
 Modern Stellar trading primarily uses **liquidity pools** rather than traditional orderbooks:
