@@ -534,189 +534,55 @@ export const ChatInterface: React.FC = () => {
           </div>
         )}
 
-        {messages.map((msg, idx) => {
-          // Handle live summary messages with dedicated component
-          if (msg.type?.startsWith('live_summary')) {
+              {messages.map((msg, idx) => {
+          // Only show user messages, live summaries, and final responses
+          // Hide all other streaming messages (llm_response, tool_result, tool_error, thinking, etc.)
+          if (msg.role === 'user') {
             return (
-              <LiveSummary
-                key={msg.id || idx}
-                message={msg as StreamMessage}
-                onToggleExpand={() => msg.id && toggleSummaryExpansion(msg.id)}
-                isExpanded={msg.id ? expandedSummaries.has(msg.id) : false}
-              />
-            );
-          }
-
-          const messageStyling = getMessageStyling(msg);
-          const indicator = getMessageIndicator(msg);
-          const isMinimized = msg.id ? minimizedMessages.has(msg.id) : false;
-
-          return (
-            <div
-              key={msg.id || idx}
-              style={{
-                display: 'flex',
-                justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                marginBottom: '12px',
-                alignItems: 'flex-start',
-              }}
-              onMouseEnter={(e) => {
-                if (msg.role === 'user') {
-                  const copyButton = e.currentTarget.querySelector('[data-user-copy-button]');
-                      if (copyButton) {
-                        (copyButton as HTMLElement).style.opacity = '1';
-                      }
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (msg.role === 'user') {
-                      const copyButton = e.currentTarget.querySelector('[data-user-copy-button]');
-                      if (copyButton) {
-                        (copyButton as HTMLElement).style.opacity = '0';
-                      }
-                    }
-                  }}
-                >
               <div
+                key={msg.id || idx}
                 style={{
-                  maxWidth: '75%',
-                  padding: isMinimized ? '6px 10px' : '10px 14px',
-                  borderRadius: '12px',
-                  ...messageStyling,
-                  position: 'relative',
-                  opacity: msg.isStreaming ? 0.9 : 1,
-                  transition: 'all 0.2s ease-in-out',
-                  cursor: 'default',
-                  transform: 'scale(1)',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  marginBottom: '12px',
+                  alignItems: 'flex-start',
                 }}
                 onMouseEnter={(e) => {
-                  if (msg.role === 'assistant') {
-                    e.currentTarget.style.transform = 'scale(1.02)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-                  } else if (msg.role === 'user') {
-                    e.currentTarget.style.transform = 'scale(1.01)';
-                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                  const copyButton = e.currentTarget.querySelector('[data-user-copy-button]');
+                  if (copyButton) {
+                    (copyButton as HTMLElement).style.opacity = '1';
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (msg.role === 'assistant' || msg.role === 'user') {
-                    e.currentTarget.style.transform = 'scale(1)';
-                    e.currentTarget.style.boxShadow = 'none';
+                  const copyButton = e.currentTarget.querySelector('[data-user-copy-button]');
+                  if (copyButton) {
+                    (copyButton as HTMLElement).style.opacity = '0';
                   }
                 }}
               >
-                {/* Message header with indicator and type info */}
-                {msg.role === 'assistant' && msg.type && (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    marginBottom: '6px',
-                    fontSize: '11px',
-                    fontWeight: '500',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                  }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                    }}>
-                      <span>{indicator}</span>
-                      <span>{msg.type.replace('_', ' ')}</span>
-                      {msg.iteration && (
-                        <span style={{ opacity: 0.6 }}>
-                          #{msg.iteration}
-                        </span>
-                      )}
-                      {msg.toolName && (
-                        <span style={{
-                          opacity: 0.8,
-                          fontFamily: 'monospace',
-                          fontSize: '10px',
-                          backgroundColor: 'rgba(0,0,0,0.1)',
-                          padding: '1px 4px',
-                          borderRadius: '3px'
-                        }}>
-                          {msg.toolName}
-                        </span>
-                      )}
-                      {msg.isStreaming && (
-                        <div style={{ marginLeft: '4px', display: 'inline-block' }}>
-                          <Loader size="sm" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Action buttons */}
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                    }}>
-                      {/* Copy button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          copyMessage(msg.content);
-                        }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          padding: '2px 4px',
-                          borderRadius: '3px',
-                          fontSize: '12px',
-                          opacity: 0.6,
-                          transition: 'opacity 0.2s',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.opacity = '1';
-                          e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.1)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.opacity = '0.6';
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                        title="Copy message"
-                      >
-                        📋
-                      </button>
-
-                      {/* Minimize button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (msg.id) toggleMinimize(msg.id);
-                        }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          padding: '2px 4px',
-                          borderRadius: '3px',
-                          fontSize: '12px',
-                          opacity: 0.6,
-                          transition: 'opacity 0.2s',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.opacity = '1';
-                          e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.1)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.opacity = '0.6';
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                        title={isMinimized ? "Expand message" : "Minimize message"}
-                      >
-                        {isMinimized ? '📂' : '📁'}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Copy button for user messages */}
-                {msg.role === 'user' && (
+                <div
+                  style={{
+                    maxWidth: '75%',
+                    padding: '10px 14px',
+                    borderRadius: '12px',
+                    backgroundColor: '#667eea',
+                    color: '#fff',
+                    border: 'none',
+                    position: 'relative',
+                    transition: 'all 0.2s ease-in-out',
+                    cursor: 'default',
+                    transform: 'scale(1)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.01)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                >
+                  {/* Copy button for user messages */}
                   <div
                     data-user-copy-button
                     style={{
@@ -736,7 +602,9 @@ export const ChatInterface: React.FC = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        copyMessage(msg.content);
+                        navigator.clipboard.writeText(msg.content).then(() => {
+                          console.log('Message copied to clipboard');
+                        });
                       }}
                       style={{
                         background: 'rgba(255,255,255,0.9)',
@@ -760,99 +628,67 @@ export const ChatInterface: React.FC = () => {
                       📋
                     </button>
                   </div>
-                )}
 
-                {/* Minimized or full message content */}
-                {isMinimized ? (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '12px',
-                    opacity: 0.7,
-                  }}>
-                    <span>{msg.type === 'final_response' ? '🎯' : indicator}</span>
-                    <span>{msg.type === 'final_response' ? 'Response' : msg.type?.replace('_', ' ')}</span>
-                  </div>
-                ) : (
-                  <>
-                    {/* Message content */}
-                    <Text
-                      as="p"
-                      size="sm"
-                      style={{
-                        whiteSpace: 'pre-wrap',
-                        lineHeight: 1.4,
-                        margin: 0,
-                      }}
-                    >
-                      {msg.content}
-                    </Text>
-                  </>
-                )}
-
-                {/* Special formatting for certain message types - only show when not minimized */}
-                {!isMinimized && (
-                  <>
-                    {msg.type === 'tool_result' && (
-                      <div style={{
-                        marginTop: '8px',
-                        padding: '8px',
-                        backgroundColor: 'rgba(46, 125, 50, 0.1)',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        fontFamily: 'monospace',
-                        border: '1px solid rgba(46, 125, 50, 0.2)',
-                      }}>
-                        <Text as="span" size="xs" style={{ color: '#2e7d32' }}>
-                          📊 Tool Result
-                        </Text>
-                      </div>
-                    )}
-
-                    {msg.type === 'error' || msg.type === 'tool_error' ? (
-                      <div style={{
-                        marginTop: '8px',
-                        padding: '8px',
-                        backgroundColor: 'rgba(198, 40, 40, 0.1)',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        border: '1px solid rgba(198, 40, 40, 0.2)',
-                      }}>
-                        <Text as="span" size="xs" style={{ color: '#c62828' }}>
-                          ⚠️ Error Details
-                        </Text>
-                      </div>
-                    ) : null}
-                  </>
-                )}
+                  <Text
+                    as="p"
+                    size="sm"
+                    style={{
+                      whiteSpace: 'pre-wrap',
+                      lineHeight: 1.4,
+                      margin: 0,
+                    }}
+                  >
+                    {msg.content}
+                  </Text>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          }
 
-        {agentThinking && (
-          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-            <div
-              style={{
-                padding: '12px 16px',
-                borderRadius: '12px',
-                backgroundColor: '#f8f9fa',
-                border: '1px solid #e9ecef',
-                color: '#6c757d',
-                fontSize: '14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              <Loader size="sm" />
-              <span className="thinking-text">
-                Thinking...
-              </span>
-            </div>
-          </div>
-        )}
+          // Handle live summary messages with dedicated component
+          if (msg.type?.startsWith('live_summary')) {
+            return (
+              <LiveSummary
+                key={msg.id || idx}
+                message={msg as StreamMessage}
+                onToggleExpand={() => msg.id && toggleSummaryExpansion(msg.id)}
+                isExpanded={msg.id ? expandedSummaries.has(msg.id) : false}
+              />
+            );
+          }
+
+          // Handle final responses - plain text, centered, no bubble
+          if (msg.type === 'final_response') {
+            return (
+              <div
+                key={msg.id || idx}
+                style={{
+                  textAlign: 'center',
+                  margin: '24px 0',
+                  padding: '0 20px',
+                }}
+              >
+                <Text
+                  as="p"
+                  size="md"
+                  style={{
+                    whiteSpace: 'pre-wrap',
+                    lineHeight: 1.6,
+                    margin: 0,
+                    color: '#333',
+                    fontSize: '16px',
+                    fontWeight: '400',
+                  }}
+                >
+                  {msg.content}
+                </Text>
+              </div>
+            );
+          }
+
+          // Hide all other message types (llm_response, tool_result, tool_error, thinking, etc.)
+          return null;
+        })}
 
         <div ref={messagesEndRef} />
       </div>
