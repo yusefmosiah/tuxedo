@@ -330,6 +330,24 @@ except ImportError as e:
 # Import TUX farming tools
 try:
     from tux_farming import TuxFarmingTools
+    from tux_farming_transactions import TuxFarmingTransactions
+except ImportError as e:
+    logger.warning(f"TUX farming tools not available: {e}")
+    TUX_FARMING_TOOLS_AVAILABLE = False
+
+# Import Transaction API
+try:
+    from transaction_api import transaction_api, TransactionRequest, TransactionResponse
+    TRANSACTION_API_AVAILABLE = True
+    logger.info("Transaction API loaded successfully")
+except ImportError as e:
+    logger.warning(f"Transaction API not available: {e}")
+    TRANSACTION_API_AVAILABLE = False
+
+# Check if TUX farming tools are available
+try:
+    from tux_farming import TuxFarmingTools
+    from tux_farming_transactions import TuxFarmingTransactions
     TUX_FARMING_AVAILABLE = True
     logger.info("TUX farming tools loaded successfully")
 except ImportError as e:
@@ -523,6 +541,283 @@ async def tux_farming_user_positions(
     except Exception as e:
         return f"Error getting user positions: {str(e)}"
 
+# ============================================================================
+# TUX YIELD FARMING TRANSACTION TOOLS
+# ============================================================================
+
+@tool
+async def tux_create_trustline(
+    wallet_address: str
+) -> str:
+    """
+    Create a trustline transaction for TUX token to enable receiving farming rewards.
+
+    Args:
+        wallet_address: User's Stellar wallet address
+
+    Returns unsigned transaction that can be signed with Freighter wallet:
+    - XDR transaction for trustline creation
+    - Instructions for signing
+    - Network information
+    """
+    try:
+        if not TUX_FARMING_AVAILABLE:
+            return "TUX farming tools are not available."
+
+        if not wallet_address:
+            return "Wallet address is required to create a trustline."
+
+        transactions = TuxFarmingTransactions()
+        result = transactions.create_tux_trustline_xdr(wallet_address)
+
+        if not result["success"]:
+            return f"Error creating trustline transaction: {result['error']}"
+
+        response_parts = []
+        response_parts.append("## 🔐 TUX Token Trustline Transaction")
+        response_parts.append("")
+        response_parts.append("To receive TUX farming rewards, you need to create a trustline for the TUX token.")
+        response_parts.append("")
+        response_parts.append("### Transaction Details:")
+        response_parts.append(f"- **Network:** {result['network']}")
+        response_parts.append(f"- **Operations:** {', '.join(result['operations'])}")
+        response_parts.append(f"- **Message:** {result['message']}")
+        response_parts.append("")
+        response_parts.append("### XDR Transaction:")
+        response_parts.append(f"```")
+        response_parts.append(result["xdr"])
+        response_parts.append(f"```")
+        response_parts.append("")
+        response_parts.append("### How to Sign:")
+        response_parts.append("1. Copy the XDR transaction above")
+        response_parts.append("2. Open your Freighter wallet")
+        response_parts.append("3. Go to 'Sign Transaction'")
+        response_parts.append("4. Paste the XDR and sign")
+        response_parts.append("5. Your TUX trustline will be created!")
+        response_parts.append("")
+        response_parts.append("After creating the trustline, you'll be able to receive TUX rewards from farming.")
+
+        return "\n".join(response_parts)
+
+    except Exception as e:
+        return f"Error creating trustline transaction: {str(e)}"
+
+@tool
+async def tux_stake_tokens(
+    wallet_address: str,
+    pool_id: str,
+    amount: str
+) -> str:
+    """
+    Create a staking transaction to deposit tokens into a TUX farming pool.
+
+    Args:
+        wallet_address: User's Stellar wallet address
+        pool_id: Pool identifier (USDC, XLM, or ETH)
+        amount: Amount to stake (e.g., "100" for 100 tokens)
+
+    Returns unsigned transaction that can be signed with Freighter wallet:
+    - XDR transaction for staking
+    - Pool information and expected rewards
+    - Instructions for signing
+    """
+    try:
+        if not TUX_FARMING_AVAILABLE:
+            return "TUX farming tools are not available."
+
+        if not wallet_address:
+            return "Wallet address is required to create a staking transaction."
+
+        if not pool_id or not amount:
+            return "Both pool_id and amount are required for staking."
+
+        transactions = TuxFarmingTransactions()
+        result = transactions.create_stake_transaction_xdr(wallet_address, pool_id, amount)
+
+        if not result["success"]:
+            return f"Error creating staking transaction: {result['error']}"
+
+        # Calculate potential rewards
+        rewards_sim = transactions.simulate_farming_rewards(wallet_address, pool_id, amount, 30)
+
+        response_parts = []
+        response_parts.append("## 🚜 TUX Farming Staking Transaction")
+        response_parts.append("")
+        response_parts.append(f"### Staking {amount} {pool_id} in TUX Farming Pool")
+        response_parts.append("")
+
+        if rewards_sim["success"]:
+            response_parts.append("### Expected Rewards (30 days):")
+            response_parts.append(f"- **Daily Rewards:** {rewards_sim['formatted_daily_rewards']}")
+            response_parts.append(f"- **Total Rewards:** {rewards_sim['formatted_total_rewards']}")
+            response_parts.append(f"- **APY:** {rewards_sim['apy_percentage']:.1f}%")
+            response_parts.append("")
+
+        response_parts.append("### Transaction Details:")
+        response_parts.append(f"- **Network:** {result['network']}")
+        response_parts.append(f"- **Pool:** {result['pool_id']}")
+        response_parts.append(f"- **Amount:** {result['amount']}")
+        response_parts.append(f"- **Operations:** {', '.join(result['operations'])}")
+        response_parts.append(f"- **Message:** {result['message']}")
+        response_parts.append("")
+        response_parts.append("### XDR Transaction:")
+        response_parts.append(f"```")
+        response_parts.append(result["xdr"])
+        response_parts.append(f"```")
+        response_parts.append("")
+        response_parts.append("### How to Sign:")
+        response_parts.append("1. Copy the XDR transaction above")
+        response_parts.append("2. Open your Freighter wallet")
+        response_parts.append("3. Go to 'Sign Transaction'")
+        response_parts.append("4. Paste the XDR and sign")
+        response_parts.append("5. Your tokens will be staked and start earning TUX rewards!")
+        response_parts.append("")
+        response_parts.append("⚠️ **Note:** Make sure you have enough {pool_id} tokens in your wallet before signing.")
+
+        return "\n".join(response_parts)
+
+    except Exception as e:
+        return f"Error creating staking transaction: {str(e)}"
+
+@tool
+async def tux_claim_rewards(
+    wallet_address: str
+) -> str:
+    """
+    Create a transaction to claim accumulated TUX farming rewards.
+
+    Args:
+        wallet_address: User's Stellar wallet address
+
+    Returns unsigned transaction that can be signed with Freighter wallet:
+    - XDR transaction for claiming rewards
+    - Reward amount information
+    - Instructions for signing
+    """
+    try:
+        if not TUX_FARMING_AVAILABLE:
+            return "TUX farming tools are not available."
+
+        if not wallet_address:
+            return "Wallet address is required to claim rewards."
+
+        transactions = TuxFarmingTransactions()
+        result = transactions.create_claim_rewards_transaction_xdr(wallet_address)
+
+        if not result["success"]:
+            return f"Error creating claim rewards transaction: {result['error']}"
+
+        response_parts = []
+        response_parts.append("## 🏆 Claim TUX Farming Rewards")
+        response_parts.append("")
+        response_parts.append("Claim your accumulated TUX rewards from farming pools.")
+        response_parts.append("")
+        response_parts.append("### Transaction Details:")
+        response_parts.append(f"- **Network:** {result['network']}")
+        response_parts.append(f"- **Operations:** {', '.join(result['operations'])}")
+        response_parts.append(f"- **Reward Amount:** {result['reward_amount']}")
+        response_parts.append(f"- **Message:** {result['message']}")
+        response_parts.append("")
+        response_parts.append("### XDR Transaction:")
+        response_parts.append(f"```")
+        response_parts.append(result["xdr"])
+        response_parts.append(f"```")
+        response_parts.append("")
+        response_parts.append("### How to Sign:")
+        response_parts.append("1. Copy the XDR transaction above")
+        response_parts.append("2. Open your Freighter wallet")
+        response_parts.append("3. Go to 'Sign Transaction'")
+        response_parts.append("4. Paste the XDR and sign")
+        response_parts.append("5. Your TUX rewards will be transferred to your wallet!")
+        response_parts.append("")
+        response_parts.append("💰 **Note:** Rewards are automatically calculated based on your staked amounts and farming duration.")
+
+        return "\n".join(response_parts)
+
+    except Exception as e:
+        return f"Error creating claim rewards transaction: {str(e)}"
+
+@tool
+async def tux_check_farming_readiness(
+    wallet_address: str
+) -> str:
+    """
+    Check what's needed to start TUX farming with a specific wallet.
+
+    Args:
+        wallet_address: User's Stellar wallet address
+
+    Returns comprehensive readiness analysis:
+    - Current token balances
+    - Trustline status
+    - Recommended actions
+    - Farming requirements
+    """
+    try:
+        if not TUX_FARMING_AVAILABLE:
+            return "TUX farming tools are not available."
+
+        if not wallet_address:
+            return "Wallet address is required to check farming readiness."
+
+        transactions = TuxFarmingTransactions()
+        requirements = transactions.get_farming_requirements(wallet_address)
+
+        if "error" in requirements:
+            return f"Error checking farming requirements: {requirements['error']}"
+
+        response_parts = []
+        response_parts.append("## 📋 TUX Farming Readiness Check")
+        response_parts.append("")
+        response_parts.append(f"**Wallet:** `{wallet_address}`")
+        response_parts.append("")
+
+        # Balance information
+        response_parts.append("### Current Balances:")
+        response_parts.append(f"- **XLM:** {requirements['xlm_balance']:.2f} XLM")
+        response_parts.append(f"- **USDC:** {requirements['usdc_balance']:.2f} USDC")
+        response_parts.append(f"- **TUX:** {requirements['tux_balance']:.2f} TUX")
+        response_parts.append(f"- **TUX Trustline:** {'✅ Created' if requirements['has_tux_trustline'] else '❌ Not created'}")
+        response_parts.append("")
+
+        # Farming capabilities
+        response_parts.append("### Farming Capabilities:")
+        response_parts.append(f"- **Can stake XLM:** {'✅ Yes' if requirements['can_stake_xlm'] else '❌ Insufficient balance'}")
+        response_parts.append(f"- **Can stake USDC:** {'✅ Yes' if requirements['can_stake_usdc'] else '❌ Insufficient balance'}")
+        response_parts.append("")
+
+        # Recommended actions
+        if requirements["recommended_actions"]:
+            response_parts.append("### Recommended Actions:")
+            for action in requirements["recommended_actions"]:
+                response_parts.append(f"- {action}")
+            response_parts.append("")
+
+        # Next steps
+        response_parts.append("### Next Steps:")
+        if requirements["needs_trustline"]:
+            response_parts.append("1. **Create TUX Trustline** - Use: 'Create TUX trustline for my wallet'")
+            response_parts.append("")
+
+        if requirements["can_stake_xlm"]:
+            response_parts.append("2. **Stake XLM** - Use: 'Stake 10 XLM in the XLM farming pool'")
+            response_parts.append("")
+
+        if requirements["can_stake_usdc"]:
+            response_parts.append("2. **Stake USDC** - Use: 'Stake 50 USDC in the USDC farming pool'")
+            response_parts.append("")
+
+        if not requirements["can_stake_xlm"] and not requirements["can_stake_usdc"]:
+            response_parts.append("2. **Fund Wallet** - Add XLM or USDC to start farming")
+            response_parts.append("")
+
+        response_parts.append("3. **Claim Rewards** - Use: 'Claim my TUX farming rewards'")
+
+        return "\n".join(response_parts)
+
+    except Exception as e:
+        return f"Error checking farming readiness: {str(e)}"
+
 # List of all available tools
 STELLAR_TOOLS = [
     stellar_account_manager,
@@ -546,7 +841,11 @@ if TUX_FARMING_AVAILABLE:
     STELLAR_TOOLS.extend([
         tux_farming_overview,
         tux_farming_pool_details,
-        tux_farming_user_positions
+        tux_farming_user_positions,
+        tux_create_trustline,
+        tux_stake_tokens,
+        tux_claim_rewards,
+        tux_check_farming_readiness
     ])
 
 @asynccontextmanager
@@ -1648,6 +1947,68 @@ async def tux_farming_user_positions_endpoint(request: TuxFarmingUserPositionsRe
         raise
     except Exception as e:
         logger.error(f"Error in TUX farming user positions endpoint: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+# ============================================================================
+# TRANSACTION API ENDPOINTS - FOR DIRECT WALLET TRIGGERING
+# ============================================================================
+
+@app.post("/prepare-transaction", response_model=TransactionResponse)
+async def prepare_transaction(request: TransactionRequest):
+    """Prepare a transaction for automatic wallet triggering"""
+    if not TRANSACTION_API_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Transaction API not available")
+
+    try:
+        if request.action == "deposit":
+            if not request.amount or not request.user_address:
+                raise HTTPException(status_code=400, detail="Amount and user_address required for deposit")
+
+            result = await transaction_api.prepare_deposit_transaction(
+                user_address=request.user_address,
+                amount=request.amount,
+                vault_address=request.vault_address
+            )
+            return result
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported action: {request.action}")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in prepare-transaction endpoint: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@app.get("/mining-status/{user_address}")
+async def get_mining_status(user_address: str):
+    """Get mining status for a user"""
+    if not TRANSACTION_API_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Transaction API not available")
+
+    try:
+        status = await transaction_api.get_mining_status(user_address)
+        return status
+    except Exception as e:
+        logger.error(f"Error in mining-status endpoint: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@app.post("/simulate-mining-completion")
+async def simulate_mining_completion(
+    user_address: str,
+    deposit_amount: float
+):
+    """Simulate mining completion for demo purposes"""
+    if not TRANSACTION_API_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Transaction API not available")
+
+    try:
+        result = await transaction_api.simulate_mining_completion(
+            user_address=user_address,
+            deposit_amount=deposit_amount
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Error in simulate-mining-completion endpoint: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 if __name__ == "__main__":

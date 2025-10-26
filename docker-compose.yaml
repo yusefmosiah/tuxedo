@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # Backend FastAPI service
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: tuxedo-backend
+    ports:
+      - "8002:8002"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.redpill.ai/v1}
+      - STELLAR_NETWORK=testnet
+      - HORIZON_URL=https://horizon-testnet.stellar.org
+      - SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
+      - PYTHONUNBUFFERED=1
+    env_file:
+      - .env.backend
+    volumes:
+      - ./backend:/app
+      - backend_data:/app/data
+    networks:
+      - tuxedo-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Frontend service
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: tuxedo-frontend
+    ports:
+      - "80:80"
+      - "443:443"  # For future HTTPS support
+    environment:
+      - VITE_STELLAR_NETWORK=testnet
+      - VITE_HORIZON_URL=https://horizon-testnet.stellar.org
+      - VITE_RPC_URL=https://soroban-testnet.stellar.org
+      - VITE_API_URL=http://localhost:8002
+    env_file:
+      - .env.frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - tuxedo-network
+    restart: unless-stopped
+
+  # Development service (optional)
+  dev-frontend:
+    image: node:18-alpine
+    container_name: tuxedo-dev-frontend
+    ports:
+      - "5173:5173"
+    working_dir: /app
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    environment:
+      - VITE_STELLAR_NETWORK=testnet
+      - VITE_HORIZON_URL=https://horizon-testnet.stellar.org
+      - VITE_RPC_URL=https://soroban-testnet.stellar.org
+      - VITE_API_URL=http://localhost:8002
+    command: sh -c "npm ci && npm run dev"
+    networks:
+      - tuxedo-network
+    profiles:
+      - dev
+
+networks:
+  tuxedo-network:
+    driver: bridge
+
+volumes:
+  backend_data:
+    driver: local
+  node_modules:
+    driver: local

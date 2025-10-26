@@ -91,6 +91,41 @@ export interface MessageWithMetadata {
   created_at: string;
 }
 
+// Transaction API Interfaces
+export interface TransactionRequest {
+  action: string; // 'deposit', 'mining', 'claim'
+  user_address: string;
+  amount?: number;
+  vault_address?: string;
+}
+
+export interface TransactionResponse {
+  success: boolean;
+  transaction?: {
+    xdr: string;
+    network: string;
+    description: string;
+    amount: number;
+    tux_rewards: number;
+    estimated_shares: string;
+    note: string;
+    mining_duration?: number;
+    vault_address?: string;
+  };
+  error?: string;
+  message?: string;
+}
+
+export interface MiningStatus {
+  user_address: string;
+  total_tux_mined: number;
+  active_mining_sessions: number;
+  last_mining?: string;
+  mining_power: number;
+  next_reward_estimate: number;
+  error?: string;
+}
+
 // Create Axios instance with default configuration
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -387,6 +422,63 @@ export const chatApi = {
       return response.data;
     } catch (error: any) {
       console.error('Stellar Tool Call Error:', error);
+      throw error;
+    }
+  }
+};
+
+// Transaction API for automatic wallet triggering
+export const transactionApi = {
+  /**
+   * Prepare a deposit transaction with tux mining
+   */
+  async prepareDepositTransaction(
+    userAddress: string,
+    amount: number,
+    vaultAddress?: string
+  ): Promise<TransactionResponse> {
+    try {
+      const response = await api.post('/prepare-transaction', {
+        action: 'deposit',
+        user_address: userAddress,
+        amount: amount,
+        vault_address: vaultAddress
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Prepare Transaction Error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get mining status for a user
+   */
+  async getMiningStatus(userAddress: string): Promise<MiningStatus> {
+    try {
+      const response = await api.get(`/mining-status/${userAddress}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Get Mining Status Error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Simulate mining completion for demo purposes
+   */
+  async simulateMiningCompletion(
+    userAddress: string,
+    depositAmount: number
+  ): Promise<any> {
+    try {
+      const response = await api.post('/simulate-mining-completion', {
+        user_address: userAddress,
+        deposit_amount: depositAmount
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Simulate Mining Completion Error:', error);
       throw error;
     }
   }

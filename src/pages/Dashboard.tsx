@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Heading, Card, Content } from "@stellar/design-system";
 import { useBlendPools } from "../hooks/useBlendPools";
 import PoolsDashboard from "../components/dashboard/PoolsDashboard";
+import { TuxMiningDashboard } from "../components/TuxMiningDashboard";
 
 const Dashboard: React.FC = () => {
   const { pools, isLoading, error, refetch } = useBlendPools();
@@ -38,6 +39,14 @@ const Dashboard: React.FC = () => {
         📊 DeFindex Dashboard
       </Heading>
 
+      {/* Tux Mining Section */}
+      <Card style={{ marginBottom: "24px" }}>
+        <Content>
+          <TuxMiningDashboard />
+        </Content>
+      </Card>
+
+      {/* Pools Section */}
       <Card>
         <Content>
           <PoolsDashboard
