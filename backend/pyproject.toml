@@ -1,5 +1,5 @@
 # Tuxedo Backend Dependencies
-# Use with: uv add fastapi uvicorn pydantic python-dotenv langchain-openai stellar-sdk
+# Use with: uv add fastapi uvicorn pydantic python-dotenv langchain-openai stellar-sdk aiohttp certifi
 
 [project]
 name = "tuxedo-backend"
@@ -14,5 +14,7 @@ dependencies = [
     "langchain>=0.1.0",
     "langchain-openai>=0.1.0",
     "langchain-core>=1.0.1",
-    "stellar-sdk>=13.1.0",
+    "stellar-sdk[aiohttp]>=13.1.0",
+    "aiohttp>=3.8.0",
+    "certifi>=2022.12.7",
 ]

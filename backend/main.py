@@ -28,11 +28,13 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
 # Import local Stellar tools
 try:
-    from stellar_tools import account_manager, trading, market_data
+    from stellar_tools import account_manager, trading, trustline_manager, market_data, utilities
+    from stellar_soroban import soroban_operations
+    from stellar_ssl import create_soroban_client_with_ssl
     from stellar_sdk import Server
     from key_manager import KeyManager
     STELLAR_TOOLS_AVAILABLE = True
-    logger.info("Local Stellar tools loaded successfully")
+    logger.info("Local Stellar tools loaded successfully (including Soroban)")
 except ImportError as e:
     logger.warning(f"Stellar tools not available: {e}")
     STELLAR_TOOLS_AVAILABLE = False
@@ -137,7 +139,8 @@ async def stellar_tools_status():
             "trading_tool",
             "trustline_manager_tool",
             "market_data_tool",
-            "utilities_tool"
+            "utilities_tool",
+            "soroban_tool"
         ]
 
     return StellarToolsResponse(
@@ -210,6 +213,7 @@ async def call_stellar_tool(tool_name: str, arguments: dict) -> str:
 
         # Initialize Stellar components
         horizon = Server("https://horizon-testnet.stellar.org")
+        soroban = create_soroban_client_with_ssl("https://soroban-testnet.stellar.org")
         key_manager = KeyManager()
 
         if tool_name == "account_manager_tool":
@@ -229,8 +233,26 @@ async def call_stellar_tool(tool_name: str, arguments: dict) -> str:
                 horizon=horizon,
                 **arguments
             )
+        elif tool_name == "trustline_manager_tool":
+            return trustline_manager(
+                horizon=horizon,
+                key_manager=key_manager,
+                **arguments
+            )
+        elif tool_name == "utilities_tool":
+            return utilities(
+                horizon=horizon,
+                **arguments
+            )
+        elif tool_name == "soroban_tool":
+            return await soroban_operations(
+                soroban_server=soroban,
+                key_manager=key_manager,
+                network_passphrase="Test SDF Network ; September 2015",
+                **arguments
+            )
         else:
-            return f"Unknown tool: {tool_name}. Available tools: account_manager_tool, trading_tool, market_data_tool"
+            return f"Unknown tool: {tool_name}. Available tools: account_manager_tool, trading_tool, trustline_manager_tool, market_data_tool, utilities_tool, soroban_tool"
 
     except Exception as e:
         logger.error(f"Error calling Stellar tool {tool_name}: {e}")
