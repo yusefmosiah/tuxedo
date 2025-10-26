@@ -1,0 +1,77 @@
+services:
+  # Backend Service (from docker-compose.yaml backend service)
+  - type: web
+    name: tuxedo-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile.backend
+    plan: free
+    rootDir: backend
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_BASE_URL
+        value: https://openrouter.ai/api/v1
+      - key: STELLAR_NETWORK
+        value: testnet
+      - key: HORIZON_URL
+        value: https://horizon-testnet.stellar.org
+      - key: SOROBAN_RPC_URL
+        value: https://soroban-testnet.stellar.org
+      - key: PYTHONUNBUFFERED
+        value: "1"
+    healthCheck:
+      path: /health
+      interval: 30
+      timeout: 10
+      gracePeriod: 40
+    domains:
+      - tuxedo-backend.onrender.com
+
+  # Frontend Service (from docker-compose.yaml frontend service)
+  - type: web
+    name: tuxedo-frontend
+    runtime: docker
+    dockerfilePath: ./Dockerfile.frontend
+    plan: free
+    envVars:
+      - key: VITE_STELLAR_NETWORK
+        value: testnet
+      - key: VITE_HORIZON_URL
+        value: https://horizon-testnet.stellar.org
+      - key: VITE_RPC_URL
+        value: https://soroban-testnet.stellar.org
+      - key: VITE_API_URL
+        value: https://tuxedo-backend.onrender.com
+    domains:
+      - tuxedo.onrender.com
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: X-XSS-Protection
+        value: "1; mode=block"
+
+  # Optional Development Frontend (from docker-compose.yaml dev-frontend)
+  - type: web
+    name: tuxedo-dev-frontend
+    runtime: docker
+    dockerfilePath: ./Dockerfile.dev-frontend
+    plan: free
+    envVars:
+      - key: VITE_STELLAR_NETWORK
+        value: testnet
+      - key: VITE_HORIZON_URL
+        value: https://horizon-testnet.stellar.org
+      - key: VITE_RPC_URL
+        value: https://soroban-testnet.stellar.org
+      - key: VITE_API_URL
+        value: https://tuxedo-backend.onrender.com
+    domains:
+      - tuxedo-dev.onrender.com
