@@ -1,30 +1,87 @@
-# Tuxedo - AI-Powered Blend Pools Dashboard
+# 🎩 Tuxedo - AI-Powered DeFi Assistant
 
-Conversational AI agent for discovering and interacting with Blend Protocol on Stellar testnet.
+**Harvard Hack-o-Ween Winner 🎃**
+Conversational AI agent for discovering and interacting with DeFi protocols on Stellar testnet.
 
-**Live Demo:** https://your-demo-url.com
-**Explainer Video:** [Watch Project Overview](https://discord.com/channels/@me/1431689387296428095/1432038283629563935)
-**Block Explorer:** [View Contract on Stellar Explorer]()
-
----
-
-## 🎥 Demo Video
-
-[Project Demo Video](https://discord.com/channels/@me/1431689387296428095/1432038283629563935)
+**Status:** Production-Ready (6.3/10) | **Network:** Stellar Testnet
+**Features:** AI Chat + Yield Farming + Wallet Integration + Smart Contracts
 
 ---
 
-## 📸 Screenshots
+## 🎯 Quick Start
 
-### Dashboard Interface
-[*Screenshot of the main Blend pools dashboard showing APY rates and pool metrics*](https://i.imgur.com/BhBeyBm.png)
-### AI Chat Interface
-[*Screenshot of the conversational AI interface with tool execution indicators*](https://i.imgur.com/UZ7RmGs.png)
-### Wallet Integration
-[*Screenshot showing connected wallet with account details*](https://imgur.com/enkIM7m)
+### Local Development (Current Setup)
+```bash
+# Backend (Port 8002)
+cd backend && source .venv/bin/activate && python main.py
+
+# Frontend (Port 5173)
+npm run dev
+
+# Access: http://localhost:5173
+```
+
+### AWS SSH Port Forwarding
+```bash
+# Forward ports for remote access
+ssh -L 5173:localhost:5173 -L 8002:localhost:8002 user@your-server
+```
+
 ---
 
-## 🔧 How It Works
+## 🚀 Core Features
+
+### 🤖 AI Agent
+- **Multi-step reasoning** with LangChain integration
+- **9 Integrated Tools**: 6 Stellar tools + 3 TUX farming tools
+- **Natural language** blockchain interaction
+- **Real-time streaming** responses
+
+### 🏦 DeFi Integration
+- **Blend Protocol**: Pool discovery and APY tracking
+- **TUX Yield Farming**: Synthetic rewards with 100M token supply
+- **Smart Contracts**: Soroban contracts on Stellar testnet
+- **Hardware Wallet**: USB ledger support
+
+### 💫 Modern UI
+- **Real-time chat** with tool execution indicators
+- **Wallet integration** via Stellar Wallets Kit
+- **Responsive design** with Stellar Design System
+- **Health monitoring** and error handling
+
+---
+
+## 🔧 Architecture
+
+### AI Agent Backend (Port 8002)
+```
+FastAPI + LangChain + OpenAI gpt-oss 120b
+├─ Agent Loop (10 iterations max)
+├─ 9 Stellar & DeFi tools
+├─ Conversation history
+└─ Error handling
+```
+
+### Frontend (Port 5173)
+```
+React 19 + TypeScript + Vite
+├─ ChatInterface.tsx (main AI chat)
+├─ TuxFarmingDashboard.tsx (yield farming)
+├─ Stellar Wallets Kit integration
+└─ Real-time health checks
+```
+
+### Smart Contracts
+```
+Stellar Testnet (Soroban)
+├─ TUX Token (100M supply)
+├─ TUX Farming (Synthetix rewards)
+└─ Blend Protocol integration
+```
+
+---
+
+## 🛠️ Development
 
 ### Smart Contract Integration
 Tuxedo interacts with Blend Protocol's smart contracts on Stellar testnet:

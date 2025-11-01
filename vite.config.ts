@@ -32,6 +32,30 @@ export default defineConfig(() => {
           target: "http://localhost:8000/friendbot",
           changeOrigin: true,
         },
+        "/api": {
+          target: "http://localhost:8000",
+          changeOrigin: true,
+        },
+        "/health": {
+          target: "http://localhost:8000",
+          changeOrigin: true,
+        },
+        "/chat": {
+          target: "http://localhost:8000",
+          changeOrigin: true,
+        },
+        "/chat-stream": {
+          target: "http://localhost:8000",
+          changeOrigin: true,
+        },
+        "/stellar-tools": {
+          target: "http://localhost:8000",
+          changeOrigin: true,
+        },
+        "/threads": {
+          target: "http://localhost:8000",
+          changeOrigin: true,
+        },
       },
     },
   };
