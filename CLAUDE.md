@@ -57,9 +57,9 @@ source .venv/bin/activate && python main.py
 
 ### Service URLs (Development)
 - Frontend: http://localhost:5173/
-- Backend: http://localhost:8002/
-- Health Check: http://localhost:8002/health
-- API Documentation: http://localhost:8002/docs
+- Backend: http://localhost:8000/
+- Health Check: http://localhost:8000/health
+- API Documentation: http://localhost:8000/docs
 
 ## High-Level Architecture
 
@@ -82,7 +82,7 @@ User Chat → Frontend → API → AI Agent → LLM → Tool Selection → Stell
 - `VITE_STELLAR_NETWORK=testnet`
 - `VITE_HORIZON_URL=https://horizon-testnet.stellar.org`
 - `VITE_RPC_URL=https://soroban-testnet.stellar.org`
-- `VITE_API_URL=http://localhost:8002` (or `PUBLIC_API_URL`)
+- `VITE_API_URL=http://localhost:8000` (or `PUBLIC_API_URL`)
 
 **Backend (.env)**:
 - `OPENAI_API_KEY=your_api_key` (required)
@@ -200,8 +200,8 @@ All Stellar tools follow consistent patterns:
 
 ### Port Configuration
 - Frontend: 5173 (configurable via Vite)
-- Backend: 8002 (hardcoded across multiple files - needs refactoring)
-- API fallback: Attempts 8000, 8001 if 8002 unavailable
+- Backend: 8000 (standardized port)
+- API fallback: Attempts 8001, 8002 if 8000 unavailable
 
 ### Network Configuration
 - Currently testnet-only (major limitation)
@@ -267,7 +267,7 @@ All Stellar tools follow consistent patterns:
 
 ### Quick Reference for Common Issues
 - **Backend not starting**: Check `backend/.env` for OPENAI_API_KEY
-- **Frontend can't reach backend**: Verify port 8002 is available
+- **Frontend can't reach backend**: Verify port 8000 is available
 - **Tools not working**: Ensure `STELLAR_TOOLS_AVAILABLE = True` in backend logs
 - **Wallet not connecting**: Check Freighter extension and network settings
 - **Testnet only**: All contracts and URLs hardcoded to testnet (see Production Limitations)

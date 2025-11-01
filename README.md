@@ -53,7 +53,7 @@ ssh -L 5173:localhost:5173 -L 8002:localhost:8002 user@your-server
 
 ## 🔧 Architecture
 
-### AI Agent Backend (Port 8002)
+### AI Agent Backend (Port 8000)
 ```
 FastAPI + LangChain + OpenAI gpt-oss 120b
 ├─ Agent Loop (10 iterations max)
