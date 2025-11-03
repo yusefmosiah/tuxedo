@@ -45,6 +45,15 @@ except ImportError as e:
     logger.warning(f"Stellar tools not available: {e}")
     STELLAR_TOOLS_AVAILABLE = False
 
+# Import agent account management
+try:
+    from api.routes.agent import router as agent_router
+    AGENT_API_AVAILABLE = True
+    logger.info("Agent account management API loaded successfully")
+except ImportError as e:
+    logger.warning(f"Agent account management API not available: {e}")
+    AGENT_API_AVAILABLE = False
+
 # Import live summary service
 try:
     from live_summary_service import get_live_summary_service, is_live_summary_enabled
@@ -408,6 +417,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include API routers
+if AGENT_API_AVAILABLE:
+    app.include_router(agent_router, prefix="/api/agent", tags=["agent"])
 
 # Routes
 @app.get("/")
