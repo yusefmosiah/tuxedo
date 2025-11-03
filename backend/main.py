@@ -16,6 +16,10 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Create app at module level for Docker/uvicorn compatibility
+from app import create_app
+app = create_app()
+
 def main():
     """Main entry point for the application"""
     try:
