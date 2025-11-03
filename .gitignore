@@ -41,7 +41,8 @@ packages/*
 !packages/.gitkeep
 
 # generated contract client imports
-src/contracts/*
+# Note: blend.ts is manually maintained and should be committed
+src/contracts/generated/*
 !src/contracts/util.ts
 
 # Python cache files
@@ -66,3 +67,5 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+
+backend/chat_threads.db
