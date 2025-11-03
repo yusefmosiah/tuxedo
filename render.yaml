@@ -3,7 +3,7 @@ services:
   - type: web
     name: tuxedo-backend
     runtime: docker
-    dockerfilePath: ./Dockerfile.backend
+    dockerfilePath: Dockerfile.backend
     plan: free
     rootDir: backend
     envVars:
