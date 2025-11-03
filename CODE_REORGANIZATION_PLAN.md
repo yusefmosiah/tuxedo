@@ -1,205 +1,337 @@
-# Code Reorganization Plan
+# Tuxedo Code Reorganization Plan
 
-This document outlines a systematic plan to reorganize the Tuxedo codebase for better maintainability, scalability, and developer experience.
+**Vision**: Transform Tuxedo into a clean, scalable agent-first DeFi interface that can integrate with broader ecosystems like Choir.
+
+**Context**: This plan supports both immediate hackathon success and long-term evolution toward multi-agent social DeFi experiences.
 
 ## 🎯 Objectives
 
-1. **Improve maintainability** by splitting large files into focused modules
-2. **Reduce complexity** through clear separation of concerns
-3. **Enhance developer experience** with better code organization
-4. **Support scaling** by creating extensible architecture
-5. **Standardize patterns** across frontend and backend
+### Immediate (Hackathon Week)
+1. **Remove wallet dependencies** and establish agent-first paradigm
+2. **Clean up project structure** for professional presentation
+3. **Fix testing organization** (move tests out of root)
+4. **Remove TUX farming code** and focus on real protocols
+
+### Medium-term (Post-Hackathon)
+1. **Modular architecture** supporting multiple agents
+2. **Clean separation** between web app and agent core
+3. **Extensible protocol integration** framework
+4. **Production-ready security** and configuration
+
+### Long-term (Choir Integration)
+1. **Multi-agent architecture** supporting social features
+2. **API-first design** for mobile/web client support
+3. **Plugin system** for different agent capabilities
+4. **Cross-protocol abstraction** for multi-chain support
 
 ## 📊 Current State Analysis
 
-### Issues Identified
-- **Backend main.py**: 2000+ lines, multiple responsibilities
-- **Frontend components**: Mixed concerns, inconsistent patterns
-- **Configuration scattered**: Multiple env files, hardcoded values
-- **Testing gaps**: Missing comprehensive test coverage
-- **Documentation**: Outdated file references
+### Critical Issues
+- **Backend main.py**: 2000+ lines, agent logic mixed with API
+- **Frontend wallet dependencies**: WalletProvider throughout component tree
+- **Test files in root**: test_*.py files at project root (unprofessional)
+- **TUX farming mock code**: Entire mock system needs removal
+- **Configuration scattered**: Hardcoded values in 15+ locations
+- **Monolithic structure**: Difficult to extend or modify
 
 ### Files Needing Immediate Attention
-- `backend/main.py` - Split into 8+ focused modules
-- `src/components/ChatInterface.tsx` - Extract AI logic
-- `src/lib/api.ts` - Split into focused API clients
-- `src/contracts/` - Standardize contract interfaces
+- `backend/main.py` - Split into agent core, API, and tools
+- `src/providers/WalletProvider.tsx` - Remove entirely
+- `src/components/` - Remove wallet dependencies from all components
+- `test_*.py` (root) - Move to `tests/` directory
+- `backend/tux_farming.py` - Remove entire module
 - Configuration files - Centralize and standardize
 
 ## 🏗️ Target Architecture
 
-### Backend Structure
+### Project Structure
 ```
-backend/
-├── app.py                    # FastAPI app setup (200 lines)
-├── config/
-│   ├── __init__.py
-│   ├── settings.py           # Environment & configuration
-│   ├── logging.py            # Logging configuration
-│   └── constants.py          # App constants
-├── agent/
-│   ├── __init__.py
-│   ├── core.py               # Main AI agent logic (300 lines)
-│   ├── conversation.py       # Chat management
-│   ├── tools.py              # Tool orchestration
-│   └── memory.py             # Context management
-├── tools/
-│   ├── __init__.py
-│   ├── stellar/
+tuxedo/
+├── README.md                     # Main project overview
+├── HACKATHON_FINAL_PLAN.md       # Current hackathon strategy
+├── CLAUDE.md                     # AI assistant development guide
+├── ENVIRONMENT_SETUP.md          # Environment configuration
+├── SECURITY.md                   # Security considerations
+├── PHALA_DEPLOYMENT.md           # Phala deployment guide
+├── CODE_REORGANIZATION_PLAN.md   # This document
+├── .env.example                  # Environment template
+├── .env.backend.example          # Backend env template
+├── .env.frontend.example         # Frontend env template
+├── render.yaml                   # Render deployment config
+├── docker-compose.yaml           # Local development
+├── scripts/                      # Development tools
+│   ├── dev.sh                    # Development launcher
+│   └── dev-improved.sh           # Improved dev launcher
+├── contracts/                    # Smart contracts
+│   └── (Soroban contracts)
+├── backend/                      # FastAPI backend
+│   ├── README.md
+│   ├── main.py                   # Entry point (simplified)
+│   ├── app.py                    # FastAPI app setup
+│   ├── .env.example              # Backend env template
+│   ├── .env.production.template  # Production template
+│   ├── agent/                    # AI agent core
 │   │   ├── __init__.py
-│   │   ├── account_manager.py    # 200 lines
-│   │   ├── trading.py             # 150 lines
-│   │   ├── trustline_manager.py   # 100 lines
-│   │   ├── market_data.py         # 100 lines
-│   │   ├── utilities.py           # 80 lines
-│   │   └── soroban_operations.py  # 200 lines
-│   └── base.py               # Base tool interface
-├── api/
-│   ├── __init__.py
-│   ├── routes/
+│   │   ├── core.py               # Main agent logic
+│   │   ├── conversation.py       # Chat management
+│   │   ├── tools.py              # Tool orchestration
+│   │   ├── memory.py             # Context management
+│   │   └── prompts.py            # Agent prompts
+│   ├── tools/                    # Agent tools
 │   │   ├── __init__.py
-│   │   ├── chat.py           # Chat endpoints
-│   │   ├── health.py         # Health check
-│   │   └── tools.py          # Tool endpoints
-│   ├── middleware.py         # CORS, auth, logging
-│   └── schemas.py            # Pydantic models
-├── services/
-│   ├── __init__.py
-│   ├── stellar_client.py     # Stellar SDK wrapper
-│   ├── openai_client.py      # OpenAI API wrapper
-│   └── cache.py              # Caching service
-├── utils/
-│   ├── __init__.py
-│   ├── key_manager.py        # Key management
-│   ├── errors.py             # Error definitions
-│   └── helpers.py            # Utility functions
-└── tests/
-    ├── __init__.py
-    ├── test_agent.py
-    ├── test_tools.py
-    ├── test_api.py
-    └── conftest.py           # Test configuration
-```
-
-### Frontend Structure
-```
-src/
-├── App.tsx                   # Main app component (100 lines)
-├── main.tsx                  # App entry point
-├── components/
-│   ├── common/               # Reusable UI components
-│   │   ├── Button.tsx
-│   │   ├── Input.tsx
-│   │   ├── Modal.tsx
+│   │   ├── base.py               # Base tool interface
+│   │   ├── stellar/              # Stellar ecosystem tools
+│   │   │   ├── __init__.py
+│   │   │   ├── account_manager.py
+│   │   │   ├── trading.py
+│   │   │   ├── market_data.py
+│   │   │   ├── blend_protocol.py
+│   │   │   ├── defindex_vaults.py
+│   │   │   └── utilities.py
+│   │   └── agent/                # Agent management tools
+│   │       ├── __init__.py
+│   │       ├── account_management.py
+│   │       └── security.py
+│   ├── config/                   # Configuration management
+│   │   ├── __init__.py
+│   │   ├── settings.py           # Pydantic settings
+│   │   ├── networks.py           # Network configurations
+│   │   ├── contracts.py          # Contract addresses
+│   │   └── security.py           # Security parameters
+│   ├── api/                      # API layer
+│   │   ├── __init__.py
+│   │   ├── routes/
+│   │   │   ├── __init__.py
+│   │   │   ├── chat.py           # Chat endpoints
+│   │   │   ├── agent.py           # Agent management
+│   │   │   ├── health.py         # Health checks
+│   │   │   └── tools.py          # Tool execution
+│   │   ├── middleware.py         # CORS, auth, logging
+│   │   └── schemas.py            # Pydantic models
+│   ├── services/                 # Business services
+│   │   ├── __init__.py
+│   │   ├── stellar_client.py     # Stellar SDK wrapper
+│   │   ├── llm_client.py         # LLM abstraction
+│   │   ├── cache.py              # Caching service
+│   │   └── key_manager.py        # Agent key management
+│   ├── database/                 # Database management
+│   │   ├── __init__.py
+│   │   ├── models.py             # Database models
+│   │   └── migrations/           # Database migrations
+│   └── tests/                    # Backend tests
+│       ├── __init__.py
+│       ├── conftest.py           # Test configuration
+│       ├── test_agent.py
+│       ├── test_tools/
+│       │   ├── test_stellar.py
+│       │   └── test_agent_management.py
+│       ├── test_api/
+│       │   ├── test_chat.py
+│       │   └── test_agent.py
+│       └── integration/
+│           └── test_workflows.py
+├── src/                          # Frontend (React/TypeScript)
+│   ├── main.tsx                  # App entry point
+│   ├── App.tsx                   # Main app component
+│   ├── .env.example              # Frontend env template
+│   ├── components/               # React components
+│   │   ├── common/               # Reusable UI components
+│   │   │   ├── Button.tsx
+│   │   │   ├── Input.tsx
+│   │   │   ├── Modal.tsx
+│   │   │   ├── Loading.tsx
+│   │   │   └── index.ts
+│   │   ├── agent/                # Agent management UI
+│   │   │   ├── AgentProvider.tsx  # Replace WalletProvider
+│   │   │   ├── AccountManager.tsx # Account management
+│   │   │   ├── AccountList.tsx    # Account list
+│   │   │   ├── CreateAccount.tsx  # Account creation
+│   │   │   └── index.ts
+│   │   ├── chat/                 # Chat functionality
+│   │   │   ├── ChatInterface.tsx  # Main chat UI
+│   │   │   ├── MessageList.tsx    # Message display
+│   │   │   ├── MessageInput.tsx   # Input handling
+│   │   │   ├── ToolIndicator.tsx  # Tool execution status
+│   │   │   └── index.ts
+│   │   ├── dashboard/            # Dashboard components
+│   │   │   ├── Dashboard.tsx      # Main dashboard
+│   │   │   ├── PoolDashboard.tsx  # Blend pools
+│   │   │   ├── VaultDashboard.tsx # DeFindex vaults
+│   │   │   ├── PortfolioView.tsx  # Portfolio overview
+│   │   │   └── index.ts
+│   │   └── layout/               # Layout components
+│   │       ├── Header.tsx
+│   │       ├── Sidebar.tsx
+│   │       ├── Footer.tsx
+│   │       └── index.ts
+│   ├── hooks/                    # Custom React hooks
+│   │   ├── useAgent.ts           # Agent state management
+│   │   ├── useChat.ts            # Chat functionality
+│   │   ├── useAccounts.ts        # Account management
+│   │   ├── useApi.ts             # API client
+│   │   ├── useBlendPools.ts      # Blend pool data
 │   │   └── index.ts
-│   ├── chat/                 # Chat functionality
-│   │   ├── ChatInterface.tsx     # Main chat UI (200 lines)
-│   │   ├── MessageList.tsx       # Message display
-│   │   ├── MessageInput.tsx      # Input handling
-│   │   ├── ToolIndicator.tsx     # Tool execution status
+│   ├── services/                 # Frontend services
+│   │   ├── agentService.ts       # Agent API client
+│   │   ├── chatService.ts        # Chat API client
+│   │   ├── poolService.ts        # Pool data service
 │   │   └── index.ts
-│   ├── dashboard/            # Dashboard components
-│   │   ├── PoolsDashboard.tsx
-│   │   ├── PoolCard.tsx
-│   │   ├── MetricsPanel.tsx
+│   ├── stores/                   # State management
+│   │   ├── agentStore.ts         # Agent state
+│   │   ├── chatStore.ts          # Chat state
+│   │   ├── accountStore.ts       # Account state
 │   │   └── index.ts
-│   └── layout/               # Layout components
-│       ├── Header.tsx
-│       ├── Sidebar.tsx
-│       ├── Footer.tsx
-│       └── index.ts
-├── hooks/                    # Custom React hooks
-│   ├── useChat.ts            # Chat state management
-│   ├── useWallet.ts          # Wallet integration
-│   ├── useApi.ts             # API client hook
-│   ├── useBlendPools.ts      # Pool data
-│   └── index.ts
-├── services/                 # Business logic
-│   ├── chatService.ts        # Chat API client
-│   ├── stellarService.ts     # Stellar operations
-│   ├── poolService.ts        # Pool data management
-│   └── index.ts
-├── stores/                   # State management
-│   ├── chatStore.ts          # Chat state
-│   ├── walletStore.ts        # Wallet state
-│   ├── appStore.ts           # Global app state
-│   └── index.ts
-├── utils/                    # Utility functions
-│   ├── format.ts             # Data formatting
-│   ├── validation.ts         # Input validation
-│   ├── constants.ts          # App constants
-│   └── index.ts
-├── types/                    # TypeScript definitions
-│   ├── chat.ts               # Chat-related types
-│   ├── stellar.ts            # Stellar types
-│   ├── api.ts                # API response types
-│   └── index.ts
-├── styles/                   # Styling
-│   ├── globals.css
-│   ├── components.css
-│   └── variables.css
-└── tests/                    # Frontend tests
-    ├── __tests__/
-    ├── components/
-    ├── hooks/
-    └── utils/
+│   ├── config/                   # Frontend configuration
+│   │   ├── constants.ts          # App constants
+│   │   ├── networks.ts           # Network config
+│   │   ├── endpoints.ts          # API endpoints
+│   │   └── environment.ts        # Environment handling
+│   ├── types/                    # TypeScript definitions
+│   │   ├── agent.ts              # Agent types
+│   │   ├── chat.ts               # Chat types
+│   │   ├── stellar.ts            # Stellar types
+│   │   ├── api.ts                # API types
+│   │   └── index.ts
+│   ├── utils/                    # Utility functions
+│   │   ├── format.ts             # Data formatting
+│   │   ├── validation.ts         # Input validation
+│   │   ├── helpers.ts            # Helper functions
+│   │   └── index.ts
+│   └── tests/                    # Frontend tests
+│       ├── setup.ts              # Test setup
+│       ├── __mocks__/            # Mock files
+│       ├── components/
+│       │   ├── agent/
+│       │   ├── chat/
+│       │   └── dashboard/
+│       ├── hooks/
+│       └── utils/
+├── tests/                        # Integration and E2E tests
+│   ├── integration/              # Integration tests
+│   │   ├── test_agent_workflows.py
+│   │   ├── test_chat_flows.py
+│   │   └── test_transaction_flows.py
+│   ├── e2e/                      # End-to-end tests
+│   │   ├── test_user_journeys.py
+│   │   └── test_critical_paths.py
+│   └── fixtures/                 # Test data
+│       ├── accounts.json
+│       ├── transactions.json
+│       └── conversations.json
+└── docs/                        # Additional documentation
+    ├── API.md                     # API documentation
+    ├── DEPLOYMENT.md              # Deployment guides
+    └── DEVELOPMENT.md             # Development setup
 ```
 
 ## 📋 Implementation Plan
 
-### Phase 1: Backend Refactoring (Priority: High)
+### Phase 1: Critical Cleanup (Hackathon Day 1)
 
-#### 1.1 Configuration Management
-**Target**: `backend/config/`
+#### 1.1 Remove Wallet Dependencies
+**Priority**: CRITICAL for hackathon success
 
 **Actions**:
-```python
-# backend/config/settings.py
-from pydantic import BaseSettings
-from typing import Optional
+```bash
+# Remove wallet provider system
+rm src/providers/WalletProvider.tsx
+rm src/components/WalletButton.tsx
+rm src/util/wallet.ts
 
-class Settings(BaseSettings):
-    # API Configuration
-    openai_api_key: str
-    openai_base_url: str = "https://api.redpill.ai/v1"
-    primary_model: str = "gpt-4"
+# Create agent provider
+# src/providers/AgentProvider.tsx
+export const AgentProvider = ({ children }: { children: React.ReactNode }) => {
+  const [accounts, setAccounts] = useState<string[]>([]);
+  const [activeAccount, setActiveAccount] = useState<string>("");
 
-    # Stellar Configuration
-    stellar_network: str = "testnet"
-    horizon_url: str = "https://horizon-testnet.stellar.org"
-    soroban_rpc_url: str = "https://soroban-testnet.stellar.org"
+  const createAccount = async () => {
+    const response = await fetch('/api/agent/create-account', { method: 'POST' });
+    const newAccount = await response.json();
+    setAccounts(prev => [...prev, newAccount.address]);
+    return newAccount.address;
+  };
 
-    # Server Configuration
-    host: str = "0.0.0.0"
-    port: int = 8000
-    debug: bool = False
-
-    class Config:
-        env_file = ".env"
+  return (
+    <AgentContext.Provider value={{ accounts, activeAccount, setActiveAccount, createAccount }}>
+      {children}
+    </AgentContext.Provider>
+  );
+};
 ```
 
-**Benefits**:
-- Centralized configuration
-- Type safety with Pydantic
-- Environment-specific settings
-- Easy validation
-
-#### 1.2 Split main.py
-**Target**: Reduce from 2000+ lines to ~200 lines
+#### 1.2 Fix Testing Structure
+**Priority**: HIGH for professional appearance
 
 **Actions**:
+```bash
+# Create proper test structure
+mkdir -p tests/{integration,e2e,fixtures}
+
+# Move root test files to appropriate locations
+mv test_agent.py backend/tests/
+mv test_agent_with_tools.py backend/tests/test_tools/
+mv test_multiturn.py backend/tests/test_chat/
+mv test_multiturn_with_tools.py backend/tests/test_chat/
+mv test_wallet_fix.py backend/tests/test_agent_management/
+```
+
+#### 1.3 Remove TUX Farming System
+**Priority**: HIGH for hackathon focus
+
+**Actions**:
+```bash
+# Remove TUX farming components
+rm -rf src/components/tux_farming/
+rm src/hooks/useTuxFarming.ts
+rm src/components/dashboard/TuxMiningDashboard.tsx
+
+# Remove TUX farming backend
+rm backend/tux_farming.py
+rm backend/tux_farming_transactions.py
+
+# Remove TUX farming tests
+rm test_mock_farming.py
+rm test_tux_farming.py
+```
+
+### Phase 2: Backend Refactoring (Hackathon Day 1-2)
+
+#### 2.1 Split main.py into Focused Modules
+**Target**: Reduce from 2000+ lines to ~200 lines
+
+**Current structure issues**:
+- Agent logic mixed with FastAPI setup
+- Tool definitions scattered throughout
+- Configuration hardcoded
+- No clear separation of concerns
+
+**New structure**:
 ```python
-# backend/app.py - New main file
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+# backend/main.py - Simplified entry point
+from app import create_app
 from config.settings import settings
-from api.routes import chat, health, tools
+import uvicorn
+
+app = create_app()
+
+if __name__ == "__main__":
+    uvicorn.run(
+        "main:app",
+        host=settings.host,
+        port=settings.port,
+        reload=settings.debug
+    )
+
+# backend/app.py - FastAPI application setup
+from fastapi import FastAPI
+from api.routes import chat, agent, health, tools
 from api.middleware import setup_middleware
+from config.settings import settings
 
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Tuxedo AI Agent",
-        description="Stellar-focused AI agent with DeFi tools",
+        description="Agent-first DeFi interface for Stellar ecosystem",
         version="1.0.0"
     )
 
@@ -208,461 +340,577 @@ def create_app() -> FastAPI:
 
     # Include routers
     app.include_router(chat.router, prefix="/chat")
+    app.include_router(agent.router, prefix="/agent")
     app.include_router(health.router, prefix="/health")
     app.include_router(tools.router, prefix="/tools")
 
     return app
-
-app = create_app()
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(
-        "app:app",
-        host=settings.host,
-        port=settings.port,
-        reload=settings.debug
-    )
 ```
 
-#### 1.3 Extract AI Agent Logic
-**Target**: `backend/agent/core.py`
+#### 2.2 Extract Agent Core Logic
+**Target**: Clean agent module focused on AI reasoning
 
-**Actions**:
 ```python
 # backend/agent/core.py
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from langchain_core.messages import HumanMessage, AIMessage
-from langchain_openai import ChatOpenAI
-from .conversation import ConversationManager
-from .tools import ToolOrchestrator
+from services.llm_client import LLMClient
+from tools.tool_orchestrator import ToolOrchestrator
+from agent.conversation import ConversationManager
+from agent.memory import MemoryManager
 
 class TuxedoAgent:
-    def __init__(self, llm: ChatOpenAI, tools: List):
-        self.llm = llm
+    """Main AI agent for DeFi operations"""
+
+    def __init__(self, llm_client: LLMClient, tools: List):
+        self.llm_client = llm_client
         self.tools = tools
         self.conversation_manager = ConversationManager()
         self.tool_orchestrator = ToolOrchestrator(tools)
+        self.memory_manager = MemoryManager()
 
     async def process_message(
         self,
         message: str,
-        conversation_history: Optional[List[Dict]] = None,
-        wallet_address: Optional[str] = None
-    ) -> str:
-        # Main agent logic (extracted from main.py)
-        pass
+        conversation_id: Optional[str] = None,
+        agent_account: Optional[str] = None,
+        context: Optional[Dict] = None
+    ) -> Dict[str, Any]:
+        """Process user message and generate response"""
+
+        # Load conversation context
+        conversation = await self.conversation_manager.get_or_create(
+            conversation_id, agent_account
+        )
+
+        # Add human message
+        conversation.add_message(HumanMessage(content=message))
+
+        # Get relevant memory
+        relevant_memory = await self.memory_manager.get_relevant_context(
+            message, agent_account
+        )
+
+        # Build agent context
+        agent_context = {
+            "agent_account": agent_account,
+            "conversation_history": conversation.messages,
+            "relevant_memory": relevant_memory,
+            "current_context": context or {}
+        }
+
+        # Process with LLM and tools
+        response = await self.llm_client.process_with_tools(
+            message,
+            self.tools,
+            agent_context
+        )
+
+        # Add AI response to conversation
+        conversation.add_message(AIMessage(content=response["content"]))
+
+        # Save conversation
+        await self.conversation_manager.save(conversation)
+
+        # Update memory if needed
+        await self.memory_manager.update_memory(
+            message, response, agent_account
+        )
+
+        return response
 ```
 
-#### 1.4 Modularize Tools
-**Target**: `backend/tools/stellar/`
+#### 2.3 Create Agent Management Tools
+**Target**: Tools for agent-controlled account management
 
-**Actions**:
 ```python
-# backend/tools/stellar/account_manager.py
-from typing import Dict, List, Optional
-from stellar_sdk import Server
-from ..base import BaseTool
+# backend/tools/agent/account_management.py
+from typing import Dict, Optional
+from services.key_manager import KeyManager
+from services.stellar_client import StellarClient
+from tools.base import BaseTool
 
-class AccountManagerTool(BaseTool):
-    name = "account_manager"
-    description = "Manage Stellar accounts"
+class AccountManagementTool(BaseTool):
+    """Agent-controlled account management"""
 
-    def __init__(self, server: Server):
-        self.server = server
+    def __init__(self, key_manager: KeyManager, stellar_client: StellarClient):
+        self.key_manager = key_manager
+        self.stellar_client = stellar_client
 
-    async def create_account(self) -> Dict:
-        # Account creation logic
-        pass
+    async def create_account(
+        self,
+        account_name: Optional[str] = None,
+        initial_funding: bool = True
+    ) -> Dict[str, str]:
+        """Create new agent-controlled account"""
 
-    async def fund_account(self, address: str) -> Dict:
-        # Account funding logic
-        pass
+        # Generate new keypair
+        keypair = self.key_manager.create_random_keypair()
 
-    # ... other methods
+        # Store with metadata
+        account_data = {
+            "address": keypair.public_key,
+            "name": account_name or f"Account {len(self.list_accounts()) + 1}",
+            "created_at": datetime.utcnow().isoformat(),
+            "initial_funding": initial_funding
+        }
+
+        self.key_manager.store_account(keypair.public_key, keypair.secret, account_data)
+
+        # Fund with testnet lumens if requested
+        if initial_funding:
+            await self.stellar_client.fund_account(keypair.public_key)
+
+        return {
+            "address": keypair.public_key,
+            "name": account_data["name"],
+            "funded": initial_funding,
+            "network": "testnet"
+        }
+
+    async def list_accounts(self) -> List[Dict[str, str]]:
+        """List all agent-controlled accounts"""
+        return self.key_manager.list_accounts_with_metadata()
+
+    async def get_account_info(self, address: str) -> Dict[str, Any]:
+        """Get detailed account information"""
+        if not self.key_manager.has_account(address):
+            raise ValueError(f"Account {address} not found")
+
+        # Get stellar account data
+        account_data = await self.stellar_client.get_account(address)
+        stored_metadata = self.key_manager.get_account_metadata(address)
+
+        return {
+            "address": address,
+            "balance": account_data.get("balance", 0),
+            "sequence": account_data.get("sequence", 0),
+            "metadata": stored_metadata,
+            "network": "testnet"
+        }
 ```
 
-### Phase 2: Frontend Refactoring (Priority: Medium)
+### Phase 3: Frontend Refactoring (Hackathon Day 2-3)
 
-#### 2.1 Extract Chat Logic
-**Target**: Split `ChatInterface.tsx` (500+ lines) into focused components
+#### 3.1 Create Agent-First UI Components
+**Target**: Replace wallet UI with agent management UI
 
-**Actions**:
 ```typescript
-// src/components/chat/ChatInterface.tsx - Reduced to ~200 lines
-import { useState, useCallback } from 'react'
-import { useChat } from '../../hooks/useChat'
-import { MessageList } from './MessageList'
-import { MessageInput } from './MessageInput'
-import { ToolIndicator } from './ToolIndicator'
+// src/components/agent/AccountManager.tsx
+import React, { useState, useEffect } from 'react';
+import { useAgent } from '../../hooks/useAgent';
+import { CreateAccount } from './CreateAccount';
+import { AccountList } from './AccountList';
 
-export const ChatInterface: React.FC = () => {
-  const { messages, isLoading, sendMessage, activeTools } = useChat()
+export const AccountManager: React.FC = () => {
+  const { accounts, activeAccount, createAccount, setActiveAccount } = useAgent();
+  const [isCreating, setIsCreating] = useState(false);
 
-  const handleSendMessage = useCallback((message: string) => {
-    sendMessage(message)
-  }, [sendMessage])
+  const handleCreateAccount = async (name?: string) => {
+    setIsCreating(true);
+    try {
+      const newAddress = await createAccount(name);
+      setActiveAccount(newAddress);
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   return (
-    <div className="chat-interface">
-      <MessageList messages={messages} />
-      {activeTools.length > 0 && (
-        <ToolIndicator tools={activeTools} />
-      )}
-      <MessageInput
-        onSendMessage={handleSendMessage}
-        disabled={isLoading}
+    <div className="account-manager">
+      <div className="account-manager-header">
+        <h3>Agent Accounts</h3>
+        <button
+          onClick={() => setIsCreating(true)}
+          disabled={isCreating}
+          className="create-account-btn"
+        >
+          {isCreating ? 'Creating...' : 'Create Account'}
+        </button>
+      </div>
+
+      <AccountList
+        accounts={accounts}
+        activeAccount={activeAccount}
+        onSelectAccount={setActiveAccount}
       />
+
+      {isCreating && (
+        <CreateAccount
+          onCreate={handleCreateAccount}
+          onCancel={() => setIsCreating(false)}
+        />
+      )}
     </div>
-  )
-}
+  );
+};
 ```
 
-#### 2.2 Create Custom Hooks
-**Target**: `src/hooks/useChat.ts`
+#### 3.2 Create Agent State Management Hook
+**Target**: Replace wallet hooks with agent hooks
 
-**Actions**:
 ```typescript
-// src/hooks/useChat.ts
-import { useState, useCallback } from 'react'
-import { chatService } from '../services/chatService'
-import type { ChatMessage, ChatState } from '../types/chat'
+// src/hooks/useAgent.ts
+import { useState, useEffect, useCallback } from 'react';
+import { agentService } from '../services/agentService';
 
-export const useChat = () => {
-  const [state, setState] = useState<ChatState>({
-    messages: [],
-    isLoading: false,
-    error: null,
-    activeTools: []
-  })
+export interface AgentAccount {
+  address: string;
+  name: string;
+  balance: number;
+  network: string;
+  created_at: string;
+}
 
-  const sendMessage = useCallback(async (message: string) => {
-    setState(prev => ({ ...prev, isLoading: true }))
+export const useAgent = () => {
+  const [accounts, setAccounts] = useState<AgentAccount[]>([]);
+  const [activeAccount, setActiveAccount] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load accounts on mount
+  useEffect(() => {
+    loadAccounts();
+  }, []);
+
+  const loadAccounts = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
 
     try {
-      const response = await chatService.sendMessage(message)
-      setState(prev => ({
-        ...prev,
-        messages: [...prev.messages, response.message],
-        isLoading: false,
-        activeTools: response.activeTools
-      }))
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        error: error.message,
-        isLoading: false
-      }))
+      const accountList = await agentService.getAccounts();
+      setAccounts(accountList);
+
+      // Set active account if none selected
+      if (!activeAccount && accountList.length > 0) {
+        setActiveAccount(accountList[0].address);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load accounts');
+    } finally {
+      setIsLoading(false);
     }
-  }, [])
+  }, [activeAccount]);
+
+  const createAccount = useCallback(async (name?: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const newAccount = await agentService.createAccount(name);
+      setAccounts(prev => [...prev, newAccount]);
+      setActiveAccount(newAccount.address);
+      return newAccount.address;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create account');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   return {
-    ...state,
-    sendMessage,
-    clearError: () => setState(prev => ({ ...prev, error: null }))
-  }
-}
+    accounts,
+    activeAccount,
+    setActiveAccount,
+    createAccount,
+    isLoading,
+    error,
+    refreshAccounts: loadAccounts
+  };
+};
 ```
 
-#### 2.3 API Service Layer
-**Target**: `src/services/`
+### Phase 4: Configuration Management (Hackathon Day 3)
 
-**Actions**:
-```typescript
-// src/services/chatService.ts
-import { apiClient } from './apiClient'
-import type { ChatRequest, ChatResponse } from '../types/api'
+#### 4.1 Centralize Configuration
+**Target**: Single source of truth for all settings
 
-class ChatService {
-  async sendMessage(request: ChatRequest): Promise<ChatResponse> {
-    const response = await apiClient.post('/chat', request)
-    return response.data
-  }
+```python
+# backend/config/settings.py
+from pydantic import BaseSettings, validator
+from typing import Optional
 
-  async getConversationHistory(): Promise<ChatMessage[]> {
-    const response = await apiClient.get('/chat/history')
-    return response.data
-  }
-}
+class Settings(BaseSettings):
+    # API Configuration
+    openai_api_key: str
+    openai_base_url: str = "https://openrouter.ai/api/v1"
+    primary_model: str = "openai/gpt-oss-120b:exacto"
 
-export const chatService = new ChatService()
+    # Stellar Configuration
+    stellar_network: str = "testnet"
+    horizon_url: str = "https://horizon-testnet.stellar.org"
+    soroban_rpc_url: str = "https://soroban-testnet.stellar.org"
+    friendbot_url: str = "https://friendbot.stellar.org"
+
+    # Agent Configuration
+    max_accounts_per_agent: int = 10
+    default_account_funding: float = 10000  # stroops
+    agent_conversation_limit: int = 100
+
+    # Server Configuration
+    host: str = "0.0.0.0"
+    port: int = 8000
+    debug: bool = False
+    cors_origins: list = ["http://localhost:5173", "http://localhost:3000"]
+
+    # Security Configuration
+    encryption_key_path: str = ".encryption_key"
+    keystore_path: str = ".agent_keystore.json"
+
+    # External Services
+    defindex_api_key: Optional[str] = None
+
+    @validator('stellar_network')
+    def validate_network(cls, v):
+        if v not in ['testnet', 'mainnet', 'futurenet', 'local']:
+            raise ValueError('Invalid network')
+        return v
+
+    class Config:
+        env_file = ".env"
+        case_sensitive = False
+
+settings = Settings()
 ```
 
-### Phase 3: Configuration Management (Priority: High)
-
-#### 3.1 Centralize Configuration
-**Target**: Single source of truth for all configuration
-
-**Actions**:
 ```typescript
 // src/config/constants.ts
 export const NETWORK_CONFIG = {
   testnet: {
     horizon: 'https://horizon-testnet.stellar.org',
     rpc: 'https://soroban-testnet.stellar.org',
-    network: 'TESTNET'
+    network: 'Test SDF Network ; September 2015',
+    friendbot: 'https://friendbot.stellar.org'
   },
   mainnet: {
     horizon: 'https://horizon.stellar.org',
     rpc: 'https://soroban.stellar.org',
-    network: 'PUBLIC'
+    network: 'Public Global Stellar Network ; September 2015',
+    friendbot: null
   }
-}
+};
 
 export const API_ENDPOINTS = {
   chat: '/api/chat',
+  agent: '/api/agent',
   health: '/api/health',
   tools: '/api/tools'
-}
+};
+
+export const AGENT_CONFIG = {
+  maxAccounts: 10,
+  conversationLimit: 100,
+  defaultFunding: 10000,
+  messageTimeout: 30000
+};
 
 export const UI_CONFIG = {
   maxMessages: 100,
   typingIndicatorDelay: 500,
-  toolExecutionTimeout: 30000
-}
+  toolExecutionTimeout: 30000,
+  refreshInterval: 30000
+};
 ```
 
-#### 3.2 Environment Variables
-**Target**: Standardized environment configuration
+### Phase 5: Testing Infrastructure (Post-Hackathon)
 
-**Actions**:
-```typescript
-// src/config/environment.ts
-interface Environment {
-  VITE_STELLAR_NETWORK: 'testnet' | 'mainnet'
-  VITE_API_URL: string
-  VITE_ENABLE_DEBUG: boolean
-}
+#### 5.1 Comprehensive Test Structure
+**Target**: Professional testing setup with proper organization
 
-export const env: Environment = {
-  VITE_STELLAR_NETWORK: import.meta.env.VITE_STELLAR_NETWORK || 'testnet',
-  VITE_API_URL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
-  VITE_ENABLE_DEBUG: import.meta.env.VITE_ENABLE_DEBUG === 'true'
-}
-```
-
-### Phase 4: Testing Infrastructure (Priority: Medium)
-
-#### 4.1 Backend Testing
-**Target**: Comprehensive test coverage
-
-**Actions**:
 ```python
-# backend/tests/test_agent.py
+# backend/tests/conftest.py
 import pytest
-from unittest.mock import Mock, patch
+import asyncio
+from unittest.mock import Mock, AsyncMock
 from agent.core import TuxedoAgent
+from services.llm_client import LLMClient
+from tools.stellar.account_manager import AccountManagerTool
+from services.key_manager import KeyManager
 
 @pytest.fixture
-def mock_llm():
-    return Mock()
+def event_loop():
+    """Create an instance of the default event loop for the test session."""
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
 @pytest.fixture
-def agent(mock_llm):
+def mock_key_manager():
+    """Mock key manager for testing"""
+    manager = Mock(spec=KeyManager)
+    manager.create_random_keypair = Mock()
+    manager.store_account = Mock()
+    manager.list_accounts = Mock(return_value=[])
+    return manager
+
+@pytest.fixture
+def mock_llm_client():
+    """Mock LLM client for testing"""
+    client = AsyncMock(spec=LLMClient)
+    client.process_with_tools = AsyncMock(return_value={
+        "content": "Test response",
+        "tools_used": [],
+        "success": True
+    })
+    return client
+
+@pytest.fixture
+def test_agent(mock_llm_client):
+    """Test agent with mocked dependencies"""
     tools = [Mock()]
-    return TuxedoAgent(mock_llm, tools)
-
-@pytest.mark.asyncio
-async def test_process_message(agent):
-    with patch.object(agent, 'tool_orchestrator') as mock_tools:
-        mock_tools.execute.return_value = {"result": "success"}
-
-        response = await agent.process_message("Create account")
-
-        assert response is not None
-        mock_tools.execute.assert_called_once()
+    return TuxedoAgent(mock_llm_client, tools)
 ```
 
-#### 4.2 Frontend Testing
-**Target**: Component and integration tests
+#### 5.2 Integration Test Framework
+**Target**: Test complete user workflows
 
-**Actions**:
-```typescript
-// src/components/chat/__tests__/ChatInterface.test.tsx
-import { render, screen, fireEvent } from '@testing-library/react'
-import { ChatInterface } from '../ChatInterface'
-
-jest.mock('../../hooks/useChat')
-
-describe('ChatInterface', () => {
-  const mockUseChat = useChat as jest.MockedFunction<typeof useChat>
-
-  beforeEach(() => {
-    mockUseChat.mockReturnValue({
-      messages: [],
-      isLoading: false,
-      error: null,
-      activeTools: [],
-      sendMessage: jest.fn()
-    })
-  })
-
-  it('renders message input', () => {
-    render(<ChatInterface />)
-    expect(screen.getByRole('textbox')).toBeInTheDocument()
-  })
-
-  it('calls sendMessage when form is submitted', () => {
-    const mockSendMessage = jest.fn()
-    mockUseChat.mockReturnValue({
-      messages: [],
-      isLoading: false,
-      error: null,
-      activeTools: [],
-      sendMessage: mockSendMessage
-    })
-
-    render(<ChatInterface />)
-
-    const input = screen.getByRole('textbox')
-    fireEvent.change(input, { target: { value: 'Hello' } })
-    fireEvent.submit(screen.getByRole('form'))
-
-    expect(mockSendMessage).toHaveBeenCalledWith('Hello')
-  })
-})
-```
-
-### Phase 5: Documentation & Standards (Priority: Low)
-
-#### 5.1 Code Standards
-**Target**: Consistent patterns and practices
-
-**Actions**:
-```typescript
-// Component template
-// src/components/template/ComponentTemplate.tsx
-import React from 'react'
-import type { ComponentProps } from './types'
-
-export const ComponentTemplate: React.FC<ComponentProps> = ({
-  prop1,
-  prop2,
-  ...props
-}) => {
-  // Component logic
-
-  return (
-    <div className="component-template" {...props}>
-      {/* Component JSX */}
-    </div>
-  )
-}
-
-export default ComponentTemplate
-```
-
-#### 5.2 Documentation Standards
-**Target**: Clear, maintainable documentation
-
-**Actions**:
 ```python
-# backend/tools/stellar/account_manager.py
-"""
-Stellar Account Management Tool
+# tests/integration/test_agent_workflows.py
+import pytest
+from fastapi.testclient import TestClient
+from app import create_app
 
-This module provides functionality for managing Stellar accounts including:
-- Creating new accounts
-- Funding accounts with testnet lumens
-- Retrieving account information
-- Managing account operations
+app = create_app()
+client = TestClient(app)
 
-Example:
-    >>> account_manager = AccountManagerTool(server)
-    >>> result = await account_manager.create_account()
-    >>> print(result['address'])
-"""
+class TestAgentWorkflows:
+    """Integration tests for complete agent workflows"""
 
-class AccountManagerTool(BaseTool):
-    """Manage Stellar accounts with testnet support."""
+    def test_account_creation_workflow(self):
+        """Test complete account creation flow"""
 
-    async def create_account(self) -> Dict[str, str]:
-        """
-        Create a new Stellar account.
+        # Create account via API
+        response = client.post("/api/agent/create-account", json={
+            "name": "Test Account",
+            "initial_funding": True
+        })
 
-        Returns:
-            Dict containing:
-            - address: The new account address
-            - secret: The account secret key
-            - funded: Boolean indicating if account was funded
+        assert response.status_code == 200
+        account_data = response.json()
+        assert "address" in account_data
+        assert account_data["name"] == "Test Account"
 
-        Raises:
-            StellarAccountError: If account creation fails
-        """
+        # Verify account appears in list
+        list_response = client.get("/api/agent/accounts")
+        assert list_response.status_code == 200
+        accounts = list_response.json()
+        assert len(accounts) > 0
+        assert any(acc["address"] == account_data["address"] for acc in accounts)
+
+    def test_chat_with_agent_workflow(self):
+        """Test complete chat interaction flow"""
+
+        # Create account first
+        account_response = client.post("/api/agent/create-account")
+        account_address = account_response.json()["address"]
+
+        # Send chat message
+        chat_response = client.post("/api/chat", json={
+            "message": "What is my account balance?",
+            "agent_account": account_address
+        })
+
+        assert chat_response.status_code == 200
+        chat_data = chat_response.json()
+        assert "response" in chat_data
+        assert "success" in chat_data
+        assert chat_data["success"] is True
 ```
 
 ## 🗓️ Implementation Timeline
 
-### Week 1: Backend Core Refactoring
-- Day 1-2: Configuration management system
-- Day 3-4: Split main.py into focused modules
-- Day 5: Extract AI agent logic
+### Hackathon Week (Days 1-5)
+- **Day 1**: Critical cleanup, wallet removal, testing structure
+- **Day 2**: Backend refactoring, agent core extraction
+- **Day 3**: Frontend agent UI, configuration management
+- **Day 4**: Polish and optimization, bug fixes
+- **Day 5**: Demo preparation, testing, documentation
 
-### Week 2: Backend Tools & API
-- Day 1-2: Modularize Stellar tools
-- Day 3-4: API routes and middleware
-- Day 5: Services layer implementation
+### Week 2-3: Production Readiness
+- **Backend**: Complete modularization, comprehensive testing
+- **Frontend**: Component optimization, state management refinement
+- **Configuration**: Environment management, deployment setup
 
-### Week 3: Frontend Refactoring
-- Day 1-2: Extract chat logic into components
-- Day 3-4: Create custom hooks
-- Day 5: API service layer
+### Week 4-6: Advanced Features
+- **Multi-agent support**: Foundation for Choir integration
+- **Protocol expansion**: More DeFi protocols
+- **Advanced security**: TEE preparation, encryption
 
-### Week 4: Configuration & Testing
-- Day 1-2: Frontend configuration management
-- Day 3-4: Testing infrastructure setup
-- Day 5: Documentation updates
+### Month 2-3: Choir Integration
+- **API abstraction**: Multi-client support (web/mobile)
+- **Social features**: Agent sharing and collaboration
+- **Cross-chain preparation**: Multi-network support
 
 ## 📈 Expected Benefits
 
-### Immediate Benefits
-- **Reduced complexity**: Files under 300 lines
-- **Better maintainability**: Clear separation of concerns
-- **Easier testing**: Focused, testable units
-- **Improved developer experience**: Intuitive file organization
+### Immediate Benefits (Hackathon)
+- **Professional appearance**: Proper file organization, no root-level tests
+- **Clear innovation**: Agent-first paradigm immediately obvious
+- **Focused demo**: No wallet distractions, pure agent experience
+- **Clean codebase**: Easy to explain and demonstrate
 
-### Long-term Benefits
-- **Scalability**: Easy to add new features
-- **Team collaboration**: Clear ownership boundaries
-- **Code quality**: Consistent patterns and standards
-- **Faster development**: Predictable structure
+### Medium-term Benefits (Production)
+- **Maintainability**: Clear separation of concerns, modular architecture
+- **Extensibility**: Easy to add new protocols and features
+- **Testability**: Comprehensive test coverage, reliable deployment
+- **Developer experience**: Intuitive structure, easy onboarding
+
+### Long-term Benefits (Choir Integration)
+- **Multi-agent architecture**: Foundation for social agent interactions
+- **API-first design**: Support for web, mobile, and future clients
+- **Scalable security**: Ready for TEE and advanced encryption
+- **Protocol flexibility**: Easy cross-chain and protocol expansion
 
 ## 🎯 Success Metrics
 
+### Hackathon Success Criteria
+- [ ] Wallet dependencies completely removed
+- [ ] Agent account management working seamlessly
+- [ ] Professional project structure (no root tests)
+- [ ] Clean, impressive demo showcasing innovation
+- [ ] Clear differentiation from wallet-dependent projects
+
 ### Code Quality Metrics
-- Average file size: < 300 lines
-- Cyclomatic complexity: < 10 per function
-- Test coverage: > 80%
-- ESLint warnings: < 50
+- [ ] Average file size: < 300 lines
+- [ ] Test coverage: > 80% for critical components
+- [ ] Configuration: Centralized, environment-specific
+- [ ] Documentation: Clear, up-to-date, comprehensive
 
 ### Developer Experience Metrics
-- Time to locate relevant code: < 30 seconds
-- New developer onboarding time: < 2 hours
-- Feature implementation time: Reduced by 30%
-- Bug fix time: Reduced by 40%
+- [ ] New developer onboarding: < 2 hours
+- [ ] Feature implementation time: Reduced by 50%
+- [ ] Bug fix time: Reduced by 60%
+- [ ] Code review time: Reduced by 40%
 
 ## 🔄 Migration Strategy
 
 ### Incremental Approach
-1. **Parallel development**: Create new structure alongside existing code
-2. **Feature flags**: Use feature flags to switch between old/new implementations
+1. **Critical path first**: Focus on hackathon-winning features
+2. **Parallel development**: New structure alongside existing code
 3. **Gradual migration**: Move functionality piece by piece
-4. **Testing**: Comprehensive testing at each step
-5. **Documentation**: Update documentation continuously
+4. **Continuous testing**: Test at each step to prevent regressions
+5. **Documentation updates**: Keep docs in sync with changes
 
 ### Risk Mitigation
 - **Backup strategy**: Git branches for each major change
-- **Rollback plan**: Quick revert capabilities
-- **Testing pipeline**: Automated tests prevent regressions
+- **Rollback plan**: Quick revert to working state
+- **Testing pipeline**: Automated tests prevent breaking changes
 - **Code review**: All changes require review
-- **Monitoring**: Track performance and error rates
+- **Feature flags**: Switch between old/new implementations safely
 
 ## 📝 Next Steps
 
-1. **Approve this plan** with the development team
-2. **Set up branching strategy** for parallel development
-3. **Create detailed implementation tickets** for each phase
-4. **Set up CI/CD pipeline** to enforce new standards
-5. **Begin Phase 1 implementation** with backend core refactoring
+### Immediate (This Week)
+1. **Start with wallet removal** - Highest impact for hackathon
+2. **Fix testing structure** - Professional appearance
+3. **Extract agent core** - Clean separation of concerns
+4. **Create agent UI** - Replace wallet interface
 
-This reorganization will transform the codebase into a maintainable, scalable, and developer-friendly foundation for future development.
+### Post-Hackathon
+1. **Complete modularization** - Full backend refactoring
+2. **Add comprehensive testing** - Production readiness
+3. **Optimize for deployment** - Phala/cloud preparation
+4. **Plan Choir integration** - Multi-agent architecture
+
+This reorganization transforms Tuxedo into a professional, scalable, agent-first DeFi interface ready for hackathon success and future ecosystem integration.
