@@ -44,6 +44,8 @@ services:
         value: https://soroban-testnet.stellar.org
       - key: VITE_API_URL
         value: https://tuxedo-backend.onrender.com
+      - key: PUBLIC_API_URL
+        value: https://tuxedo-backend.onrender.com
     domains:
       - tuxedo.onrender.com
     headers:
