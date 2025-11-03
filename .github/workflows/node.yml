@@ -34,21 +34,22 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install uv
+        run: |
+          pip install uv
+
       - name: Install backend dependencies
         run: |
           cd backend
-          python3 -m venv .venv
-          source .venv/bin/activate
-          pip install -r requirements.txt
+          uv sync
 
       - name: Run backend tests
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           cd backend
-          source .venv/bin/activate
-          python test_agent.py || true
-          python test_agent_with_tools.py || true
+          uv run python test_agent.py || true
+          uv run python test_agent_with_tools.py || true
 
       - name: Test Docker build
         run: |
