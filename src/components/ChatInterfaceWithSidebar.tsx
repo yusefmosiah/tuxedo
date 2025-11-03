@@ -4,7 +4,6 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { chatApi, StreamMessage, type HealthResponse } from '../lib/api';
-import { useWallet } from '../hooks/useWallet';
 import { useChatThreads, ExtendedChatMessage } from '../hooks/useChatThreads';
 import { ThreadSidebar } from './ThreadSidebar';
 import { parseMessageForTransaction } from '../utils/transactionParser';
@@ -15,7 +14,8 @@ import styles from './ChatInterfaceWithSidebar.module.css';
 
 
 export const ChatInterfaceWithSidebar: React.FC = () => {
-  const wallet = useWallet();
+  // Agent-first approach: AI agents manage their own accounts
+  const [agentAddress, setAgentAddress] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -36,9 +36,9 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
     saveCurrentThread,
   } = useChatThreads();
 
-  // Check API health on mount and setup interval
+  // Check API health and fetch agent accounts on mount
   useEffect(() => {
-    const checkHealth = async () => {
+    const checkHealthAndFetchAccounts = async () => {
       try {
         const health: HealthResponse = await chatApi.healthCheck();
 
@@ -47,6 +47,20 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
           // Update live summary preference based on backend availability
           if (!health.live_summary_ready) {
             setUseLiveSummary(false);
+          }
+
+          // Fetch agent accounts (agent-first approach)
+          try {
+            const response = await fetch('http://localhost:8000/api/agent/accounts');
+            if (response.ok) {
+              const accounts = await response.json();
+              if (accounts.length > 0) {
+                // Use the first agent account for display purposes
+                setAgentAddress(accounts[0].address);
+              }
+            }
+          } catch (accountError) {
+            console.log('No agent accounts available, which is fine for agent-first mode');
           }
         } else {
           setApiStatus('disconnected');
@@ -58,10 +72,10 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
     };
 
     // Initial health check
-    checkHealth();
+    checkHealthAndFetchAccounts();
 
     // Check health every 30 seconds
-    const interval = setInterval(checkHealth, 30000);
+    const interval = setInterval(checkHealthAndFetchAccounts, 30000);
 
     return () => clearInterval(interval);
   }, []);
@@ -196,10 +210,10 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
   const handleSend = async () => {
     if (!input.trim() || isLoading || apiStatus === 'disconnected') return;
 
-    console.log('🔍 Wallet state:', {
-      wallet: wallet,
-      address: wallet.address,
-      isConnected: !!wallet.address
+    console.log('🔍 Agent state:', {
+      agentAddress: agentAddress,
+      isAgentMode: true,
+      hasAgentAccount: !!agentAddress
     });
 
     const streamId = Date.now().toString();
@@ -236,7 +250,7 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
                 m.content && m.content.trim() !== '' // Ensure content exists and is not empty
               )
               .map(({ role, content }) => ({ role, content })),
-            wallet_address: wallet.address || null,
+            wallet_address: agentAddress || null,
             enable_summary: true,
           },
           (streamMessage: StreamMessage) => {
@@ -278,7 +292,7 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
                 m.content && m.content.trim() !== '' // Ensure content exists and is not empty
               )
               .map(({ role, content }) => ({ role, content })),
-            wallet_address: wallet.address || null,
+            wallet_address: agentAddress || null,
           },
           (streamMessage: StreamMessage) => {
             // Handle thinking states for loading indicator
@@ -463,7 +477,7 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
               }}>
                 I can help you with Stellar blockchain operations, account management, trading, market data, and smart contracts
               </p>
-              {wallet.address && (
+              {agentAddress && (
                 <p style={{
                   fontFamily: 'var(--font-tertiary-mono)',
                   fontSize: '12px',
@@ -473,7 +487,7 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
                   letterSpacing: '0.05em',
                   fontWeight: 'bold'
                 }}>
-                  Connected: {wallet.address.slice(0, 8)}...{wallet.address.slice(-4)}
+                  🤖 Agent Account: {agentAddress.slice(0, 8)}...{agentAddress.slice(-4)}
                 </p>
               )}
 
@@ -568,7 +582,7 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
                   margin: '0',
                   lineHeight: '1.6'
                 }}>
-                  "What's in my wallet?" (connect wallet first)
+                  "What's in my agent account?"
                 </p>
                 <p style={{
                   fontFamily: 'var(--font-primary-sans)',

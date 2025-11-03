@@ -182,10 +182,10 @@ export const ChatInterface: React.FC = () => {
   const handleSend = async () => {
     if (!input.trim() || isLoading || apiStatus === 'disconnected') return;
 
-    console.log('🔍 Wallet state:', {
-      wallet: wallet,
-      address: wallet.address,
-      isConnected: !!wallet.address
+    console.log('🔍 Agent state:', {
+      agent: agent,
+      activeAccount: agent.activeAccount,
+      isConnected: !!agent.activeAccount
     });
 
     const streamId = Date.now().toString();
@@ -419,9 +419,9 @@ export const ChatInterface: React.FC = () => {
             <Text as="p" size="md" style={{ color: '#666' }}>
               I can help you with Stellar blockchain operations, account management, trading, market data, and smart contracts
             </Text>
-            {wallet.address && (
+            {agent.activeAccount && (
               <Text as="p" size="sm" style={{ color: '#999', marginTop: '8px' }}>
-                Connected: {wallet.address.slice(0, 8)}...{wallet.address.slice(-4)}
+                🤖 Agent Account: {agent.activeAccount.slice(0, 8)}...{agent.activeAccount.slice(-4)}
               </Text>
             )}
 
@@ -457,7 +457,7 @@ export const ChatInterface: React.FC = () => {
               <p>"What's the current Stellar network status?"</p>
               <p>"Create a new testnet account and fund it"</p>
               <p>"Check the XLM/USDC orderbook on Stellar DEX"</p>
-              <p>"What's in my wallet?" (connect wallet first)</p>
+              <p>"What's in my agent account?"</p>
               <p>"Show me recent network transactions"</p>
               <p>"Explain Stellar transaction fees"</p>
             </div>
