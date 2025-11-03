@@ -11,16 +11,15 @@ RUN apt-get update && apt-get install -y \
 # Install uv for faster package management
 RUN pip install uv
 
-# Copy dependency files
-COPY backend/pyproject.toml ./
-COPY backend/uv.lock ./
+# Copy dependency files (from backend directory context)
+COPY pyproject.toml ./
+COPY uv.lock ./
 
 # Install Python dependencies
 RUN uv pip install --system -e .
 
 # Copy backend source code (excluding .env file)
-COPY backend/*.py ./
-COPY backend/src/ ./src/
+COPY *.py ./
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash app
