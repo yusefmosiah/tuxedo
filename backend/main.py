@@ -45,6 +45,16 @@ except ImportError as e:
     logger.warning(f"Stellar tools not available: {e}")
     STELLAR_TOOLS_AVAILABLE = False
 
+# Import agent account management tools
+try:
+    from tools.agent.account_management import create_agent_account, list_agent_accounts, get_agent_account_info
+    from langchain_core.tools import tool
+    AGENT_ACCOUNT_TOOLS_AVAILABLE = True
+    logger.info("Agent account management tools loaded successfully")
+except ImportError as e:
+    logger.warning(f"Agent account management tools not available: {e}")
+    AGENT_ACCOUNT_TOOLS_AVAILABLE = False
+
 # Import agent account management
 try:
     from api.routes.agent import router as agent_router
@@ -349,6 +359,130 @@ except ImportError as e:
 
 
 
+# ============================================================================
+# AGENT ACCOUNT MANAGEMENT TOOLS
+# ============================================================================
+
+@tool
+async def agent_create_account(account_name: Optional[str] = None) -> str:
+    """
+    Create a new agent-controlled Stellar account for DeFi operations.
+
+    This allows the AI agent to manage its own accounts without requiring external wallet connections.
+
+    Args:
+        account_name: Optional descriptive name for the account
+
+    Returns:
+        Account creation details including address, name, and funding status
+    """
+    try:
+        if not AGENT_ACCOUNT_TOOLS_AVAILABLE:
+            return "Agent account management tools not available."
+
+        result = create_agent_account(account_name)
+
+        if not result.get("success", True):
+            return f"Error creating agent account: {result.get('error', 'Unknown error')}"
+
+        response_parts = []
+        response_parts.append("## 🤖 Agent Account Created")
+        response_parts.append("")
+        response_parts.append(f"**Account Name:** {result['name']}")
+        response_parts.append(f"**Address:** {result['address']}")
+        response_parts.append(f"**Network:** {result['network']}")
+        response_parts.append(f"**Funding Status:** {'✅ Funded' if result.get('funded') else '❌ Pending funding'}")
+        response_parts.append("")
+        response_parts.append("This account is now managed by the AI agent and can be used for DeFi operations.")
+
+        return "\n".join(response_parts)
+
+    except Exception as e:
+        return f"Error creating agent account: {str(e)}"
+
+@tool
+async def agent_list_accounts() -> str:
+    """
+    List all agent-controlled Stellar accounts.
+
+    Returns a comprehensive list of all accounts managed by the AI agent
+    with their current balances and status information.
+
+    Returns:
+        List of agent accounts with addresses, names, and balances
+    """
+    try:
+        if not AGENT_ACCOUNT_TOOLS_AVAILABLE:
+            return "Agent account management tools not available."
+
+        accounts = list_agent_accounts()
+
+        if len(accounts) == 0:
+            return "No agent accounts found. Use agent_create_account to create your first account."
+
+        response_parts = []
+        response_parts.append(f"## 🤖 Agent Accounts ({len(accounts)} accounts)")
+        response_parts.append("")
+
+        for account in accounts:
+            if "error" in account:
+                response_parts.append(f"**Error:** {account['error']}")
+                continue
+
+            response_parts.append(f"### {account.get('name', 'Unnamed Account')}")
+            response_parts.append(f"- **Address:** {account['address']}")
+            response_parts.append(f"- **Balance:** {account.get('balance', 0):.2f} XLM")
+            response_parts.append(f"- **Network:** {account['network']}")
+            response_parts.append("")
+
+        return "\n".join(response_parts)
+
+    except Exception as e:
+        return f"Error listing agent accounts: {str(e)}"
+
+@tool
+async def agent_get_account_info(address: str) -> str:
+    """
+    Get detailed information about a specific agent account.
+
+    Args:
+        address: The Stellar account address to look up
+
+    Returns:
+        Detailed account information including balance and metadata
+    """
+    try:
+        if not AGENT_ACCOUNT_TOOLS_AVAILABLE:
+            return "Agent account management tools not available."
+
+        if not address:
+            return "Account address is required."
+
+        result = get_agent_account_info(address)
+
+        if not result.get("success", True):
+            return f"Error getting account info: {result.get('error', 'Unknown error')}"
+
+        response_parts = []
+        response_parts.append("## 🤖 Agent Account Information")
+        response_parts.append("")
+        response_parts.append(f"**Address:** {result['address']}")
+        response_parts.append(f"**Balance:** {result.get('balance', 0):.2f} XLM")
+        response_parts.append(f"**Network:** {result['network']}")
+
+        if result.get('metadata'):
+            metadata = result['metadata']
+            response_parts.append(f"**Name:** {metadata.get('name', 'Unnamed')}")
+            response_parts.append(f"**Created:** {metadata.get('created_at', 'Unknown')}")
+
+        response_parts.append("")
+        response_parts.append("This account is managed by the AI agent and ready for DeFi operations.")
+
+        return "\n".join(response_parts)
+
+    except Exception as e:
+        return f"Error getting account info: {str(e)}"
+
 # List of all available tools
 STELLAR_TOOLS = [
     stellar_account_manager,
@@ -358,6 +492,14 @@ STELLAR_TOOLS = [
     stellar_utilities,
     stellar_soroban
 ]
+
+# Add agent account management tools if available
+if AGENT_ACCOUNT_TOOLS_AVAILABLE:
+    STELLAR_TOOLS.extend([
+        agent_create_account,
+        agent_list_accounts,
+        agent_get_account_info
+    ])
 
 # Add DeFindex tools if available
 if DEFINDEX_TOOLS_AVAILABLE:
@@ -634,17 +776,20 @@ async def chat_with_tools(
     """
     try:
         # Enhanced system prompt for the agent
-        system_prompt = """You are Tuxedo, an AI assistant that helps users discover and understand DeFi opportunities on Stellar including Blend Protocol and DeFindex vaults.
+        system_prompt = """You are Tuxedo, an AI agent that manages its own Stellar accounts for DeFi operations. You help users discover and understand DeFi opportunities on Stellar including Blend Protocol and DeFindex vaults.
+
+**Agent-First Approach:**
+You are an autonomous AI agent that manages your own accounts - you do NOT require users to connect external wallets. You can create and manage your own Stellar accounts for demonstrating DeFi operations.
 
 **Your Available Tools:**
 You have access to Stellar blockchain tools that can:
-- Create and manage accounts (account_manager)
+- **Agent Account Management**: Create, list, and get info about your own agent-controlled accounts
 - Query market data and orderbooks (market_data)
 - Execute trades on the Stellar DEX (trading)
 - Manage trustlines for assets (trustline_manager)
 - Query network status and fees (utilities)
 - Interact with smart contracts (soroban)
-- **NEW**: Discover and interact with DeFindex vaults for yield generation
+- Discover and interact with DeFindex vaults for yield generation
 
 **IMPORTANT - Automatic Transaction Signing:**
 The prepare_defindex_deposit tool returns text that is ALREADY properly formatted with [STELLAR_TX]...[/STELLAR_TX] tags.
@@ -834,17 +979,20 @@ async def chat_with_tools_stream(
     """
     try:
         # Enhanced system prompt for the agent
-        system_prompt = """You are Tuxedo, an AI assistant that helps users discover and understand DeFi opportunities on Stellar including Blend Protocol and DeFindex vaults.
+        system_prompt = """You are Tuxedo, an AI agent that manages its own Stellar accounts for DeFi operations. You help users discover and understand DeFi opportunities on Stellar including Blend Protocol and DeFindex vaults.
+
+**Agent-First Approach:**
+You are an autonomous AI agent that manages your own accounts - you do NOT require users to connect external wallets. You can create and manage your own Stellar accounts for demonstrating DeFi operations.
 
 **Your Available Tools:**
 You have access to Stellar blockchain tools that can:
-- Create and manage accounts (account_manager)
+- **Agent Account Management**: Create, list, and get info about your own agent-controlled accounts
 - Query market data and orderbooks (market_data)
 - Execute trades on the Stellar DEX (trading)
 - Manage trustlines for assets (trustline_manager)
 - Query network status and fees (utilities)
 - Interact with smart contracts (soroban)
-- **NEW**: Discover and interact with DeFindex vaults for yield generation
+- Discover and interact with DeFindex vaults for yield generation
 
 **IMPORTANT - Automatic Transaction Signing:**
 The prepare_defindex_deposit tool returns text that is ALREADY properly formatted with [STELLAR_TX]...[/STELLAR_TX] tags.
