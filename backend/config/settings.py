@@ -1,48 +1,45 @@
 """
 Application Configuration
-Centralized configuration management using Pydantic settings.
+Simplified configuration using environment variables.
 """
 
-from pydantic import BaseSettings
+import os
 from typing import Optional
 
-class Settings(BaseSettings):
-    """Application settings"""
+class Settings:
+    """Simple settings class using environment variables"""
 
-    # API Configuration
-    openai_api_key: str
-    openai_base_url: str = "https://api.redpill.ai/v1"
-    primary_model: str = "deepseek/deepseek-v3.1-terminus:exacto"
+    def __init__(self):
+        # API Configuration
+        self.openai_api_key = os.getenv("OPENAI_API_KEY", "")
+        self.openai_base_url = os.getenv("OPENAI_BASE_URL", "https://api.redpill.ai/v1")
+        self.primary_model = os.getenv("PRIMARY_MODEL", "deepseek/deepseek-v3.1-terminus:exacto")
 
-    # Stellar Configuration
-    stellar_network: str = "testnet"
-    horizon_url: str = "https://horizon-testnet.stellar.org"
-    soroban_rpc_url: str = "https://soroban-testnet.stellar.org"
-    friendbot_url: str = "https://friendbot.stellar.org"
+        # Stellar Configuration
+        self.stellar_network = os.getenv("STELLAR_NETWORK", "testnet")
+        self.horizon_url = os.getenv("HORIZON_URL", "https://horizon-testnet.stellar.org")
+        self.soroban_rpc_url = os.getenv("SOROBAN_RPC_URL", "https://soroban-testnet.stellar.org")
+        self.friendbot_url = os.getenv("FRIENDBOT_URL", "https://friendbot.stellar.org")
 
-    # Agent Configuration
-    max_accounts_per_agent: int = 10
-    default_account_funding: float = 10000  # stroops
-    agent_conversation_limit: int = 100
+        # Agent Configuration
+        self.max_accounts_per_agent = int(os.getenv("MAX_ACCOUNTS_PER_AGENT", "10"))
+        self.default_account_funding = float(os.getenv("DEFAULT_ACCOUNT_FUNDING", "10000"))
+        self.agent_conversation_limit = int(os.getenv("AGENT_CONVERSATION_LIMIT", "100"))
 
-    # Server Configuration
-    host: str = "0.0.0.0"
-    port: int = 8000
-    debug: bool = False
-    cors_origins: list = [
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "https://tuxedo.onrender.com",
-        "https://tuxedo-frontend.onrender.com"
-    ]
+        # Server Configuration
+        self.host = os.getenv("HOST", "0.0.0.0")
+        self.port = int(os.getenv("PORT", "8000"))
+        self.debug = os.getenv("DEBUG", "false").lower() == "true"
+        self.cors_origins = [
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "https://tuxedo.onrender.com",
+            "https://tuxedo-frontend.onrender.com"
+        ]
 
-    # Security Configuration
-    encryption_key_path: str = ".encryption_key"
-    keystore_path: str = ".agent_keystore.json"
-
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
+        # Security Configuration
+        self.encryption_key_path = os.getenv("ENCRYPTION_KEY_PATH", ".encryption_key")
+        self.keystore_path = os.getenv("KEYSTORE_PATH", ".agent_keystore.json")
 
 # Create global settings instance
 settings = Settings()

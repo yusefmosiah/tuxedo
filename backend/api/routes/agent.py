@@ -37,7 +37,7 @@ except ImportError as e:
     logger.warning(f"Agent account management tools not available: {e}")
     AGENT_TOOLS_AVAILABLE = False
 
-@router.post("/create-account", response_model=AccountResponse)
+@router.post("/create-account")
 async def create_account(request: AccountCreateRequest):
     """Create new agent-controlled account"""
     if not AGENT_TOOLS_AVAILABLE:
@@ -49,7 +49,22 @@ async def create_account(request: AccountCreateRequest):
         if not result.get("success", True):
             raise HTTPException(status_code=400, detail=result.get("error", "Failed to create account"))
 
-        return AccountResponse(**result)
+        # Get balance for the created account
+        try:
+            from tools.agent.account_management import get_agent_account_info
+            account_info = get_agent_account_info(result["address"])
+            balance = account_info.get("balance", 0) if account_info.get("success") else 0
+        except:
+            balance = 0
+
+        return {
+            "address": result["address"],
+            "name": result["name"],
+            "balance": balance,
+            "network": result["network"],
+            "funded": result.get("funded", False),
+            "success": True
+        }
 
     except HTTPException:
         raise
@@ -57,7 +72,7 @@ async def create_account(request: AccountCreateRequest):
         logger.error(f"Error creating agent account: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-@router.get("/accounts", response_model=List[AccountResponse])
+@router.get("/accounts")
 async def list_accounts():
     """List all agent-controlled accounts"""
     if not AGENT_TOOLS_AVAILABLE:
@@ -70,7 +85,27 @@ async def list_accounts():
         if len(accounts) == 1 and "error" in accounts[0]:
             raise HTTPException(status_code=500, detail=accounts[0]["error"])
 
-        return [AccountResponse(**account) for account in accounts]
+        # Enhance accounts with metadata names
+        enhanced_accounts = []
+        for account in accounts:
+            if "error" in account:
+                enhanced_accounts.append(account)
+                continue
+
+            # Get account metadata for name
+            try:
+                from tools.agent.account_management import get_agent_account_info
+                account_info = get_agent_account_info(account["address"])
+                if account_info.get("success") and account_info.get("metadata"):
+                    account["name"] = account_info["metadata"].get("name", "Unnamed Account")
+                else:
+                    account["name"] = "Unnamed Account"
+            except:
+                account["name"] = "Unnamed Account"
+
+            enhanced_accounts.append(account)
+
+        return enhanced_accounts
 
     except HTTPException:
         raise

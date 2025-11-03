@@ -64,7 +64,7 @@ def create_app() -> FastAPI:
     )
 
     # Include routers
-    app.include_router(chat_router, prefix="/chat", tags=["chat"])
+    app.include_router(chat_router, tags=["chat"])
     app.include_router(agent_router, prefix="/api/agent", tags=["agent"])
 
     # Health check endpoint
