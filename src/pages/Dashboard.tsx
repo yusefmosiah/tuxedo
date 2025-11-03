@@ -5,7 +5,7 @@ import PoolsDashboard from "../components/dashboard/PoolsDashboard";
 import { TuxMiningDashboard } from "../components/TuxMiningDashboard";
 
 const Dashboard: React.FC = () => {
-  const { pools, isLoading, error, refetch } = useBlendPools();
+  const { error, refetch } = useBlendPools();
 
   useEffect(() => {
     // Only refetch when the page becomes visible again (user returns to tab)
@@ -25,7 +25,7 @@ const Dashboard: React.FC = () => {
   if (error) {
     return (
       <div style={{ padding: "24px" }}>
-        <Heading size="md">Dashboard Error</Heading>
+        <Heading as="h2" size="md">Dashboard Error</Heading>
         <Content>
           <p>Error loading pool data: {error}</p>
         </Content>
@@ -35,12 +35,12 @@ const Dashboard: React.FC = () => {
 
   return (
     <div style={{ padding: "24px" }}>
-      <Heading size="lg" spacing="md">
+      <Heading as="h1" size="lg">
         📊 DeFindex Dashboard
       </Heading>
 
       {/* Tux Mining Section */}
-      <Card style={{ marginBottom: "24px" }}>
+      <Card>
         <Content>
           <TuxMiningDashboard />
         </Content>
@@ -49,11 +49,7 @@ const Dashboard: React.FC = () => {
       {/* Pools Section */}
       <Card>
         <Content>
-          <PoolsDashboard
-            pools={pools}
-            isLoading={isLoading}
-            onRefresh={refetch}
-          />
+          <PoolsDashboard />
         </Content>
       </Card>
     </div>

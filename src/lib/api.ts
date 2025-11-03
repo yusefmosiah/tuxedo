@@ -388,7 +388,8 @@ export const chatApi = {
         stellar_tools_ready: false,
         openai_configured: false,
         live_summary_ready: false,
-        defindex_tools_ready: false
+        defindex_tools_ready: false,
+        database_ready: false
       };
     }
   },

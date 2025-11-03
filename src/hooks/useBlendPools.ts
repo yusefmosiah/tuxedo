@@ -6,6 +6,13 @@ import {
 } from "@blend-capital/blend-sdk";
 import { BLEND_CONTRACTS } from "../contracts/blend";
 import { network } from "../contracts/util";
+
+// Create Blend SDK compatible network object
+const blendNetwork = {
+  rpc: network.rpcUrl,
+  passphrase: network.passphrase,
+  networkPassphrase: network.passphrase
+};
 import { BlendPoolData, PoolReserve, UseBlendPoolsResult } from "../types/blend";
 
 /**
@@ -73,7 +80,7 @@ export function useBlendPools(): UseBlendPoolsResult {
       console.log("🔍 Loading Backstop contract to discover pools...");
 
       // Load the Backstop contract - it contains the list of all active pools
-      const backstop = await Backstop.load(network, BLEND_CONTRACTS.backstop);
+      const backstop = await Backstop.load(blendNetwork, BLEND_CONTRACTS.backstop);
 
       console.log(`  📊 Backstop loaded successfully`);
       console.log(`  📊 Backstop config:`, {
@@ -126,7 +133,7 @@ export function useBlendPools(): UseBlendPoolsResult {
           console.log(`  ⏳ Loading pool: ${poolAddress}`);
 
           // Load the complete pool data
-          const pool = await PoolV2.load(network, poolAddress);
+          const pool = await PoolV2.load(blendNetwork, poolAddress);
 
           console.log(`  ✅ Pool loaded with ${pool.reserves.size} reserves`);
           console.log(`  📊 Pool metadata:`, {

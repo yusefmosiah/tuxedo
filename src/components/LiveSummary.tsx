@@ -127,7 +127,7 @@ export const LiveSummary: React.FC<LiveSummaryProps> = ({
       </div>
 
       {/* Add global styles for fade animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(4px); }
           to { opacity: 1; transform: translateY(0); }

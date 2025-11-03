@@ -1,5 +1,4 @@
 import React from "react";
-import { Button, Text, Loader } from "@stellar/design-system";
 import { useBlendPools } from "../../hooks/useBlendPools";
 import { PoolCard } from "./PoolCard";
 

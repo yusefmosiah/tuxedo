@@ -3,7 +3,7 @@ import { Button, Text } from '@stellar/design-system';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
-import { chatApi, ChatMessage, StreamMessage, type HealthResponse } from '../lib/api';
+import { chatApi, StreamMessage, type HealthResponse } from '../lib/api';
 import { useWallet } from '../hooks/useWallet';
 import { useChatThreads, ExtendedChatMessage } from '../hooks/useChatThreads';
 import { ThreadSidebar } from './ThreadSidebar';
@@ -27,16 +27,13 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
 
   // Thread management
   const {
-    threads,
     currentThreadId,
     currentThreadTitle,
     messages,
     setMessages,
-    isLoading: threadsLoading,
     createNewThread,
     loadThread,
     saveCurrentThread,
-    updateThreadTitle
   } = useChatThreads();
 
   // Check API health on mount and setup interval
@@ -360,7 +357,7 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
   };
 
   const handleNewThread = () => {
-    const newThreadId = createNewThread();
+    createNewThread();
     setInput('');
     setIsLoading(false);
     setAgentThinking(false);

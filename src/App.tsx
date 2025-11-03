@@ -80,7 +80,7 @@ const AppLayout: React.FC = () => (
 const TuxMiningPage: React.FC = () => {
   return (
     <div style={{ padding: "24px" }}>
-      <Heading size="lg" spacing="md">
+      <Heading as="h1" size="lg">
         🪙 Tux Mining - Automatic Wallet Integration
       </Heading>
 

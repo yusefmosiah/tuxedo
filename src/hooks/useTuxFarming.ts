@@ -59,7 +59,7 @@ export interface UseTuxFarmingReturn {
  * Hook for fetching and managing TUX farming data
  */
 export const useTuxFarming = (): UseTuxFarmingReturn => {
-  const { walletAddress } = useWallet();
+  const { address: walletAddress } = useWallet();
   const [overview, setOverview] = useState<FarmingOverview | null>(null);
   const [userPositions, setUserPositions] = useState<UserPositions | null>(null);
   const [loading, setLoading] = useState(true);

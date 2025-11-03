@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Text } from '@stellar/design-system';
 import { threadsApi, Thread } from '../lib/api';
 import { useWallet } from '../hooks/useWallet';
 import styles from './ThreadSidebar.module.css';

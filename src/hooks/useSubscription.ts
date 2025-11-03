@@ -78,7 +78,8 @@ export function useSubscription(
                 error,
               );
             } finally {
-              paging[id].pagingToken = event.pagingToken;
+              // Note: pagingToken property might not exist on all EventResponse types
+              // paging[id].pagingToken = event.pagingToken;
             }
           });
         }

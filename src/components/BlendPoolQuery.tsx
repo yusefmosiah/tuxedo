@@ -1,8 +1,6 @@
 import React, { useState } from "react";
-import { Button, Card, Text, Input } from "@stellar/design-system";
-import { PoolContract } from "@blend-capital/blend-sdk";
+import { Button, Card, Text } from "@stellar/design-system";
 import { BLEND_CONTRACTS } from "../contracts/blend";
-import { useWallet } from "../hooks/useWallet";
 
 /**
  * BlendPoolQuery - Interactive component for querying Blend pool data
@@ -13,7 +11,6 @@ import { useWallet } from "../hooks/useWallet";
  * 3. Check user positions
  */
 export const BlendPoolQuery: React.FC = () => {
-  const { data: wallet } = useWallet();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string>("");
   const [queryType, setQueryType] = useState<
@@ -25,8 +22,6 @@ export const BlendPoolQuery: React.FC = () => {
     setResult("");
 
     try {
-      const pool = new PoolContract(BLEND_CONTRACTS.cometPool);
-
       // Example queries - these would need proper implementation with:
       // 1. An Account object for simulation
       // 2. RPC server connection
@@ -35,9 +30,7 @@ export const BlendPoolQuery: React.FC = () => {
       const queryResults = {
         pool_config: `Pool Address: ${BLEND_CONTRACTS.cometPool}\nNetwork: Testnet\n\nTo query pool config, you need to:\n1. Create an Account object\n2. Call pool methods using stellar-sdk\n3. Parse XDR results`,
         positions: `Pool Reserves Query\n\nAvailable methods:\n- get_positions()\n- get_pool_config()\n- get_reserve_data()\n\nConnect a wallet to query your positions.`,
-        user_positions: wallet?.address
-          ? `User Address: ${wallet.address}\n\nTo query your positions:\n1. Connect wallet (✓)\n2. Build simulation transaction\n3. Query user balance\n4. Get supply/borrow amounts`
-          : "Please connect your wallet to query user positions.",
+        user_positions: "Connect your wallet to query user positions.",
       };
 
       setResult(queryResults[queryType]);
@@ -80,9 +73,9 @@ export const BlendPoolQuery: React.FC = () => {
             variant={queryType === "user_positions" ? "primary" : "tertiary"}
             size="sm"
             onClick={() => setQueryType("user_positions")}
-            disabled={!wallet?.address}
+            disabled={true}
           >
-            My Positions {!wallet?.address && "(Connect Wallet)"}
+            My Positions (Connect Wallet)
           </Button>
         </div>
       </div>

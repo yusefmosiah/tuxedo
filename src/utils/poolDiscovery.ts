@@ -11,6 +11,13 @@ import { Backstop, PoolV2 } from "@blend-capital/blend-sdk";
 import { BLEND_CONTRACTS } from "../contracts/blend";
 import { network } from "../contracts/util";
 
+// Create Blend SDK compatible network object
+const blendNetwork = {
+  rpc: network.rpcUrl,
+  passphrase: network.passphrase,
+  networkPassphrase: network.passphrase
+};
+
 interface PoolDiscoveryResult {
   backstopPools: string[];
   factoryPools: string[];
@@ -38,7 +45,7 @@ interface PoolTokenReport {
 export async function discoverPoolsViaBackstop(): Promise<string[]> {
   try {
     console.log("🔍 [Strategy 1] Loading pools from Backstop reward zone...");
-    const backstop = await Backstop.load(network, BLEND_CONTRACTS.backstop);
+    const backstop = await Backstop.load(blendNetwork, BLEND_CONTRACTS.backstop);
 
     const pools = backstop.config.rewardZone;
     console.log(`  ✅ Found ${pools.length} pool(s) in Backstop reward zone:`, pools);
@@ -119,7 +126,7 @@ export async function discoverAllPools(): Promise<PoolDiscoveryResult> {
  */
 export async function getPoolTokens(poolAddress: string): Promise<TokenInfo[]> {
   try {
-    const pool = await PoolV2.load(network, poolAddress);
+    const pool = await PoolV2.load(blendNetwork, poolAddress);
 
     const tokens: TokenInfo[] = [];
 
@@ -152,7 +159,7 @@ export async function generatePoolTokenReport(): Promise<PoolTokenReport[]> {
     try {
       console.log(`\n📦 Loading tokens for pool: ${poolAddress}`);
 
-      const pool = await PoolV2.load(network, poolAddress);
+      const pool = await PoolV2.load(blendNetwork, poolAddress);
       const tokens = Array.from(pool.reserves.keys()).map(assetId => ({
         address: assetId,
         symbol: assetId.slice(0, 8),
@@ -185,7 +192,7 @@ export async function generatePoolTokenReport(): Promise<PoolTokenReport[]> {
     });
   });
 
-  console.log(`Total unique tokens across all pools: ${allTokensSet.length}`);
+  console.log(`Total unique tokens across all pools: ${allTokensSet.size}`);
   console.log("\nAll token addresses:");
   Array.from(allTokensSet).forEach((token, i) => {
     console.log(`  ${i + 1}. ${token}`);

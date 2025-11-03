@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Button, Text, TabGroup, Tab } from "@stellar/design-system";
+import { Button, Text } from "@stellar/design-system";
 import { useBlendPools } from "../../hooks/useBlendPools";
 import { useWallet } from "../../hooks/useWallet";
 import { PoolCard } from "./PoolCard";
-import { TuxFarmingDashboard } from "../farming/TuxFarmingDashboard";
 
 interface CompleteDashboardProps {
   className?: string;
@@ -21,8 +20,8 @@ interface CompleteDashboardProps {
  */
 export const CompleteDashboard: React.FC<CompleteDashboardProps> = ({ className }) => {
   const { pools, loading: blendLoading, error: blendError, refetch } = useBlendPools();
-  const { walletAddress } = useWallet();
-  const [activeTab, setActiveTab] = useState<"blend" | "farming">("blend");
+  const { address: walletAddress } = useWallet();
+  const [activeTab, setActiveTab] = useState<"blend">("blend");
 
   // Calculate Blend stats
   const totalPools = pools.length;
@@ -79,12 +78,11 @@ export const CompleteDashboard: React.FC<CompleteDashboardProps> = ({ className 
           {/* Blend Pools List */}
           {blendLoading ? (
             <div className="flex items-center justify-center p-8">
-              <Text>Loading Blend pools...</Text>
-              <Loader size="sm" />
+              <Text as="p" size="sm">Loading Blend pools...</Text>
             </div>
           ) : blendError ? (
             <div className="card p-4 bg-red-50 border border-red-200">
-              <Text>Error loading pools: {blendError}</Text>
+              <Text as="p" size="sm">Error loading pools: {blendError}</Text>
               <Button onClick={refetch} variant="secondary" size="sm">
                 Retry
               </Button>
@@ -92,7 +90,7 @@ export const CompleteDashboard: React.FC<CompleteDashboardProps> = ({ className 
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {pools.map((pool) => (
-                <PoolCard key={pool.address} pool={pool} />
+                <PoolCard key={pool.id} pool={pool} />
               ))}
             </div>
           )}
@@ -120,16 +118,13 @@ export const CompleteDashboard: React.FC<CompleteDashboardProps> = ({ className 
                   <span className="text-white font-bold text-xs">TUX</span>
                 </div>
                 {walletAddress && (
-                  <Text variant="body2" className="text-text-tertiary">
+                  <Text as="p" size="sm">
                     Connected: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
                   </Text>
                 )}
               </div>
             </div>
           </div>
-
-          {/* TUX Farming Dashboard */}
-          <TuxFarmingDashboard walletAddress={walletAddress} />
         </div>
       ),
     },
@@ -148,17 +143,17 @@ export const CompleteDashboard: React.FC<CompleteDashboardProps> = ({ className 
       </div>
 
       {/* Tab Navigation */}
-      <div className="mb-8">
-        <TabGroup
-          activeId={activeTab}
-          onChange={(tabId) => setActiveTab(tabId as "blend" | "farming")}
-        >
-          {tabs.map((tab) => (
-            <Tab key={tab.id} id={tab.id}>
-              {tab.title}
-            </Tab>
-          ))}
-        </TabGroup>
+      <div className="mb-8 flex gap-4 justify-center">
+        {tabs.map((tab) => (
+          <Button
+            key={tab.id}
+            variant={activeTab === tab.id ? "primary" : "secondary"}
+            size="sm"
+            onClick={() => setActiveTab(tab.id as "blend")}
+          >
+            {tab.title}
+          </Button>
+        ))}
       </div>
 
       {/* Tab Content */}
@@ -176,7 +171,7 @@ export const CompleteDashboard: React.FC<CompleteDashboardProps> = ({ className 
                 Connect your Stellar wallet to see your positions and manage your investments.
               </p>
             </div>
-            <Button size="sm">Connect Wallet</Button>
+            <Button variant="primary" size="sm">Connect Wallet</Button>
           </div>
         </div>
       )}

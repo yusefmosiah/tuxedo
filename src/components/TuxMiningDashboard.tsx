@@ -18,7 +18,6 @@ export const TuxMiningDashboard: React.FC = () => {
   const wallet = useWallet();
   const [depositAmount, setDepositAmount] = useState<string>('10');
   const [miningStatus, setMiningStatus] = useState<MiningStatus | null>(null);
-  const [loadingStatus, setLoadingStatus] = useState(false);
 
   const {
     isPreparing,
@@ -50,14 +49,14 @@ export const TuxMiningDashboard: React.FC = () => {
   const fetchMiningStatus = async () => {
     if (!wallet.address) return;
 
-    setLoadingStatus(true);
+    // setLoadingStatus(true);
     try {
       const status = await transactionApi.getMiningStatus(wallet.address);
       setMiningStatus(status);
     } catch (error) {
       console.error('Failed to fetch mining status:', error);
     } finally {
-      setLoadingStatus(false);
+      // setLoadingStatus(false);
     }
   };
 
@@ -180,6 +179,7 @@ export const TuxMiningDashboard: React.FC = () => {
                 placeholder="10"
                 min="1"
                 step="0.1"
+                fieldSize="md"
               />
               <Text as="div" size="xs" style={{ color: '#666', marginTop: '4px' }}>
                 Estimated TUX rewards: {getEstimatedTuxRewards().toFixed(2)} TUX
@@ -254,7 +254,7 @@ export const TuxMiningDashboard: React.FC = () => {
         <Text as="h4" size="sm" weight="semi-bold" style={{ marginBottom: '8px', color: '#856404' }}>
           💡 How It Works
         </Text>
-        <Text as="ul" size="xs" style={{ color: '#856404', margin: 0, paddingLeft: '16px' }}>
+        <Text as="div" size="xs" style={{ color: '#856404', margin: 0, paddingLeft: '16px' }}>
           <li>Enter XLM amount for testnet deposit</li>
           <li>Click "Deposit & Mine TUX" to prepare transaction</li>
           <li>Wallet opens automatically for signature</li>

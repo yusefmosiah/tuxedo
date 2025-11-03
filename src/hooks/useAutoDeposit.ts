@@ -16,8 +16,7 @@ export const useAutoDeposit = (options: UseAutoDepositOptions = {}) => {
 
   const {
     onTransactionComplete,
-    onError,
-    autoTrigger = true
+    onError
   } = options;
 
   const prepareDeposit = useCallback(async (

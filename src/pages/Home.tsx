@@ -1,5 +1,4 @@
 import React from "react";
-import { Layout } from "@stellar/design-system";
 import { ChatInterfaceWithSidebar } from "../components/ChatInterfaceWithSidebar";
 
 const Home: React.FC = () => (

@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
-import { PoolContract } from "@blend-capital/blend-sdk";
 import { BLEND_CONTRACTS } from "../contracts/blend";
-import { rpcUrl, networkPassphrase } from "../contracts/util";
 
 export interface PoolReserve {
   assetId: string;
@@ -42,9 +40,6 @@ export function useBlendPool(poolAddress: string = BLEND_CONTRACTS.cometPool) {
     async function fetchPoolData() {
       try {
         setPoolData((prev) => ({ ...prev, loading: true, error: null }));
-
-        // Initialize the Pool contract
-        const pool = new PoolContract(poolAddress);
 
         // Query pool positions
         // Note: This is a simplified example. Real implementation needs:
