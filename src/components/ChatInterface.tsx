@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { chatApi, ChatMessage, StreamMessage, type HealthResponse } from '../lib/api';
-import { useWallet } from '../hooks/useWallet';
+import { useAgent } from '../providers/AgentProvider';
 import { parseMessageForTransaction } from '../utils/transactionParser';
 import { TransactionCard } from './TransactionCard';
 import '../App.module.css';
@@ -21,7 +21,7 @@ interface ExtendedChatMessage extends ChatMessage {
 }
 
 export const ChatInterface: React.FC = () => {
-  const wallet = useWallet();
+  const agent = useAgent();
   const [messages, setMessages] = useState<ExtendedChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -222,7 +222,7 @@ export const ChatInterface: React.FC = () => {
                 m.content && m.content.trim() !== '' // Ensure content exists and is not empty
               )
               .map(({ role, content }) => ({ role, content })),
-            wallet_address: wallet.address || null,
+            wallet_address: agent.activeAccount || null,
             enable_summary: true,
           },
           (streamMessage: StreamMessage) => {
@@ -265,7 +265,7 @@ export const ChatInterface: React.FC = () => {
                 m.content && m.content.trim() !== '' // Ensure content exists and is not empty
               )
               .map(({ role, content }) => ({ role, content })),
-            wallet_address: wallet.address || null,
+            wallet_address: agent.activeAccount || null,
           },
           (streamMessage: StreamMessage) => {
             // Handle thinking states for loading indicator
