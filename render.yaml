@@ -19,6 +19,8 @@ services:
         value: https://horizon-testnet.stellar.org
       - key: SOROBAN_RPC_URL
         value: https://soroban-testnet.stellar.org
+      - key: DEFINDEX_API_KEY
+        sync: false
       - key: PYTHONUNBUFFERED
         value: "1"
     healthCheck:

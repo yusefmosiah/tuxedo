@@ -40,6 +40,8 @@ MANIFEST
 .env.production.local
 .env.backend
 .env.frontend
+.env.render
+backend/.env
 
 # Logs
 logs

@@ -17,8 +17,11 @@ COPY backend/pyproject.toml ./
 # Install Python dependencies
 RUN uv pip install --system -e .
 
-# Copy backend source code
-COPY backend/ ./
+# Copy backend source code (excluding .env file)
+COPY backend/*.py ./
+COPY backend/pyproject.toml ./
+COPY backend/uv.lock ./
+COPY backend/src/ ./src/
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash app
