@@ -33,7 +33,7 @@ services:
   - type: web
     name: tuxedo-frontend
     runtime: docker
-    dockerfilePath: ./Dockerfile.frontend-fixed
+    dockerfilePath: ./Dockerfile.frontend
     plan: free
     envVars:
       - key: VITE_STELLAR_NETWORK

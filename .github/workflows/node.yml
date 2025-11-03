@@ -53,4 +53,4 @@ jobs:
       - name: Test Docker build
         run: |
           docker build -f Dockerfile.backend -t tuxedo-backend .
-          docker build -f Dockerfile.frontend-fixed -t tuxedo-frontend .
+          docker build -f Dockerfile.frontend -t tuxedo-frontend .
