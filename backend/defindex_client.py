@@ -27,14 +27,15 @@ class DeFindexClient:
         self.factory_address = "CDKFHFJIET3A73A2YN4KV7NSV32S6YGQMUFH3DNJXLBWL4SKEGVRNFKI"
 
     def _create_session(self):
-        """Create session with retry logic and Bearer auth"""
+        """Create session with retry logic, rate limiting, and Bearer auth"""
         session = requests.Session()
 
-        # Retry on failures
+        # Retry on failures with exponential backoff for rate limits
         retry = Retry(
-            total=3,
-            backoff_factor=1,
-            status_forcelist=[429, 500, 502, 503, 504]
+            total=5,  # Increased retries for rate limits
+            backoff_factor=2,  # Exponential backoff
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["HEAD", "GET", "POST"]  # Explicitly allow POST
         )
         session.mount("https://", HTTPAdapter(max_retries=retry))
 

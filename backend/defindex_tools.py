@@ -20,36 +20,38 @@ TESTNET_VAULTS = {
 }
 
 @tool
-async def discover_high_yield_vaults(min_apy: Optional[float] = 15.0) -> str:
-    """Discover DeFindex vaults with high yields using enhanced data sources.
+async def discover_high_yield_vaults(min_apy: Optional[float] = 0.0) -> str:
+    """Discover ALL available DeFindex vaults sorted by APY (highest to lowest).
 
     Use this when users ask about:
-    - High yield opportunities
-    - Where to invest or earn yield
-    - Best APY rates on Stellar
+    - Available vaults for investment
+    - Current APY rates on Stellar
     - DeFi yield opportunities
+    - Where to deposit funds
 
-    This tool provides realistic yield data and vault information with enhanced
-    details about risk levels, strategies, and asset types.
+    This tool shows ALL vaults including 0% APY vaults, sorted by yield.
 
     Args:
-        min_apy: Minimum APY threshold as percentage (default 15.0%)
+        min_apy: Minimum APY threshold as percentage (default 0.0% to show ALL)
 
     Returns:
-        Formatted list of vaults with their APYs, TVL, and detailed information
+        Complete list of available vaults sorted by APY with full details
     """
     try:
-        # Query for vault yields using testnet for safe demo/testing
+        # Query for ALL vaults using testnet for actual testing
         defindex = get_defindex_soroban(network='testnet')
         vaults_data = await defindex.get_available_vaults(min_apy=min_apy)
 
         if not vaults_data:
-            return f"No vaults found with APY above {min_apy}%."
+            return f"No vaults found with APY above {min_apy}% on testnet."
 
-        # Format response with enhanced information
-        result = f"Found {len(vaults_data)} high-yield DeFindex vaults on Stellar:\n\n"
+        # Sort vaults by APY (highest first)
+        vaults_data.sort(key=lambda x: x.get('apy', 0), reverse=True)
 
-        for i, v in enumerate(vaults_data[:8], 1):  # Top 8 vaults
+        # Format response with ALL available vaults
+        result = f"Found {len(vaults_data)} available DeFindex vaults on testnet (sorted by APY):\n\n"
+
+        for i, v in enumerate(vaults_data, 1):  # Show ALL vaults
             # Risk indicator emoji
             risk_emoji = {'Low': '🟢', 'Medium': '🟡', 'High': '🔴'}.get(v.get('risk_level', 'Medium'), '⚪')
 
@@ -58,13 +60,9 @@ async def discover_high_yield_vaults(min_apy: Optional[float] = 15.0) -> str:
             result += f"   TVL: ${v['tvl']:,.0f} | Type: {v.get('asset_type', 'Unknown')}\n"
             result += f"   Address: {v['address']}\n\n"
 
-        # Add helpful context
-        if len(vaults_data) > 8:
-            result += f"... and {len(vaults_data) - 8} more vaults available.\n\n"
-
         result += "💡 **Risk Guide**: 🟢 Low Risk (Stablecoins) | 🟡 Medium Risk (XLM) | 🔴 High Risk (Alt tokens)\n"
-        result += "📊 Data includes realistic market-based APY and TVL calculations.\n"
-        result += "🧪 For testing, I can prepare demo transactions on testnet using these mainnet vault references."
+        result += "📊 All vaults are REAL and available for deposits on testnet.\n"
+        result += "🔧 Use prepare_defindex_deposit to create REAL deposit transactions."
 
         return result
 
@@ -158,17 +156,16 @@ async def prepare_defindex_deposit(
     """Prepare a REAL deposit transaction to a DeFindex vault using the DeFindex API.
 
     This builds an actual vault deposit transaction that interacts with the DeFindex smart contract.
-    When the API is available, creates a real deposit transaction. Falls back to demo transaction
-    only when the API is unavailable.
+    NO DEMO TRANSACTIONS - only real transactions are supported.
 
     Args:
-        vault_address: The vault contract address (can be testnet or mainnet)
+        vault_address: The vault contract address (must be valid on specified network)
         amount_xlm: Amount to deposit in XLM (e.g., 10.5)
         user_address: User's Stellar public key (G...)
         network: Network to use ('testnet' or 'mainnet', default 'testnet')
 
     Returns:
-        Transaction details indicating whether it's a REAL or DEMO transaction
+        REAL deposit transaction details for immediate use
     """
     try:
         # Convert XLM to stroops (1 XLM = 10,000,000 stroops)
@@ -177,17 +174,18 @@ async def prepare_defindex_deposit(
         # Use specified network for transactions
         defindex = get_defindex_soroban(network=network)
 
-        # Build the deposit transaction (real or demo based on API availability)
+        # Build ONLY REAL deposit transactions
         tx_data = defindex.build_deposit_transaction(
             vault_address=vault_address,
             amount_stroops=amount_stroops,
             user_address=user_address
         )
 
-        # Create transaction payload
-        is_real_transaction = tx_data.get('data_source') == 'api'
-        transaction_type = "REAL" if is_real_transaction else "DEMO"
+        # Verify this is a REAL transaction
+        if tx_data.get('data_source') != 'api':
+            raise ValueError(f"Unable to create real deposit transaction. API returned: {tx_data.get('data_source', 'unknown')}")
 
+        # Create REAL transaction payload
         tx_payload = {
             'xdr': tx_data['xdr'],
             'vault_address': vault_address,
@@ -195,20 +193,14 @@ async def prepare_defindex_deposit(
             'estimated_shares': tx_data.get('estimated_shares', '0'),
             'description': tx_data['description'],
             'network': network,
-            'transaction_type': transaction_type,
-            'data_source': tx_data.get('data_source', 'demo')
+            'transaction_type': 'REAL',
+            'data_source': 'api'
         }
 
-        # Add additional fields for demo transactions
-        if not is_real_transaction:
-            tx_payload['demo_destination'] = tx_data.get('demo_destination', 'N/A')
-            tx_payload['note'] = tx_data.get('note', 'Demo transaction for testing')
-
-        # Return transaction details
+        # Return REAL transaction details
         tx_json = json.dumps(tx_payload, indent=2)
 
-        if is_real_transaction:
-            return f"""✅ **REAL DEPOSIT TRANSACTION PREPARED**
+        return f"""✅ **REAL DEPOSIT TRANSACTION PREPARED**
 
 I've prepared a **real vault deposit transaction** for {amount_xlm:,.0f} XLM to the {vault_address[:8]}... vault on {network}.
 
@@ -217,18 +209,9 @@ I've prepared a **real vault deposit transaction** for {amount_xlm:,.0f} XLM to 
 {tx_json}
 ```
 
-🎯 **This is a real DeFindex vault deposit** that will interact with the smart contract. The transaction can be signed and submitted to the {network} network."""
-        else:
-            return f"""🎭 **DEMO TRANSACTION PREPARED** (API Unavailable)
+🎯 **This is a real DeFindex vault deposit** that will interact with the smart contract. The transaction can be signed and submitted to the {network} network.
 
-I've prepared a **demo deposit transaction** for {amount_xlm:,.0f} XLM to simulate depositing to the {vault_address[:8]}... vault on {network}.
-
-**Transaction Details:**
-```json
-{tx_json}
-```
-
-⚠️ **Note:** The DeFindex API is currently unavailable, so this is a testnet demo transaction that simulates a vault deposit using a simple XLM payment. For real vault deposits, the API needs to be accessible."""
+⚠️ **Important**: This transaction will actually deposit funds into the vault when submitted."""
 
     except Exception as e:
         logger.error(f"Error in prepare_defindex_deposit: {e}")

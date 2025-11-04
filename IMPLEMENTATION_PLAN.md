@@ -435,6 +435,43 @@ const YieldDisplay = ({ vault }) => {
 
 **Status**: **PHASE 4 COMPLETED** ✅ - Real Deposit Implementation Complete
 
+### 🚨 **CURRENT BLOCKER: DeFindex API Issues (2025-11-04)**
+
+#### **Problem Summary**
+The system has been successfully updated to eliminate all demo transactions and implement real deposit functionality. However, we're encountering DeFindex API issues that prevent successful transaction building.
+
+#### **Specific Issues Identified:**
+
+1. **API Rate Limiting**
+   - Multiple rapid API calls trigger "DeFindex API rate limit exceeded" errors
+   - Partially mitigated with delays and retry logic
+   - API is responding but throttling requests
+
+2. **API Response Issues**
+   - `prepare_defindex_deposit` returns: "Cannot build real deposit transaction: DeFindex API ba..."
+   - Appears to be truncated error messages
+   - API is returning "bad request – no response text" errors
+
+3. **Testnet Vault Data Issues**
+   - All testnet vaults show 0% APY (expected for HODL vaults)
+   - Contract calls return "MissingValue" errors
+   - Mainnet vault addresses don't work on testnet (expected)
+
+#### **Current Error Patterns:**
+```
+Error: Unable to prepare deposit transaction: Cannot build real deposit transaction: DeFindex API ba...
+```
+- Error messages are being truncated
+- API connectivity works (rate limiting proves it)
+- Transaction building endpoint failing
+
+#### **Debugging Status:**
+- ✅ API authentication working
+- ✅ Rate limiting improvements implemented
+- ⚠️ Deposit transaction building failing
+- ⚠️ Error messages incomplete
+- ❌ Need systematic API debugging
+
 ### Phase 4 Completion Summary (2025-11-04)
 
 #### ✅ NEW ACHIEVEMENTS (Phase 4)
@@ -498,7 +535,9 @@ const YieldDisplay = ({ vault }) => {
 **Date**: 2025-11-04
 **Version**: 1.2
 **Last Updated**: 2025-11-04 - Phase 4: Real Deposit Implementation COMPLETED
-**Next Phase**: Phase 5: Network Configuration Management
+**Next Phase**: 🔧 DEBUGGING - DeFindex API Issues (BLOCKED)
+
+**Immediate Priority**: Debug and resolve DeFindex API transaction building issues before proceeding to Phase 5.
 
 ---
 
@@ -547,7 +586,45 @@ Real Yield Data Integration successfully completed:
 - ✅ Connected to actual vault addresses with proper error handling
 - ✅ System now uses real API data when available, graceful fallback when not
 
+### 🔧 **DEBUGGING PLAN - DeFindex API Issues**
+
+#### **Immediate Debugging Steps:**
+
+1. **API Endpoint Testing**
+   - Test each DeFindex API endpoint individually
+   - `/health` - ✅ Working
+   - `/factory/address` - ❌ 403 Forbidden (needs investigation)
+   - `/vault/{address}` - ❌ Contract errors
+   - `/vault/{address}/deposit` - ❌ Bad request errors
+
+2. **Error Message Investigation**
+   - Error messages are being truncated ("DeFindex API ba...")
+   - Need to capture full API response details
+   - Check if issue is in client or server response
+
+3. **Authentication Verification**
+   - API key format and permissions
+   - Check if testnet vs mainnet affects access
+   - Verify Bearer token is properly formatted
+
+4. **Network-Specific Issues**
+   - Test if mainnet vault addresses work on mainnet
+   - Test if there are different endpoints for testnet
+   - Check if network parameter affects API behavior
+
+5. **Rate Limit Analysis**
+   - Monitor API call frequency
+   - Implement longer delays between calls
+   - Check if there are different rate limits for different endpoints
+
+#### **Required Debugging Tools:**
+- Full API response logging
+- Request/response capture
+- Network-level debugging
+- Error message完整性检查
+
 ### Next Phase: Network Configuration Management
 - Centralized network configuration management
 - Dynamic network switching capabilities
 - Enhanced multi-network support
+**BLOCKED UNTIL**: DeFindex API issues resolved
