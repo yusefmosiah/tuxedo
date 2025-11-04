@@ -35,6 +35,12 @@ export const ChatInterface: React.FC = () => {
       try {
         const health: HealthResponse = await chatApi.healthCheck();
 
+        console.log('🔍 Health check response:', health);
+        console.log('🔍 Health check - status:', health.status);
+        console.log('🔍 Health check - stellar_tools_ready:', health.stellar_tools_ready);
+        console.log('🔍 Health check - live_summary_ready:', health.live_summary_ready);
+        console.log('🔍 Health check - database_ready:', health.database_ready);
+
         if (health.status === 'healthy' && health.stellar_tools_ready) {
           setApiStatus('connected');
           // Update live summary preference based on backend availability
@@ -42,10 +48,15 @@ export const ChatInterface: React.FC = () => {
             setUseLiveSummary(false);
           }
         } else {
+          console.log('⚠️ Health check failed conditions:', {
+            status: health.status,
+            stellar_tools_ready: health.stellar_tools_ready,
+            both_conditions: health.status === 'healthy' && health.stellar_tools_ready
+          });
           setApiStatus('disconnected');
         }
       } catch (error) {
-        console.error('Health check failed:', error);
+        console.error('❌ Health check failed:', error);
         setApiStatus('disconnected');
       }
     };

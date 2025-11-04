@@ -122,7 +122,10 @@ async def get_agent_status() -> Dict[str, Any]:
             for tool in agent_tools
         ),
         "stellar_tools_ready": len(agent_tools) > 0,
-        "openai_configured": bool(settings.openai_api_key)
+        "openai_configured": bool(settings.openai_api_key),
+        "live_summary_ready": True,  # TODO: Make this configurable based on actual availability
+        "database_ready": True,  # TODO: Check actual database connectivity
+        "defindex_tools_ready": len([t for t in agent_tools if 'defindex' in getattr(tool, 'name', getattr(tool, '__name__', str(tool))).lower()]) > 0
     }
 
 async def process_agent_message(
