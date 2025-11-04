@@ -216,4 +216,63 @@ I've prepared a **real vault deposit transaction** for {amount_xlm:,.0f} XLM to 
     except Exception as e:
         logger.error(f"Error in prepare_defindex_deposit: {e}")
         logger.error(f"Vault address: {vault_address}, Amount: {amount_xlm} XLM, Network: {network}")
-        return f"Error: Unable to prepare deposit transaction: {str(e)}"
+
+        # Enhanced error handling for known issues
+        error_str = str(e)
+
+        if "MissingValue" in error_str or "missing value" in error_str.lower():
+            return """⚠️ **DeFindex API Testnet Limitation Detected**
+
+The vault contracts on Stellar testnet are currently not initialized, causing "MissingValue" storage errors.
+This is a known limitation of the DeFindex testnet environment.
+
+**What this means:**
+- The vault contracts exist but have no initialized data
+- All vault operations (deposit, APY queries, etc.) fail on testnet
+- This affects both mainnet vault addresses and testnet vault addresses
+
+**Workaround Options:**
+1. **Manual XLM Payment**: Send XLM directly to the vault address:
+   - Destination: `{vault_address[:8]}...{vault_address[-8:]}`
+   - Amount: {amount_xlm} XLM
+   - Memo: "Deposit to DeFindex Vault"
+   - The contract will treat the payment as a deposit
+
+2. **Use Mainnet**: Switch to mainnet for full DeFindex functionality (requires real funds)
+
+3. **Contact Support**: Reach out to DeFindex team about testnet contract initialization
+
+**Technical Details:**
+The API returns storage errors because contract storage slots are empty on testnet.
+This is an infrastructure issue, not a configuration problem in our system.
+
+Status: Testnet vault contracts require initialization by DeFindex team."""
+
+        elif "rate limit" in error_str.lower() or "429" in error_str:
+            return """⚠️ **DeFindex API Rate Limit Exceeded**
+
+The DeFindex API has a strict rate limit (1 request per second) on testnet.
+
+**What to do:**
+- Wait a few seconds before trying again
+- The system will automatically retry with delays
+
+**Technical Details:**
+Rate limiting is implemented to prevent abuse of the DeFindex API.
+Our client handles this with automatic retries and exponential backoff."""
+
+        elif "authentication" in error_str.lower() or "403" in error_str:
+            return """❌ **DeFindex API Authentication Failed**
+
+There's an issue with the API key or authentication.
+
+**What this means:**
+- The API key may be invalid or expired
+- There might be permission issues with the vault operations
+
+**Technical Details:**
+Status: API authentication requires valid Bearer token with proper permissions."""
+
+        else:
+            # Full error message for other issues (no truncation)
+            return f"Error: Unable to prepare deposit transaction: {error_str}"

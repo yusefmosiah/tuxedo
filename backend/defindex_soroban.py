@@ -22,20 +22,15 @@ MAINNET_VAULTS = {
     'XLM_Blend_Yieldblox': 'CBDOIGFO2QOOZTWQZ7AFPH5JOUS2SBN5CTTXR665NHV6GOCM6OUGI5KP'
 }
 
-# Testnet vaults - include both real HODL vaults AND mainnet vault addresses for testing
-# Note: Some mainnet vaults might work on testnet if contracts are deployed there
+# Testnet vaults - ONLY real testnet HODL vaults (verified working)
+# NOTE: Mainnet vault addresses do NOT work on testnet (MissingValue errors)
 TESTNET_VAULTS = {
     # Real testnet HODL vaults (0% APY - just hold XLM)
+    # These are verified working testnet contracts
     'XLM_HODL_1': 'CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA',
     'XLM_HODL_2': 'CCSPRGGUP32M23CTU7RUAGXDNOHSA6O2BS2IK4NVUP5X2JQXKTSIQJKE',
     'XLM_HODL_3': 'CBLXUUHUL7TA3LF3U5G6ZTU7EACBBOSJLR4AYOM5YJKJ4APZ7O547R5T',
-    'XLM_HODL_4': 'CCGKL6U2DHSNFJ3NU4UPRUKYE2EUGYR4ZFZDYA7KDJLP3TKSPHD5C4UP',
-
-    # Include mainnet vault addresses for testing (might work on testnet)
-    'USDC_Blend_Fixed_TN': 'CDB2WMKQQNVZMEBY7Q7GZ5C7E7IAFSNMZ7GGVD6WKTCEWK7XOIAVZSAP',
-    'USDC_Blend_Yieldblox_TN': 'CCSRX5E4337QMCMC3KO3RDFYI57T5NZV5XB3W3TWE4USCASKGL5URKJL',
-    'XLM_Blend_Fixed_TN': 'CDPWNUW7UMCSVO36VAJSQHQECISPJLCVPDASKHRC5SEROAAZDUQ5DG2Z',
-    'XLM_Blend_Yieldblox_TN': 'CBDOIGFO2QOOZTWQZ7AFPH5JOUS2SBN5CTTXR665NHV6GOCM6OUGI5KP'
+    'XLM_HODL_4': 'CCGKL6U2DHSNFJ3NU4UPRUKYE2EUGYR4ZFZDYA7KDJLP3TKSPHD5C4UP'
 }
 
 # Removed: REALISTIC_APY_DATA - now fetched from DeFindex API
