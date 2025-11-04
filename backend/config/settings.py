@@ -14,6 +14,7 @@ class Settings:
         self.openai_api_key = os.getenv("OPENAI_API_KEY", "")
         self.openai_base_url = os.getenv("OPENAI_BASE_URL", "https://openrouter.ai/api/v1")
         self.primary_model = os.getenv("PRIMARY_MODEL", "openai/gpt-oss-120b:exacto")
+        self.summarization_model = os.getenv("SUMMARIZATION_MODEL", "openai/gpt-oss-120b:exacto")
 
         # Stellar Configuration
         self.stellar_network = os.getenv("STELLAR_NETWORK", "testnet")

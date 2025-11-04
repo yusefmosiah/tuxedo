@@ -10,6 +10,7 @@ from typing import List, Dict, Optional, Any
 import logging
 import json
 import asyncio
+from live_summary_service import get_live_summary_service, is_live_summary_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -184,11 +185,39 @@ async def chat_live_summary_endpoint(request: StreamChatRequest):
             if response.get("success", False):
                 content = response.get("response", "")
 
-                # Send summary start
-                summary_start = {
-                    "type": "live_summary_start",
-                    "content": "Starting conversation..."
-                }
+                # Get the live summary service
+                summary_service = get_live_summary_service()
+
+                # Prepare messages for summarization
+                messages_for_summary = [
+                    {"role": "user", "content": request.message},
+                    {"role": "assistant", "content": content}
+                ]
+
+                # Add history if available
+                for msg in history:
+                    messages_for_summary.append(msg)
+
+                # Send summary start with live summary
+                live_summary = ""
+                if is_live_summary_enabled():
+                    try:
+                        live_summary = await summary_service.generate_live_summary(messages_for_summary)
+                        summary_start = {
+                            "type": "live_summary_start",
+                            "content": live_summary
+                        }
+                    except Exception as e:
+                        logger.error(f"Error generating live summary: {e}")
+                        summary_start = {
+                            "type": "live_summary_start",
+                            "content": "Processing your request..."
+                        }
+                else:
+                    summary_start = {
+                        "type": "live_summary_start",
+                        "content": "Processing your request..."
+                    }
                 yield f"data: {json.dumps(summary_start)}\n\n"
 
                 # Send the actual content
@@ -200,12 +229,28 @@ async def chat_live_summary_endpoint(request: StreamChatRequest):
                 }
                 yield f"data: {json.dumps(message_data)}\n\n"
 
-                # Send summary completion
-                summary_complete = {
-                    "type": "live_summary_complete",
-                    "content": content,
-                    "summary": f"Discussion about: {request.message[:50]}..."
-                }
+                # Send summary completion with final summary
+                if is_live_summary_enabled():
+                    try:
+                        final_summary = await summary_service.generate_final_summary(messages_for_summary)
+                        summary_complete = {
+                            "type": "live_summary_complete",
+                            "content": content,
+                            "summary": final_summary
+                        }
+                    except Exception as e:
+                        logger.error(f"Error generating final summary: {e}")
+                        summary_complete = {
+                            "type": "live_summary_complete",
+                            "content": content,
+                            "summary": f"Completed: {request.message[:50]}..."
+                        }
+                else:
+                    summary_complete = {
+                        "type": "live_summary_complete",
+                        "content": content,
+                        "summary": f"Completed: {request.message[:50]}..."
+                    }
                 yield f"data: {json.dumps(summary_complete)}\n\n"
             else:
                 # Send error

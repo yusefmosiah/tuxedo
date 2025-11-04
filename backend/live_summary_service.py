@@ -13,6 +13,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -21,14 +22,19 @@ class LiveSummaryService:
 
     def __init__(self):
         """Initialize the live summary service."""
-        self.summarization_model = os.getenv('SUMMARIZATION_MODEL', 'gpt-4o-mini')
-        self.primary_model = os.getenv('PRIMARY_MODEL', 'gpt-4o')
+        # Use centralized settings
+        self.summarization_model = settings.summarization_model
+        self.primary_model = settings.primary_model
+        self.api_key = settings.openai_api_key
+        self.base_url = settings.openai_base_url
 
         # Initialize the live summary LLM (try same config as final summary)
         self.summary_llm = ChatOpenAI(
             model=self.summarization_model,
             temperature=0.1,  # Even lower temperature for consistency
             max_tokens=150,   # Same as final summary
+            api_key=self.api_key,
+            base_url=self.base_url,
         )
 
         # Initialize the final summary LLM
@@ -36,6 +42,8 @@ class LiveSummaryService:
             model=self.summarization_model,
             temperature=0.3,
             max_tokens=150,   # Longer for final summaries
+            api_key=self.api_key,
+            base_url=self.base_url,
         )
 
         logger.info(f"LiveSummaryService initialized with model: {self.summarization_model}")
@@ -176,6 +184,8 @@ Summary:"""
                 model=self.summarization_model,
                 temperature=0.1,
                 max_tokens=60,  # Very concise
+                api_key=self.api_key,
+                base_url=self.base_url,
             )
 
             response = await summary_llm.ainvoke([
@@ -268,4 +278,4 @@ def get_live_summary_service() -> LiveSummaryService:
 
 def is_live_summary_enabled() -> bool:
     """Check if live summary functionality is enabled."""
-    return bool(os.getenv('SUMMARIZATION_MODEL')) and bool(os.getenv('OPENAI_API_KEY'))
+    return bool(settings.summarization_model) and bool(settings.openai_api_key)
