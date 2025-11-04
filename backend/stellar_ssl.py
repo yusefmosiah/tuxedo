@@ -13,9 +13,15 @@ from typing import Optional, Dict
 try:
     import certifi
     import aiohttp
-    from stellar_sdk.client.aiohttp_client import AiohttpClient
-    from stellar_sdk.client import defines
-    _DEPS_AVAILABLE = True
+    try:
+        from stellar_sdk.client.aiohttp_client import AiohttpClient
+        from stellar_sdk.client import defines
+        _DEPS_AVAILABLE = True
+    except ImportError:
+        # Fallback for newer stellar_sdk versions
+        from stellar_sdk.request import AiohttpClient
+        from stellar_sdk.client import defines
+        _DEPS_AVAILABLE = True
 except ImportError:
     _DEPS_AVAILABLE = False
 

@@ -23,8 +23,8 @@ class DeFindexClient:
         self.base_url = "https://api.defindex.io"
         self.session = self._create_session()
 
-        # Factory contract address for vault operations
-        self.factory_address = "CDZKFHJIET3A73A2YN4KV7NSV32S6YGQMUFH3DNJXLBWL4SKEGVRNFKI"
+        # Factory contract address for vault operations (Updated 2025-11-04)
+        self.factory_address = "CDKFHFJIET3A73A2YN4KV7NSV32S6YGQMUFH3DNJXLBWL4SKEGVRNFKI"
 
     def _create_session(self):
         """Create session with retry logic and Bearer auth"""

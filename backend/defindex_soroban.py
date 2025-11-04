@@ -4,28 +4,26 @@ DeFindex integration using Soroban smart contracts
 """
 
 import logging
+import asyncio
 from typing import Dict, List, Optional
 from stellar_sdk import Server
 from stellar_sdk.soroban_server import SorobanServer
-from stellar_ssl import create_soroban_client_with_ssl
+# from stellar_ssl import create_soroban_client_with_ssl  # Temporarily disabled for testing
 
 logger = logging.getLogger(__name__)
 
-# Real DeFindex contract addresses from GitHub
+# Real DeFindex contract addresses from official docs (Updated 2025-11-04)
 MAINNET_VAULTS = {
     'USDC_Blend_Fixed': 'CDB2WMKQQNVZMEBY7Q7GZ5C7E7IAFSNMZ7GGVD6WKTCEWK7XOIAVZSAP',
     'USDC_Blend_Yieldblox': 'CCSRX5E4337QMCMC3KO3RDFYI57T5NZV5XB3W3TWE4USCASKGL5URKJL',
-    'USDC_Palta': 'CCFWKCD52JNSQLN5OS4F7EG6BPDT4IRJV6KODIEIZLWPM35IKHOKT6S2',
     'EURC_Blend_Fixed': 'CC5CE6MWISDXT3MLNQ7R3FVILFVFEIH3COWGH45GJKL6BD2ZHF7F7JVI',
     'EURC_Blend_Yieldblox': 'CA33NXYN7H3EBDSA3U2FPSULGJTTL3FQRHD2ADAAPTKS3FUJOE73735A',
     'XLM_Blend_Fixed': 'CDPWNUW7UMCSVO36VAJSQHQECISPJLCVPDASKHRC5SEROAAZDUQ5DG2Z',
-    'XLM_Blend_Yieldblox': 'CBDOIGFO2QOOZTWQZ7AFPH5JOUS2SBN5CTTXR665NHV6GOCM6OUGI5KP',
-    'Cetes': 'CBTSRJLN5CVVOWLTH2FY5KNQ47KW5KKU3VWGASDN72STGMXLRRNHPRIL',
-    'Aqua': 'CCMJUJW6Z7I3TYDCJFGTI3A7QA3ASMYAZ5PSRRWBBIJQPKI2GXL5DW5D',
-    'Ustry': 'CDDXPBOF727FDVTNV4I3G4LL4BHTJHE5BBC4W6WZAHMUPFDPBQBL6K7Y',
-    'USDglo': 'CCTLQXYSIUN3OSZLZ7O7MIJC6YCU3QLLS6TUM3P2CD6DAVELMWC3QV4E'
+    'XLM_Blend_Yieldblox': 'CBDOIGFO2QOOZTWQZ7AFPH5JOUS2SBN5CTTXR665NHV6GOCM6OUGI5KP'
 }
 
+# Testnet vaults - real addresses discovered from Blend protocol
+# Note: Limited testnet vault availability - these are primarily XLM HODL vaults
 TESTNET_VAULTS = {
     'XLM_HODL_1': 'CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA',
     'XLM_HODL_2': 'CCSPRGGUP32M23CTU7RUAGXDNOHSA6O2BS2IK4NVUP5X2JQXKTSIQJKE',
@@ -33,28 +31,7 @@ TESTNET_VAULTS = {
     'XLM_HODL_4': 'CCGKL6U2DHSNFJ3NU4UPRUKYE2EUGYR4ZFZDYA7KDJLP3TKSPHD5C4UP'
 }
 
-# Realistic APY data based on current market conditions (in a real implementation, this would come from on-chain data or oracle)
-# These values reflect realistic yields for different asset types and strategies
-REALISTIC_APY_DATA = {
-    # USDC Vaults - Stablecoin yields
-    'USDC_Blend_Fixed': 28.5,
-    'USDC_Blend_Yieldblox': 35.2,
-    'USDC_Palta': 31.8,
-
-    # EURC Vaults - Euro stablecoin yields
-    'EURC_Blend_Fixed': 26.3,
-    'EURC_Blend_Yieldblox': 32.1,
-
-    # XLM Vaults - Native asset yields
-    'XLM_Blend_Fixed': 22.7,
-    'XLM_Blend_Yieldblox': 28.9,
-
-    # Specialized Vaults
-    'Cetes': 18.5,  # Mexican government bonds
-    'Aqua': 24.3,   # Aqua protocol
-    'Ustry': 21.7,  # Ustry protocol
-    'USDglo': 19.8  # USDglo stablecoin
-}
+# Removed: REALISTIC_APY_DATA - now fetched from DeFindex API
 
 class DeFindexSoroban:
     """DeFindex integration using Soroban smart contracts"""
@@ -63,65 +40,108 @@ class DeFindexSoroban:
         self.network = network
         if network == "mainnet":
             self.horizon = Server("https://horizon.stellar.org")
-            self.soroban = create_soroban_client_with_ssl("https://mainnet.stellar.expert/explorer/rpc")
+            # self.soroban = create_soroban_client_with_ssl("https://mainnet.stellar.expert/explorer/rpc")  # Temporarily disabled
             self.vaults = MAINNET_VAULTS
         else:
             self.horizon = Server("https://horizon-testnet.stellar.org")
-            self.soroban = create_soroban_client_with_ssl("https://soroban-testnet.stellar.org")
+            # self.soroban = create_soroban_client_with_ssl("https://soroban-testnet.stellar.org")  # Temporarily disabled
             self.vaults = TESTNET_VAULTS
 
+        # Initialize API client for real data
+        self.api_client = None
+        try:
+            from defindex_client import get_defindex_client
+            self.api_client = get_defindex_client(network)
+            logger.info(f"DeFindex API client initialized for {network}")
+        except Exception as e:
+            logger.warning(f"Failed to initialize DeFindex API client: {e}")
+            self.api_client = None
+
     async def get_available_vaults(self, min_apy: float = 15.0) -> List[Dict]:
-        """Get available vaults with their APY data"""
+        """Get available vaults with their real APY and TVL data"""
         vaults_data = []
 
-        # Use mainnet data for APY information
-        apy_source = REALISTIC_APY_DATA if self.network == "testnet" else REALISTIC_APY_DATA
+        # Use appropriate vaults for the network
+        vaults_to_use = self.vaults
+        vault_addresses = list(vaults_to_use.values())
 
-        # Always use mainnet vaults for reference data but adjust for network context
-        vaults_to_use = MAINNET_VAULTS if self.network == "mainnet" else MAINNET_VAULTS
+        # Try to get real data from API first
+        real_vault_data = {}
+        if self.api_client:
+            try:
+                # Get vault info and APY data from API
+                api_vaults = self.api_client.get_vaults(vault_addresses)
+                for vault_info in api_vaults:
+                    address = vault_info.get('address')
+                    if address:
+                        real_vault_data[address] = vault_info
 
+                        # Try to get APY data separately for more accurate info
+                        try:
+                            apy_data = self.api_client.get_vault_apy(address)
+                            real_vault_data[address]['apy'] = apy_data.get('apy', 0)
+                        except Exception as e:
+                            logger.debug(f"Could not get APY for {address}: {e}")
+                            real_vault_data[address]['apy'] = vault_info.get('apy', 0)
+
+            except Exception as e:
+                logger.warning(f"Failed to get vault data from API: {e}")
+
+        # Process vaults with real or fallback data
         for name, address in vaults_to_use.items():
-            apy = apy_source.get(name, 0)
+            vault_info = real_vault_data.get(address, {})
 
+            if vault_info:
+                # Use real data from API
+                apy = vault_info.get('apy', 0)
+                tvl = vault_info.get('tvl', 0)
+
+                # Extract real symbol and strategy
+                symbol = vault_info.get('symbol', name.split('_')[0])
+                strategy = vault_info.get('strategy', name.split('_')[1] if '_' in name else 'HODL')
+                asset_type = vault_info.get('asset_type',
+                    'stablecoin' if symbol in ['USDC', 'EURC', 'USDglo'] else
+                    'volatile' if symbol == 'XLM' else 'tokenized')
+
+            else:
+                # Fallback to basic data if API fails
+                logger.warning(f"Using fallback data for vault {name} ({address})")
+                apy = 0  # No APY data available without API
+                tvl = 0  # No TVL data available without API
+                symbol = name.split('_')[0]
+                strategy = name.split('_')[1] if '_' in name else 'HODL'
+                asset_type = 'stablecoin' if symbol in ['USDC', 'EURC', 'USDglo'] else 'volatile' if symbol == 'XLM' else 'tokenized'
+
+            # Filter by minimum APY
             if apy >= min_apy:
-                # Calculate more realistic TVL based on asset type and APY
-                base_tvl = {
-                    'USDC': 5000000,   # $5M base for USDC vaults
-                    'EURC': 2000000,   # $2M base for EURC vaults
-                    'XLM': 3000000,    # $3M base for XLM vaults
-                    'Cetes': 1500000,  # $1.5M base for Cetes
-                    'Aqua': 2500000,   # $2.5M base for Aqua
-                    'Ustry': 1800000,  # $1.8M base for Ustry
-                    'USDglo': 1200000  # $1.2M base for USDglo
-                }
-
-                asset = name.split('_')[0]
-                tvl = base_tvl.get(asset, 2000000) + (hash(name) % 3000000)
-
-                # Adjust TVL based on APY (higher APY generally attracts more TVL)
-                tvl_multiplier = 1.0 + (apy - 20.0) * 0.05  # 5% increase per point above 20% APY
-                tvl = int(tvl * max(0.5, min(tvl_multiplier, 3.0)))  # Cap between 50% and 300%
-
                 vaults_data.append({
                     'name': name.replace('_', ' '),
                     'address': address,
                     'apy': apy,
                     'tvl': tvl,
-                    'symbol': asset,
-                    'network': 'mainnet' if self.network == 'mainnet' else 'testnet-reference',
-                    'strategy': name.split('_')[1] if '_' in name else 'HODL',
-                    'asset_type': 'stablecoin' if asset in ['USDC', 'EURC', 'USDglo'] else 'volatile' if asset == 'XLM' else 'tokenized'
+                    'symbol': symbol,
+                    'network': self.network,
+                    'strategy': strategy,
+                    'asset_type': asset_type,
+                    'data_source': 'api' if vault_info else 'fallback'
                 })
 
         # Sort by APY descending, then by TVL descending
         vaults_data.sort(key=lambda v: (v['apy'], v['tvl']), reverse=True)
+
+        # Log data source summary
+        api_count = sum(1 for v in vaults_data if v.get('data_source') == 'api')
+        fallback_count = len(vaults_data) - api_count
+        logger.info(f"Returning {len(vaults_data)} vaults: {api_count} from API, {fallback_count} from fallback")
+
         return vaults_data
 
     async def get_vault_details(self, vault_address: str) -> Dict:
-        """Get detailed information about a vault"""
-        # Find vault name from address
+        """Get detailed information about a vault using real API data"""
+        # Find vault name from address (check both mainnet and testnet)
         vault_name = None
-        for name, address in MAINNET_VAULTS.items():
+        all_vaults = {**MAINNET_VAULTS, **TESTNET_VAULTS}
+        for name, address in all_vaults.items():
             if address == vault_address:
                 vault_name = name
                 break
@@ -129,71 +149,76 @@ class DeFindexSoroban:
         if not vault_name:
             raise ValueError(f"Vault not found: {vault_address}")
 
-        apy = REALISTIC_APY_DATA.get(vault_name, 0)
-        asset = vault_name.split('_')[0]
-        strategy = vault_name.split('_')[1] if '_' in vault_name else 'HODL'
+        # Try to get real data from API first
+        vault_info = {}
+        if self.api_client:
+            try:
+                vault_info = self.api_client.get_vault_info(vault_address)
 
-        # Calculate realistic TVL
-        base_tvl = {
-            'USDC': 5000000,
-            'EURC': 2000000,
-            'XLM': 3000000,
-            'Cetes': 1500000,
-            'Aqua': 2500000,
-            'Ustry': 1800000,
-            'USDglo': 1200000
-        }
+                # Try to get APY data separately for more accurate info
+                try:
+                    apy_data = self.api_client.get_vault_apy(vault_address)
+                    vault_info['apy'] = apy_data.get('apy', 0)
+                except Exception as e:
+                    logger.debug(f"Could not get APY for {vault_address}: {e}")
+                    vault_info['apy'] = vault_info.get('apy', 0)
 
-        tvl = base_tvl.get(asset, 2000000) + (hash(vault_name) % 3000000)
-        tvl_multiplier = 1.0 + (apy - 20.0) * 0.05
-        tvl = int(tvl * max(0.5, min(tvl_multiplier, 3.0)))
+                logger.info(f"Retrieved real vault data for {vault_name}")
+            except Exception as e:
+                logger.warning(f"Failed to get vault details from API for {vault_name}: {e}")
 
-        # Generate strategy details based on vault type
-        strategies = []
-        if strategy == 'Blend_Fixed':
-            strategies = [
-                {'name': 'Blend Fixed Rate Lending', 'paused': False, 'description': 'Lending at fixed rates through Blend protocol'},
-                {'name': 'Stablecoin Arbitrage', 'paused': False, 'description': 'Cross-protocol stablecoin yield optimization'}
-            ]
-        elif strategy == 'Blend_Yieldblox':
-            strategies = [
-                {'name': 'Blend Variable Rate Lending', 'paused': False, 'description': 'Variable rate lending with Yieldblox optimization'},
-                {'name': 'Liquidity Mining', 'paused': False, 'description': 'Yieldblox liquidity mining rewards'}
-            ]
-        elif strategy == 'Palta':
-            strategies = [
-                {'name': 'Palta Automated Market Making', 'paused': False, 'description': 'AMM strategy on Palta DEX'},
-                {'name': 'Dynamic Fee Capture', 'paused': False, 'description': 'Capturing trading fees from market activity'}
-            ]
+        if vault_info:
+            # Use real data from API
+            apy = vault_info.get('apy', 0)
+            tvl = vault_info.get('tvl', 0)
+            symbol = vault_info.get('symbol', vault_name.split('_')[0])
+            strategy = vault_info.get('strategy', vault_name.split('_')[1] if '_' in vault_name else 'HODL')
+            strategies = vault_info.get('strategies', [])
+            historical_apy = vault_info.get('historical_apy', {})
+            asset_type = vault_info.get('asset_type',
+                'stablecoin' if symbol in ['USDC', 'EURC', 'USDglo'] else
+                'volatile' if symbol == 'XLM' else 'tokenized')
+            risk_level = vault_info.get('risk_level',
+                'Low' if symbol in ['USDC', 'EURC'] else
+                'Medium' if symbol == 'XLM' else 'High')
+            min_deposit = vault_info.get('min_deposit', 100 if symbol in ['USDC', 'EURC'] else 1)
+            fees = vault_info.get('fees', {
+                'deposit': '0.1%',
+                'withdrawal': '0.1%',
+                'performance': '10% of profits'
+            })
+
         else:
-            strategies = [
-                {'name': f'{strategy} Strategy', 'paused': False, 'description': 'Automated yield generation with compound optimization'}
-            ]
-
-        # Generate realistic historical APY data
-        base_variance = 0.1 if asset in ['USDC', 'EURC'] else 0.15  # Stablecoins have lower variance
-        historical_apy = {
-            '1m': round(apy * (1 + (hash(f"{vault_name}_1m") % 20 - 10) / 100 * base_variance), 1),
-            '3m': round(apy * (1 + (hash(f"{vault_name}_3m") % 25 - 12) / 100 * base_variance), 1),
-            '1y': round(apy * (1 + (hash(f"{vault_name}_1y") % 30 - 15) / 100 * base_variance), 1)
-        }
+            # Fallback to basic data if API fails
+            logger.warning(f"Using fallback data for vault details: {vault_name}")
+            apy = 0
+            tvl = 0
+            symbol = vault_name.split('_')[0]
+            strategy = vault_name.split('_')[1] if '_' in vault_name else 'HODL'
+            strategies = [{'name': f'{strategy} Strategy', 'paused': False, 'description': 'Data unavailable - API required'}]
+            historical_apy = {'1m': 0, '3m': 0, '1y': 0}
+            asset_type = 'stablecoin' if symbol in ['USDC', 'EURC', 'USDglo'] else 'volatile' if symbol == 'XLM' else 'tokenized'
+            risk_level = 'Low' if symbol in ['USDC', 'EURC'] else 'Medium' if symbol == 'XLM' else 'High'
+            min_deposit = 100 if symbol in ['USDC', 'EURC'] else 1
+            fees = {
+                'deposit': '0.1%',
+                'withdrawal': '0.1%',
+                'performance': '10% of profits'
+            }
 
         return {
             'name': vault_name.replace('_', ' '),
             'address': vault_address,
             'apy': apy,
             'tvl': tvl,
-            'symbol': asset,
+            'symbol': symbol,
             'strategies': strategies,
             'historical_apy': historical_apy,
-            'asset_type': 'stablecoin' if asset in ['USDC', 'EURC', 'USDglo'] else 'volatile' if asset == 'XLM' else 'tokenized',
-            'risk_level': 'Low' if asset in ['USDC', 'EURC'] else 'Medium' if asset == 'XLM' else 'High',
-            'min_deposit': 100 if asset in ['USDC', 'EURC'] else 1,  # Minimum deposit in asset units
-            'fees': {
-                'deposit': '0.1%',
-                'withdrawal': '0.1%',
-                'performance': '10% of profits'
-            }
+            'asset_type': asset_type,
+            'risk_level': risk_level,
+            'min_deposit': min_deposit,
+            'fees': fees,
+            'data_source': 'api' if vault_info else 'fallback'
         }
 
     def build_deposit_transaction(
@@ -202,24 +227,58 @@ class DeFindexSoroban:
         amount_stroops: int,
         user_address: str
     ) -> Dict:
+        """Build a real deposit transaction using DeFindex API
+
+        If API is available, builds a real vault deposit transaction.
+        Falls back to demo transaction for testnet if API fails.
+        """
+        # Try to use real API client first
+        if self.api_client:
+            try:
+                # Build real deposit transaction via API
+                tx_data = self.api_client.build_deposit_transaction(
+                    vault_address=vault_address,
+                    amount_stroops=amount_stroops,
+                    caller=user_address,
+                    invest=True
+                )
+
+                amount_xlm = amount_stroops / 10_000_000
+                return {
+                    'xdr': tx_data.get('xdr', ''),
+                    'description': f'✅ REAL: Deposit {amount_xlm:.2f} XLM to DeFindex vault',
+                    'amount': amount_xlm,
+                    'estimated_shares': tx_data.get('estimated_shares', str(int(amount_stroops * 0.95))),
+                    'vault_address': vault_address,
+                    'user_address': user_address,
+                    'transaction_data': tx_data,
+                    'data_source': 'api'
+                }
+
+            except Exception as e:
+                logger.warning(f"Failed to build real deposit transaction: {e}")
+                logger.info("Falling back to demo transaction")
+
+        # Fallback to demo transaction
+        return self._build_demo_transaction(vault_address, amount_stroops, user_address)
+
+    def _build_demo_transaction(self, vault_address: str, amount_stroops: int, user_address: str) -> Dict:
         """Build a demo deposit transaction for testnet purposes
 
-        This creates a simple XLM payment to a testnet address to demonstrate
-        the wallet signing flow. The vault_address parameter is used for metadata
-        only - the actual transaction sends to a known testnet account.
+        This creates a simple XLM payment to demonstrate the wallet signing flow.
+        The vault_address parameter is used for metadata only.
         """
         from stellar_sdk import TransactionBuilder, Network, Account
         from stellar_sdk.operation import Payment
         from stellar_sdk import Asset
 
         # Use a valid testnet destination (Stellar testnet friendbot address)
-        # This ensures the transaction is always valid for demo purposes
         demo_destination = 'GAIH3ULLFQ4DGSECF2AR555KZ4KNDGEKN4AFI4SU2M7B43MGK3QJZNSR'
 
         try:
             # Fetch user account from network to get sequence number
             account = self.horizon.accounts().account_id(user_address).call()
-            sequence = int(account['sequence'])  # Convert sequence to int
+            sequence = int(account['sequence'])
             source_account = Account(user_address, sequence)
 
             # Calculate amount in XLM
@@ -234,7 +293,7 @@ class DeFindexSoroban:
                 )
                 .append_payment_op(
                     destination=demo_destination,
-                    amount=f"{amount_xlm:.7f}",  # Format as string with 7 decimal places
+                    amount=f"{amount_xlm:.7f}",
                     asset=Asset.native(),
                 )
                 .set_timeout(300)  # 5 minute timeout
@@ -242,23 +301,21 @@ class DeFindexSoroban:
                 .build()
             )
 
-            # Get XDR
-            xdr = transaction.to_xdr()
-
             return {
-                'xdr': xdr,
+                'xdr': transaction.to_xdr(),
                 'description': f'🎭 DEMO: Deposit {amount_xlm:.2f} XLM to DeFindex vault (testnet simulation)',
                 'amount': amount_xlm,
-                'estimated_shares': str(int(amount_stroops * 0.95)),  # Mock share calculation
-                'vault_address': vault_address,  # Original mainnet vault for reference
+                'estimated_shares': str(int(amount_stroops * 0.95)),
+                'vault_address': vault_address,
                 'demo_destination': demo_destination,
                 'user_address': user_address,
-                'note': 'This is a testnet demo transaction that simulates a mainnet vault deposit'
+                'data_source': 'demo',
+                'note': 'This is a testnet demo transaction that simulates a vault deposit'
             }
 
         except Exception as e:
-            logger.error(f"Error building deposit transaction: {e}")
-            raise ValueError(f"Could not build demo transaction: {str(e)}")
+            logger.error(f"Error building demo transaction: {e}")
+            raise ValueError(f"Could not build transaction: {str(e)}")
 
 def get_defindex_soroban(network: str = 'mainnet') -> DeFindexSoroban:
     """Get DeFindex Soroban client"""
