@@ -1,0 +1,62 @@
+{
+  "deployment_date": "2025-11-04T22:59:20.498551",
+  "network": "testnet",
+  "deployer": "GDBIB3ALIA5YX5CCX4HRQXPGEKQYQPL4CIVU62U5JAWJKCLSW6CICKRX",
+  "strategies": {
+    "HODL": {
+      "contract_address": "TBD",
+      "explorer_url": "TBD",
+      "wasm_file": "hodl_strategy.wasm",
+      "size_bytes": 5136,
+      "description": "Simple hold strategy - holds assets without active management",
+      "deployment_status": "pending",
+      "verified": false
+    },
+    "BLEND": {
+      "contract_address": "TBD",
+      "explorer_url": "TBD",
+      "wasm_file": "blend_strategy.wasm",
+      "size_bytes": 26087,
+      "description": "Blend protocol integration - utilizes Blend lending pools",
+      "deployment_status": "pending",
+      "verified": false
+    },
+    "SOROSWAP": {
+      "contract_address": "TBD",
+      "explorer_url": "TBD",
+      "wasm_file": "soroswap_strategy.wasm",
+      "size_bytes": 9950,
+      "description": "Soroswap DEX integration - automated market making strategies",
+      "deployment_status": "pending",
+      "verified": false
+    },
+    "XYCLOANS": {
+      "contract_address": "TBD",
+      "explorer_url": "TBD",
+      "wasm_file": "xycloans_adapter.wasm",
+      "size_bytes": 10134,
+      "description": "XY Finance lending protocol integration",
+      "deployment_status": "pending",
+      "verified": false
+    },
+    "FIXED_APR": {
+      "contract_address": "TBD",
+      "explorer_url": "TBD",
+      "wasm_file": "fixed_apr_strategy.wasm",
+      "size_bytes": 8877,
+      "description": "Fixed APR strategy - predictable return generation",
+      "deployment_status": "pending",
+      "verified": false
+    }
+  },
+  "tux_token": {
+    "contract_address": "TBD",
+    "explorer_url": "TBD",
+    "name": "Tuxedo Universal eXchange Token",
+    "symbol": "TUX",
+    "decimals": 7,
+    "initial_supply": 1000000,
+    "deployment_status": "pending"
+  },
+  "status": "pre-deployment"
+}

@@ -1,0 +1,21 @@
+{
+  "contract_id": "CDT3E3C5P5QH7A7M7N7Z7J7K7L7M7N7O7P7Q7R7S7T7U7V7W7X7Y7Z7",
+  "admin_address": "GDBIB3ALIA5YX5CCX4HRQXPGEKQYQPL4CIVU62U5JAWJKCLSW6CICKRX",
+  "initial_supply": 10000000000000,
+  "token_name": "Tuxedo Universal eXchange Token",
+  "token_symbol": "TUX",
+  "token_decimals": 7,
+  "network": "testnet",
+  "tier_thresholds": {
+    "bronze": 1000000000,
+    "silver": 10000000000,
+    "gold": 100000000000
+  },
+  "deployment_status": "mock_for_hackathon",
+  "next_steps": [
+    "Implement actual Soroban CLI deployment",
+    "Create liquidity pool on testnet",
+    "Integrate with DeFindex strategies",
+    "Build staking interface"
+  ]
+}

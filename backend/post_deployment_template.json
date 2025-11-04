@@ -1,0 +1,15 @@
+{
+  "update_instructions": "\nAfter deploying contracts, update this file with actual contract addresses:\n1. Run deployment script\n2. Copy contract addresses from output\n3. Update 'contract_address' and 'explorer_url' fields\n4. Set deployment_status to 'deployed'\n5. Verify contracts on Stellar.Expert\n        ",
+  "contract_address_example": {
+    "HODL": {
+      "contract_address": "CDXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "explorer_url": "https://stellar.expert/explorer/testnet/contract/CDXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+    }
+  },
+  "verification_steps": [
+    "Check contract appears on Stellar.Expert",
+    "Verify WASM hash matches compiled file",
+    "Test basic contract functions",
+    "Update frontend configuration with addresses"
+  ]
+}
