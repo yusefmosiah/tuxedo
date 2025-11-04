@@ -263,3 +263,39 @@ def get_defindex_client(network: str = 'mainnet') -> DeFindexClient:
     if not api_key:
         raise ValueError("DEFINDEX_API_KEY environment variable not set")
     return DeFindexClient(api_key=api_key, network=network)
+
+async def get_vault_data_with_fallback(network: str = 'mainnet', min_apy: float = 15.0):
+    """Get vault data with API fallback to enhanced mock data"""
+    try:
+        # Try to get real API data first
+        client = get_defindex_client(network)
+        if client.test_connection():
+            vaults = client.get_vaults()
+            if vaults:
+                return vaults, "api"
+    except Exception as e:
+        logger.warning(f"API fallback triggered: {e}")
+
+    # Fallback to enhanced mock data
+    from defindex_soroban import get_defindex_soroban
+    defindex = get_defindex_soroban(network)
+    vaults = await defindex.get_available_vaults(min_apy=min_apy)
+    return vaults, "enhanced_mock"
+
+async def get_vault_details_with_fallback(vault_address: str, network: str = 'mainnet'):
+    """Get vault details with API fallback to enhanced mock data"""
+    try:
+        # Try to get real API data first
+        client = get_defindex_client(network)
+        if client.test_connection():
+            vault_info = client.get_vault_info(vault_address)
+            if vault_info:
+                return vault_info, "api"
+    except Exception as e:
+        logger.warning(f"API fallback triggered for vault details: {e}")
+
+    # Fallback to enhanced mock data
+    from defindex_soroban import get_defindex_soroban
+    defindex = get_defindex_soroban(network)
+    vault_info = await defindex.get_vault_details(vault_address)
+    return vault_info, "enhanced_mock"

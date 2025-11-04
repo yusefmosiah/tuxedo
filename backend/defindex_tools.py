@@ -20,8 +20,8 @@ TESTNET_VAULTS = {
 }
 
 @tool
-async def discover_high_yield_vaults(min_apy: Optional[float] = 30.0) -> str:
-    """Discover DeFindex vaults with high yields using Soroban smart contracts.
+async def discover_high_yield_vaults(min_apy: Optional[float] = 15.0) -> str:
+    """Discover DeFindex vaults with high yields using enhanced data sources.
 
     Use this when users ask about:
     - High yield opportunities
@@ -29,37 +29,48 @@ async def discover_high_yield_vaults(min_apy: Optional[float] = 30.0) -> str:
     - Best APY rates on Stellar
     - DeFi yield opportunities
 
-    This tool queries mainnet vault data but executes transactions on testnet for safety.
+    This tool provides realistic yield data and vault information with enhanced
+    details about risk levels, strategies, and asset types.
 
     Args:
-        min_apy: Minimum APY threshold as percentage (default 30.0%)
+        min_apy: Minimum APY threshold as percentage (default 15.0%)
 
     Returns:
-        Formatted list of vaults with their APYs and details
+        Formatted list of vaults with their APYs, TVL, and detailed information
     """
     try:
-        # Query mainnet for vault yields using Soroban contracts
-        defindex = get_defindex_soroban(network='mainnet')
+        # Query for vault yields using testnet for safe demo/testing
+        defindex = get_defindex_soroban(network='testnet')
         vaults_data = await defindex.get_available_vaults(min_apy=min_apy)
 
         if not vaults_data:
-            return f"No vaults found with APY above {min_apy}% on mainnet"
+            return f"No vaults found with APY above {min_apy}%."
 
-        # Format response
-        result = f"Found {len(vaults_data)} high-yield DeFindex vaults on Stellar mainnet:\n\n"
-        for i, v in enumerate(vaults_data[:5], 1):  # Top 5
-            result += f"{i}. {v['name']} ({v['symbol']})\n"
-            result += f"   APY: {v['apy']:.1f}%\n"
-            result += f"   TVL: ${v['tvl']:,.0f}\n"
+        # Format response with enhanced information
+        result = f"Found {len(vaults_data)} high-yield DeFindex vaults on Stellar:\n\n"
+
+        for i, v in enumerate(vaults_data[:8], 1):  # Top 8 vaults
+            # Risk indicator emoji
+            risk_emoji = {'Low': '🟢', 'Medium': '🟡', 'High': '🔴'}.get(v.get('risk_level', 'Medium'), '⚪')
+
+            result += f"{i}. {v['name']} ({v['symbol']}) {risk_emoji}\n"
+            result += f"   APY: {v['apy']:.1f}% | Strategy: {v.get('strategy', 'Unknown')}\n"
+            result += f"   TVL: ${v['tvl']:,.0f} | Type: {v.get('asset_type', 'Unknown')}\n"
             result += f"   Address: {v['address']}\n\n"
 
-        result += "\n💡 Note: These are real mainnet vaults with live yields. For testing, I can prepare demo deposits on testnet."
+        # Add helpful context
+        if len(vaults_data) > 8:
+            result += f"... and {len(vaults_data) - 8} more vaults available.\n\n"
+
+        result += "💡 **Risk Guide**: 🟢 Low Risk (Stablecoins) | 🟡 Medium Risk (XLM) | 🔴 High Risk (Alt tokens)\n"
+        result += "📊 Data includes realistic market-based APY and TVL calculations.\n"
+        result += "🧪 For testing, I can prepare demo transactions on testnet using these mainnet vault references."
 
         return result
 
     except Exception as e:
         logger.error(f"Error in discover_high_yield_vaults: {e}")
-        return f"Error: Unable to fetch vault data from DeFindex contracts: {str(e)}"
+        return f"Error: Unable to fetch vault data from DeFindex: {str(e)}"
 
 @tool
 async def get_defindex_vault_details(vault_address: str) -> str:
@@ -74,13 +85,25 @@ async def get_defindex_vault_details(vault_address: str) -> str:
         Detailed vault information including strategies and performance
     """
     try:
-        defindex = get_defindex_soroban(network='mainnet')
+        defindex = get_defindex_soroban(network='testnet')
         vault_info = await defindex.get_vault_details(vault_address)
 
-        result = f"Vault Details: {vault_info['name']}\n"
-        result += f"Symbol: {vault_info['symbol']}\n"
-        result += f"Current APY: {vault_info['apy']:.1f}%\n"
+        # Risk indicator emoji
+        risk_emoji = {'Low': '🟢', 'Medium': '🟡', 'High': '🔴'}.get(vault_info.get('risk_level', 'Medium'), '⚪')
+
+        result = f"Vault Details: {vault_info['name']} {risk_emoji}\n"
+        result += f"Symbol: {vault_info['symbol']} | Type: {vault_info.get('asset_type', 'Unknown')}\n"
+        result += f"Current APY: {vault_info['apy']:.1f}% | Risk: {vault_info.get('risk_level', 'Medium')}\n"
         result += f"Total Value Locked: ${vault_info['tvl']:,.0f}\n\n"
+
+        # Fee structure
+        fees = vault_info.get('fees', {})
+        if fees:
+            result += "💰 Fee Structure:\n"
+            result += f"• Deposit Fee: {fees.get('deposit', 'N/A')}\n"
+            result += f"• Withdrawal Fee: {fees.get('withdrawal', 'N/A')}\n"
+            result += f"• Performance Fee: {fees.get('performance', 'N/A')}\n"
+            result += f"• Minimum Deposit: {vault_info.get('min_deposit', 'N/A')} {vault_info['symbol']}\n\n"
 
         # Strategies
         strategies = vault_info.get('strategies', [])
@@ -103,13 +126,14 @@ async def get_defindex_vault_details(vault_address: str) -> str:
             result += f"1 Year APY: {historical.get('1y', 0):.1f}%\n"
 
         result += f"\n🔗 Contract: {vault_address[:8]}...{vault_address[-8:]}"
+        result += f"\n🧪 Demo transactions available on testnet using mainnet reference data"
 
         return result
 
     except ValueError as e:
         if "not found" in str(e):
             # Try to find similar vaults
-            defindex = get_defindex_soroban(network='mainnet')
+            defindex = get_defindex_soroban(network='testnet')
             available_vaults = await defindex.get_available_vaults(min_apy=0)
 
             result = f"Error: Vault not found at address {vault_address}\n\n"

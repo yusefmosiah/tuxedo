@@ -103,14 +103,23 @@ async def load_agent_tools():
     # Import DeFindex tools
     try:
         from defindex_tools import discover_high_yield_vaults, get_defindex_vault_details, prepare_defindex_deposit
+        logger.info(f"Before adding DeFindex tools: {len(agent_tools)} tools loaded")
+        logger.info(f"DeFindex tools to add: {discover_high_yield_vaults}, {get_defindex_vault_details}, {prepare_defindex_deposit}")
+
         agent_tools.extend([
             discover_high_yield_vaults,
             get_defindex_vault_details,
             prepare_defindex_deposit
         ])
+
+        logger.info(f"After adding DeFindex tools: {len(agent_tools)} tools loaded")
         logger.info("DeFindex tools loaded successfully")
     except ImportError as e:
         logger.warning(f"DeFindex tools not available: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error loading DeFindex tools: {e}")
+        import traceback
+        traceback.print_exc()
 
 async def get_agent_status() -> Dict[str, Any]:
     """Get current agent system status"""
@@ -255,10 +264,17 @@ async def process_agent_message_streaming(
 
                     # Find and execute the tool
                     tool_func = None
-                    for t in agent_tools:
-                        if t.name == tool_name:
+                    logger.info(f"Looking for tool '{tool_name}' among {len(agent_tools)} tools")
+                    for i, t in enumerate(agent_tools):
+                        tool_name_attr = getattr(t, 'name', 'NO_NAME')
+                        logger.info(f"  Tool {i}: '{tool_name_attr}' == '{tool_name}'? {tool_name_attr == tool_name}")
+                        if tool_name_attr == tool_name:
                             tool_func = t
+                            logger.info(f"✅ Found tool: {tool_func}")
                             break
+
+                    if tool_func is None:
+                        logger.error(f"❌ Tool '{tool_name}' not found! Available tools: {[getattr(t, 'name', 'NO_NAME') for t in agent_tools]}")
 
                     yield {
                         "type": "tool_call_start",
@@ -494,10 +510,17 @@ async def process_agent_message(
 
                     # Find and execute the tool
                     tool_func = None
-                    for t in agent_tools:
-                        if t.name == tool_name:
+                    logger.info(f"[NON-STREAMING] Looking for tool '{tool_name}' among {len(agent_tools)} tools")
+                    for i, t in enumerate(agent_tools):
+                        tool_name_attr = getattr(t, 'name', 'NO_NAME')
+                        logger.info(f"  [NON-STREAMING] Tool {i}: '{tool_name_attr}' == '{tool_name}'? {tool_name_attr == tool_name}")
+                        if tool_name_attr == tool_name:
                             tool_func = t
+                            logger.info(f"✅ [NON-STREAMING] Found tool: {tool_func}")
                             break
+
+                    if tool_func is None:
+                        logger.error(f"❌ [NON-STREAMING] Tool '{tool_name}' not found! Available tools: {[getattr(t, 'name', 'NO_NAME') for t in agent_tools]}")
 
                     if tool_func:
                         try:
