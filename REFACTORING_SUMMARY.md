@@ -288,3 +288,91 @@ except Exception as llm_error:
 - [ ] Security review of agent key management
 - [ ] Performance testing under load
 - [ ] Phala TEE configuration
+
+---
+
+## 🚨 Critical Frontend Integration Issues (November 4, 2025)
+
+### **Problem Statement**
+The frontend still contains wallet-dependent code that conflicts with the new agent-first architecture, causing both build failures and runtime errors.
+
+### **GitHub Workflow Build Failures**
+The following TypeScript errors indicate the frontend is still wallet-centric:
+
+```
+Error: src/App.tsx(5,1): error TS6192: All imports in import declaration are unused.
+Error: src/components/AgentConnectAccount.tsx(2,1): error TS6133: 'stellarNetwork' is declared but its value is never read.
+Error: src/components/AutoTransactionCard.tsx(65,9): error TS2554: Expected 1 arguments, but got 2.
+Error: src/components/TransactionCard.tsx(51,77): error TS2554: Expected 1 arguments, but got 2.
+Error: src/debug/components/InvokeContractForm.tsx(149,57): error TS2554: Expected 1 arguments, but got 2.
+```
+
+**Root Cause**: Wallet signing functions expecting different signatures than agent-based signing.
+
+### **Runtime Connection Issues**
+Deployed application shows:
+- **Backend offline**: "Start FastAPI server" error
+- **Agent account creation fails**: `Unexpected token '<', "<!doctype "... is not valid JSON`
+
+**Root Cause Analysis**:
+1. **API endpoint mismatch**: Frontend calling wrong backend URL
+2. **CORS configuration**: Backend not accepting requests from deployed frontend
+3. **Missing agent integration**: Frontend components still expecting wallet providers
+
+### **Required Frontend Refactoring**
+
+#### 1. **Remove Wallet Dependencies**
+```typescript
+// Remove all wallet.signTransaction() calls
+// Replace with agent-based account management
+// Remove wallet provider dependencies
+```
+
+#### 2. **Update API Integration**
+```typescript
+// Fix backend URL configuration
+// Update API client to work with agent endpoints
+// Remove wallet address requirements from API calls
+```
+
+#### 3. **Agent-First Component Architecture**
+```typescript
+// Convert all transaction components to use agent accounts
+// Update signing flows to use agent keys
+// Remove wallet connection UI elements
+```
+
+### **Immediate Action Items**
+
+#### Phase 1: Fix Build Issues
+- [ ] Remove unused imports (`Heading`, `Content`, `stellarNetwork`)
+- [ ] Fix `signTransaction` calls to use agent-based signing
+- [ ] Update transaction signing to expect 1 argument instead of 2
+
+#### Phase 2: Fix Runtime Issues
+- [ ] Update API client configuration for deployed backend
+- [ ] Fix CORS settings for deployed frontend domain
+- [ ] Replace wallet providers with agent providers
+
+#### Phase 3: Complete Agent Integration
+- [ ] Convert all wallet-based components to agent-based
+- [ ] Update transaction signing to use agent keys
+- [ ] Remove wallet connection UI entirely
+
+### **Technical Debt Identified**
+
+1. **Inconsistent Signing Models**: Mix of wallet.signTransaction and agent signing
+2. **Import Pollution**: Unused imports from Stellar Design System
+3. **API Mismatch**: Frontend expecting wallet-based endpoints
+4. **CORS Issues**: Backend not configured for deployed frontend domain
+
+### **Impact Assessment**
+
+**Critical**: These issues prevent the deployed application from functioning correctly and demonstrate incomplete transition to agent-first architecture.
+
+**Priority**: HIGH - Must be resolved before production use
+
+**Estimated Effort**: 4-6 hours for complete frontend refactoring
+
+### **Stashed Changes**
+TypeScript compilation fixes have been stashed and should be applied as part of the frontend refactoring effort.
