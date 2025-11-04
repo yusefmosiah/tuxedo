@@ -286,34 +286,35 @@ async def process_agent_message_streaming(
 
                     if tool_func:
                         try:
-                            # Execute tool function - handle different tool types
+                            # Execute tool function - handle different tool types using LangChain v2+ patterns
                             result = None
 
-                            # Try different ways to execute the tool
+                            # Modern LangChain v2+ tool execution patterns
                             if hasattr(tool_func, 'ainvoke') and callable(tool_func.ainvoke):
-                                # Modern LangChain async tool - use ainvoke for async operations
+                                # Modern LangChain async tool - use ainvoke with structured input
+                                logger.info(f"Using ainvoke for tool {tool_name}")
                                 result = await tool_func.ainvoke(tool_args)
                             elif hasattr(tool_func, 'invoke') and callable(tool_func.invoke):
-                                # Modern LangChain sync tool - use invoke for sync operations
+                                # Modern LangChain sync tool - use invoke with structured input
+                                logger.info(f"Using invoke for tool {tool_name}")
                                 result = tool_func.invoke(tool_args)
-                            elif hasattr(tool_func, 'func') and tool_func.func is not None:
-                                # Legacy tool with func attribute
-                                if asyncio.iscoroutinefunction(tool_func.func):
-                                    result = await tool_func.func(**tool_args)
-                                else:
-                                    result = tool_func.func(**tool_args)
                             elif hasattr(tool_func, '_run') and callable(tool_func._run):
-                                # Tool with _run method
+                                # Tool with _run method (legacy pattern)
+                                logger.info(f"Using _run for tool {tool_name}")
                                 if asyncio.iscoroutinefunction(tool_func._run):
                                     result = await tool_func._run(**tool_args)
                                 else:
                                     result = tool_func._run(**tool_args)
                             elif asyncio.iscoroutinefunction(tool_func):
-                                # Direct async function
+                                # Direct async function (decorated functions)
+                                logger.info(f"Using direct async call for tool {tool_name}")
                                 result = await tool_func(**tool_args)
-                            else:
-                                # Try direct invocation as last resort
+                            elif callable(tool_func):
+                                # Regular callable function
+                                logger.info(f"Using direct call for tool {tool_name}")
                                 result = tool_func(**tool_args)
+                            else:
+                                raise ValueError(f"Cannot determine how to execute tool {tool_name}. Tool attributes: {dir(tool_func)}")
 
                             logger.info(f"Tool {tool_name} executed successfully")
 
@@ -524,11 +525,22 @@ async def process_agent_message(
 
                     if tool_func:
                         try:
-                            # Execute tool function
-                            if asyncio.iscoroutinefunction(tool_func.func):
-                                result = await tool_func.func(**tool_args)
+                            # Execute tool function using LangChain v2+ patterns
+                            if hasattr(tool_func, 'ainvoke') and callable(tool_func.ainvoke):
+                                result = await tool_func.ainvoke(tool_args)
+                            elif hasattr(tool_func, 'invoke') and callable(tool_func.invoke):
+                                result = tool_func.invoke(tool_args)
+                            elif hasattr(tool_func, '_run') and callable(tool_func._run):
+                                if asyncio.iscoroutinefunction(tool_func._run):
+                                    result = await tool_func._run(**tool_args)
+                                else:
+                                    result = tool_func._run(**tool_args)
+                            elif asyncio.iscoroutinefunction(tool_func):
+                                result = await tool_func(**tool_args)
+                            elif callable(tool_func):
+                                result = tool_func(**tool_args)
                             else:
-                                result = tool_func.func(**tool_args)
+                                raise ValueError(f"Cannot determine how to execute tool {tool_name}. Tool attributes: {dir(tool_func)}")
 
                             logger.info(f"Tool {tool_name} executed successfully")
 

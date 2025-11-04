@@ -19,9 +19,12 @@ class DeFindexClient:
     def __init__(self, api_key: str, network: str = "mainnet"):
         self.api_key = api_key
         self.network = network
-        # ⚠️ TODO: Verify correct base URL from official docs
+        # ✅ CONFIRMED: Correct base URL from official API docs
         self.base_url = "https://api.defindex.io"
         self.session = self._create_session()
+
+        # Factory contract address for vault operations
+        self.factory_address = "CDZKFHJIET3A73A2YN4KV7NSV32S6YGQMUFH3DNJXLBWL4SKEGVRNFKI"
 
     def _create_session(self):
         """Create session with retry logic and Bearer auth"""
@@ -46,69 +49,45 @@ class DeFindexClient:
     def test_connection(self) -> bool:
         """Test if API key works with base URL"""
         try:
-            # Try to get vaults as a connection test
-            response = self.session.get(
-                f"{self.base_url}/vaults",
-                params={'network': self.network, 'limit': 1},
+            # Use health endpoint and factory address for connection test
+            health_response = self.session.get(
+                f"{self.base_url}/health",
                 timeout=10
             )
-            return response.status_code == 200
+            factory_response = self.session.get(
+                f"{self.base_url}/factory/address",
+                timeout=10
+            )
+            return health_response.status_code == 200 and factory_response.status_code == 200
         except Exception as e:
             logger.error(f"DeFindex API connection failed: {e}")
             return False
 
-    def get_vaults(self, limit: int = 50) -> List[Dict]:
-        """Get list of available vaults
+    def get_vaults(self, vault_addresses: List[str] = None) -> List[Dict]:
+        """Get information about specific vaults
+
+        Args:
+            vault_addresses: List of vault contract addresses to query.
+                           If None, returns empty list (API requires specific addresses)
 
         Returns:
             List of vault objects with basic info
         """
-        try:
-            # Try different endpoint patterns based on documentation
-            endpoints_to_try = [
-                f"{self.base_url}/vaults",
-                f"{self.base_url}/api/vaults",
-                f"{self.base_url}/v1/vaults"
-            ]
+        if not vault_addresses:
+            logger.warning("DeFindex API requires specific vault addresses - no addresses provided")
+            return []
 
-            for endpoint in endpoints_to_try:
-                try:
-                    response = self.session.get(
-                        endpoint,
-                        params={'network': self.network, 'limit': limit},
-                        timeout=15
-                    )
-                    response.raise_for_status()
-                    data = response.json()
+        vaults = []
+        for address in vault_addresses:
+            try:
+                vault_info = self.get_vault_info(address)
+                if vault_info:
+                    vaults.append(vault_info)
+            except Exception as e:
+                logger.warning(f"Failed to fetch vault {address}: {e}")
+                continue
 
-                    # Handle different response formats
-                    if isinstance(data, dict) and 'vaults' in data:
-                        return data['vaults']
-                    elif isinstance(data, list):
-                        return data
-                    elif isinstance(data, dict) and 'data' in data:
-                        return data['data']
-                    else:
-                        logger.warning(f"Unexpected response format from {endpoint}: {type(data)}")
-                        continue
-
-                except requests.HTTPError as e:
-                    if e.response.status_code == 404:
-                        continue  # Try next endpoint
-                    else:
-                        raise
-
-            raise ValueError("All vault endpoints returned 404 - API structure may have changed")
-
-        except requests.HTTPError as e:
-            if e.response.status_code == 403:
-                raise ValueError("DeFindex API authentication failed - check API key")
-            raise
-        except requests.Timeout:
-            raise ValueError("DeFindex API timeout - please try again")
-        except Exception as e:
-            logger.error(f"Error fetching vaults: {e}")
-            raise ValueError(f"Error fetching vaults: {str(e)}")
+        return vaults
 
     def get_vault_info(self, vault_address: str) -> Dict:
         """Get detailed information about a specific vault
@@ -120,35 +99,25 @@ class DeFindexClient:
             Vault details including APY, TVL, strategies, etc.
         """
         try:
-            # Try different endpoint patterns
-            endpoints_to_try = [
+            # ✅ CONFIRMED: Correct endpoint format from API spec
+            response = self.session.get(
                 f"{self.base_url}/vault/{vault_address}",
-                f"{self.base_url}/api/vault/{vault_address}",
-                f"{self.base_url}/v1/vault/{vault_address}"
-            ]
-
-            for endpoint in endpoints_to_try:
-                try:
-                    response = self.session.get(
-                        endpoint,
-                        params={'network': self.network},
-                        timeout=10
-                    )
-                    response.raise_for_status()
-                    return response.json()
-
-                except requests.HTTPError as e:
-                    if e.response.status_code == 404:
-                        continue  # Try next endpoint
-                    else:
-                        raise
-
-            raise ValueError(f"Vault not found with any endpoint: {vault_address}")
+                timeout=15
+            )
+            response.raise_for_status()
+            return response.json()
 
         except requests.HTTPError as e:
             if e.response.status_code == 403:
                 raise ValueError("DeFindex API authentication failed")
-            raise
+            elif e.response.status_code == 404:
+                raise ValueError(f"Vault not found: {vault_address}")
+            elif e.response.status_code == 429:
+                raise ValueError("DeFindex API rate limit exceeded - please wait before trying again")
+            else:
+                raise ValueError(f"DeFindex API error: {e.response.status_code} - {e.response.text}")
+        except requests.Timeout:
+            raise ValueError("DeFindex API timeout - please try again")
         except Exception as e:
             raise ValueError(f"Error fetching vault info: {str(e)}")
 
@@ -195,39 +164,65 @@ class DeFindexClient:
         try:
             data = {
                 'amounts': [amount_stroops],
-                'from': caller,  # Based on docs example
+                'from': caller,  # Based on API docs
                 'invest': invest,
                 'slippageBps': 50  # 0.5% slippage tolerance
             }
 
-            # Try different endpoint patterns
-            endpoints_to_try = [
+            # ✅ CONFIRMED: Correct endpoint format from API spec
+            response = self.session.post(
                 f"{self.base_url}/vault/{vault_address}/deposit",
-                f"{self.base_url}/api/vault/{vault_address}/deposit",
-                f"{self.base_url}/v1/vault/{vault_address}/deposit"
-            ]
+                json=data,
+                timeout=30
+            )
+            response.raise_for_status()
+            return response.json()
 
-            for endpoint in endpoints_to_try:
-                try:
-                    response = self.session.post(
-                        endpoint,
-                        json=data,
-                        params={'network': self.network},
-                        timeout=30
-                    )
-                    response.raise_for_status()
-                    return response.json()
-
-                except requests.HTTPError as e:
-                    if e.response.status_code == 404:
-                        continue  # Try next endpoint
-                    else:
-                        raise
-
-            raise ValueError(f"Deposit endpoint not found for vault: {vault_address}")
-
+        except requests.HTTPError as e:
+            if e.response.status_code == 403:
+                raise ValueError("DeFindex API authentication failed")
+            elif e.response.status_code == 404:
+                raise ValueError(f"Deposit endpoint not found for vault: {vault_address}")
+            elif e.response.status_code == 429:
+                raise ValueError("DeFindex API rate limit exceeded - please wait before trying again")
+            else:
+                raise ValueError(f"DeFindex API error: {e.response.status_code} - {e.response.text}")
+        except requests.Timeout:
+            raise ValueError("DeFindex API timeout - please try again")
         except Exception as e:
             raise ValueError(f"Error building deposit transaction: {str(e)}")
+
+    def get_vault_apy(self, vault_address: str) -> Dict:
+        """Get APY information for a specific vault
+
+        Args:
+            vault_address: Contract address of the vault
+
+        Returns:
+            APY data for the vault
+        """
+        try:
+            # ✅ CONFIRMED: Dedicated APY endpoint from API spec
+            response = self.session.get(
+                f"{self.base_url}/vault/{vault_address}/apy",
+                timeout=10
+            )
+            response.raise_for_status()
+            return response.json()
+
+        except requests.HTTPError as e:
+            if e.response.status_code == 403:
+                raise ValueError("DeFindex API authentication failed")
+            elif e.response.status_code == 404:
+                raise ValueError(f"APY endpoint not found for vault: {vault_address}")
+            elif e.response.status_code == 429:
+                raise ValueError("DeFindex API rate limit exceeded - please wait before trying again")
+            else:
+                raise ValueError(f"DeFindex API error: {e.response.status_code} - {e.response.text}")
+        except requests.Timeout:
+            raise ValueError("DeFindex API timeout - please try again")
+        except Exception as e:
+            raise ValueError(f"Error fetching vault APY: {str(e)}")
 
     def submit_transaction(self, signed_xdr: str, use_launchtube: bool = False) -> Dict:
         """Submit signed transaction to Stellar network
@@ -248,12 +243,20 @@ class DeFindexClient:
             response = self.session.post(
                 f"{self.base_url}/send",
                 json=data,
-                params={'network': self.network},
                 timeout=30
             )
             response.raise_for_status()
             return response.json()
 
+        except requests.HTTPError as e:
+            if e.response.status_code == 403:
+                raise ValueError("DeFindex API authentication failed")
+            elif e.response.status_code == 429:
+                raise ValueError("DeFindex API rate limit exceeded - please wait before trying again")
+            else:
+                raise ValueError(f"DeFindex API error: {e.response.status_code} - {e.response.text}")
+        except requests.Timeout:
+            raise ValueError("DeFindex API timeout - please try again")
         except Exception as e:
             raise ValueError(f"Error submitting transaction: {str(e)}")
 
