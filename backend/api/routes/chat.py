@@ -11,6 +11,7 @@ import logging
 import json
 import asyncio
 from live_summary_service import get_live_summary_service, is_live_summary_enabled
+from agent.core import process_agent_message_streaming
 
 logger = logging.getLogger(__name__)
 
@@ -159,8 +160,8 @@ async def chat_stream_endpoint_alias(request: StreamChatRequest):
 
 @router.post("/chat-live-summary")
 async def chat_live_summary_endpoint(request: StreamChatRequest):
-    """Chat with live summary endpoint"""
-    async def generate_summary_stream():
+    """Chat with live summary and streaming agent execution"""
+    async def generate_stream():
         if not AGENT_SYSTEM_AVAILABLE:
             # Return error as SSE
             error_data = {
@@ -174,109 +175,102 @@ async def chat_live_summary_endpoint(request: StreamChatRequest):
             # Convert request history to dict format
             history = [{"role": msg.role, "content": msg.content} for msg in request.history]
 
-            # For now, use non-streaming response with summary enabled
-            response = await process_agent_message(
+            # Get the live summary service
+            summary_service = get_live_summary_service()
+
+            # Collect all messages for final summary
+            all_messages = []
+            agent_response_content = ""
+
+            # Stream the agent execution
+            async for event in process_agent_message_streaming(
                 message=request.message,
                 history=history,
                 agent_account=request.agent_account
-            )
+            ):
+                # Convert event to SSE format
+                yield f"data: {json.dumps(event)}\n\n"
 
-            # Stream the response with summary metadata
-            if response.get("success", False):
-                content = response.get("response", "")
+                # Collect messages for summary
+                if event["type"] in ["llm_response", "tool_result", "agent_complete"]:
+                    all_messages.append({
+                        "type": event["type"],
+                        "content": event["content"],
+                        "tool_name": event.get("tool_name", ""),
+                        "iteration": event.get("iteration", 0)
+                    })
 
-                # Get the live summary service
-                summary_service = get_live_summary_service()
+                # Save the final response
+                if event["type"] == "agent_complete":
+                    agent_response_content = event["content"]
 
-                # Prepare messages for summarization
-                messages_for_summary = [
-                    {"role": "user", "content": request.message},
-                    {"role": "assistant", "content": content}
-                ]
+            # Generate live summary if available
+            if is_live_summary_enabled() and all_messages:
+                try:
+                    # Prepare messages for summarization
+                    messages_for_summary = [
+                        {"role": "user", "content": request.message},
+                        {"role": "assistant", "content": agent_response_content}
+                    ]
 
-                # Add history if available
-                for msg in history:
-                    messages_for_summary.append(msg)
+                    # Add history if available
+                    for msg in history:
+                        messages_for_summary.append(msg)
 
-                # Send summary start with live summary
-                live_summary = ""
-                if is_live_summary_enabled():
-                    try:
-                        live_summary = await summary_service.generate_live_summary(messages_for_summary)
-                        summary_start = {
-                            "type": "live_summary_start",
-                            "content": live_summary
-                        }
-                    except Exception as e:
-                        logger.error(f"Error generating live summary: {e}")
-                        summary_start = {
-                            "type": "live_summary_start",
-                            "content": "Processing your request..."
-                        }
-                else:
-                    summary_start = {
-                        "type": "live_summary_start",
-                        "content": "Processing your request..."
+                    # Add all tool results for comprehensive summary
+                    for msg in all_messages:
+                        if msg["type"] == "tool_result":
+                            messages_for_summary.append({
+                                "role": "tool",
+                                "content": f"[{msg['tool_name']}] {msg['content']}"
+                            })
+
+                    # Generate final summary
+                    final_summary = await summary_service.generate_final_summary(messages_for_summary)
+
+                    summary_event = {
+                        "type": "final_summary",
+                        "content": final_summary,
+                        "summary": final_summary,
+                        "iterations_used": event.get("iterations_used", 0)
                     }
-                yield f"data: {json.dumps(summary_start)}\n\n"
+                    yield f"data: {json.dumps(summary_event)}\n\n"
 
-                # Send the actual content
-                message_data = {
-                    "type": "llm_response",
-                    "content": content,
-                    "iteration": 1,
-                    "isStreaming": False
-                }
-                yield f"data: {json.dumps(message_data)}\n\n"
-
-                # Send summary completion with final summary
-                if is_live_summary_enabled():
-                    try:
-                        final_summary = await summary_service.generate_final_summary(messages_for_summary)
-                        summary_complete = {
-                            "type": "live_summary_complete",
-                            "content": content,
-                            "summary": final_summary
-                        }
-                    except Exception as e:
-                        logger.error(f"Error generating final summary: {e}")
-                        summary_complete = {
-                            "type": "live_summary_complete",
-                            "content": content,
-                            "summary": f"Completed: {request.message[:50]}..."
-                        }
-                else:
-                    summary_complete = {
-                        "type": "live_summary_complete",
-                        "content": content,
-                        "summary": f"Completed: {request.message[:50]}..."
+                except Exception as e:
+                    logger.error(f"Error generating final summary: {e}")
+                    summary_event = {
+                        "type": "final_summary",
+                        "content": f"Completed after {event.get('iterations_used', 0)} iterations",
+                        "summary": f"Completed: {request.message[:50]}...",
+                        "iterations_used": event.get("iterations_used", 0)
                     }
-                yield f"data: {json.dumps(summary_complete)}\n\n"
-            else:
-                # Send error
-                error_data = {
-                    "type": "error",
-                    "content": response.get("error", "Unknown error")
-                }
-                yield f"data: {json.dumps(error_data)}\n\n"
+                    yield f"data: {json.dumps(summary_event)}\n\n"
 
-            # Send completion signal
-            done_data = {"type": "done"}
-            yield f"data: {json.dumps(done_data)}\n\n"
+            # Signal completion
+            done_event = {
+                "type": "done",
+                "content": "Processing complete",
+                "success": True
+            }
+            yield f"data: {json.dumps(done_event)}\n\n"
 
         except Exception as e:
-            logger.error(f"Error in live summary chat: {e}")
+            logger.error(f"Error in streaming chat: {e}")
             error_data = {
                 "type": "error",
-                "content": f"Internal server error: {str(e)}"
+                "content": f"Error processing your request: {str(e)}",
+                "success": False
             }
             yield f"data: {json.dumps(error_data)}\n\n"
+            yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
     return StreamingResponse(
-        generate_summary_stream(),
+        generate_stream(),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "*",
         }
     )

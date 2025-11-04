@@ -3,6 +3,7 @@ FastAPI Application Factory
 Creates and configures the FastAPI application with all routes and middleware.
 """
 
+import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager

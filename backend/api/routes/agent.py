@@ -3,6 +3,7 @@ Agent API Routes
 Endpoints for AI agent account management
 """
 
+import asyncio
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List

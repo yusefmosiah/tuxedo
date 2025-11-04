@@ -6,6 +6,7 @@ This module provides SSL-configured clients that work across all platforms
 (macOS, Linux, Windows) without requiring environment variable configuration.
 """
 
+import asyncio
 import ssl
 from typing import Optional, Dict
 

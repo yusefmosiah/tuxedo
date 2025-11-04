@@ -3,6 +3,7 @@ Agent Core System
 Main AI agent logic and lifecycle management.
 """
 
+import asyncio
 import os
 import json
 import logging
@@ -123,10 +124,10 @@ async def get_agent_status() -> Dict[str, Any]:
         "status": "healthy",
         "llm_configured": llm is not None,
         "tools_count": len(agent_tools),
-        "tools_available": [getattr(tool, 'name', getattr(tool, '__name__', str(tool))) for tool in agent_tools],
+        "tools_available": [getattr(t, 'name', getattr(t, '__name__', str(t))) for t in agent_tools],
         "agent_account_tools_available": any(
-            getattr(tool, 'name', getattr(tool, '__name__', str(tool))) in ["agent_create_account", "agent_list_accounts", "agent_get_account_info"]
-            for tool in agent_tools
+            getattr(t, 'name', getattr(t, '__name__', str(t))) in ["agent_create_account", "agent_list_accounts", "agent_get_account_info"]
+            for t in agent_tools
         ),
         "stellar_tools_ready": len(agent_tools) > 0,
         "openai_configured": bool(settings.openai_api_key),
@@ -138,6 +139,266 @@ async def get_agent_status() -> Dict[str, Any]:
         "debug_base_url": settings.openai_base_url,
         "debug_model": settings.primary_model
     }
+
+async def process_agent_message_streaming(
+    message: str,
+    history: List[Dict[str, str]],
+    agent_account: Optional[str] = None
+):
+    """
+    Process a user message through the AI agent with multi-step reasoning and streaming output.
+
+    Yields dictionaries representing different stages of the agent execution.
+    """
+    if not llm:
+        yield {
+            "type": "error",
+            "content": "Agent not initialized",
+            "iteration": 0
+        }
+        return
+
+    try:
+        # Build system prompt
+        system_prompt = build_agent_system_prompt()
+
+        # Build message history
+        messages = [SystemMessage(content=system_prompt)]
+
+        # Add agent account context if available
+        if agent_account:
+            agent_context = build_agent_context(agent_account)
+            messages.append(SystemMessage(content=agent_context))
+
+        # Add conversation history
+        for msg in history:
+            if msg["role"] == "user":
+                messages.append(HumanMessage(content=msg["content"]))
+            else:
+                messages.append(AIMessage(content=msg["content"]))
+
+        messages.append(HumanMessage(content=message))
+
+        # Convert tools to OpenAI format
+        from langchain_core.utils.function_calling import convert_to_openai_function
+        tool_schemas = [convert_to_openai_function(t) for t in agent_tools]
+        tools = [{"type": "function", "function": schema} for schema in tool_schemas]
+
+        # Create LLM with tools
+        llm_with_tools = llm.bind(tools=tools)
+
+        # Agent loop with multi-step reasoning and streaming
+        max_iterations = 25
+        iteration = 0
+
+        yield {
+            "type": "agent_start",
+            "content": f"🚀 Starting AI agent with {len(agent_tools)} tools available...",
+            "iteration": 0,
+            "tools_available": len(agent_tools),
+            "max_iterations": max_iterations
+        }
+
+        while iteration < max_iterations:
+            iteration += 1
+            logger.info(f"Agent iteration {iteration}")
+
+            yield {
+                "type": "iteration_start",
+                "content": f"🤔 Thinking... (iteration {iteration}/{max_iterations})",
+                "iteration": iteration,
+                "max_iterations": max_iterations,
+                "progress": round((iteration - 1) / max_iterations * 100, 0)
+            }
+
+            # Get LLM response with potential tool calls
+            response = await llm_with_tools.ainvoke(messages)
+
+            # Add response to message history
+            messages.append(response)
+
+            # Check if LLM wants to call tools (handle both new and old LangChain formats)
+            tool_calls = []
+
+            # New LangChain format
+            if hasattr(response, 'tool_calls') and response.tool_calls:
+                tool_calls = response.tool_calls
+                logger.info(f"LLM wants to call {len(tool_calls)} tools (new format)")
+            # Old LangChain format with function_call in additional_kwargs
+            elif (hasattr(response, 'additional_kwargs') and
+                  response.additional_kwargs.get('function_call')):
+                function_call = response.additional_kwargs['function_call']
+                tool_calls = [{
+                    "name": function_call["name"],
+                    "args": json.loads(function_call["arguments"]),
+                    "id": f"call_{function_call['name']}"
+                }]
+                logger.info(f"LLM wants to call {len(tool_calls)} tools (old format)")
+
+            if response.content and response.content.strip():
+                # Yield AI thinking/response
+                yield {
+                    "type": "llm_response",
+                    "content": response.content,
+                    "iteration": iteration,
+                    "isStreaming": False
+                }
+
+            if tool_calls:
+                # Execute each tool call with streaming feedback
+                for tool_call in tool_calls:
+                    tool_name = tool_call.get("name") if isinstance(tool_call, dict) else tool_call.name
+                    tool_args = tool_call.get("args") if isinstance(tool_call, dict) else tool_call.args
+                    tool_id = tool_call.get("id") if isinstance(tool_call, dict) else getattr(tool_call, 'id', f"call_{tool_name}")
+
+                    logger.info(f"Executing tool: {tool_name} with args: {tool_args}")
+
+                    # Find and execute the tool
+                    tool_func = None
+                    for t in agent_tools:
+                        if t.name == tool_name:
+                            tool_func = t
+                            break
+
+                    yield {
+                        "type": "tool_call_start",
+                        "content": f"🔧 Executing {tool_name}...",
+                        "tool_name": tool_name,
+                        "iteration": iteration,
+                        "tools_remaining": len(tool_calls) - tool_calls.index(tool_call)
+                    }
+
+                    if tool_func:
+                        try:
+                            # Execute tool function - handle different tool types
+                            result = None
+
+                            # Try different ways to execute the tool
+                            if hasattr(tool_func, 'ainvoke') and callable(tool_func.ainvoke):
+                                # LangChain tool with ainvoke method
+                                result = await tool_func.ainvoke(tool_args)
+                            elif hasattr(tool_func, 'func') and tool_func.func is not None:
+                                # Tool with func attribute
+                                if asyncio.iscoroutinefunction(tool_func.func):
+                                    result = await tool_func.func(**tool_args)
+                                else:
+                                    result = tool_func.func(**tool_args)
+                            elif hasattr(tool_func, '_run') and callable(tool_func._run):
+                                # Tool with _run method
+                                if asyncio.iscoroutinefunction(tool_func._run):
+                                    result = await tool_func._run(**tool_args)
+                                else:
+                                    result = tool_func._run(**tool_args)
+                            elif asyncio.iscoroutinefunction(tool_func):
+                                # Direct async function
+                                result = await tool_func(**tool_args)
+                            else:
+                                # Try direct invocation
+                                result = tool_func(**tool_args)
+
+                            logger.info(f"Tool {tool_name} executed successfully")
+
+                            # Yield tool result
+                            yield {
+                                "type": "tool_result",
+                                "content": str(result),
+                                "tool_name": tool_name,
+                                "iteration": iteration,
+                                "success": True
+                            }
+
+                            # Add tool result to message history for next iteration
+                            tool_message = {
+                                "role": "tool",
+                                "content": str(result),
+                                "tool_call_id": tool_id,
+                                "name": tool_name
+                            }
+                            messages.append(tool_message)
+
+                        except Exception as tool_error:
+                            logger.error(f"Error executing tool {tool_name}: {tool_error}")
+
+                            # Yield tool error
+                            yield {
+                                "type": "tool_error",
+                                "content": f"Error in {tool_name}: {str(tool_error)}",
+                                "tool_name": tool_name,
+                                "iteration": iteration,
+                                "success": False
+                            }
+
+                            # Add tool error to message history for next iteration
+                            tool_message = {
+                                "role": "tool",
+                                "content": f"Error: {str(tool_error)}",
+                                "tool_call_id": tool_id,
+                                "name": tool_name
+                            }
+                            messages.append(tool_message)
+                    else:
+                        logger.error(f"Tool {tool_name} not found")
+
+                        # Yield tool not found error
+                        yield {
+                            "type": "tool_error",
+                            "content": f"Tool {tool_name} not found",
+                            "tool_name": tool_name,
+                            "iteration": iteration,
+                            "success": False
+                        }
+
+                        # Add tool not found error to message history
+                        tool_message = {
+                            "role": "tool",
+                            "content": f"Error: Tool {tool_name} not found",
+                            "tool_call_id": tool_id,
+                            "name": tool_name
+                        }
+                        messages.append(tool_message)
+
+            else:
+                # No more tool calls, exit loop
+                logger.info(f"No more tool calls requested, ending loop after {iteration} iterations")
+                break
+
+        else:
+            # Max iterations reached
+            logger.warning(f"Agent reached maximum iterations ({max_iterations}) without completion")
+            yield {
+                "type": "warning",
+                "content": f"⚠️ Reached maximum iterations ({max_iterations}) without completion",
+                "iteration": iteration,
+                "max_iterations_reached": True
+            }
+
+        # Extract final response (last AI message that's not a tool call)
+        final_response = "I'm sorry, I couldn't complete your request."
+        for msg in reversed(messages):
+            if hasattr(msg, 'content') and msg.content and not hasattr(msg, 'tool_call_id'):
+                final_response = msg.content
+                break
+
+        yield {
+            "type": "agent_complete",
+            "content": f"✅ Completed in {iteration} iterations!\n\n{final_response}",
+            "iteration": iteration,
+            "iterations_used": iteration,
+            "success": True,
+            "agent_account": agent_account,
+            "final_response": final_response
+        }
+
+    except Exception as e:
+        logger.error(f"Error processing agent message: {e}")
+        yield {
+            "type": "error",
+            "content": f"Error processing your request: {str(e)}",
+            "iteration": iteration if 'iteration' in locals() else 0,
+            "success": False,
+            "error": str(e)
+        }
+
 
 async def process_agent_message(
     message: str,
@@ -237,11 +498,6 @@ async def process_agent_message(
 
                     if tool_func:
                         try:
-                            # Auto-inject wallet address for account-related operations
-                            if agent_account and "account" in tool_name.lower():
-                                if "wallet_address" not in tool_args:
-                                    tool_args["wallet_address"] = agent_account
-
                             # Execute tool function
                             if asyncio.iscoroutinefunction(tool_func.func):
                                 result = await tool_func.func(**tool_args)

@@ -6,6 +6,7 @@ Handles internal dependencies while providing schema-clean interfaces.
 from langchain.tools import tool
 from typing import Optional, Dict, Any, List
 import os
+import asyncio
 from stellar_sdk import Server
 from stellar_sdk.soroban_server_async import SorobanServerAsync
 

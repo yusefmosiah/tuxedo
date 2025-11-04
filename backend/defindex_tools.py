@@ -3,6 +3,7 @@
 DeFindex LangChain tools for Stellar vault operations
 """
 
+import asyncio
 import json
 import logging
 from typing import Optional
@@ -134,9 +135,9 @@ async def prepare_defindex_deposit(
     This builds a testnet transaction that demonstrates the wallet signing flow.
     The transaction is a simple XLM payment to a testnet address (not a real vault deposit).
 
-    IMPORTANT: This tool's output is ALREADY properly formatted with [STELLAR_TX] tags.
-    The frontend will AUTOMATICALLY detect these tags and open the user's wallet for signing.
-    You do NOT need to instruct users to click anything - the wallet opens automatically.
+    NOTE: Wallet integration has been removed. This tool now returns readable transaction details
+    without automatic wallet parsing. Users would need to manually use the transaction data if
+    wallet integration was available.
 
     Args:
         vault_address: The mainnet vault contract address (used for metadata/reference only)
@@ -144,7 +145,7 @@ async def prepare_defindex_deposit(
         user_address: User's Stellar public key (G...)
 
     Returns:
-        Formatted message with embedded transaction data in [STELLAR_TX] tags
+        Readable transaction details in formatted JSON without wallet integration
     """
     try:
         # Convert XLM to stroops (1 XLM = 10,000,000 stroops)
@@ -171,9 +172,16 @@ async def prepare_defindex_deposit(
             'note': tx_data.get('note', 'Testnet demo transaction')
         }
 
-        # Wrap in special format that frontend will parse and automatically open wallet
-        tx_json = json.dumps(tx_payload)  # Single line JSON for better parsing
-        return f"[STELLAR_TX]\n{tx_json}\n[/STELLAR_TX]\n\nI've prepared a demo deposit transaction for {amount_xlm:,.0f} XLM to the {vault_address[:8]}... vault. Your wallet should open automatically in a moment to request your signature.\n\n⚠️ **Note:** This is a testnet demo transaction that simulates a mainnet vault deposit. The actual transaction sends XLM to a testnet address for demonstration purposes."
+        # Return transaction details without wallet integration tags
+        tx_json = json.dumps(tx_payload, indent=2)  # Formatted JSON for readability
+        return f"""I've prepared a demo deposit transaction for {amount_xlm:,.0f} XLM to the {vault_address[:8]}... vault.
+
+**Transaction Details:**
+```json
+{tx_json}
+```
+
+⚠️ **Note:** This is a testnet demo transaction that simulates a mainnet vault deposit. The actual transaction sends XLM to a testnet address for demonstration purposes. No wallet integration is available."""
 
     except Exception as e:
         logger.error(f"Error in prepare_defindex_deposit: {e}")

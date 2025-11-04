@@ -3,6 +3,7 @@ Stellar MCP Server - Composite Tools
 Consolidated tool implementations reducing 17 tools to 5 composite tools.
 """
 
+import asyncio
 from stellar_sdk import (
     Server,
     TransactionBuilder,

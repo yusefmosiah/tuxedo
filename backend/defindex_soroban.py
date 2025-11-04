@@ -6,7 +6,7 @@ DeFindex integration using Soroban smart contracts
 import logging
 from typing import Dict, List, Optional
 from stellar_sdk import Server
-from stellar_ssl import create_soroban_client_with_ssl
+from stellar_sdk.soroban_server import SorobanServer
 
 logger = logging.getLogger(__name__)
 
@@ -54,11 +54,11 @@ class DeFindexSoroban:
         self.network = network
         if network == "mainnet":
             self.horizon = Server("https://horizon.stellar.org")
-            self.soroban = create_soroban_client_with_ssl("https://mainnet.stellar.expert/explorer/rpc")
+            self.soroban = SorobanServer("https://mainnet.stellar.expert/explorer/rpc")
             self.vaults = MAINNET_VAULTS
         else:
             self.horizon = Server("https://horizon-testnet.stellar.org")
-            self.soroban = create_soroban_client_with_ssl("https://soroban-testnet.stellar.org")
+            self.soroban = SorobanServer("https://soroban-testnet.stellar.org")
             self.vaults = TESTNET_VAULTS
 
     def get_available_vaults(self, min_apy: float = 30.0) -> List[Dict]:

@@ -104,15 +104,7 @@ class LiveSummaryService:
             return "No significant activity to summarize."
 
         try:
-            # Extract embedded transactions BEFORE summarization
-            embedded_transactions = []
-            for msg in messages:
-                content = msg.get('content', '')
-                if '[STELLAR_TX]' in content:
-                    import re
-                    tx_matches = re.findall(r'\[STELLAR_TX\](.*?)\[/STELLAR_TX\]', content, re.DOTALL)
-                    embedded_transactions.extend(tx_matches)
-                    logger.info(f"Found {len(tx_matches)} embedded transaction(s) in message")
+            # No embedded transaction extraction needed (wallet integration removed)
 
             # Extract all relevant content
             relevant_content = self._extract_relevant_content(messages)
@@ -135,13 +127,7 @@ class LiveSummaryService:
             if len(summary.split()) > 100:
                 summary = ' '.join(summary.split()[:97]) + "..."
 
-            # Append embedded transactions to the end of the summary
-            if embedded_transactions:
-                for tx in embedded_transactions:
-                    summary += f"\n\n[STELLAR_TX]{tx}[/STELLAR_TX]"
-                logger.info(f"Appended {len(embedded_transactions)} transaction(s) to summary")
-
-            logger.info(f"Generated final summary with transactions: {len(summary)} chars")
+            logger.info(f"Generated final summary: {len(summary)} chars")
             return summary
 
         except Exception as e:

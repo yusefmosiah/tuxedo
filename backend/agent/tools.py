@@ -3,6 +3,7 @@ Agent Tools
 LangChain tool wrappers for agent account management functions.
 """
 
+import asyncio
 from typing import Optional
 from langchain_core.tools import tool
 import logging

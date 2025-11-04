@@ -3,6 +3,7 @@ Stellar Soroban (Smart Contract) Operations
 Async-first implementation using SorobanServerAsync
 """
 
+import asyncio
 from stellar_sdk import TransactionBuilder, scval
 from stellar_sdk.soroban_server_async import SorobanServerAsync
 from stellar_sdk.soroban_rpc import EventFilter, EventFilterType, GetEventsRequest
