@@ -4,6 +4,7 @@ Endpoints for AI agent chat functionality.
 """
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Dict, Optional, Any
 import logging
@@ -74,57 +75,67 @@ async def chat_endpoint(request: ChatRequest):
 @router.post("/chat/stream")
 async def chat_stream_endpoint(request: StreamChatRequest):
     """Stream chat response through the AI agent"""
-    if not AGENT_SYSTEM_AVAILABLE:
-        # Return error as SSE
-        error_data = {
-            "type": "error",
-            "content": "Agent system not available"
-        }
-        yield f"data: {json.dumps(error_data)}\n\n"
-        return
-
-    try:
-        # Convert request history to dict format
-        history = [{"role": msg.role, "content": msg.content} for msg in request.history]
-
-        # For now, use non-streaming response (can be enhanced later)
-        response = await process_agent_message(
-            message=request.message,
-            history=history,
-            agent_account=request.agent_account
-        )
-
-        # Stream the response as data chunks
-        if response.get("success", False):
-            content = response.get("response", "")
-
-            # Send streaming data
-            message_data = {
-                "type": "message",
-                "content": content,
-                "iteration": 1,
-                "isStreaming": False
-            }
-            yield f"data: {json.dumps(message_data)}\n\n"
-        else:
-            # Send error
+    async def generate_chat_stream():
+        if not AGENT_SYSTEM_AVAILABLE:
+            # Return error as SSE
             error_data = {
                 "type": "error",
-                "content": response.get("error", "Unknown error")
+                "content": "Agent system not available"
+            }
+            yield f"data: {json.dumps(error_data)}\n\n"
+            return
+
+        try:
+            # Convert request history to dict format
+            history = [{"role": msg.role, "content": msg.content} for msg in request.history]
+
+            # For now, use non-streaming response (can be enhanced later)
+            response = await process_agent_message(
+                message=request.message,
+                history=history,
+                agent_account=request.agent_account
+            )
+
+            # Stream the response as data chunks
+            if response.get("success", False):
+                content = response.get("response", "")
+
+                # Send streaming data
+                message_data = {
+                    "type": "message",
+                    "content": content,
+                    "iteration": 1,
+                    "isStreaming": False
+                }
+                yield f"data: {json.dumps(message_data)}\n\n"
+            else:
+                # Send error
+                error_data = {
+                    "type": "error",
+                    "content": response.get("error", "Unknown error")
+                }
+                yield f"data: {json.dumps(error_data)}\n\n"
+
+            # Send completion signal
+            done_data = {"type": "done"}
+            yield f"data: {json.dumps(done_data)}\n\n"
+
+        except Exception as e:
+            logger.error(f"Error in streaming chat: {e}")
+            error_data = {
+                "type": "error",
+                "content": f"Internal server error: {str(e)}"
             }
             yield f"data: {json.dumps(error_data)}\n\n"
 
-        # Send completion signal
-        done_data = {"type": "done"}
-        yield f"data: {json.dumps(done_data)}\n\n"
-
-    except Exception as e:
-        logger.error(f"Error in streaming chat: {e}")
-        error_data = {
-            "type": "error",
-            "content": f"Internal server error: {str(e)}"
+    return StreamingResponse(
+        generate_chat_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
         }
-        yield f"data: {json.dumps(error_data)}\n\n"
+    )
 
 @router.get("/chat/status")
 async def chat_status():
@@ -138,3 +149,89 @@ async def chat_status():
     except Exception as e:
         logger.error(f"Error getting chat status: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+# Add endpoints to match frontend expectations
+@router.post("/chat-stream")
+async def chat_stream_endpoint_alias(request: StreamChatRequest):
+    """Alias for /chat/stream to match frontend expectations"""
+    return await chat_stream_endpoint(request)
+
+@router.post("/chat-live-summary")
+async def chat_live_summary_endpoint(request: StreamChatRequest):
+    """Chat with live summary endpoint"""
+    async def generate_summary_stream():
+        if not AGENT_SYSTEM_AVAILABLE:
+            # Return error as SSE
+            error_data = {
+                "type": "error",
+                "content": "Agent system not available"
+            }
+            yield f"data: {json.dumps(error_data)}\n\n"
+            return
+
+        try:
+            # Convert request history to dict format
+            history = [{"role": msg.role, "content": msg.content} for msg in request.history]
+
+            # For now, use non-streaming response with summary enabled
+            response = await process_agent_message(
+                message=request.message,
+                history=history,
+                agent_account=request.agent_account
+            )
+
+            # Stream the response with summary metadata
+            if response.get("success", False):
+                content = response.get("response", "")
+
+                # Send summary start
+                summary_start = {
+                    "type": "live_summary_start",
+                    "content": "Starting conversation..."
+                }
+                yield f"data: {json.dumps(summary_start)}\n\n"
+
+                # Send the actual content
+                message_data = {
+                    "type": "llm_response",
+                    "content": content,
+                    "iteration": 1,
+                    "isStreaming": False
+                }
+                yield f"data: {json.dumps(message_data)}\n\n"
+
+                # Send summary completion
+                summary_complete = {
+                    "type": "live_summary_complete",
+                    "content": content,
+                    "summary": f"Discussion about: {request.message[:50]}..."
+                }
+                yield f"data: {json.dumps(summary_complete)}\n\n"
+            else:
+                # Send error
+                error_data = {
+                    "type": "error",
+                    "content": response.get("error", "Unknown error")
+                }
+                yield f"data: {json.dumps(error_data)}\n\n"
+
+            # Send completion signal
+            done_data = {"type": "done"}
+            yield f"data: {json.dumps(done_data)}\n\n"
+
+        except Exception as e:
+            logger.error(f"Error in live summary chat: {e}")
+            error_data = {
+                "type": "error",
+                "content": f"Internal server error: {str(e)}"
+            }
+            yield f"data: {json.dumps(error_data)}\n\n"
+
+    return StreamingResponse(
+        generate_summary_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        }
+    )
