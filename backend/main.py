@@ -38,13 +38,24 @@ def main():
         logger.info(f"Debug mode: {debug}")
 
         # Run the application
-        uvicorn.run(
-            app,
-            host=host,
-            port=port,
-            reload=debug,
-            log_level="info"
-        )
+        if debug:
+            # Use import string for reload mode
+            uvicorn.run(
+                "main:app",
+                host=host,
+                port=port,
+                reload=debug,
+                log_level="info"
+            )
+        else:
+            # Direct app import for production mode
+            uvicorn.run(
+                app,
+                host=host,
+                port=port,
+                reload=False,
+                log_level="info"
+            )
 
     except Exception as e:
         logger.error(f"Failed to start application: {e}")
