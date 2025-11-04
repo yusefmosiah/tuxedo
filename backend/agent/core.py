@@ -112,6 +112,12 @@ async def load_agent_tools():
 
 async def get_agent_status() -> Dict[str, Any]:
     """Get current agent system status"""
+    # Debug environment variables (remove sensitive data)
+    api_key = settings.openai_api_key
+    api_key_debug = f"{api_key[:8]}...{api_key[-8:]}" if api_key and len(api_key) > 16 else "EMPTY_OR_TOO_SHORT"
+
+    logger.info(f"Health check debug - API key: {api_key_debug}, Base URL: {settings.openai_base_url}, Model: {settings.primary_model}")
+
     return {
         "status": "healthy",
         "llm_configured": llm is not None,
@@ -125,7 +131,11 @@ async def get_agent_status() -> Dict[str, Any]:
         "openai_configured": bool(settings.openai_api_key),
         "live_summary_ready": True,  # TODO: Make this configurable based on actual availability
         "database_ready": True,  # TODO: Check actual database connectivity
-        "defindex_tools_ready": len([t for t in agent_tools if 'defindex' in getattr(tool, 'name', getattr(tool, '__name__', str(tool))).lower()]) > 0
+        "defindex_tools_ready": len([t for t in agent_tools if 'defindex' in getattr(tool, 'name', getattr(tool, '__name__', str(tool))).lower()]) > 0,
+        # Debug fields (remove these in production)
+        "debug_api_key_prefix": api_key_debug,
+        "debug_base_url": settings.openai_base_url,
+        "debug_model": settings.primary_model
     }
 
 async def process_agent_message(
