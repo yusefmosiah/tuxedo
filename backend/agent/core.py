@@ -275,10 +275,13 @@ async def process_agent_message_streaming(
 
                             # Try different ways to execute the tool
                             if hasattr(tool_func, 'ainvoke') and callable(tool_func.ainvoke):
-                                # LangChain tool with ainvoke method
+                                # Modern LangChain async tool - use ainvoke for async operations
                                 result = await tool_func.ainvoke(tool_args)
+                            elif hasattr(tool_func, 'invoke') and callable(tool_func.invoke):
+                                # Modern LangChain sync tool - use invoke for sync operations
+                                result = tool_func.invoke(tool_args)
                             elif hasattr(tool_func, 'func') and tool_func.func is not None:
-                                # Tool with func attribute
+                                # Legacy tool with func attribute
                                 if asyncio.iscoroutinefunction(tool_func.func):
                                     result = await tool_func.func(**tool_args)
                                 else:
@@ -293,7 +296,7 @@ async def process_agent_message_streaming(
                                 # Direct async function
                                 result = await tool_func(**tool_args)
                             else:
-                                # Try direct invocation
+                                # Try direct invocation as last resort
                                 result = tool_func(**tool_args)
 
                             logger.info(f"Tool {tool_name} executed successfully")

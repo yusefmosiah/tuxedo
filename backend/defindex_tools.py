@@ -40,7 +40,7 @@ async def discover_high_yield_vaults(min_apy: Optional[float] = 30.0) -> str:
     try:
         # Query mainnet for vault yields using Soroban contracts
         defindex = get_defindex_soroban(network='mainnet')
-        vaults_data = defindex.get_available_vaults(min_apy=min_apy)
+        vaults_data = await defindex.get_available_vaults(min_apy=min_apy)
 
         if not vaults_data:
             return f"No vaults found with APY above {min_apy}% on mainnet"
@@ -75,7 +75,7 @@ async def get_defindex_vault_details(vault_address: str) -> str:
     """
     try:
         defindex = get_defindex_soroban(network='mainnet')
-        vault_info = defindex.get_vault_details(vault_address)
+        vault_info = await defindex.get_vault_details(vault_address)
 
         result = f"Vault Details: {vault_info['name']}\n"
         result += f"Symbol: {vault_info['symbol']}\n"
@@ -110,7 +110,7 @@ async def get_defindex_vault_details(vault_address: str) -> str:
         if "not found" in str(e):
             # Try to find similar vaults
             defindex = get_defindex_soroban(network='mainnet')
-            available_vaults = defindex.get_available_vaults(min_apy=0)
+            available_vaults = await defindex.get_available_vaults(min_apy=0)
 
             result = f"Error: Vault not found at address {vault_address}\n\n"
             result += "Available vaults:\n"

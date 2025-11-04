@@ -7,6 +7,7 @@ import logging
 from typing import Dict, List, Optional
 from stellar_sdk import Server
 from stellar_sdk.soroban_server import SorobanServer
+from stellar_ssl import create_soroban_client_with_ssl
 
 logger = logging.getLogger(__name__)
 
@@ -54,14 +55,14 @@ class DeFindexSoroban:
         self.network = network
         if network == "mainnet":
             self.horizon = Server("https://horizon.stellar.org")
-            self.soroban = SorobanServer("https://mainnet.stellar.expert/explorer/rpc")
+            self.soroban = create_soroban_client_with_ssl("https://mainnet.stellar.expert/explorer/rpc")
             self.vaults = MAINNET_VAULTS
         else:
             self.horizon = Server("https://horizon-testnet.stellar.org")
-            self.soroban = SorobanServer("https://soroban-testnet.stellar.org")
+            self.soroban = create_soroban_client_with_ssl("https://soroban-testnet.stellar.org")
             self.vaults = TESTNET_VAULTS
 
-    def get_available_vaults(self, min_apy: float = 30.0) -> List[Dict]:
+    async def get_available_vaults(self, min_apy: float = 30.0) -> List[Dict]:
         """Get available vaults with their APY data"""
         vaults_data = []
 
@@ -85,7 +86,7 @@ class DeFindexSoroban:
         vaults_data.sort(key=lambda v: v['apy'], reverse=True)
         return vaults_data
 
-    def get_vault_details(self, vault_address: str) -> Dict:
+    async def get_vault_details(self, vault_address: str) -> Dict:
         """Get detailed information about a vault"""
         # Find vault name from address
         vault_name = None
