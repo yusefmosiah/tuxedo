@@ -1,8 +1,6 @@
-import AgentConnectAccount from "./components/AgentConnectAccount.tsx";
 import { Routes, Route, Outlet, NavLink } from "react-router-dom";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
-import { Heading, Content } from "@stellar/design-system";
 
 const AppLayout: React.FC = () => (
   <main style={{
@@ -45,11 +43,10 @@ const AppLayout: React.FC = () => (
                 padding: '8px 16px'
               }}
             >
-              Pools
+              Dashboard
             </button>
           )}
         </NavLink>
-          <AgentConnectAccount />
       </div>
     </header>
 

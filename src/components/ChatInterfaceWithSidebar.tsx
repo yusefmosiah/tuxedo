@@ -6,8 +6,6 @@ import rehypeHighlight from 'rehype-highlight';
 import { chatApi, StreamMessage, type HealthResponse } from '../lib/api';
 import { useChatThreads, ExtendedChatMessage } from '../hooks/useChatThreads';
 import { ThreadSidebar } from './ThreadSidebar';
-import { parseMessageForTransaction } from '../utils/transactionParser';
-import { TransactionCard } from './TransactionCard';
 import '../App.module.css';
 import 'highlight.js/styles/github.css';
 import styles from './ChatInterfaceWithSidebar.module.css';
@@ -889,8 +887,6 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
 
               // Final Responses - plain text, left-aligned, no bubble
               if (msg.type === 'final_response') {
-                const parsed = parseMessageForTransaction(msg.content);
-
                 return (
                   <div
                     key={msg.id || idx}
@@ -901,50 +897,22 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
                       padding: '0 20px',
                     }}
                   >
-                    {/* Text before transaction */}
-                    {parsed.beforeTx && (
-                      <div
-                        style={{
-                          color: 'var(--color-ai-text)',
-                          fontSize: '16px',
-                          fontWeight: '400',
-                          lineHeight: 1.6,
-                          margin: 0,
-                          marginBottom: parsed.transaction ? '12px' : 0,
-                        }}
+                    <div
+                      style={{
+                        color: 'var(--color-ai-text)',
+                        fontSize: '16px',
+                        fontWeight: '400',
+                        lineHeight: 1.6,
+                        margin: 0,
+                      }}
+                    >
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeHighlight]}
                       >
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
-                          rehypePlugins={[rehypeHighlight]}
-                        >
-                          {parsed.beforeTx}
-                        </ReactMarkdown>
-                      </div>
-                    )}
-
-                    {/* Embedded transaction card */}
-                    {parsed.transaction && <TransactionCard transaction={parsed.transaction} />}
-
-                    {/* Text after transaction */}
-                    {parsed.afterTx && (
-                      <div
-                        style={{
-                          color: 'var(--color-ai-text)',
-                          fontSize: '16px',
-                          fontWeight: '400',
-                          lineHeight: 1.6,
-                          margin: 0,
-                          marginTop: parsed.transaction ? '12px' : 0,
-                        }}
-                      >
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
-                          rehypePlugins={[rehypeHighlight]}
-                        >
-                          {parsed.afterTx}
-                        </ReactMarkdown>
-                      </div>
-                    )}
+                        {msg.content || ''}
+                      </ReactMarkdown>
+                    </div>
                   </div>
                 );
               }

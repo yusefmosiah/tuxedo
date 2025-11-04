@@ -5,8 +5,6 @@ import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { chatApi, ChatMessage, StreamMessage, type HealthResponse } from '../lib/api';
 import { useAgent } from '../providers/AgentProvider';
-import { parseMessageForTransaction } from '../utils/transactionParser';
-import { TransactionCard } from './TransactionCard';
 import '../App.module.css';
 import 'highlight.js/styles/github.css';
 
@@ -222,7 +220,6 @@ export const ChatInterface: React.FC = () => {
                 m.content && m.content.trim() !== '' // Ensure content exists and is not empty
               )
               .map(({ role, content }) => ({ role, content })),
-            wallet_address: agent.activeAccount || null,
             enable_summary: true,
           },
           (streamMessage: StreamMessage) => {
@@ -265,7 +262,6 @@ export const ChatInterface: React.FC = () => {
                 m.content && m.content.trim() !== '' // Ensure content exists and is not empty
               )
               .map(({ role, content }) => ({ role, content })),
-            wallet_address: agent.activeAccount || null,
           },
           (streamMessage: StreamMessage) => {
             // Handle thinking states for loading indicator
@@ -742,21 +738,6 @@ export const ChatInterface: React.FC = () => {
 
             // Final Responses - plain text, left-aligned, no bubble
             if (msg.type === 'final_response') {
-              // Check if message contains an embedded transaction
-              console.log('🔍 Checking message for embedded transaction:', {
-                hasContent: !!msg.content,
-                contentLength: msg.content?.length,
-                containsStellarTx: msg.content?.includes('[STELLAR_TX]'),
-                contentPreview: msg.content?.substring(0, 200)
-              });
-              const parsed = parseMessageForTransaction(msg.content);
-              console.log('🔍 Parsed result:', {
-                hasTransaction: !!parsed.transaction,
-                transaction: parsed.transaction,
-                beforeTxLength: parsed.beforeTx.length,
-                afterTxLength: parsed.afterTx.length
-              });
-
               return (
                 <div
                   key={msg.id || idx}
@@ -767,50 +748,22 @@ export const ChatInterface: React.FC = () => {
                     padding: '0 20px',
                   }}
                 >
-                  {/* Text before transaction */}
-                  {parsed.beforeTx && (
-                    <div
-                      style={{
-                        color: '#333',
-                        fontSize: '16px',
-                        fontWeight: '400',
-                        lineHeight: 1.6,
-                        margin: 0,
-                        marginBottom: parsed.transaction ? '12px' : 0,
-                      }}
+                  <div
+                    style={{
+                      color: '#333',
+                      fontSize: '16px',
+                      fontWeight: '400',
+                      lineHeight: 1.6,
+                      margin: 0,
+                    }}
+                  >
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeHighlight]}
                     >
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        rehypePlugins={[rehypeHighlight]}
-                      >
-                        {parsed.beforeTx}
-                      </ReactMarkdown>
-                    </div>
-                  )}
-
-                  {/* Embedded transaction card */}
-                  {parsed.transaction && <TransactionCard transaction={parsed.transaction} />}
-
-                  {/* Text after transaction */}
-                  {parsed.afterTx && (
-                    <div
-                      style={{
-                        color: '#333',
-                        fontSize: '16px',
-                        fontWeight: '400',
-                        lineHeight: 1.6,
-                        margin: 0,
-                        marginTop: parsed.transaction ? '12px' : 0,
-                      }}
-                    >
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        rehypePlugins={[rehypeHighlight]}
-                      >
-                        {parsed.afterTx}
-                      </ReactMarkdown>
-                    </div>
-                  )}
+                      {msg.content || ''}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               );
             }

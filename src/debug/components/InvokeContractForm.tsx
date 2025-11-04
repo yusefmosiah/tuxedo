@@ -146,10 +146,7 @@ export const InvokeContractForm = ({
 
     if (userPk) {
       try {
-        const result = await signTransaction(xdr || "", {
-          address: userPk,
-          networkPassphrase: network.passphrase,
-        });
+        const result = await signTransaction(xdr || "");
 
         if (result.signedTxXdr && result.signedTxXdr !== "") {
           return result.signedTxXdr;

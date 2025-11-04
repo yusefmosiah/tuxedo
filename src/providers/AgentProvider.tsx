@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import api from '../lib/api';
 
 interface AgentAccount {
   address: string;
@@ -9,19 +10,17 @@ interface AgentAccount {
 }
 
 interface AgentContextType {
-  accounts: AgentAccount[];
-  activeAccount: string;
-  setActiveAccount: (address: string) => void;
-  createAccount: (name?: string) => Promise<string>;
+  status: 'active' | 'idle' | 'error';
+  accounts: AgentAccount[]; // Read-only
+  activeAccount: string; // Read-only
   isLoading: boolean;
   error: string | null;
 }
 
 const AgentContext = createContext<AgentContextType>({
+  status: 'idle',
   accounts: [],
   activeAccount: '',
-  setActiveAccount: () => {},
-  createAccount: async () => '',
   isLoading: false,
   error: null,
 });
@@ -35,62 +34,47 @@ interface AgentProviderProps {
 export const AgentProvider: React.FC<AgentProviderProps> = ({ children }) => {
   const [accounts, setAccounts] = useState<AgentAccount[]>([]);
   const [activeAccount, setActiveAccount] = useState<string>('');
+  const [status, setStatus] = useState<'active' | 'idle' | 'error'>('idle');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createAccount = async (name?: string): Promise<string> => {
-    setIsLoading(true);
-    setError(null);
+  useEffect(() => {
+    // Load existing accounts on mount
+    loadAgentAccounts();
+    // Only refresh occasionally, not continuously
+    const interval = setInterval(loadAgentAccounts, 30000); // Poll every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
 
+  const loadAgentAccounts = async () => {
     try {
-      const response = await fetch('/api/agent/create-account', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
-      });
+      setIsLoading(true);
 
-      if (!response.ok) throw new Error('Failed to create account');
-
-      const newAccount = await response.json();
-      setAccounts(prev => [...prev, newAccount]);
-      setActiveAccount(newAccount.address);
-
-      return newAccount.address;
+      const response = await api.get('/api/agent/accounts');
+      if (response.data) {
+        setAccounts(response.data);
+        if (response.data.length > 0 && !activeAccount) {
+          setActiveAccount(response.data[0].address);
+        }
+        setStatus('active');
+      } else {
+        setStatus('idle');
+      }
+      setError(null);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setError(errorMessage);
-      throw err;
+      console.error('Failed to load agent accounts:', err);
+      setStatus('error');
+      setError(err instanceof Error ? err.message : 'Failed to load agent accounts');
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    // Load existing accounts on mount
-    loadAccounts();
-  }, []);
-
-  const loadAccounts = async () => {
-    try {
-      const response = await fetch('/api/agent/accounts');
-      if (response.ok) {
-        const accounts = await response.json();
-        setAccounts(accounts);
-        if (accounts.length > 0 && !activeAccount) {
-          setActiveAccount(accounts[0].address);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to load accounts:', err);
-    }
-  };
-
   return (
     <AgentContext.Provider value={{
-      accounts,
-      activeAccount,
-      setActiveAccount,
-      createAccount,
+      status,
+      accounts, // Read-only
+      activeAccount, // Read-only
       isLoading,
       error
     }}>
