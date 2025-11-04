@@ -12,8 +12,8 @@ class Settings:
     def __init__(self):
         # API Configuration
         self.openai_api_key = os.getenv("OPENAI_API_KEY", "")
-        self.openai_base_url = os.getenv("OPENAI_BASE_URL", "https://api.redpill.ai/v1")
-        self.primary_model = os.getenv("PRIMARY_MODEL", "deepseek/deepseek-v3.1-terminus:exacto")
+        self.openai_base_url = os.getenv("OPENAI_BASE_URL", "https://openrouter.ai/api/v1")
+        self.primary_model = os.getenv("PRIMARY_MODEL", "openai/gpt-oss-120b:exacto")
 
         # Stellar Configuration
         self.stellar_network = os.getenv("STELLAR_NETWORK", "testnet")
