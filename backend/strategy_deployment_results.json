@@ -1,0 +1,19 @@
+{
+  "deployment_date": "2025-11-04T23:02:34.828481",
+  "network": "testnet",
+  "rpc_url": "https://soroban-testnet.stellar.org",
+  "strategies": {
+    "HODL": {
+      "wasm_file": "unsafe_hodl_strategy.wasm",
+      "contract_address": null,
+      "explorer_url": null,
+      "status": "failed"
+    },
+    "VAULT": {
+      "wasm_file": "defindex_vault.wasm",
+      "contract_address": null,
+      "explorer_url": null,
+      "status": "failed"
+    }
+  }
+}
