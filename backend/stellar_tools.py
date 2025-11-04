@@ -176,7 +176,7 @@ def _calculate_market_fill(
 def _build_sign_submit(
     account_id: str,
     operations: list,
-    key_manager: KeyManager,
+    key_manager,
     horizon: Server,
     auto_sign: bool = True
 ) -> Dict[str, Any]:
@@ -235,7 +235,7 @@ def _build_sign_submit(
 
 def account_manager(
     action: str,
-    key_manager: KeyManager,
+    key_manager,
     horizon: Server,
     account_id: Optional[str] = None,
     secret_key: Optional[str] = None,
@@ -243,7 +243,7 @@ def account_manager(
 ) -> Dict[str, Any]:
     """
     Unified account management tool consolidating 7 operations.
-    
+
     Actions:
         - "create": Generate new testnet account
         - "fund": Fund account via Friendbot (testnet only)
@@ -252,15 +252,15 @@ def account_manager(
         - "list": List all managed accounts
         - "export": Export secret key (⚠️ dangerous!)
         - "import": Import existing keypair
-    
+
     Args:
         action: Operation to perform
-        key_manager: KeyManager instance
+        key_manager: KeyManager instance for key storage
         horizon: Horizon server instance
         account_id: Stellar public key (required for most actions)
         secret_key: Secret key (required only for "import")
         limit: Transaction limit (for "transactions" action)
-    
+
     Returns:
         Action-specific response dict
     """
@@ -379,7 +379,7 @@ def account_manager(
 def trading(
     action: str,
     account_id: str,
-    key_manager: KeyManager,
+    key_manager,
     horizon: Server,
     buying_asset: Optional[str] = None,
     selling_asset: Optional[str] = None,
@@ -404,7 +404,7 @@ def trading(
     Args:
         action: Trading operation ("buy", "sell", "cancel_order", "get_orders")
         account_id: Stellar public key
-        key_manager: KeyManager instance
+        key_manager: KeyManager instance for signing transactions
         horizon: Horizon server instance
         buying_asset: Asset you want to acquire (e.g., "USDC")
         selling_asset: Asset you're spending (e.g., "XLM")
@@ -419,19 +419,6 @@ def trading(
 
     Returns:
         {"success": bool, "hash": "...", "ledger": 123, "market_execution": {...}}
-
-    Examples:
-        # Buy 4 USDC by spending XLM at market price:
-        trading(action="buy", buying_asset="USDC", selling_asset="XLM",
-                amount="4", order_type="market", ...)
-
-        # Place limit order to buy 4 USDC, willing to pay 15 XLM per USDC:
-        trading(action="buy", buying_asset="USDC", selling_asset="XLM",
-                amount="4", price="15", order_type="limit", ...)
-
-        # Sell 100 XLM for USDC, wanting 0.01 USDC per XLM:
-        trading(action="sell", selling_asset="XLM", buying_asset="USDC",
-                amount="100", price="0.01", order_type="limit", ...)
     """
     try:
         if action == "get_orders":
@@ -607,23 +594,23 @@ def trustline_manager(
     account_id: str,
     asset_code: str,
     asset_issuer: str,
-    key_manager: KeyManager,
+    key_manager,
     horizon: Server,
     limit: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Manage trustlines for issued assets.
-    
+
     Actions:
         - "establish": Create trustline (required before receiving assets)
         - "remove": Remove trustline (requires zero balance)
-    
+
     Args:
         action: Trustline operation
         account_id: Stellar public key
         asset_code: Asset code (e.g., "USDC")
         asset_issuer: Asset issuer public key
-        key_manager: KeyManager instance
+        key_manager: KeyManager instance for signing transactions
         horizon: Horizon server instance
         limit: Optional trust limit (default: maximum)
     

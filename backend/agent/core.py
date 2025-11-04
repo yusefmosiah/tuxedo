@@ -12,6 +12,9 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.tools import tool
 
+# Import settings
+from config.settings import settings
+
 logger = logging.getLogger(__name__)
 
 # Global agent state
@@ -24,14 +27,11 @@ async def initialize_agent():
 
     try:
         # Initialize LLM
-        openai_api_key = os.getenv("OPENAI_API_KEY")
-        openai_base_url = os.getenv("OPENAI_BASE_URL", "https://api.redpill.ai/v1")
-
         try:
             llm = ChatOpenAI(
-                api_key=openai_api_key,
-                base_url=openai_base_url,
-                model="deepseek/deepseek-v3.1-terminus:exacto",
+                api_key=settings.openai_api_key,
+                base_url=settings.openai_base_url,
+                model=settings.primary_model,
                 temperature=0.7,
                 max_tokens=2000,
             )
@@ -63,21 +63,28 @@ async def load_agent_tools():
 
     agent_tools = []
 
-    # Import stellar tools
+    # Import stellar tools via LangChain-compatible wrappers
     try:
-        from stellar_tools import account_manager, trading, trustline_manager, market_data, utilities
-        from stellar_soroban import soroban_operations
+        from agent.stellar_tools_wrappers import (
+            stellar_account_manager,
+            stellar_trading,
+            stellar_trustline_manager,
+            stellar_market_data,
+            stellar_utilities,
+            stellar_soroban_operations
+        )
         agent_tools.extend([
-            account_manager,
-            trading,
-            trustline_manager,
-            market_data,
-            utilities,
-            soroban_operations
+            stellar_account_manager,
+            stellar_trading,
+            stellar_trustline_manager,
+            stellar_market_data,
+            stellar_utilities,
+            stellar_soroban_operations
         ])
-        logger.info("Stellar tools loaded successfully")
+        logger.info("Stellar tools loaded successfully (via LangChain wrappers)")
     except ImportError as e:
-        logger.warning(f"Stellar tools not available: {e}")
+        logger.error(f"Failed to load Stellar tools wrappers: {e}")
+        logger.info("Stellar functionality will be unavailable")
 
     # Import agent account management tools
     try:
@@ -115,7 +122,7 @@ async def get_agent_status() -> Dict[str, Any]:
             for tool in agent_tools
         ),
         "stellar_tools_ready": len(agent_tools) > 0,
-        "openai_configured": bool(os.getenv("OPENAI_API_KEY"))
+        "openai_configured": bool(settings.openai_api_key)
     }
 
 async def process_agent_message(

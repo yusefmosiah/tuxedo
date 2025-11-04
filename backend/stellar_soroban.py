@@ -74,7 +74,7 @@ def _parse_single_param(param: dict):
 async def soroban_operations(
     action: str,
     soroban_server: SorobanServerAsync,
-    key_manager: KeyManager,
+    key_manager,
     contract_id: Optional[str] = None,
     key: Optional[str] = None,
     function_name: Optional[str] = None,
