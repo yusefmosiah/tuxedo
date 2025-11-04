@@ -5,7 +5,7 @@ Test multi-turn conversation to verify 422 error is fixed.
 import requests
 import json
 
-API_URL = "http://localhost:8002"
+API_URL = "http://localhost:8000"
 
 def test_multiturn_conversation():
     """Test a multi-turn conversation."""

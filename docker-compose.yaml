@@ -44,7 +44,7 @@ services:
       - VITE_STELLAR_NETWORK=testnet
       - VITE_HORIZON_URL=https://horizon-testnet.stellar.org
       - VITE_RPC_URL=https://soroban-testnet.stellar.org
-      - VITE_API_URL=http://backend:8000
+      - VITE_API_URL=https://tuxedo-backend.onrender.com
     env_file:
       - .env.frontend
     depends_on:

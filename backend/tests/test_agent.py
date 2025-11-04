@@ -7,7 +7,7 @@ import asyncio
 import requests
 import json
 
-BACKEND_URL = "http://localhost:8002"
+BACKEND_URL = "http://localhost:8000"
 
 async def test_agent():
     """Test the LLM agent with Stellar tools"""

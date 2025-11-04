@@ -5,7 +5,7 @@ Test multi-turn conversation with tool calls to verify context preservation.
 import requests
 import json
 
-API_URL = "http://localhost:8002"
+API_URL = "http://localhost:8000"
 
 def test_multiturn_with_tools():
     """Test a multi-turn conversation with tool execution."""

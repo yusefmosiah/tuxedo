@@ -33,6 +33,9 @@ RUN npm ci --include=dev --no-audit --no-fund
 # Copy source code
 COPY . .
 
+# Copy environment file for build-time variables
+COPY .env.frontend .env.production
+
 # Build the application (skip TypeScript checking)
 RUN npx vite build --mode production
 

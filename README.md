@@ -12,7 +12,7 @@ Conversational AI agent for discovering and interacting with DeFi protocols on S
 
 ### Local Development (Current Setup)
 ```bash
-# Backend (Port 8002)
+# Backend (Port 8000)
 cd backend && source .venv/bin/activate && python main.py
 
 # Frontend (Port 5173)
@@ -24,7 +24,7 @@ npm run dev
 ### AWS SSH Port Forwarding
 ```bash
 # Forward ports for remote access
-ssh -L 5173:localhost:5173 -L 8002:localhost:8002 user@your-server
+ssh -L 5173:localhost:5173 -L 8000:localhost:8000 user@your-server
 ```
 
 ---

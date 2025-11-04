@@ -8,7 +8,7 @@ import requests
 import json
 
 # Test configuration
-BACKEND_URL = "http://localhost:8002"
+BACKEND_URL = "http://localhost:8000"
 
 async def test_wallet_integration():
     """Test wallet address integration in chat"""

@@ -1,7 +1,9 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 
-// API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
+// API Configuration - Environment-based with fallbacks
+const API_BASE_URL = import.meta.env.VITE_API_URL ||
+                     import.meta.env.PUBLIC_API_URL ||
+                     (import.meta.env.DEV ? 'http://localhost:8000' : 'https://tuxedo-backend.onrender.com');
 
 // API Interfaces
 export interface ChatMessage {
