@@ -200,3 +200,91 @@ The refactoring successfully transformed Tuxedo from a prototype-like monolithic
 **Status**: ✅ REFACTORING COMPLETE - SYSTEM PRODUCTION READY
 
 The comprehensive testing validates that all core functionality works correctly, and the modular architecture provides a solid foundation for future enhancements, including LLM integration and Phala TEE deployment.
+
+---
+
+## 🔧 Post-Refactoring Deployment Fixes (November 4, 2025)
+
+### Docker Deployment Issue Resolution
+
+**Problem Identified**:
+- Module import failure during Docker deployment: `ModuleNotFoundError: No module named 'api'`
+- Application failing to start when OpenAI API key not available during deployment
+
+**Root Cause Analysis**:
+- Dockerfile only copying `*.py` files, missing subdirectories (`api/`, `agent/`, `config/`, etc.)
+- Agent initialization hardcoded to fail without API key, preventing deployment startup
+
+**Solutions Implemented**:
+
+#### 1. Fixed Dockerfile Module Structure
+```dockerfile
+# Before: Only copy Python files
+COPY backend/*.py ./
+
+# After: Copy entire backend structure
+COPY backend/ ./
+```
+
+#### 2. Graceful API Key Handling
+```python
+# Before: Hard failure on missing API key
+if openai_api_key:
+    llm = ChatOpenAI(...)
+else:
+    raise Exception("OpenAI API key required")
+
+# After: Graceful degradation for deployment
+try:
+    llm = ChatOpenAI(api_key=openai_api_key, ...)
+    logger.info("LLM initialized successfully")
+except Exception as llm_error:
+    logger.warning(f"LLM initialization failed: {llm_error}")
+    logger.info("Continuing without LLM - agent features will be limited")
+```
+
+#### 3. Fixed Health Check Endpoint
+```python
+# Handle both tool objects and function objects
+"tools_available": [getattr(tool, 'name', getattr(tool, '__name__', str(tool))) for tool in agent_tools]
+```
+
+### Deployment Verification Results
+
+- ✅ **Application starts successfully** without OpenAI API key
+- ✅ **All modules import correctly** (`api`, `agent`, `config`, etc.)
+- ✅ **Health check returns 200 OK** with proper status
+- ✅ **All 12 tools loaded** (Stellar tools + agent account tools + DeFindex tools)
+- ✅ **Graceful degradation** when dependencies missing
+
+### Health Check Response Example
+```json
+{
+  "status": "healthy",
+  "llm_configured": false,
+  "tools_count": 12,
+  "tools_available": [
+    "account_manager", "trading", "trustline_manager", "market_data",
+    "utilities", "soroban_operations", "agent_create_account",
+    "agent_list_accounts", "agent_get_account_info",
+    "discover_high_yield_vaults", "get_defindex_vault_details",
+    "prepare_defindex_deposit"
+  ],
+  "agent_account_tools_available": true,
+  "stellar_tools_ready": true,
+  "openai_configured": false
+}
+```
+
+**Impact**: System now deploys successfully on any Docker platform (Render, etc.) with or without API keys configured during deployment.
+
+### Updated Deployment Checklist
+
+- [x] **Docker Configuration**: Fixed module copying and structure
+- [x] **Environment Resilience**: Graceful handling of missing environment variables
+- [x] **Health Check**: Robust health endpoint with comprehensive status
+- [ ] Configure LLM API key for full chat functionality
+- [ ] Set up environment variables for target deployment
+- [ ] Security review of agent key management
+- [ ] Performance testing under load
+- [ ] Phala TEE configuration

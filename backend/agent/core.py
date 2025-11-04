@@ -27,7 +27,7 @@ async def initialize_agent():
         openai_api_key = os.getenv("OPENAI_API_KEY")
         openai_base_url = os.getenv("OPENAI_BASE_URL", "https://api.redpill.ai/v1")
 
-        if openai_api_key:
+        try:
             llm = ChatOpenAI(
                 api_key=openai_api_key,
                 base_url=openai_base_url,
@@ -36,9 +36,9 @@ async def initialize_agent():
                 max_tokens=2000,
             )
             logger.info("LLM initialized successfully")
-        else:
-            logger.warning("OpenAI API key not configured")
-            raise Exception("OpenAI API key required")
+        except Exception as llm_error:
+            logger.warning(f"LLM initialization failed: {llm_error}")
+            logger.info("Continuing without LLM - agent features will be limited")
 
         # Initialize agent tools
         await load_agent_tools()
@@ -109,9 +109,9 @@ async def get_agent_status() -> Dict[str, Any]:
         "status": "healthy",
         "llm_configured": llm is not None,
         "tools_count": len(agent_tools),
-        "tools_available": [tool.name for tool in agent_tools],
+        "tools_available": [getattr(tool, 'name', getattr(tool, '__name__', str(tool))) for tool in agent_tools],
         "agent_account_tools_available": any(
-            tool.name in ["agent_create_account", "agent_list_accounts", "agent_get_account_info"]
+            getattr(tool, 'name', getattr(tool, '__name__', str(tool))) in ["agent_create_account", "agent_list_accounts", "agent_get_account_info"]
             for tool in agent_tools
         ),
         "stellar_tools_ready": len(agent_tools) > 0,
