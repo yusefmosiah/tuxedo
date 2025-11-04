@@ -4,6 +4,7 @@ Main AI agent logic and lifecycle management.
 """
 
 import os
+import json
 import logging
 from typing import Optional, Dict, Any, List
 from contextlib import asynccontextmanager
@@ -144,7 +145,7 @@ async def process_agent_message(
     agent_account: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Process a user message through the AI agent.
+    Process a user message through the AI agent with multi-step reasoning.
 
     Args:
         message: User message
@@ -186,13 +187,120 @@ async def process_agent_message(
         # Create LLM with tools
         llm_with_tools = llm.bind(tools=tools)
 
-        # Get response
-        response = await llm_with_tools.ainvoke(messages)
+        # Agent loop with multi-step reasoning
+        max_iterations = 25
+        iteration = 0
+
+        while iteration < max_iterations:
+            iteration += 1
+            logger.info(f"Agent iteration {iteration}")
+
+            # Get LLM response with potential tool calls
+            response = await llm_with_tools.ainvoke(messages)
+
+            # Add response to message history
+            messages.append(response)
+
+            # Check if LLM wants to call tools (handle both new and old LangChain formats)
+            tool_calls = []
+
+            # New LangChain format
+            if hasattr(response, 'tool_calls') and response.tool_calls:
+                tool_calls = response.tool_calls
+                logger.info(f"LLM wants to call {len(tool_calls)} tools (new format)")
+            # Old LangChain format with function_call in additional_kwargs
+            elif (hasattr(response, 'additional_kwargs') and
+                  response.additional_kwargs.get('function_call')):
+                function_call = response.additional_kwargs['function_call']
+                tool_calls = [{
+                    "name": function_call["name"],
+                    "args": json.loads(function_call["arguments"]),
+                    "id": f"call_{function_call['name']}"
+                }]
+                logger.info(f"LLM wants to call {len(tool_calls)} tools (old format)")
+
+            if tool_calls:
+                # Execute each tool call
+                for tool_call in tool_calls:
+                    tool_name = tool_call.get("name") if isinstance(tool_call, dict) else tool_call.name
+                    tool_args = tool_call.get("args") if isinstance(tool_call, dict) else tool_call.args
+                    tool_id = tool_call.get("id") if isinstance(tool_call, dict) else getattr(tool_call, 'id', f"call_{tool_name}")
+
+                    logger.info(f"Executing tool: {tool_name} with args: {tool_args}")
+
+                    # Find and execute the tool
+                    tool_func = None
+                    for t in agent_tools:
+                        if t.name == tool_name:
+                            tool_func = t
+                            break
+
+                    if tool_func:
+                        try:
+                            # Auto-inject wallet address for account-related operations
+                            if agent_account and "account" in tool_name.lower():
+                                if "wallet_address" not in tool_args:
+                                    tool_args["wallet_address"] = agent_account
+
+                            # Execute tool function
+                            if asyncio.iscoroutinefunction(tool_func.func):
+                                result = await tool_func.func(**tool_args)
+                            else:
+                                result = tool_func.func(**tool_args)
+
+                            logger.info(f"Tool {tool_name} executed successfully")
+
+                            # Add tool result to message history for next iteration
+                            tool_message = {
+                                "role": "tool",
+                                "content": str(result),
+                                "tool_call_id": tool_id,
+                                "name": tool_name
+                            }
+                            messages.append(tool_message)
+
+                        except Exception as tool_error:
+                            logger.error(f"Error executing tool {tool_name}: {tool_error}")
+                            # Add tool error to message history for next iteration
+                            tool_message = {
+                                "role": "tool",
+                                "content": f"Error: {str(tool_error)}",
+                                "tool_call_id": tool_id,
+                                "name": tool_name
+                            }
+                            messages.append(tool_message)
+                    else:
+                        logger.error(f"Tool {tool_name} not found")
+                        # Add tool not found error to message history
+                        tool_message = {
+                            "role": "tool",
+                            "content": f"Error: Tool {tool_name} not found",
+                            "tool_call_id": tool_id,
+                            "name": tool_name
+                        }
+                        messages.append(tool_message)
+
+            else:
+                # No more tool calls, exit loop
+                logger.info(f"No more tool calls requested, ending loop after {iteration} iterations")
+                break
+
+        else:
+            # Max iterations reached
+            logger.warning(f"Agent reached maximum iterations ({max_iterations}) without completion")
+
+        # Extract final response (last AI message that's not a tool call)
+        final_response = "I'm sorry, I couldn't complete your request."
+        for msg in reversed(messages):
+            if hasattr(msg, 'content') and msg.content and not hasattr(msg, 'tool_call_id'):
+                final_response = msg.content
+                break
 
         return {
-            "response": response.content,
+            "response": final_response,
             "success": True,
             "tools_available": len(agent_tools),
+            "iterations_used": iteration,
             "agent_account": agent_account
         }
 
@@ -201,7 +309,8 @@ async def process_agent_message(
         return {
             "response": f"Error processing your request: {str(e)}",
             "success": False,
-            "error": str(e)
+            "error": str(e),
+            "iterations_used": iteration if 'iteration' in locals() else 0
         }
 
 def build_agent_system_prompt() -> str:
