@@ -152,61 +152,85 @@ async def get_defindex_vault_details(vault_address: str) -> str:
 async def prepare_defindex_deposit(
     vault_address: str,
     amount_xlm: float,
-    user_address: str
+    user_address: str,
+    network: str = "testnet"
 ) -> str:
-    """Prepare a DEMO deposit transaction that simulates depositing into a DeFindex vault.
+    """Prepare a REAL deposit transaction to a DeFindex vault using the DeFindex API.
 
-    This builds a testnet transaction that demonstrates the wallet signing flow.
-    The transaction is a simple XLM payment to a testnet address (not a real vault deposit).
-
-    NOTE: Wallet integration has been removed. This tool now returns readable transaction details
-    without automatic wallet parsing. Users would need to manually use the transaction data if
-    wallet integration was available.
+    This builds an actual vault deposit transaction that interacts with the DeFindex smart contract.
+    When the API is available, creates a real deposit transaction. Falls back to demo transaction
+    only when the API is unavailable.
 
     Args:
-        vault_address: The mainnet vault contract address (used for metadata/reference only)
+        vault_address: The vault contract address (can be testnet or mainnet)
         amount_xlm: Amount to deposit in XLM (e.g., 10.5)
         user_address: User's Stellar public key (G...)
+        network: Network to use ('testnet' or 'mainnet', default 'testnet')
 
     Returns:
-        Readable transaction details in formatted JSON without wallet integration
+        Transaction details indicating whether it's a REAL or DEMO transaction
     """
     try:
         # Convert XLM to stroops (1 XLM = 10,000,000 stroops)
         amount_stroops = int(amount_xlm * 10_000_000)
 
-        # Use testnet for SAFE demo transactions
-        defindex = get_defindex_soroban(network='testnet')
+        # Use specified network for transactions
+        defindex = get_defindex_soroban(network=network)
 
-        # Build the demo transaction
+        # Build the deposit transaction (real or demo based on API availability)
         tx_data = defindex.build_deposit_transaction(
-            vault_address=vault_address,  # Pass mainnet address for metadata
+            vault_address=vault_address,
             amount_stroops=amount_stroops,
             user_address=user_address
         )
 
         # Create transaction payload
+        is_real_transaction = tx_data.get('data_source') == 'api'
+        transaction_type = "REAL" if is_real_transaction else "DEMO"
+
         tx_payload = {
             'xdr': tx_data['xdr'],
-            'vault_address': vault_address,  # Mainnet vault for reference
+            'vault_address': vault_address,
             'amount': amount_xlm,
             'estimated_shares': tx_data.get('estimated_shares', '0'),
             'description': tx_data['description'],
-            'network': 'testnet',
-            'note': tx_data.get('note', 'Testnet demo transaction')
+            'network': network,
+            'transaction_type': transaction_type,
+            'data_source': tx_data.get('data_source', 'demo')
         }
 
-        # Return transaction details without wallet integration tags
-        tx_json = json.dumps(tx_payload, indent=2)  # Formatted JSON for readability
-        return f"""I've prepared a demo deposit transaction for {amount_xlm:,.0f} XLM to the {vault_address[:8]}... vault.
+        # Add additional fields for demo transactions
+        if not is_real_transaction:
+            tx_payload['demo_destination'] = tx_data.get('demo_destination', 'N/A')
+            tx_payload['note'] = tx_data.get('note', 'Demo transaction for testing')
+
+        # Return transaction details
+        tx_json = json.dumps(tx_payload, indent=2)
+
+        if is_real_transaction:
+            return f"""✅ **REAL DEPOSIT TRANSACTION PREPARED**
+
+I've prepared a **real vault deposit transaction** for {amount_xlm:,.0f} XLM to the {vault_address[:8]}... vault on {network}.
 
 **Transaction Details:**
 ```json
 {tx_json}
 ```
 
-⚠️ **Note:** This is a testnet demo transaction that simulates a mainnet vault deposit. The actual transaction sends XLM to a testnet address for demonstration purposes. No wallet integration is available."""
+🎯 **This is a real DeFindex vault deposit** that will interact with the smart contract. The transaction can be signed and submitted to the {network} network."""
+        else:
+            return f"""🎭 **DEMO TRANSACTION PREPARED** (API Unavailable)
+
+I've prepared a **demo deposit transaction** for {amount_xlm:,.0f} XLM to simulate depositing to the {vault_address[:8]}... vault on {network}.
+
+**Transaction Details:**
+```json
+{tx_json}
+```
+
+⚠️ **Note:** The DeFindex API is currently unavailable, so this is a testnet demo transaction that simulates a vault deposit using a simple XLM payment. For real vault deposits, the API needs to be accessible."""
 
     except Exception as e:
         logger.error(f"Error in prepare_defindex_deposit: {e}")
-        return f"Error: Unable to prepare demo deposit transaction: {str(e)}"
+        logger.error(f"Vault address: {vault_address}, Amount: {amount_xlm} XLM, Network: {network}")
+        return f"Error: Unable to prepare deposit transaction: {str(e)}"

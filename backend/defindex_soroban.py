@@ -235,6 +235,9 @@ class DeFindexSoroban:
         # Try to use real API client first
         if self.api_client:
             try:
+                logger.info(f"Attempting to build REAL deposit transaction for vault {vault_address[:8]}...")
+                logger.info(f"Amount: {amount_stroops / 10_000_000:.2f} XLM, User: {user_address[:8]}...")
+
                 # Build real deposit transaction via API
                 tx_data = self.api_client.build_deposit_transaction(
                     vault_address=vault_address,
@@ -244,6 +247,8 @@ class DeFindexSoroban:
                 )
 
                 amount_xlm = amount_stroops / 10_000_000
+                logger.info(f"✅ Successfully built REAL deposit transaction")
+
                 return {
                     'xdr': tx_data.get('xdr', ''),
                     'description': f'✅ REAL: Deposit {amount_xlm:.2f} XLM to DeFindex vault',
@@ -257,7 +262,12 @@ class DeFindexSoroban:
 
             except Exception as e:
                 logger.warning(f"Failed to build real deposit transaction: {e}")
+                logger.warning(f"Vault address: {vault_address}")
+                logger.warning(f"This might be a mainnet vault on testnet network or API connectivity issue")
                 logger.info("Falling back to demo transaction")
+
+        else:
+            logger.warning("DeFindex API client not available - using demo transaction")
 
         # Fallback to demo transaction
         return self._build_demo_transaction(vault_address, amount_stroops, user_address)
@@ -271,15 +281,23 @@ class DeFindexSoroban:
         from stellar_sdk import TransactionBuilder, Network, Account
         from stellar_sdk.operation import Payment
         from stellar_sdk import Asset
+        from stellar_sdk.exceptions import NotFoundError
 
         # Use a valid testnet destination (Stellar testnet friendbot address)
         demo_destination = 'GAIH3ULLFQ4DGSECF2AR555KZ4KNDGEKN4AFI4SU2M7B43MGK3QJZNSR'
 
         try:
             # Fetch user account from network to get sequence number
-            account = self.horizon.accounts().account_id(user_address).call()
-            sequence = int(account['sequence'])
-            source_account = Account(user_address, sequence)
+            try:
+                account = self.horizon.accounts().account_id(user_address).call()
+                sequence = int(account['sequence'])
+                source_account = Account(user_address, sequence)
+                logger.info(f"Successfully loaded account {user_address[:8]}... with sequence {sequence}")
+            except Exception as e:
+                logger.error(f"Account {user_address} not found on {self.network}: {e}")
+                logger.info("Creating demo transaction without account validation")
+                # Skip transaction building if account is invalid
+                return self._create_simple_transaction_response(vault_address, amount_stroops, user_address)
 
             # Calculate amount in XLM
             amount_xlm = amount_stroops / 10_000_000
@@ -301,6 +319,9 @@ class DeFindexSoroban:
                 .build()
             )
 
+            # Check if account was found and add appropriate note
+            account_status = "valid" if 'account' in locals() and sequence != 1 else "not_found"
+
             return {
                 'xdr': transaction.to_xdr(),
                 'description': f'🎭 DEMO: Deposit {amount_xlm:.2f} XLM to DeFindex vault (testnet simulation)',
@@ -309,13 +330,32 @@ class DeFindexSoroban:
                 'vault_address': vault_address,
                 'demo_destination': demo_destination,
                 'user_address': user_address,
+                'account_status': account_status,
                 'data_source': 'demo',
                 'note': 'This is a testnet demo transaction that simulates a vault deposit'
             }
 
         except Exception as e:
             logger.error(f"Error building demo transaction: {e}")
-            raise ValueError(f"Could not build transaction: {str(e)}")
+            # Fallback to simple response without real transaction
+            return self._create_simple_transaction_response(vault_address, amount_stroops, user_address)
+
+    def _create_simple_transaction_response(self, vault_address: str, amount_stroops: int, user_address: str) -> Dict:
+        """Create a simple response when transaction building fails"""
+        amount_xlm = amount_stroops / 10_000_000
+
+        return {
+            'xdr': '',
+            'description': f'🎭 DEMO: Deposit {amount_xlm:.2f} XLM to DeFindex vault (simulation only)',
+            'amount': amount_xlm,
+            'estimated_shares': str(int(amount_stroops * 0.95)),
+            'vault_address': vault_address,
+            'demo_destination': 'N/A - account validation failed',
+            'user_address': user_address,
+            'account_status': 'invalid',
+            'data_source': 'demo',
+            'note': f'Account {user_address[:8]}... not found on {self.network} - demo simulation only'
+        }
 
 def get_defindex_soroban(network: str = 'mainnet') -> DeFindexSoroban:
     """Get DeFindex Soroban client"""

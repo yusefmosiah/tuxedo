@@ -179,14 +179,26 @@ class DeFindexClient:
             return response.json()
 
         except requests.HTTPError as e:
+            error_text = e.response.text if e.response else "No response text"
             if e.response.status_code == 403:
                 raise ValueError("DeFindex API authentication failed")
             elif e.response.status_code == 404:
                 raise ValueError(f"Deposit endpoint not found for vault: {vault_address}")
             elif e.response.status_code == 429:
                 raise ValueError("DeFindex API rate limit exceeded - please wait before trying again")
+            elif e.response.status_code == 400:
+                # Parse the detailed error message
+                try:
+                    error_json = e.response.json()
+                    message = error_json.get('message', error_text)
+                    if 'MissingValue' in message or 'contract call failed' in message:
+                        raise ValueError(f"Vault {vault_address[:8]}... not available on {self.network} network - likely a mainnet vault on testnet")
+                    else:
+                        raise ValueError(f"DeFindex API error: {message}")
+                except:
+                    raise ValueError(f"DeFindex API bad request: {error_text}")
             else:
-                raise ValueError(f"DeFindex API error: {e.response.status_code} - {e.response.text}")
+                raise ValueError(f"DeFindex API error: {e.response.status_code} - {error_text}")
         except requests.Timeout:
             raise ValueError("DeFindex API timeout - please try again")
         except Exception as e:
