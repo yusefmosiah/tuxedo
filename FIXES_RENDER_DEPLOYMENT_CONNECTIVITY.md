@@ -36,23 +36,14 @@ const API_BASE_URL = import.meta.env.VITE_API_URL ||
 - Production: Uses `https://tuxedo-backend.onrender.com` for Render deployment
 - Maintains backward compatibility with existing environment variables
 
-### 2. Environment Files Updated
+### 2. Environment Variables Configuration
 
-**File**: `.env.frontend`
+**Removed**: `.env.frontend` and `.env.backend` files (should not be committed)
 
-**Before**:
-```
-# API Configuration - Use backend service name for Docker networking
-VITE_API_URL=http://backend:8000
-```
-
-**After**:
-```
-# API Configuration - Render deployment URL
-VITE_API_URL=https://tuxedo-backend.onrender.com
-```
-
-**Created**: `.env.backend` with proper backend configuration for Docker deployments
+**Platform Environment Variables**:
+- Frontend uses `VITE_API_URL=https://tuxedo-backend.onrender.com` from Render dashboard
+- Backend uses environment variables configured in Render dashboard
+- No local .env files are copied to Docker containers
 
 ### 3. Docker Configuration Fixes
 
@@ -72,10 +63,20 @@ environment:
 
 **File**: `Dockerfile.frontend`
 
-**Added**:
+**Removed**:
 ```dockerfile
 # Copy environment file for build-time variables
 COPY .env.frontend .env.production
+```
+
+**Replaced with**:
+```dockerfile
+# Copy source code (excluding .env files via .dockerignore)
+COPY . .
+
+# Build the application (skip TypeScript checking)
+# Environment variables are provided by the platform (Render/Docker)
+RUN npx vite build --mode production
 ```
 
 ### 4. Documentation Port References Fixed

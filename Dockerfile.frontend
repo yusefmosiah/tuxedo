@@ -30,13 +30,11 @@ RUN npm cache clean --force
 ENV PYTHON=/usr/bin/python3
 RUN npm ci --include=dev --no-audit --no-fund
 
-# Copy source code
+# Copy source code (excluding .env files via .dockerignore)
 COPY . .
 
-# Copy environment file for build-time variables
-COPY .env.frontend .env.production
-
 # Build the application (skip TypeScript checking)
+# Environment variables are provided by the platform (Render/Docker)
 RUN npx vite build --mode production
 
 # Production stage - use a simple web server
