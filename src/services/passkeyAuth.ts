@@ -1,8 +1,6 @@
 import {
   startRegistration,
   startAuthentication,
-  type RegistrationResponseJSON,
-  type AuthenticationResponseJSON,
 } from "@simplewebauthn/browser";
 
 const API_URL = "http://localhost:8000";
@@ -205,9 +203,10 @@ export class PasskeyAuthService {
   isSupported(): boolean {
     // Check if WebAuthn is supported
     return !!(
+      window.PublicKeyCredential &&
       navigator.credentials &&
-      navigator.credentials.create &&
-      navigator.credentials.get
+      "create" in navigator.credentials &&
+      "get" in navigator.credentials
     );
   }
 }
