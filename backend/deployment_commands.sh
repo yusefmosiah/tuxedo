@@ -9,7 +9,7 @@ echo "================================================"
 # Configuration
 SECRET_KEY="SCXHJJVT7FGFRJ347GSB4LXRJAJKEPZN2EGGGGCWCWMBXMARQYDHAHIA"
 NETWORK="testnet"
-BASE_WASM_PATH="/home/ubuntu/blend-pools/defindex/apps/contracts/target/wasm32v1-none/release"
+BASE_WASM_PATH="/home/ubuntu/blend-pools/backend/defindex/apps/contracts/target/wasm32v1-none/release"
 
 # Check if soroban CLI is available
 if ! command -v soroban &> /dev/null; then
@@ -55,7 +55,7 @@ for strategy_name in "${!STRATEGIES[@]}"; do
         deploy_output=$(soroban contract install \
             --wasm "$wasm_path" \
             --network "$NETWORK" \
-            --secret-key "$SECRET_KEY" \
+            --source-account "$SECRET_KEY" \
             2>&1)
 
         deploy_result=$?
