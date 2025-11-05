@@ -15,6 +15,41 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+async def get_current_user(request):
+    """Get current authenticated user from session token"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No authentication token provided")
+
+    session_token = auth_header[7:]  # Remove "Bearer " prefix
+
+    # Try passkey session validation first
+    from database import db
+    session = db.validate_passkey_session(session_token)
+
+    if not session:
+        raise HTTPException(status_code=401, detail="Invalid or expired session")
+
+    return session
+
+@router.get("/")
+async def get_threads(request):
+    """Get all threads for current user"""
+    try:
+        current_user = await get_current_user(request)
+
+        from database import DatabaseManager
+        db_manager = DatabaseManager()
+        threads = db_manager.get_threads(current_user['user_id'], limit=50)
+
+        return {"threads": threads}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get threads: {e}")
+        raise HTTPException(500, f"Failed to get threads: {str(e)}")
+
 # Pydantic models (matching frontend expectations)
 class Thread(BaseModel):
     id: str

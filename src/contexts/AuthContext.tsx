@@ -5,12 +5,18 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
+import {
+  passkeyService,
+  type PasskeyRegistrationResult,
+  type PasskeyAuthenticationResult,
+} from "../services/passkeyAuth";
 
 // Types
 interface User {
   id: string;
   email: string;
   public_key?: string | null;
+  stellar_public_key?: string | null;
   last_login?: string | null;
 }
 
@@ -26,6 +32,13 @@ interface AuthContextType {
   validateSession: (token: string) => Promise<boolean>;
   logout: () => void;
   checkAuth: () => Promise<void>;
+  // Passkey methods
+  registerWithPasskey: (email: string) => Promise<PasskeyRegistrationResult>;
+  authenticateWithPasskey: (
+    email?: string,
+  ) => Promise<PasskeyAuthenticationResult>;
+  useRecoveryCode: (code: string) => Promise<PasskeyAuthenticationResult>;
+  isPasskeySupported: boolean;
 }
 
 // Create context
@@ -45,6 +58,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Check if passkey is supported
+  const isPasskeySupported = passkeyService.isSupported();
+
   // Check authentication on mount
   useEffect(() => {
     checkAuth();
@@ -59,12 +75,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const storedUserData = localStorage.getItem(USER_DATA_KEY);
 
       if (storedToken && storedUserData) {
-        // Validate session with backend
-        const isValid = await validateSession(storedToken);
+        // Try passkey session validation first
+        let user = await passkeyService.validateSession(storedToken);
 
-        if (isValid) {
+        // Fallback to magic link validation if passkey validation fails
+        if (!user) {
+          const isValid = await validateSession(storedToken);
+          if (isValid) {
+            user = JSON.parse(storedUserData);
+          }
+        }
+
+        if (user) {
           setSessionToken(storedToken);
-          setUser(JSON.parse(storedUserData));
+          setUser(user);
         } else {
           // Clear invalid session
           logout();
@@ -146,6 +170,58 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setSessionToken(null);
     localStorage.removeItem(SESSION_TOKEN_KEY);
     localStorage.removeItem(USER_DATA_KEY);
+    passkeyService.logout();
+  };
+
+  // Passkey registration
+  const registerWithPasskey = async (
+    email: string,
+  ): Promise<PasskeyRegistrationResult> => {
+    setIsLoading(true);
+    try {
+      const result = await passkeyService.register(email);
+      if (result.success && result.user) {
+        setUser(result.user);
+        setSessionToken(result.session_token || null);
+      }
+      return result;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Passkey authentication
+  const authenticateWithPasskey = async (
+    email?: string,
+  ): Promise<PasskeyAuthenticationResult> => {
+    setIsLoading(true);
+    try {
+      const result = await passkeyService.authenticate(email);
+      if (result.success && result.user) {
+        setUser(result.user);
+        setSessionToken(result.session_token || null);
+      }
+      return result;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Recovery code authentication
+  const useRecoveryCode = async (
+    code: string,
+  ): Promise<PasskeyAuthenticationResult> => {
+    setIsLoading(true);
+    try {
+      const result = await passkeyService.useRecoveryCode(code);
+      if (result.success && result.user) {
+        setUser(result.user);
+        setSessionToken(result.session_token || null);
+      }
+      return result;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Computed value
@@ -161,6 +237,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     validateSession,
     logout,
     checkAuth,
+    registerWithPasskey,
+    authenticateWithPasskey,
+    useRecoveryCode,
+    isPasskeySupported,
   };
 
   return <AuthContext value={value}>{children}</AuthContext>;

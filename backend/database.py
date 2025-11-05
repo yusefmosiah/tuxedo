@@ -424,5 +424,35 @@ class DatabaseManager:
             conn.commit()
             return True
 
+    # Passkey session validation
+    def validate_passkey_session(self, session_token: str) -> Optional[Dict[str, Any]]:
+        """Validate passkey session token and return user info"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            cursor.execute('''
+                SELECT ps.*, u.email, u.public_key, u.stellar_public_key
+                FROM passkey_sessions ps
+                JOIN users u ON ps.user_id = u.id
+                WHERE ps.session_token = ? AND ps.expires_at > ? AND u.is_active = TRUE
+            ''', (session_token, datetime.now()))
+
+            session = cursor.fetchone()
+            if not session:
+                return None
+
+            return dict(session)
+
+    def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        """Get user by email"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+            user = cursor.fetchone()
+            return dict(user) if user else None
+
 # Global database instance
 db = DatabaseManager()

@@ -341,3 +341,61 @@ async def get_current_user(session_token: Optional[str] = None):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get user info"
         )
+
+@router.post("/auth/validate-passkey-session", response_model=AuthResponse)
+async def validate_passkey_session(request: Request, session_token: Optional[str] = None):
+    """Validate passkey session token"""
+    try:
+        # Get session token from multiple sources
+        original_token = session_token
+        if not session_token:
+            session_token = request.headers.get("Authorization")
+            if session_token and session_token.startswith("Bearer "):
+                session_token = session_token[7:]  # Remove "Bearer " prefix
+
+        if not session_token:
+            session_token = request.cookies.get("session_token")
+
+        logger.info(f"Passkey session validation request: token_source={'header' if original_token else 'cookie' if request.cookies.get('session_token') else 'none'}, token_preview={session_token[:16] if session_token else 'None'}...")
+
+        if not session_token:
+            logger.warning("No session token provided in request")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="No session token provided"
+            )
+
+        # Validate passkey session
+        session = db.validate_passkey_session(session_token)
+        logger.info(f"Database passkey session validation result: {session is not None}")
+
+        if not session:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired session"
+            )
+
+        # Return user info (excluding sensitive data)
+        user_info = {
+            "id": session['user_id'],
+            "email": session['email'],
+            "public_key": session.get('public_key'),
+            "stellar_public_key": session.get('stellar_public_key'),
+            "last_login": session.get('last_login')
+        }
+
+        return AuthResponse(
+            success=True,
+            session_token=session_token,
+            user=user_info,
+            message="Passkey session valid"
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error validating passkey session: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to validate passkey session"
+        )

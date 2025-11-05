@@ -17,9 +17,14 @@ from api.routes.chat import router as chat_router
 from api.routes.agent import router as agent_router
 from api.routes.threads import router as threads_router
 from api.routes.auth import router as auth_router
+from api.routes.passkey import router as passkey_router
+from api.routes.agents import router as agents_router
 
 # Import agent system
 from agent.core import initialize_agent, cleanup_agent
+
+# Import database
+from database import db
 
 # Import configuration
 try:
@@ -67,10 +72,15 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Add database to app state
+    app.state.db = db
+
     # Include routers
     app.include_router(auth_router, tags=["auth"])
+    app.include_router(passkey_router, tags=["passkey"])
     app.include_router(chat_router, tags=["chat"])
     app.include_router(agent_router, prefix="/api/agent", tags=["agent"])
+    app.include_router(agents_router, tags=["agents"])
     app.include_router(threads_router, tags=["threads"])
 
     # Health check endpoint
