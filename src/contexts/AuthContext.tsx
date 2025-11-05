@@ -82,6 +82,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const requestMagicLink = async (
     email: string,
   ): Promise<{ success: boolean; message: string }> => {
+    // Create abort controller for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
     try {
       const response = await fetch("http://localhost:8000/auth/magic-link", {
         method: "POST",
@@ -89,12 +93,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email }),
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
       const data = await response.json();
       return data;
     } catch (error) {
+      clearTimeout(timeoutId);
       console.error("Magic link request failed:", error);
+
+      // Check if error was due to timeout
+      if (error instanceof Error && error.name === "AbortError") {
+        return {
+          success: false,
+          message:
+            "Request timed out. Please check your connection and try again.",
+        };
+      }
+
       return {
         success: false,
         message: "Failed to send magic link. Please try again.",
