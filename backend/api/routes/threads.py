@@ -9,6 +9,7 @@ from typing import List, Dict, Optional, Any
 import logging
 import uuid
 from datetime import datetime
+from fastapi import Request
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class Thread(BaseModel):
 
 class ThreadCreate(BaseModel):
     title: str
-    wallet_address: Optional[str] = None
+    # wallet_address removed - threads now belong to authenticated users
 
 class ThreadUpdate(BaseModel):
     title: Optional[str] = None
@@ -38,63 +39,77 @@ class MessageWithMetadata(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
     created_at: str
 
-# Database integration (simple in-memory for now)
-# In production, this should use the database.py implementation
-_threads_db = {}
-_messages_db = {}
+# Database integration using SQLite
+from database import db
 
 def get_thread_dict(thread_id: str) -> Optional[Dict[str, Any]]:
     """Get thread data as dict"""
-    return _threads_db.get(thread_id)
+    return db.get_thread(thread_id)
 
-def get_threads_list(wallet_address: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
-    """Get threads list"""
-    threads = list(_threads_db.values())
 
-    if wallet_address:
-        threads = [t for t in threads if t.get('wallet_address') == wallet_address]
+# Helper function to get authenticated user from session
+async def get_authenticated_user(request: Request, session_token: Optional[str] = None) -> dict:
+    """Get authenticated user from session token"""
+    # Get session token from multiple sources
+    if not session_token:
+        session_token = request.cookies.get("session_token")
 
-    # Filter out archived threads
-    threads = [t for t in threads if not t.get('is_archived', False)]
+    if not session_token:
+        session_token = request.headers.get("Authorization")
+        if session_token and session_token.startswith("Bearer "):
+            session_token = session_token[7:]  # Remove "Bearer " prefix
 
-    # Sort by updated_at
-    threads.sort(key=lambda x: x.get('updated_at', ''), reverse=True)
+    if not session_token:
+        raise HTTPException(status_code=401, detail="Authentication required")
 
-    return threads[:limit]
+    user_session = db.validate_user_session(session_token)
+    if not user_session:
+        raise HTTPException(status_code=401, detail="Invalid or expired session")
+
+    return user_session
 
 @router.post("/threads", response_model=Thread)
-async def create_thread(thread_data: ThreadCreate):
-    """Create a new chat thread"""
+async def create_thread(
+    thread_data: ThreadCreate,
+    request: Request,
+    session_token: Optional[str] = None
+):
+    """Create a new chat thread for authenticated user"""
     try:
-        thread_id = str(uuid.uuid4())
-        now = datetime.now().isoformat()
+        # Get authenticated user
+        user = await get_authenticated_user(request, session_token)
 
-        thread = {
-            "id": thread_id,
-            "title": thread_data.title,
-            "wallet_address": thread_data.wallet_address,
-            "created_at": now,
-            "updated_at": now,
-            "is_archived": False
-        }
+        # Create thread for user
+        thread_id = db.create_thread(title=thread_data.title, user_id=user['user_id'])
+        thread = db.get_thread(thread_id)
 
-        _threads_db[thread_id] = thread
-        logger.info(f"Created thread {thread_id}: {thread_data.title}")
+        if not thread:
+            raise HTTPException(status_code=500, detail="Failed to create thread")
 
+        logger.info(f"Created thread {thread_id} for user {user['email']}: {thread_data.title}")
         return Thread(**thread)
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error creating thread: {e}")
         raise HTTPException(status_code=500, detail=f"Error creating thread: {str(e)}")
 
 @router.get("/threads", response_model=List[Thread])
 async def get_threads(
-    wallet_address: Optional[str] = Query(None),
+    request: Request,
+    session_token: Optional[str] = None,
     limit: int = Query(50, le=100)
 ):
-    """Get all threads for a wallet"""
+    """Get all threads for authenticated user"""
     try:
-        threads = get_threads_list(wallet_address=wallet_address, limit=limit)
+        # Get authenticated user
+        user = await get_authenticated_user(request, session_token)
+
+        # Get threads for user
+        threads = db.get_threads(user_id=user['user_id'], limit=limit)
         return [Thread(**thread) for thread in threads]
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error getting threads: {e}")
         raise HTTPException(status_code=500, detail=f"Error getting threads: {str(e)}")
@@ -121,14 +136,13 @@ async def get_thread(thread_id: str):
 async def update_thread(thread_id: str, thread_data: ThreadUpdate):
     """Update a thread title"""
     try:
-        thread = get_thread_dict(thread_id)
-        if not thread:
+        success = db.update_thread(thread_id, title=thread_data.title)
+        if not success:
             raise HTTPException(status_code=404, detail="Thread not found")
 
-        if thread_data.title:
-            thread["title"] = thread_data.title
-            thread["updated_at"] = datetime.now().isoformat()
-            _threads_db[thread_id] = thread
+        thread = db.get_thread(thread_id)
+        if not thread:
+            raise HTTPException(status_code=404, detail="Thread not found")
 
         return Thread(**thread)
     except HTTPException:
@@ -141,13 +155,9 @@ async def update_thread(thread_id: str, thread_data: ThreadUpdate):
 async def delete_thread(thread_id: str):
     """Delete a thread"""
     try:
-        if thread_id not in _threads_db:
+        success = db.delete_thread(thread_id)
+        if not success:
             raise HTTPException(status_code=404, detail="Thread not found")
-
-        # Delete thread and its messages
-        del _threads_db[thread_id]
-        if thread_id in _messages_db:
-            del _messages_db[thread_id]
 
         logger.info(f"Deleted thread {thread_id}")
         return {"message": "Thread deleted successfully"}
@@ -161,13 +171,9 @@ async def delete_thread(thread_id: str):
 async def archive_thread(thread_id: str):
     """Archive a thread"""
     try:
-        thread = get_thread_dict(thread_id)
-        if not thread:
+        success = db.archive_thread(thread_id)
+        if not success:
             raise HTTPException(status_code=404, detail="Thread not found")
-
-        thread["is_archived"] = True
-        thread["updated_at"] = datetime.now().isoformat()
-        _threads_db[thread_id] = thread
 
         logger.info(f"Archived thread {thread_id}")
         return {"message": "Thread archived successfully"}
@@ -181,11 +187,11 @@ async def archive_thread(thread_id: str):
 async def get_thread_messages(thread_id: str):
     """Get all messages for a thread"""
     try:
-        thread = get_thread_dict(thread_id)
+        thread = db.get_thread(thread_id)
         if not thread:
             raise HTTPException(status_code=404, detail="Thread not found")
 
-        messages = _messages_db.get(thread_id, [])
+        messages = db.get_messages(thread_id)
         return [MessageWithMetadata(**msg) for msg in messages]
     except HTTPException:
         raise
@@ -197,37 +203,14 @@ async def get_thread_messages(thread_id: str):
 async def save_thread_messages(thread_id: str, messages: List[Dict[str, Any]]):
     """Save messages to a thread"""
     try:
-        thread = get_thread_dict(thread_id)
+        thread = db.get_thread(thread_id)
         if not thread:
             raise HTTPException(status_code=404, detail="Thread not found")
 
-        # Convert messages to proper format and add metadata
-        saved_messages = []
-        for i, msg in enumerate(messages):
-            message_id = str(uuid.uuid4())
-            now = datetime.now().isoformat()
-
-            message_data = {
-                "id": message_id,
-                "thread_id": thread_id,
-                "role": msg.get("role", "user"),
-                "content": msg.get("content", ""),
-                "metadata": {
-                    "type": msg.get("type", "chat"),
-                    "toolName": msg.get("toolName"),
-                    "iteration": msg.get("iteration"),
-                    "isStreaming": msg.get("isStreaming", False),
-                    "summary": msg.get("summary")
-                },
-                "created_at": now
-            }
-            saved_messages.append(message_data)
-
-        _messages_db[thread_id] = saved_messages
-
-        # Update thread's updated_at
-        thread["updated_at"] = now
-        _threads_db[thread_id] = thread
+        # Use the database method to update messages
+        success = db.update_thread_from_chat_messages(thread_id, messages)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to save messages")
 
         logger.info(f"Saved {len(messages)} messages to thread {thread_id}")
         return {"message": f"Saved {len(messages)} messages successfully"}
