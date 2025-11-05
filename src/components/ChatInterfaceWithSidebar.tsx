@@ -1,30 +1,34 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Button, Text } from '@stellar/design-system';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeHighlight from 'rehype-highlight';
-import { chatApi, StreamMessage, type HealthResponse } from '../lib/api';
-import { useChatThreads, ExtendedChatMessage } from '../hooks/useChatThreads';
-import { ThreadSidebar } from './ThreadSidebar';
-import '../App.module.css';
-import 'highlight.js/styles/github.css';
-import styles from './ChatInterfaceWithSidebar.module.css';
-
+import React, { useState, useEffect, useRef } from "react";
+import { Button, Text } from "@stellar/design-system";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import { chatApi, StreamMessage, type HealthResponse } from "../lib/api";
+import { useChatThreads, ExtendedChatMessage } from "../hooks/useChatThreads";
+import { ThreadSidebar } from "./ThreadSidebar";
+import "../App.module.css";
+import "highlight.js/styles/github.css";
+import styles from "./ChatInterfaceWithSidebar.module.css";
 
 export const ChatInterfaceWithSidebar: React.FC = () => {
   // Agent-first approach: AI agents manage their own accounts
   const [agentAddress, setAgentAddress] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [agentThinking, setAgentThinking] = useState(false);
-  const [apiStatus, setApiStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
-  const [collapsedToolCalls, setCollapsedToolCalls] = useState<Set<string>>(new Set());
+  const [apiStatus, setApiStatus] = useState<
+    "connected" | "disconnected" | "checking"
+  >("checking");
+  const [collapsedToolCalls, setCollapsedToolCalls] = useState<Set<string>>(
+    new Set(),
+  );
   const [useLiveSummary, setUseLiveSummary] = useState(true); // User preference
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Thread management
   const {
+    threads,
     currentThreadId,
     currentThreadTitle,
     messages,
@@ -32,6 +36,8 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
     createNewThread,
     loadThread,
     saveCurrentThread,
+    updateThread,
+    deleteThread,
   } = useChatThreads();
 
   // Check API health and fetch agent accounts on mount
@@ -40,8 +46,12 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
       try {
         const health: HealthResponse = await chatApi.healthCheck();
 
-        if (health.status === 'healthy' && health.stellar_tools_ready && health.database_ready) {
-          setApiStatus('connected');
+        if (
+          health.status === "healthy" &&
+          health.stellar_tools_ready &&
+          health.database_ready
+        ) {
+          setApiStatus("connected");
           // Update live summary preference based on backend availability
           if (!health.live_summary_ready) {
             setUseLiveSummary(false);
@@ -49,7 +59,9 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
 
           // Fetch agent accounts (agent-first approach)
           try {
-            const response = await fetch('http://localhost:8000/api/agent/accounts');
+            const response = await fetch(
+              "http://localhost:8000/api/agent/accounts",
+            );
             if (response.ok) {
               const accounts = await response.json();
               if (accounts.length > 0) {
@@ -58,14 +70,16 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
               }
             }
           } catch (accountError) {
-            console.log('No agent accounts available, which is fine for agent-first mode');
+            console.log(
+              "No agent accounts available, which is fine for agent-first mode",
+            );
           }
         } else {
-          setApiStatus('disconnected');
+          setApiStatus("disconnected");
         }
       } catch (error) {
-        console.error('Health check failed:', error);
-        setApiStatus('disconnected');
+        console.error("Health check failed:", error);
+        setApiStatus("disconnected");
       }
     };
 
@@ -92,8 +106,8 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
   // Auto-collapse tool call results by default
   useEffect(() => {
     const newCollapsed = new Set<string>();
-    messages.forEach(msg => {
-      if (msg.type === 'tool_result' && msg.id) {
+    messages.forEach((msg) => {
+      if (msg.type === "tool_result" && msg.id) {
         newCollapsed.add(msg.id);
       }
     });
@@ -109,11 +123,14 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
       // Use setTimeout to ensure DOM has updated
       setTimeout(() => {
         // Find the last final response element
-        const finalResponseElements = messagesContainer.querySelectorAll('[data-final-response="true"]');
+        const finalResponseElements = messagesContainer.querySelectorAll(
+          '[data-final-response="true"]',
+        );
 
         if (finalResponseElements.length > 0) {
           // Scroll to the last final response
-          const lastFinalResponse = finalResponseElements[finalResponseElements.length - 1];
+          const lastFinalResponse =
+            finalResponseElements[finalResponseElements.length - 1];
 
           // Get the position of the final response
           const rect = lastFinalResponse.getBoundingClientRect();
@@ -123,10 +140,16 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
           // If it's shorter, ensure it's fully visible starting from the top
           if (rect.height > containerRect.height * 0.8) {
             // For very long responses, show from the beginning
-            lastFinalResponse.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            lastFinalResponse.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
           } else {
             // For shorter responses, position it nicely in view
-            lastFinalResponse.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            lastFinalResponse.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
           }
         } else {
           // Fallback: scroll to bottom for other messages (during tool execution, etc.)
@@ -140,7 +163,7 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
 
   // Toggle tool call expansion
   const toggleToolCallExpansion = (toolCallId: string) => {
-    setCollapsedToolCalls(prev => {
+    setCollapsedToolCalls((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(toolCallId)) {
         newSet.delete(toolCallId);
@@ -152,22 +175,28 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
   };
 
   // Helper function to handle regular stream messages
-  const handleRegularStreamMessage = (streamMessage: StreamMessage, streamId: string) => {
+  const handleRegularStreamMessage = (
+    streamMessage: StreamMessage,
+    streamId: string,
+  ) => {
     // Handle thinking states for loading indicator
-    if (streamMessage.type === 'thinking' || streamMessage.type === 'tool_call_start') {
+    if (
+      streamMessage.type === "thinking" ||
+      streamMessage.type === "tool_call_start"
+    ) {
       setAgentThinking(true);
       return; // Don't add these as visible messages when using live summary
     }
 
     // Handle live_summary_complete - store as the history-ready assistant message
-    if (streamMessage.type === 'live_summary_complete') {
+    if (streamMessage.type === "live_summary_complete") {
       setAgentThinking(false);
       // Store the complete summary with tool execution context for history
       const summaryMessage: ExtendedChatMessage = {
-        role: 'assistant',
+        role: "assistant",
         content: streamMessage.summary || streamMessage.content,
         id: `summary-${streamId}`,
-        type: 'final_response', // Mark as final_response so it gets sent in history
+        type: "final_response", // Mark as final_response so it gets sent in history
         isStreaming: false,
       };
       setMessages((prev) => [...prev, summaryMessage]);
@@ -179,19 +208,23 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
 
     // Handle each streaming message
     const extendedMessage: ExtendedChatMessage = {
-      role: 'assistant',
+      role: "assistant",
       content: streamMessage.content,
       id: `stream-${streamId}-${streamMessage.type}-${streamMessage.iteration || 0}`,
       type: streamMessage.type,
       toolName: streamMessage.tool_name,
       iteration: streamMessage.iteration,
-      isStreaming: streamMessage.type !== 'final_response' && streamMessage.type !== 'error',
+      isStreaming:
+        streamMessage.type !== "final_response" &&
+        streamMessage.type !== "error",
       summary: streamMessage.summary,
     };
 
     setMessages((prev) => {
       // Check if we already have this exact message (by ID) to avoid duplicates
-      const existingMessageIndex = prev.findIndex(m => m.id === extendedMessage.id);
+      const existingMessageIndex = prev.findIndex(
+        (m) => m.id === extendedMessage.id,
+      );
 
       if (existingMessageIndex >= 0) {
         // Update existing message if found
@@ -206,24 +239,24 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
   };
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading || apiStatus === 'disconnected') return;
+    if (!input.trim() || isLoading || apiStatus === "disconnected") return;
 
-    console.log('🔍 Agent state:', {
+    console.log("🔍 Agent state:", {
       agentAddress: agentAddress,
       isAgentMode: true,
-      hasAgentAccount: !!agentAddress
+      hasAgentAccount: !!agentAddress,
     });
 
     const streamId = Date.now().toString();
 
     const userMessage: ExtendedChatMessage = {
-      role: 'user',
+      role: "user",
       content: input,
       id: `user-${streamId}`,
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setInput('');
+    setInput("");
     setIsLoading(true);
     setAgentThinking(false); // Reset thinking state for new message
 
@@ -231,21 +264,23 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
       // Choose API based on live summary preference and availability
       const useLiveSummaryApi = useLiveSummary;
 
-      console.log('🔍 Debug: useLiveSummaryApi =', useLiveSummaryApi);
-      console.log('🔍 Debug: useLiveSummary state =', useLiveSummary);
+      console.log("🔍 Debug: useLiveSummaryApi =", useLiveSummaryApi);
+      console.log("🔍 Debug: useLiveSummary state =", useLiveSummary);
 
       if (useLiveSummaryApi) {
-        console.log('🔍 Using live summary API...');
+        console.log("🔍 Using live summary API...");
         // Use live summary streaming API
         const cleanup = chatApi.sendMessageWithLiveSummary(
           {
             message: input,
             // Only send user messages and final assistant responses (filter out tool execution details)
             history: messages
-              .filter(m =>
-                ((m.role === 'user' && m.id !== `user-${streamId}`) ||
-                (m.role === 'assistant' && m.type === 'final_response')) &&
-                m.content && m.content.trim() !== '' // Ensure content exists and is not empty
+              .filter(
+                (m) =>
+                  ((m.role === "user" && m.id !== `user-${streamId}`) ||
+                    (m.role === "assistant" && m.type === "final_response")) &&
+                  m.content &&
+                  m.content.trim() !== "", // Ensure content exists and is not empty
               )
               .map(({ role, content }) => ({ role, content })),
             wallet_address: agentAddress || null,
@@ -256,13 +291,13 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
             handleRegularStreamMessage(streamMessage, streamId);
           },
           (error: Error) => {
-            console.error('Live summary streaming error:', error);
+            console.error("Live summary streaming error:", error);
             setAgentThinking(false);
             const errorMessage: ExtendedChatMessage = {
-              role: 'assistant',
+              role: "assistant",
               content: `Live summary streaming error: ${error.message}`,
               id: `error-${streamId}`,
-              type: 'error',
+              type: "error",
               isStreaming: false,
             };
             setMessages((prev) => [...prev, errorMessage]);
@@ -271,7 +306,7 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
           () => {
             setAgentThinking(false);
             setIsLoading(false);
-          }
+          },
         );
 
         return () => {
@@ -284,17 +319,22 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
             message: input,
             // Only send user messages and final assistant responses (filter out tool execution details)
             history: messages
-              .filter(m =>
-                ((m.role === 'user' && m.id !== `user-${streamId}`) ||
-                (m.role === 'assistant' && m.type === 'final_response')) &&
-                m.content && m.content.trim() !== '' // Ensure content exists and is not empty
+              .filter(
+                (m) =>
+                  ((m.role === "user" && m.id !== `user-${streamId}`) ||
+                    (m.role === "assistant" && m.type === "final_response")) &&
+                  m.content &&
+                  m.content.trim() !== "", // Ensure content exists and is not empty
               )
               .map(({ role, content }) => ({ role, content })),
             wallet_address: agentAddress || null,
           },
           (streamMessage: StreamMessage) => {
             // Handle thinking states for loading indicator
-            if (streamMessage.type === 'thinking' || streamMessage.type === 'tool_call_start') {
+            if (
+              streamMessage.type === "thinking" ||
+              streamMessage.type === "tool_call_start"
+            ) {
               setAgentThinking(true);
               return; // Don't add these as visible messages
             }
@@ -304,19 +344,23 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
 
             // Handle each streaming message
             const extendedMessage: ExtendedChatMessage = {
-              role: 'assistant',
+              role: "assistant",
               content: streamMessage.content,
               id: `stream-${streamId}-${streamMessage.type}-${streamMessage.iteration || 0}`,
               type: streamMessage.type,
               toolName: streamMessage.tool_name,
               iteration: streamMessage.iteration,
-              isStreaming: streamMessage.type !== 'final_response' && streamMessage.type !== 'error',
+              isStreaming:
+                streamMessage.type !== "final_response" &&
+                streamMessage.type !== "error",
               summary: streamMessage.summary,
             };
 
             setMessages((prev) => {
               // Check if we already have this exact message (by ID) to avoid duplicates
-              const existingMessageIndex = prev.findIndex(m => m.id === extendedMessage.id);
+              const existingMessageIndex = prev.findIndex(
+                (m) => m.id === extendedMessage.id,
+              );
 
               if (existingMessageIndex >= 0) {
                 // Update existing message if found
@@ -330,13 +374,13 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
             });
           },
           (error: Error) => {
-            console.error('Streaming chat error:', error);
+            console.error("Streaming chat error:", error);
             setAgentThinking(false); // Clear thinking state on error
             const errorMessage: ExtendedChatMessage = {
-              role: 'assistant',
+              role: "assistant",
               content: `Streaming error: ${error.message}`,
               id: `error-${streamId}`,
-              type: 'error',
+              type: "error",
               isStreaming: false,
             };
             setMessages((prev) => [...prev, errorMessage]);
@@ -346,7 +390,7 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
             // Stream closed
             setAgentThinking(false); // Clear thinking state on close
             setIsLoading(false);
-          }
+          },
         );
 
         // Store cleanup function
@@ -355,12 +399,13 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
         };
       }
     } catch (error: any) {
-      console.error('Chat error:', error);
+      console.error("Chat error:", error);
       const errorMessage: ExtendedChatMessage = {
-        role: 'assistant',
-        content: error.message || 'Sorry, I encountered an error. Please try again.',
+        role: "assistant",
+        content:
+          error.message || "Sorry, I encountered an error. Please try again.",
         id: `error-${streamId}`,
-        type: 'error',
+        type: "error",
         isStreaming: false,
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -370,7 +415,7 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
 
   const handleNewThread = () => {
     createNewThread();
-    setInput('');
+    setInput("");
     setIsLoading(false);
     setAgentThinking(false);
   };
@@ -378,35 +423,35 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
   const handleThreadSelect = (threadId: string) => {
     loadThread(threadId);
     setSidebarOpen(false);
-    setInput('');
+    setInput("");
     setIsLoading(false);
     setAgentThinking(false);
   };
 
   const getStatusIndicator = () => {
     switch (apiStatus) {
-      case 'connected':
-        return '🟢';
-      case 'disconnected':
-        return '🔴';
-      case 'checking':
-        return '🟡';
+      case "connected":
+        return "🟢";
+      case "disconnected":
+        return "🔴";
+      case "checking":
+        return "🟡";
     }
   };
 
   const getStatusText = () => {
     switch (apiStatus) {
-      case 'connected':
-        return 'Connected to backend';
-      case 'disconnected':
-        return 'Backend offline - Start FastAPI server';
-      case 'checking':
-        return 'Checking connection...';
+      case "connected":
+        return "Connected to backend";
+      case "disconnected":
+        return "Backend offline - Start FastAPI server";
+      case "checking":
+        return "Checking connection...";
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
@@ -421,10 +466,15 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
         onThreadSelect={handleThreadSelect}
         currentThreadId={currentThreadId}
         onNewThread={handleNewThread}
+        threads={threads}
+        onUpdateThread={updateThread}
+        onDeleteThread={deleteThread}
       />
 
       {/* Main Chat Area */}
-      <div className={`${styles.mainChatArea} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
+      <div
+        className={`${styles.mainChatArea} ${sidebarOpen ? styles.sidebarOpen : ""}`}
+      >
         {/* Header with status and sidebar toggle */}
         <div className={styles.header}>
           <div className={styles.headerLeft}>
@@ -456,73 +506,91 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
         {/* Messages */}
         <div className={styles.messagesArea}>
           {messages.length === 0 && (
-            <div style={{ textAlign: 'center', marginTop: '40px' }}>
-              <h3 style={{
-                fontFamily: 'var(--font-primary-sans)',
-                fontSize: '24px',
-                margin: '0 0 16px 0',
-                color: 'var(--color-text-primary)',
-                fontWeight: '500'
-              }}>
+            <div style={{ textAlign: "center", marginTop: "40px" }}>
+              <h3
+                style={{
+                  fontFamily: "var(--font-primary-sans)",
+                  fontSize: "24px",
+                  margin: "0 0 16px 0",
+                  color: "var(--color-text-primary)",
+                  fontWeight: "500",
+                }}
+              >
                 🤖 Hi! I'm Tuxedo AI Agent
               </h3>
-              <p style={{
-                fontFamily: 'var(--font-primary-sans)',
-                fontSize: '16px',
-                color: 'var(--color-text-primary)',
-                margin: '0 0 8px 0',
-                lineHeight: '1.6'
-              }}>
-                I can help you with Stellar blockchain operations, account management, trading, market data, and smart contracts
+              <p
+                style={{
+                  fontFamily: "var(--font-primary-sans)",
+                  fontSize: "16px",
+                  color: "var(--color-text-primary)",
+                  margin: "0 0 8px 0",
+                  lineHeight: "1.6",
+                }}
+              >
+                I can help you with Stellar blockchain operations, account
+                management, trading, market data, and smart contracts
               </p>
               {agentAddress && (
-                <p style={{
-                  fontFamily: 'var(--font-tertiary-mono)',
-                  fontSize: '12px',
-                  color: 'var(--color-text-tertiary)',
-                  margin: '8px 0',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  fontWeight: 'bold'
-                }}>
-                  🤖 Agent Account: {agentAddress.slice(0, 8)}...{agentAddress.slice(-4)}
+                <p
+                  style={{
+                    fontFamily: "var(--font-tertiary-mono)",
+                    fontSize: "12px",
+                    color: "var(--color-text-tertiary)",
+                    margin: "8px 0",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    fontWeight: "bold",
+                  }}
+                >
+                  🤖 Agent Account: {agentAddress.slice(0, 8)}...
+                  {agentAddress.slice(-4)}
                 </p>
               )}
 
-              {apiStatus === 'disconnected' && (
-                <div className="card" style={{
-                  marginTop: '24px',
-                  padding: '16px 20px',
-                  border: '1px solid var(--color-negative)',
-                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                  borderRadius: 'var(--border-radius-lg)',
-                }}>
-                  <p style={{
-                    fontFamily: 'var(--font-tertiary-mono)',
-                    fontSize: '12px',
-                    color: 'var(--color-negative)',
-                    margin: '0',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    fontWeight: 'bold'
-                  }}>
+              {apiStatus === "disconnected" && (
+                <div
+                  className="card"
+                  style={{
+                    marginTop: "24px",
+                    padding: "16px 20px",
+                    border: "1px solid var(--color-negative)",
+                    backgroundColor: "rgba(239, 68, 68, 0.1)",
+                    borderRadius: "var(--border-radius-lg)",
+                  }}
+                >
+                  <p
+                    style={{
+                      fontFamily: "var(--font-tertiary-mono)",
+                      fontSize: "12px",
+                      color: "var(--color-negative)",
+                      margin: "0",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      fontWeight: "bold",
+                    }}
+                  >
                     ⚠️ Backend not connected!
                   </p>
-                  <p style={{
-                    fontFamily: 'var(--font-secondary-sans)',
-                    fontSize: '14px',
-                    color: 'var(--color-text-secondary)',
-                    margin: '8px 0 0 0',
-                    fontStyle: 'italic'
-                  }}>
-                    Run: <code style={{
-                      fontFamily: 'var(--font-tertiary-mono)',
-                      backgroundColor: 'var(--color-bg-surface)',
-                      padding: '4px 8px',
-                      borderRadius: 'var(--border-radius-sm)',
-                      border: '1px solid var(--color-border)',
-                      fontSize: '11px'
-                    }}>
+                  <p
+                    style={{
+                      fontFamily: "var(--font-secondary-sans)",
+                      fontSize: "14px",
+                      color: "var(--color-text-secondary)",
+                      margin: "8px 0 0 0",
+                      fontStyle: "italic",
+                    }}
+                  >
+                    Run:{" "}
+                    <code
+                      style={{
+                        fontFamily: "var(--font-tertiary-mono)",
+                        backgroundColor: "var(--color-bg-surface)",
+                        padding: "4px 8px",
+                        borderRadius: "var(--border-radius-sm)",
+                        border: "1px solid var(--color-border)",
+                        fontSize: "11px",
+                      }}
+                    >
                       cd backend && source .venv/bin/activate && python main.py
                     </code>
                   </p>
@@ -531,73 +599,87 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
 
               <div
                 style={{
-                  marginTop: '32px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '12px',
+                  marginTop: "32px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
                 }}
               >
-                <p style={{
-                  fontFamily: 'var(--font-secondary-serif)',
-                  fontSize: '14px',
-                  color: 'var(--color-text-secondary)',
-                  margin: '0 0 12px 0',
-                  fontStyle: 'italic'
-                }}>
+                <p
+                  style={{
+                    fontFamily: "var(--font-secondary-serif)",
+                    fontSize: "14px",
+                    color: "var(--color-text-secondary)",
+                    margin: "0 0 12px 0",
+                    fontStyle: "italic",
+                  }}
+                >
                   Try asking:
                 </p>
-                <p style={{
-                  fontFamily: 'var(--font-primary-sans)',
-                  fontSize: '14px',
-                  color: 'var(--color-text-primary)',
-                  margin: '0',
-                  lineHeight: '1.6'
-                }}>
+                <p
+                  style={{
+                    fontFamily: "var(--font-primary-sans)",
+                    fontSize: "14px",
+                    color: "var(--color-text-primary)",
+                    margin: "0",
+                    lineHeight: "1.6",
+                  }}
+                >
                   "What's the current Stellar network status?"
                 </p>
-                <p style={{
-                  fontFamily: 'var(--font-primary-sans)',
-                  fontSize: '14px',
-                  color: 'var(--color-text-primary)',
-                  margin: '0',
-                  lineHeight: '1.6'
-                }}>
+                <p
+                  style={{
+                    fontFamily: "var(--font-primary-sans)",
+                    fontSize: "14px",
+                    color: "var(--color-text-primary)",
+                    margin: "0",
+                    lineHeight: "1.6",
+                  }}
+                >
                   "Create a new testnet account and fund it"
                 </p>
-                <p style={{
-                  fontFamily: 'var(--font-primary-sans)',
-                  fontSize: '14px',
-                  color: 'var(--color-text-primary)',
-                  margin: '0',
-                  lineHeight: '1.6'
-                }}>
+                <p
+                  style={{
+                    fontFamily: "var(--font-primary-sans)",
+                    fontSize: "14px",
+                    color: "var(--color-text-primary)",
+                    margin: "0",
+                    lineHeight: "1.6",
+                  }}
+                >
                   "Check the XLM/USDC orderbook on Stellar DEX"
                 </p>
-                <p style={{
-                  fontFamily: 'var(--font-primary-sans)',
-                  fontSize: '14px',
-                  color: 'var(--color-text-primary)',
-                  margin: '0',
-                  lineHeight: '1.6'
-                }}>
+                <p
+                  style={{
+                    fontFamily: "var(--font-primary-sans)",
+                    fontSize: "14px",
+                    color: "var(--color-text-primary)",
+                    margin: "0",
+                    lineHeight: "1.6",
+                  }}
+                >
                   "What's in my agent account?"
                 </p>
-                <p style={{
-                  fontFamily: 'var(--font-primary-sans)',
-                  fontSize: '14px',
-                  color: 'var(--color-text-primary)',
-                  margin: '0',
-                  lineHeight: '1.6'
-                }}>
+                <p
+                  style={{
+                    fontFamily: "var(--font-primary-sans)",
+                    fontSize: "14px",
+                    color: "var(--color-text-primary)",
+                    margin: "0",
+                    lineHeight: "1.6",
+                  }}
+                >
                   "Show me recent network transactions"
                 </p>
-                <p style={{
-                  fontFamily: 'var(--font-primary-sans)',
-                  fontSize: '14px',
-                  color: 'var(--color-text-primary)',
-                  margin: '0',
-                  lineHeight: '1.6'
-                }}>
+                <p
+                  style={{
+                    fontFamily: "var(--font-primary-sans)",
+                    fontSize: "14px",
+                    color: "var(--color-text-primary)",
+                    margin: "0",
+                    lineHeight: "1.6",
+                  }}
+                >
                   "Explain Stellar transaction fees"
                 </p>
               </div>
@@ -607,94 +689,108 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
           {/* Message rendering logic (copied from original ChatInterface) */}
           {messages.map((msg, idx) => {
             // Show user messages
-            if (msg.role === 'user') {
+            if (msg.role === "user") {
               return (
                 <div
                   key={msg.id || idx}
                   style={{
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    marginBottom: '12px',
-                    alignItems: 'flex-start',
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    marginBottom: "12px",
+                    alignItems: "flex-start",
                   }}
                   onMouseEnter={(e) => {
-                    const copyButton = e.currentTarget.querySelector('[data-user-copy-button]');
+                    const copyButton = e.currentTarget.querySelector(
+                      "[data-user-copy-button]",
+                    );
                     if (copyButton) {
-                      (copyButton as HTMLElement).style.opacity = '1';
+                      (copyButton as HTMLElement).style.opacity = "1";
                     }
                   }}
                   onMouseLeave={(e) => {
-                    const copyButton = e.currentTarget.querySelector('[data-user-copy-button]');
+                    const copyButton = e.currentTarget.querySelector(
+                      "[data-user-copy-button]",
+                    );
                     if (copyButton) {
-                      (copyButton as HTMLElement).style.opacity = '0';
+                      (copyButton as HTMLElement).style.opacity = "0";
                     }
                   }}
                 >
                   <div
                     className="card-minimal"
                     style={{
-                      maxWidth: '75%',
-                      padding: '16px 20px',
-                      borderRadius: 'var(--border-radius-lg)',
-                      backgroundColor: 'var(--color-bg-surface)',
-                      border: '1px solid var(--color-border)',
-                      position: 'relative',
-                      transition: 'var(--transition-fast)',
-                      cursor: 'default',
+                      maxWidth: "75%",
+                      padding: "16px 20px",
+                      borderRadius: "var(--border-radius-lg)",
+                      backgroundColor: "var(--color-bg-surface)",
+                      border: "1px solid var(--color-border)",
+                      position: "relative",
+                      transition: "var(--transition-fast)",
+                      cursor: "default",
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--color-stellar-glow-strong)';
-                      e.currentTarget.style.boxShadow = '0 0 12px var(--color-stellar-glow-subtle)';
+                      e.currentTarget.style.borderColor =
+                        "var(--color-stellar-glow-strong)";
+                      e.currentTarget.style.boxShadow =
+                        "0 0 12px var(--color-stellar-glow-subtle)";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--color-border)';
-                      e.currentTarget.style.boxShadow = 'none';
+                      e.currentTarget.style.borderColor = "var(--color-border)";
+                      e.currentTarget.style.boxShadow = "none";
                     }}
                   >
                     {/* Copy button for user messages */}
                     <div
                       data-user-copy-button
                       style={{
-                        position: 'absolute',
-                        top: '6px',
-                        right: '6px',
+                        position: "absolute",
+                        top: "6px",
+                        right: "6px",
                         opacity: 0,
-                        transition: 'opacity 0.2s',
+                        transition: "opacity 0.2s",
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.opacity = '1';
+                        e.currentTarget.style.opacity = "1";
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.opacity = '0';
+                        e.currentTarget.style.opacity = "0";
                       }}
                     >
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigator.clipboard.writeText(msg.content).then(() => {
-                            console.log('Message copied to clipboard');
-                          });
+                          navigator.clipboard
+                            .writeText(msg.content)
+                            .then(() => {
+                              console.log("Message copied to clipboard");
+                            });
                         }}
                         className="btn-secondary"
                         style={{
-                          background: 'var(--color-bg-surface)',
-                          border: '1px solid var(--color-border)',
-                          cursor: 'pointer',
-                          padding: '4px 6px',
-                          borderRadius: 'var(--border-radius-sm)',
-                          fontSize: '11px',
-                          transition: 'var(--transition-fast)',
-                          color: 'var(--color-text-tertiary)'
+                          background: "var(--color-bg-surface)",
+                          border: "1px solid var(--color-border)",
+                          cursor: "pointer",
+                          padding: "4px 6px",
+                          borderRadius: "var(--border-radius-sm)",
+                          fontSize: "11px",
+                          transition: "var(--transition-fast)",
+                          color: "var(--color-text-tertiary)",
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = 'var(--color-deep-space)';
-                          e.currentTarget.style.borderColor = 'var(--color-stellar-glow-strong)';
-                          e.currentTarget.style.color = 'var(--color-stellar-glow-strong)';
+                          e.currentTarget.style.backgroundColor =
+                            "var(--color-deep-space)";
+                          e.currentTarget.style.borderColor =
+                            "var(--color-stellar-glow-strong)";
+                          e.currentTarget.style.color =
+                            "var(--color-stellar-glow-strong)";
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'var(--color-bg-surface)';
-                          e.currentTarget.style.borderColor = 'var(--color-border)';
-                          e.currentTarget.style.color = 'var(--color-text-tertiary)';
+                          e.currentTarget.style.backgroundColor =
+                            "var(--color-bg-surface)";
+                          e.currentTarget.style.borderColor =
+                            "var(--color-border)";
+                          e.currentTarget.style.color =
+                            "var(--color-text-tertiary)";
                         }}
                         title="Copy message"
                       >
@@ -704,10 +800,10 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
 
                     <p
                       style={{
-                        fontFamily: 'var(--font-primary-sans)',
-                        fontSize: '16px',
-                        color: 'var(--color-text-primary)',
-                        whiteSpace: 'pre-wrap',
+                        fontFamily: "var(--font-primary-sans)",
+                        fontSize: "16px",
+                        color: "var(--color-text-primary)",
+                        whiteSpace: "pre-wrap",
                         lineHeight: 1.6,
                         margin: 0,
                       }}
@@ -720,40 +816,46 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
             }
 
             // Show all assistant messages as full conversation
-            if (msg.role === 'assistant') {
+            if (msg.role === "assistant") {
               // AI Responses
-              if (msg.type === 'llm_response') {
+              if (msg.type === "llm_response") {
                 return (
                   <div
                     key={msg.id || idx}
                     style={{
-                      marginBottom: '12px',
-                      padding: '12px 16px',
-                      borderRadius: '8px',
-                      backgroundColor: '#e3f2fd',
-                      border: '1px solid #90caf9',
-                      borderLeft: '4px solid #2196f3',
+                      marginBottom: "12px",
+                      padding: "12px 16px",
+                      borderRadius: "8px",
+                      backgroundColor: "#e3f2fd",
+                      border: "1px solid #90caf9",
+                      borderLeft: "4px solid #2196f3",
                     }}
                   >
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                      marginBottom: '8px'
-                    }}>
-                      <Text as="div" size="sm" style={{ fontWeight: 'bold', color: '#1565c0' }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <Text
+                        as="div"
+                        size="sm"
+                        style={{ fontWeight: "bold", color: "#1565c0" }}
+                      >
                         💭 AI Response
                       </Text>
                       {msg.iteration && (
-                        <Text as="div" size="xs" style={{ color: '#666' }}>
+                        <Text as="div" size="xs" style={{ color: "#666" }}>
                           Step {msg.iteration}
                         </Text>
                       )}
                     </div>
                     <div
                       style={{
-                        color: '#1565c0',
-                        fontSize: '14px',
+                        color: "#1565c0",
+                        fontSize: "14px",
                         lineHeight: 1.4,
                         margin: 0,
                       }}
@@ -770,66 +872,90 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
               }
 
               // Tool Results - collapsible with LLM-generated summary
-              if (msg.type === 'tool_result') {
-                const isCollapsed = msg.id ? collapsedToolCalls.has(msg.id) : false;
-                const summary = msg.summary || (msg.content.split('\n')[0].substring(0, 100) + (msg.content.length > 100 ? '...' : ''));
+              if (msg.type === "tool_result") {
+                const isCollapsed = msg.id
+                  ? collapsedToolCalls.has(msg.id)
+                  : false;
+                const summary =
+                  msg.summary ||
+                  msg.content.split("\n")[0].substring(0, 100) +
+                    (msg.content.length > 100 ? "..." : "");
 
                 return (
                   <div
                     key={msg.id || idx}
                     style={{
-                      marginBottom: '8px',
-                      border: '1px solid #81c784',
-                      borderRadius: 'var(--border-radius-lg)',
-                      backgroundColor: 'var(--color-ai-bg)',
+                      marginBottom: "8px",
+                      border: "1px solid #81c784",
+                      borderRadius: "var(--border-radius-lg)",
+                      backgroundColor: "var(--color-ai-bg)",
                     }}
                   >
                     <div
                       onClick={() => msg.id && toggleToolCallExpansion(msg.id)}
                       style={{
-                        padding: '8px 12px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        borderBottom: isCollapsed ? 'none' : '1px solid #c8e6c9',
+                        padding: "8px 12px",
+                        cursor: "pointer",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        borderBottom: isCollapsed
+                          ? "none"
+                          : "1px solid #c8e6c9",
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f1f8e9';
+                        e.currentTarget.style.backgroundColor = "#f1f8e9";
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#e8f5e8';
+                        e.currentTarget.style.backgroundColor = "#e8f5e8";
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Text as="div" size="sm" style={{ fontWeight: 'bold', color: '#2e7d32' }}>
-                          ✅ {msg.toolName || 'Tool'}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
+                        <Text
+                          as="div"
+                          size="sm"
+                          style={{ fontWeight: "bold", color: "#2e7d32" }}
+                        >
+                          ✅ {msg.toolName || "Tool"}
                         </Text>
-                        <Text as="div" size="xs" style={{ color: '#666', fontStyle: 'italic' }}>
+                        <Text
+                          as="div"
+                          size="xs"
+                          style={{ color: "#666", fontStyle: "italic" }}
+                        >
                           {summary}
                         </Text>
                       </div>
-                      <Text as="div" size="xs" style={{ color: '#666' }}>
-                        {isCollapsed ? '▶' : '▼'}
+                      <Text as="div" size="xs" style={{ color: "#666" }}>
+                        {isCollapsed ? "▶" : "▼"}
                       </Text>
                     </div>
 
                     {!isCollapsed && (
-                      <div style={{
-                        padding: '12px',
-                        borderTop: '1px solid #c8e6c9',
-                        backgroundColor: 'rgba(26, 35, 50, 0.2)', /* Slightly lighter blue for expanded content */
-                      }}>
+                      <div
+                        style={{
+                          padding: "12px",
+                          borderTop: "1px solid #c8e6c9",
+                          backgroundColor:
+                            "rgba(26, 35, 50, 0.2)" /* Slightly lighter blue for expanded content */,
+                        }}
+                      >
                         <Text
                           as="div"
                           size="xs"
                           style={{
-                            fontFamily: 'monospace',
-                            whiteSpace: 'pre-wrap',
+                            fontFamily: "monospace",
+                            whiteSpace: "pre-wrap",
                             margin: 0,
-                            color: 'var(--color-ai-text)',
-                            maxHeight: '200px',
-                            overflowY: 'auto',
+                            color: "var(--color-ai-text)",
+                            maxHeight: "200px",
+                            overflowY: "auto",
                           }}
                         >
                           {msg.content}
@@ -841,30 +967,36 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
               }
 
               // Tool Errors
-              if (msg.type === 'tool_error') {
+              if (msg.type === "tool_error") {
                 return (
                   <div
                     key={msg.id || idx}
                     style={{
-                      marginBottom: '12px',
-                      padding: '12px 16px',
-                      borderRadius: '8px',
-                      backgroundColor: '#ffebee',
-                      border: '1px solid #ef5350',
-                      borderLeft: '4px solid #f44336',
+                      marginBottom: "12px",
+                      padding: "12px 16px",
+                      borderRadius: "8px",
+                      backgroundColor: "#ffebee",
+                      border: "1px solid #ef5350",
+                      borderLeft: "4px solid #f44336",
                     }}
                   >
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                      marginBottom: '8px'
-                    }}>
-                      <Text as="div" size="sm" style={{ fontWeight: 'bold', color: '#c62828' }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <Text
+                        as="div"
+                        size="sm"
+                        style={{ fontWeight: "bold", color: "#c62828" }}
+                      >
                         ❌ Tool Error: {msg.toolName}
                       </Text>
                       {msg.iteration && (
-                        <Text as="div" size="xs" style={{ color: '#666' }}>
+                        <Text as="div" size="xs" style={{ color: "#666" }}>
                           Step {msg.iteration}
                         </Text>
                       )}
@@ -873,10 +1005,10 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
                       as="p"
                       size="sm"
                       style={{
-                        whiteSpace: 'pre-wrap',
+                        whiteSpace: "pre-wrap",
                         lineHeight: 1.4,
                         margin: 0,
-                        color: '#c62828',
+                        color: "#c62828",
                       }}
                     >
                       {msg.content}
@@ -886,22 +1018,22 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
               }
 
               // Final Responses - plain text, left-aligned, no bubble
-              if (msg.type === 'final_response') {
+              if (msg.type === "final_response") {
                 return (
                   <div
                     key={msg.id || idx}
                     data-final-response="true"
                     style={{
-                      textAlign: 'left',
-                      margin: '24px 0',
-                      padding: '0 20px',
+                      textAlign: "left",
+                      margin: "24px 0",
+                      padding: "0 20px",
                     }}
                   >
                     <div
                       style={{
-                        color: 'var(--color-ai-text)',
-                        fontSize: '16px',
-                        fontWeight: '400',
+                        color: "var(--color-ai-text)",
+                        fontSize: "16px",
+                        fontWeight: "400",
                         lineHeight: 1.6,
                         margin: 0,
                       }}
@@ -910,7 +1042,7 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
                         remarkPlugins={[remarkGfm]}
                         rehypePlugins={[rehypeHighlight]}
                       >
-                        {msg.content || ''}
+                        {msg.content || ""}
                       </ReactMarkdown>
                     </div>
                   </div>
@@ -918,27 +1050,27 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
               }
 
               // Generic error messages
-              if (msg.type === 'error') {
+              if (msg.type === "error") {
                 return (
                   <div
                     key={msg.id || idx}
                     style={{
-                      marginBottom: '12px',
-                      padding: '12px 16px',
-                      borderRadius: '8px',
-                      backgroundColor: '#ffebee',
-                      border: '1px solid #ef5350',
-                      borderLeft: '4px solid #f44336',
+                      marginBottom: "12px",
+                      padding: "12px 16px",
+                      borderRadius: "8px",
+                      backgroundColor: "#ffebee",
+                      border: "1px solid #ef5350",
+                      borderLeft: "4px solid #f44336",
                     }}
                   >
                     <Text
                       as="p"
                       size="sm"
                       style={{
-                        whiteSpace: 'pre-wrap',
+                        whiteSpace: "pre-wrap",
                         lineHeight: 1.4,
                         margin: 0,
-                        color: '#c62828',
+                        color: "#c62828",
                       }}
                     >
                       ⚠️ {msg.content}
@@ -962,13 +1094,13 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={
-                apiStatus === 'disconnected'
+                apiStatus === "disconnected"
                   ? "Backend offline - check console for errors"
                   : "Ask about yields, pools, or DeFi concepts..."
               }
-              disabled={isLoading || apiStatus === 'disconnected'}
+              disabled={isLoading || apiStatus === "disconnected"}
               className={`${styles.messageInput} ${
-                apiStatus === 'disconnected' ? styles.disabled : ''
+                apiStatus === "disconnected" ? styles.disabled : ""
               }`}
               rows={1}
             />
@@ -976,7 +1108,9 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
               variant="primary"
               size="md"
               onClick={handleSend}
-              disabled={isLoading || !input.trim() || apiStatus === 'disconnected'}
+              disabled={
+                isLoading || !input.trim() || apiStatus === "disconnected"
+              }
               className={styles.sendButton}
             >
               Send
