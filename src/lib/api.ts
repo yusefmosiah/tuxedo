@@ -137,9 +137,14 @@ const api: AxiosInstance = axios.create({
   timeout: 30000, // 30 second timeout
 });
 
-// Request/Response interceptors for debugging
+// Add request interceptor to include auth token
 api.interceptors.request.use(
   (config) => {
+    // Add session token if available
+    const sessionToken = localStorage.getItem('session_token');
+    if (sessionToken) {
+      config.headers.Authorization = `Bearer ${sessionToken}`;
+    }
     console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
     return config;
   },
@@ -148,6 +153,8 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+// Response interceptors for debugging
 
 api.interceptors.response.use(
   (response: AxiosResponse) => {
@@ -205,12 +212,20 @@ export const chatApi = {
     // Use fetch with streaming response
     const controller = new AbortController();
 
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      'Accept': 'text/event-stream',
+    };
+
+    // Add session token if available
+    const sessionToken = localStorage.getItem('session_token');
+    if (sessionToken) {
+      headers.Authorization = `Bearer ${sessionToken}`;
+    }
+
     fetch(`${API_BASE_URL}/chat-stream`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'text/event-stream',
-      },
+      headers,
       body: JSON.stringify(request),
       signal: controller.signal
     })
@@ -299,12 +314,20 @@ export const chatApi = {
     // Use fetch with streaming response
     const controller = new AbortController();
 
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      'Accept': 'text/event-stream',
+    };
+
+    // Add session token if available
+    const sessionToken = localStorage.getItem('session_token');
+    if (sessionToken) {
+      headers.Authorization = `Bearer ${sessionToken}`;
+    }
+
     fetch(`${API_BASE_URL}/chat-live-summary`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'text/event-stream',
-      },
+      headers,
       body: JSON.stringify(request),
       signal: controller.signal
     })
