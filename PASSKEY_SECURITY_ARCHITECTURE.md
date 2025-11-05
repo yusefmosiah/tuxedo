@@ -21,9 +21,9 @@ This document presents a comprehensive passkey security architecture for Tuxedo,
 
 ### Strategic Vision
 
-**Passkeys as the centerpiece** - Primary authentication method
+**Passkeys ONLY** - No fallbacks, no compromises, no technical debt
 **Wallet adapter as advanced feature** - For crypto-native users to import/export
-**Magic links as fallback** - Temporary bridge during migration
+**Quantum leap** - Delete magic links entirely, build the future now
 
 ---
 
@@ -241,18 +241,41 @@ From `auth_debugging.md`:
              └────────────────────────┘
 ```
 
-### Three-Tier Authentication Model
+### Two-Tier Authentication Model (Passkey-Only)
 
-#### Tier 1: Passkey Authentication (Primary)
+#### Tier 1: Passkey Authentication (ONLY Method)
 
 **User Flow**:
 1. User visits Tuxedo
-2. Clicks "Sign in with Passkey"
+2. Enters email
 3. Browser prompts for biometric (Face ID, Touch ID, etc.)
-4. Passkey verified → 7-day session created
-5. User enters chat interface (authenticated)
+4. New user: Creates passkey, account created instantly
+5. Returning user: Authenticates with passkey → session created
+6. User enters chat interface (authenticated)
 
-**Technical Flow**:
+**Technical Flow (New User)**:
+```
+User → Frontend → POST /auth/passkey/register/options
+                → Backend generates challenge (10-min expiry)
+                → Stores challenge in DB
+
+User → Browser WebAuthn API → navigator.credentials.create()
+     → Device prompts biometric setup
+     → User authorizes (Face ID/Touch ID/PIN)
+     → Device generates key pair (private key in Secure Enclave)
+     → Returns public key + attestation
+
+Frontend → POST /auth/passkey/register/verify
+        → Backend verifies attestation
+        → Backend creates user account
+        → Backend stores public key
+        → Backend creates 24-hour session token
+        → Returns session token (HTTP-only cookie)
+
+User → Authenticated → Access chat interface
+```
+
+**Technical Flow (Returning User)**:
 ```
 User → Frontend → POST /auth/passkey/authenticate/options
                 → Backend generates challenge (10-min expiry)
@@ -268,7 +291,7 @@ Frontend → POST /auth/passkey/authenticate/verify
         → Backend verifies signature with stored public key
         → Backend checks challenge matches (single-use)
         → Backend checks sign_count (cloning detection)
-        → Backend creates 7-day session token
+        → Backend creates 24-hour session token
         → Returns session token (HTTP-only cookie)
 
 User → Authenticated → Access chat interface
@@ -305,30 +328,35 @@ User → Settings → "Export to Wallet"
 ```
 
 **Security Model**:
-- Passkey remains primary authentication
+- Passkey is ONLY authentication method
 - Wallet connection is **optional enhancement**
 - Private keys encrypted at rest
 - Export requires passkey re-verification (every time)
 
-#### Tier 3: Magic Link Fallback (Temporary)
+### Database Schema (Clean Slate)
 
-**Purpose**: Migration bridge during passkey rollout
-
-**User Flow**:
-1. User clicks "Can't use passkey? Use email instead"
-2. Follows existing magic link flow
-3. After login, prompt: "Secure your account with a passkey"
-4. One-click passkey setup
-
-**Deprecation Timeline**:
-- **Phase 1** (0-3 months): Both passkey + magic link available
-- **Phase 2** (3-6 months): Magic link only for recovery
-- **Phase 3** (6+ months): Passkey-only (magic link removed)
-
-### Database Schema Updates
-
+**Delete Old Tables**:
 ```sql
--- New table: WebAuthn credentials
+-- Remove magic link tables entirely
+DROP TABLE IF EXISTS magic_link_sessions;
+DROP TABLE IF EXISTS user_sessions;  -- Replaced with passkey sessions
+```
+
+**New Tables**:
+```sql
+-- Users (simplified)
+CREATE TABLE users (
+    id TEXT PRIMARY KEY,                    -- user_xxxxx
+    email TEXT UNIQUE NOT NULL,
+    encrypted_private_key TEXT,             -- Optional Stellar key
+    public_key TEXT UNIQUE,                 -- Optional Stellar public key
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP,
+    recovery_code TEXT,                     -- Account recovery codes
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+-- WebAuthn credentials (passkey-only auth)
 CREATE TABLE webauthn_credentials (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
@@ -362,7 +390,7 @@ CREATE TABLE webauthn_credentials (
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
--- New table: WebAuthn challenges (temporary)
+-- WebAuthn challenges (temporary, auto-cleanup)
 CREATE TABLE webauthn_challenges (
     id TEXT PRIMARY KEY,
     user_id TEXT,                          -- NULL for registration
@@ -377,12 +405,23 @@ CREATE TABLE webauthn_challenges (
     FOREIGN KEY (user_id) REFERENCES users (id)
 );
 
--- Modify users table
-ALTER TABLE users ADD COLUMN has_passkey BOOLEAN DEFAULT FALSE;
-ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT FALSE;
-ALTER TABLE users ADD COLUMN recovery_code TEXT;  -- Account recovery
+-- Passkey sessions (replaces user_sessions)
+CREATE TABLE passkey_sessions (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    session_token TEXT UNIQUE NOT NULL,     -- 86-char URL-safe token
+    credential_id TEXT NOT NULL,            -- Which passkey was used
+    expires_at TIMESTAMP NOT NULL,          -- 24 hours
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    device_fingerprint TEXT,                -- For security monitoring
+    ip_address TEXT,                        -- For audit logging
 
--- Wallet integration (optional)
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (credential_id) REFERENCES webauthn_credentials (credential_id_b64)
+);
+
+-- Wallet integration (optional, for advanced users)
 CREATE TABLE wallet_connections (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
@@ -396,46 +435,68 @@ CREATE TABLE wallet_connections (
 );
 
 -- Indexes
+CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_webauthn_credentials_user_id ON webauthn_credentials(user_id);
 CREATE INDEX idx_webauthn_credentials_credential_id ON webauthn_credentials(credential_id_b64);
 CREATE INDEX idx_webauthn_challenges_email ON webauthn_challenges(email);
 CREATE INDEX idx_webauthn_challenges_expires ON webauthn_challenges(expires_at);
+CREATE INDEX idx_passkey_sessions_token ON passkey_sessions(session_token);
+CREATE INDEX idx_passkey_sessions_user_id ON passkey_sessions(user_id);
 CREATE INDEX idx_wallet_connections_user_id ON wallet_connections(user_id);
 CREATE INDEX idx_wallet_connections_address ON wallet_connections(wallet_address);
 ```
 
-### Backend API Endpoints
+### Backend API Endpoints (Passkey-Only)
 
 ```python
-# Passkey Registration
-POST /auth/passkey/register/options
+# Passkey Registration (New Users)
+POST /auth/register/options
     Request: { email: string }
     Response: { challengeOptions: PublicKeyCredentialCreationOptions }
 
-POST /auth/passkey/register/verify
+POST /auth/register/verify
     Request: { email: string, credential: RegistrationCredential }
     Response: { success: true, sessionToken: string, user: User }
 
-# Passkey Authentication
-POST /auth/passkey/authenticate/options
+# Passkey Authentication (Returning Users)
+POST /auth/login/options
     Request: { email?: string }  # Optional for conditional UI
     Response: { challengeOptions: PublicKeyCredentialRequestOptions }
 
-POST /auth/passkey/authenticate/verify
+POST /auth/login/verify
     Request: { credential: AuthenticationCredential }
     Response: { success: true, sessionToken: string, user: User }
 
-# Passkey Management
-GET /auth/passkey/list
-    Headers: { Authorization: Bearer <token> }
-    Response: { passkeys: Array<PasskeyInfo> }
+# Session Management
+POST /auth/validate-session
+    Headers: { Authorization: Bearer <token> } OR Cookie: session_token
+    Response: { valid: true, user: User, expiresAt: timestamp }
 
-DELETE /auth/passkey/{credential_id}
+POST /auth/logout
     Headers: { Authorization: Bearer <token> }
     Response: { success: true }
 
-# Wallet Integration (Advanced)
+GET /auth/me
+    Headers: { Authorization: Bearer <token> }
+    Response: { user: User }
+
+# Passkey Management
+GET /auth/passkeys
+    Headers: { Authorization: Bearer <token> }
+    Response: { passkeys: Array<PasskeyInfo> }
+
+DELETE /auth/passkeys/{credential_id}
+    Headers: { Authorization: Bearer <token> }
+    Response: { success: true }
+
+POST /auth/passkeys/add
+    Headers: { Authorization: Bearer <token> }
+    Request: { credential: RegistrationCredential }
+    Response: { success: true, passkey: PasskeyInfo }
+
+# Wallet Integration (Advanced Users)
 POST /wallet/connect
+    Headers: { Authorization: Bearer <token> }
     Request: { walletType: 'freighter'|'xbull', publicKey: string }
     Response: { success: true, walletConnection: WalletConnection }
 
@@ -444,12 +505,21 @@ POST /wallet/export
     Response: { encryptedKey: string, qrCode: string }
 
 POST /wallet/import
+    Headers: { Authorization: Bearer <token> }
     Request: { publicKey: string, walletType: string }
     Response: { success: true }
 
-# Legacy (migration period)
-POST /auth/magic-link  # Existing endpoint
-GET /auth/magic-link/validate  # Existing endpoint
+GET /wallet/connections
+    Headers: { Authorization: Bearer <token> }
+    Response: { connections: Array<WalletConnection> }
+
+DELETE /wallet/connections/{id}
+    Headers: { Authorization: Bearer <token> }
+    Response: { success: true }
+
+# DELETED ENDPOINTS (No Magic Links)
+# ❌ POST /auth/magic-link  -- REMOVED
+# ❌ GET /auth/magic-link/validate  -- REMOVED
 ```
 
 ### Frontend Components
@@ -963,121 +1033,139 @@ log_security_event(
 
 ---
 
-## Migration Plan
+## Implementation Plan (Quantum Leap)
 
-### Phase 1: Soft Launch (Month 1)
+### Week 1: Delete & Rebuild
 
-**Goals**:
-- Introduce passkeys as optional feature
-- Maintain magic link as primary auth
-- Gather user feedback
-- Monitor adoption metrics
+**Day 1-2: Demolition**
+1. Delete magic link code entirely:
+   - ❌ `backend/api/routes/auth.py` - Remove `/auth/magic-link` endpoints
+   - ❌ `src/components/Login.tsx` - Remove email/magic link UI
+   - ❌ `backend/database.py` - Drop `magic_link_sessions` table
+   - ❌ `backend/database.py` - Drop `user_sessions` table
+2. Delete unused imports and dependencies
+3. Clean up `AuthContext.tsx` - remove magic link methods
+4. Update environment variables
 
-**Steps**:
-1. Deploy passkey infrastructure (backend + frontend)
-2. Add "Try Passkeys" button on login page
-3. Show passkey setup modal after magic link login
-4. Track adoption rate (target: 10% of new users)
-5. Monitor error rates, browser compatibility issues
-6. Collect user feedback via in-app surveys
+**Day 3-5: Passkey Foundation**
+1. Install dependencies:
+   - Backend: `pip install webauthn>=2.7.0 cryptography>=41.0.0`
+   - Frontend: `npm install @simplewebauthn/browser@^13.0.0`
+2. Database migrations:
+   - Create `webauthn_credentials` table
+   - Create `webauthn_challenges` table
+   - Create `passkey_sessions` table
+3. Backend passkey endpoints:
+   - `POST /auth/register/options`
+   - `POST /auth/register/verify`
+   - `POST /auth/login/options`
+   - `POST /auth/login/verify`
+4. Challenge management:
+   - Generation, storage, validation
+   - Auto-cleanup of expired challenges
 
-**Success Criteria**:
-- ✅ 10% adoption among new users
-- ✅ <1% authentication failure rate
-- ✅ Positive user feedback (>80% satisfaction)
-- ✅ No critical security incidents
+**Day 6-7: Frontend**
+1. Create `usePasskeyAuth` hook
+2. Build `PasskeyLogin` component (single UI for register/login)
+3. Update `AuthContext` with passkey methods
+4. Replace `Login.tsx` entirely with passkey version
+5. Update routing to remove magic link validation
 
-### Phase 2: Passkey First (Month 2-3)
+**Deliverable**: Working passkey-only authentication system
 
-**Goals**:
-- Make passkeys the default authentication
-- Magic links as fallback only
-- Increase adoption to 50%+ of active users
+### Week 2: Wallet Adapter
 
-**Steps**:
-1. Update login page: Passkey button primary, magic link secondary
-2. Email campaign to existing users: "Upgrade to Passkey Security"
-3. In-app notification: "Secure your account with a passkey"
-4. One-click passkey setup from settings
-5. Track adoption rate (target: 50% of active users)
-6. Monitor support tickets, user complaints
+**Day 1-3: Stellar Wallets Kit Integration**
+1. Update/verify `@creit.tech/stellar-wallets-kit` installation
+2. Create `useWalletConnect` hook
+3. Build `WalletConnector` component (Freighter, xBull, Lobstr)
+4. Implement wallet import flow
+5. Database: Create `wallet_connections` table
 
-**Incentives**:
-- "Secured with Passkey" badge in profile
-- Early access to new features for passkey users
-- Priority support for passkey-enabled accounts
+**Day 4-5: Wallet Export**
+1. Implement key encryption utilities
+2. Build `WalletExporter` component
+3. Backend: `POST /wallet/export` endpoint
+4. QR code generation for mobile import
+5. Warning messages and security confirmations
 
-**Success Criteria**:
-- ✅ 50% adoption among active users
-- ✅ <5% support tickets related to passkeys
-- ✅ Positive user sentiment (>70%)
+**Day 6-7: Wallet Management UI**
+1. Settings page updates
+2. Wallet connection status display
+3. Add/remove wallet connections
+4. Test Freighter integration end-to-end
+5. Test xBull integration end-to-end
 
-### Phase 3: Passkey Only (Month 4-6)
+**Deliverable**: Full wallet adapter for advanced users
 
-**Goals**:
-- Deprecate magic links
-- 100% passkey adoption for active users
-- Magic links only for account recovery
+### Week 3: Polish & Security
 
-**Steps**:
-1. Announce magic link deprecation (30-day notice)
-2. Block new magic link logins (force passkey setup)
-3. Existing magic link sessions honored until expiry
-4. Recovery flow: Magic link → immediate passkey setup required
-5. Monitor churn, user complaints
-6. Provide support for users unable to use passkeys
+**Day 1-2: Multi-Device Passkeys**
+1. Passkey management UI
+2. Add additional passkeys
+3. Device naming
+4. Delete passkeys
+5. Show last used timestamps
 
-**Recovery Mechanism**:
-- Magic link sends email → user clicks → immediate passkey setup required
-- Backup: Recovery codes generated during initial passkey setup
-- Support: Manual verification for users unable to use passkeys
+**Day 3-4: Recovery Mechanisms**
+1. Generate recovery codes on registration
+2. Recovery code validation
+3. Account recovery flow (use recovery code → create new passkey)
+4. Download/print recovery codes UI
 
-**Success Criteria**:
-- ✅ 90%+ active users using passkeys
-- ✅ <2% churn due to passkey requirement
-- ✅ Recovery flow working smoothly
+**Day 5-7: Security Hardening**
+1. Rate limiting on auth endpoints (10 req/min per IP)
+2. Device fingerprinting
+3. Session timeout logic (24 hours)
+4. Audit logging for all auth events
+5. Suspicious activity detection
+6. Penetration testing
 
-### Phase 4: Advanced Features (Month 6+)
+**Deliverable**: Production-ready security system
 
-**Goals**:
-- Multi-device passkey management
-- Cross-device authentication
-- Social recovery
-- Wallet adapter rollout
+### Week 4: Testing & Documentation
 
-**Features**:
-1. Multi-device management (add/remove devices)
-2. Device naming ("iPhone 15 Pro", "MacBook Air")
-3. Cross-device authentication (phone as authenticator for laptop)
-4. Social recovery (guardians can help recover account)
-5. Wallet adapter for advanced users
-6. Conditional UI (passkey autofill)
+**Day 1-3: Cross-Platform Testing**
+1. Chrome (macOS, Windows, Linux, Android)
+2. Safari (macOS, iOS)
+3. Firefox (macOS, Windows, Linux)
+4. Edge (Windows)
+5. Mobile browser testing (iOS Safari, Android Chrome)
+6. Security key testing (YubiKey, Titan)
 
-**Success Criteria**:
-- ✅ Average 2+ passkeys per user
-- ✅ <1% account lockout rate
-- ✅ Wallet adapter adopted by 20% of users
+**Day 4-5: Performance & Load Testing**
+1. Database query optimization
+2. Challenge cleanup automation
+3. Session token validation performance
+4. Load testing (100 concurrent users)
+5. Browser compatibility detection
 
-### Rollback Plan
+**Day 6-7: Documentation**
+1. User guide: "Getting Started with Passkeys"
+2. Developer docs: API reference
+3. Security documentation
+4. Wallet adapter guide
+5. Troubleshooting guide
+
+**Deliverable**: Launch-ready system with full documentation
+
+### Emergency Rollback (If Needed)
 
 **Trigger Conditions**:
+- Critical security vulnerability
 - Authentication failure rate >5%
-- Critical security vulnerability discovered
-- Widespread user complaints
-- Browser compatibility issues affecting >10% of users
+- Browser compatibility blocking >10% of users
 
-**Rollback Steps**:
-1. Feature flag to disable passkey auth
-2. Revert to magic link as primary auth
-3. Announce temporary rollback with timeline
-4. Fix underlying issues
-5. Gradual re-rollout with fixes
+**Rollback Plan**:
+**NO BACKWARDS COMPATIBILITY** - We fix forward, not backward.
 
-**Communication**:
-- In-app notification
-- Email to all users
-- Status page update
-- Social media announcement
+Instead of rolling back:
+1. Feature flag to disable problematic feature (not entire passkey system)
+2. Hot-fix deployment
+3. Communicate transparently about issue + ETA
+4. Deploy fix within 24 hours
+
+**Philosophy**: We committed to passkeys. If something breaks, we fix passkeys, we don't retreat to magic links.
 
 ---
 
@@ -1473,7 +1561,7 @@ FRONTEND_URL=https://tuxedo.ai
 
 ## Conclusion
 
-### Why Passkeys Now?
+### Why Passkeys Now? Why Quantum Leap?
 
 **Security**: Magic links are vulnerable to email interception and phishing. Passkeys provide cryptographic proof of user presence with hardware-backed security.
 
@@ -1485,58 +1573,71 @@ FRONTEND_URL=https://tuxedo.ai
 
 **Wallet Bridge**: The wallet adapter pattern allows advanced users to import/export while keeping passkeys as the identity layer. This serves both crypto-natives AND the next 4 billion users.
 
-### Success Metrics
+**No Users, No Legacy, No Compromises**: We're in rapid development mode. There are no users to migrate. No backwards compatibility needed. No technical debt to carry forward. This is the perfect time to build it right from day one.
 
-**Phase 1** (Month 1):
-- ✅ 10% adoption among new users
-- ✅ <1% authentication failure rate
-- ✅ Positive user feedback (>80%)
+**Quantum Leap Philosophy**:
+- ❌ No gradual migration
+- ❌ No fallback methods
+- ❌ No magic links
+- ✅ Passkeys ONLY from launch
+- ✅ Build the future, not the past
+- ✅ Set the standard, don't follow it
 
-**Phase 2** (Month 2-3):
-- ✅ 50% adoption among active users
-- ✅ <5% support tickets related to passkeys
-- ✅ Wallet adapter adopted by 5% of users
+### Success Metrics (4-Week Timeline)
 
-**Phase 3** (Month 4-6):
-- ✅ 90%+ active users using passkeys
-- ✅ <2% churn due to passkey requirement
-- ✅ Wallet adapter adopted by 20% of users
+**Week 1**: Core passkey system working
+**Week 2**: Wallet adapter functional
+**Week 3**: Security hardened
+**Week 4**: Launch ready
 
-**Long-term** (6+ months):
-- ✅ 100% passkey adoption
-- ✅ Magic links deprecated
-- ✅ Multi-device passkey management
-- ✅ Enterprise-grade security audit passed
+**Launch Day**:
+- ✅ Passkey-only authentication
+- ✅ Zero magic link code in codebase
+- ✅ Wallet adapter available for advanced users
+- ✅ Multi-device passkey support
+- ✅ Recovery codes working
+- ✅ Cross-browser tested
+- ✅ Security audited
+- ✅ Documentation complete
 
-### Next Steps
+**Philosophy**: We're not migrating from magic links to passkeys. We're **deleting magic links** and **building passkeys**. Clean slate. No compromises.
 
-1. **Immediate** (This Week):
-   - Review and approve this architecture proposal
-   - Set up development branch
-   - Install dependencies (`webauthn`, `@simplewebauthn/browser`)
+### Next Steps (Quantum Leap)
 
-2. **Week 1**: Core passkey infrastructure
-   - Database migrations
-   - Backend passkey endpoints
-   - Frontend passkey components
-   - Testing on localhost
+**Right Now** (Today):
+- ✅ Architecture approved
+- ✅ Branch created: `claude/passkey-security-research-011CUpDegmDhBfwEFqsQQkuB`
+- ✅ Research complete
 
-3. **Week 2**: Wallet integration
-   - Stellar Wallets Kit integration
-   - Wallet import/export functionality
-   - Advanced user features
+**Day 1** (Tomorrow):
+- [ ] Delete magic link code (backend + frontend)
+- [ ] Install passkey dependencies
+- [ ] Database migrations (drop old tables, create new)
 
-4. **Week 3**: Migration & cleanup
-   - User migration flows
-   - Security hardening
-   - Documentation
-   - Production testing
+**Week 1**: Core passkey infrastructure
+- [ ] Backend passkey endpoints
+- [ ] Frontend passkey components
+- [ ] Testing on localhost
+- [ ] Magic links completely removed
 
-5. **Week 4**: Launch
-   - Soft launch to beta users
-   - Monitor metrics
-   - Gather feedback
-   - Iterate based on data
+**Week 2**: Wallet integration
+- [ ] Stellar Wallets Kit integration
+- [ ] Wallet import/export functionality
+- [ ] Wallet management UI
+
+**Week 3**: Security & polish
+- [ ] Multi-device passkey management
+- [ ] Recovery codes
+- [ ] Rate limiting, audit logging
+- [ ] Security hardening
+
+**Week 4**: Testing & launch
+- [ ] Cross-browser testing
+- [ ] Load testing
+- [ ] Documentation
+- [ ] Launch
+
+**No Rollback Plan**: We fix forward. Passkeys are the foundation.
 
 ---
 
