@@ -1,5 +1,6 @@
 import { Routes, Route, Outlet, NavLink } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -131,6 +132,79 @@ const AppLayout: React.FC = () => {
   );
 };
 
+// Magic Link Validation Component
+const MagicLinkValidation: React.FC = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const validateMagicLink = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+
+      if (!token) {
+        navigate('/chat');
+        return;
+      }
+
+      try {
+        // Validate the magic link token with the backend
+        const response = await fetch(`http://localhost:8000/auth/magic-link/validate?token=${token}`);
+
+        if (response.ok) {
+          // Get session token from backend
+          const validateResponse = await fetch('http://localhost:8000/auth/validate-session', {
+            method: 'POST',
+            credentials: 'include',
+          });
+
+          if (validateResponse.ok) {
+            const data = await validateResponse.json();
+            if (data.success && data.session_token) {
+              // Store session data
+              localStorage.setItem('session_token', data.session_token);
+              localStorage.setItem('user_data', JSON.stringify(data.user));
+            }
+          }
+        }
+
+        // Redirect to chat after validation (success or failure)
+        navigate('/chat');
+      } catch (error) {
+        console.error('Error validating magic link:', error);
+        navigate('/chat');
+      }
+    };
+
+    validateMagicLink();
+  }, [navigate]);
+
+  return (
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      minHeight: '100vh',
+      backgroundColor: 'var(--color-bg-primary)'
+    }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{
+          fontSize: '48px',
+          marginBottom: '16px'
+        }}>
+          🤖
+        </div>
+        <p style={{
+          fontFamily: 'var(--font-primary-sans)',
+          fontSize: '18px',
+          color: 'var(--color-text-secondary)',
+          margin: 0
+        }}>
+          Validating your magic link...
+        </p>
+      </div>
+    </div>
+  );
+};
 
 function App() {
   return (
@@ -144,6 +218,8 @@ function App() {
           </ProtectedRoute>
         } />
         </Route>
+      {/* Magic Link Validation Route (outside main layout) */}
+      <Route path="/auth/magic-link" element={<MagicLinkValidation />} />
     </Routes>
   );
 }
