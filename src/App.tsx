@@ -139,6 +139,7 @@ const AppLayout: React.FC = () => {
 // Magic Link Validation Component
 const MagicLinkValidation: React.FC = () => {
   const navigate = useNavigate();
+  const { logout, checkAuth } = useAuth();
   const isValidatingRef = useRef(false);
 
   useEffect(() => {
@@ -166,6 +167,10 @@ const MagicLinkValidation: React.FC = () => {
       }
 
       try {
+        // SECURITY: Clear any existing session first to prevent session confusion
+        console.log("🔒 Clearing existing session before magic link validation...");
+        logout();
+
         // Check if this is already a session token (from /auth/success redirect)
         if (window.location.pathname === "/auth/success") {
           console.log(
@@ -243,6 +248,10 @@ const MagicLinkValidation: React.FC = () => {
           }
         }
 
+        // Update AuthContext state from localStorage before redirect
+        console.log("🔄 Refreshing authentication state...");
+        await checkAuth();
+
         // Redirect to chat after validation (success or failure)
         console.log("➡️ Redirecting to chat...");
         navigate("/chat");
@@ -253,7 +262,7 @@ const MagicLinkValidation: React.FC = () => {
     };
 
     validateMagicLink();
-  }, [navigate]);
+  }, [navigate, logout, checkAuth]);
 
   return (
     <div
