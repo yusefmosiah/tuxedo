@@ -1,0 +1,36 @@
+{
+  "deployer_secret": "${DEPLOYER_SECRET_KEY}",
+  "deployer_public": "${DEPLOYER_PUBLIC_KEY}",
+  "network": "testnet",
+  "horizon_url": "https://horizon-testnet.stellar.org",
+  "soroban_rpc": "https://soroban-testnet.stellar.org",
+  "status": "prepared",
+  "strategies": [
+    {
+      "name": "HODL",
+      "wasm_file": "/home/ubuntu/blend-pools/defindex/apps/contracts/strategies/hodl/../../target/wasm32v1-none/release/hodl_strategy.wasm",
+      "size_bytes": 5136,
+      "status": "ready"
+    },
+    {
+      "name": "BLEND",
+      "wasm_file": "/home/ubuntu/blend-pools/defindex/apps/contracts/strategies/blend/target/wasm32v1-none/release/blend_strategy.wasm",
+      "status": "needs_build"
+    },
+    {
+      "name": "SOROSWAP",
+      "wasm_file": "/home/ubuntu/blend-pools/defindex/apps/contracts/strategies/soroswap/target/wasm32v1-none/release/soroswap_strategy.wasm",
+      "status": "needs_build"
+    },
+    {
+      "name": "XYCLOANS",
+      "wasm_file": "/home/ubuntu/blend-pools/defindex/apps/contracts/strategies/xycloans/target/wasm32v1-none/release/xycloans_strategy.wasm",
+      "status": "needs_build"
+    },
+    {
+      "name": "FIXED_APR",
+      "wasm_file": "/home/ubuntu/blend-pools/defindex/apps/contracts/strategies/fixed_apr/target/wasm32v1-none/release/fixed_apr_strategy.wasm",
+      "status": "needs_build"
+    }
+  ]
+}
