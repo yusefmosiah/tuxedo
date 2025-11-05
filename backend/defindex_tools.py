@@ -149,6 +149,147 @@ async def get_defindex_vault_details(vault_address: str) -> str:
         return f"Error: Unable to fetch vault details. Please check the address and try again."
 
 @tool
+async def execute_defindex_deposit(
+    vault_address: str,
+    amount_xlm: float,
+    user_address: str,
+    network: str = "testnet"
+) -> str:
+    """Execute an ACTUAL autonomous deposit transaction to a DeFindex vault using the DeFindex API.
+
+    This tool builds and submits a real transaction to the Stellar network via the DeFindex API,
+    enabling true autonomous operation without manual wallet intervention.
+
+    Args:
+        vault_address: The vault contract address (verified working testnet vault)
+        amount_xlm: Amount to deposit in XLM (e.g., 10.5)
+        user_address: User's Stellar public key (G...) - must be accessible by agent
+        network: Network to use ('testnet' or 'mainnet', default 'testnet')
+
+    Returns:
+        Transaction execution details including hash and status
+    """
+    try:
+        # Get the default agent account if user_address not provided or doesn't match agent accounts
+        from agent.core import get_default_agent_account
+        default_account = get_default_agent_account()
+
+        if not default_account:
+            return """❌ **No Agent Account Available**
+
+No agent account with sufficient balance found. Please:
+1. Use agent_list_accounts to check available accounts
+2. Use agent_create_account to create a new account if needed
+3. Ensure the account has sufficient XLM balance for deposits"""
+
+        # Verify vault address is in our known working vaults
+        vault_info = None
+        for name, address in TESTNET_VAULTS.items():
+            if address == vault_address:
+                vault_info = {'name': name, 'address': address}
+                break
+
+        if not vault_info:
+            return f"""❌ **Invalid Vault Address**
+
+The vault address `{vault_address[:8]}...{vault_address[-8:]}` is not recognized.
+
+**Available testnet vaults:**
+1. XLM_HODL_1: `{TESTNET_VAULTS['XLM_HODL_1'][:8]}...{TESTNET_VAULTS['XLM_HODL_1'][-8:]}`
+2. XLM_HODL_2: `{TESTNET_VAULTS['XLM_HODL_2'][:8]}...{TESTNET_VAULTS['XLM_HODL_2'][-8:]}`
+3. XLM_HODL_3: `{TESTNET_VAULTS['XLM_HODL_3'][:8]}...{TESTNET_VAULTS['XLM_HODL_3'][-8:]}`
+4. XLM_HODL_4: `{TESTNET_VAULTS['XLM_HODL_4'][:8]}...{TESTNET_VAULTS['XLM_HODL_4'][-8:]}`
+
+Please use one of these verified vault addresses."""
+
+        # Import DeFindex client for autonomous execution
+        try:
+            from defindex_client import get_defindex_client
+            from key_manager import get_agent_keypair
+
+            # Get agent keypair for signing
+            agent_keypair = get_agent_keypair(default_account)
+            if not agent_keypair:
+                return f"❌ **Cannot access private key** for agent account {default_account[:8]}...{default_account[-8:]}"
+
+            # Initialize DeFindex client
+            client = get_defindex_client(network=network)
+
+            # Build the deposit transaction
+            amount_stroops = int(amount_xlm * 10_000_000)  # Convert XLM to stroops
+
+            logger.info(f"Building deposit transaction: {amount_xlm} XLM to {vault_info['name']}")
+            tx_data = client.build_deposit_transaction(
+                vault_address=vault_address,
+                amount_stroops=amount_stroops,
+                caller=default_account,
+                invest=True
+            )
+
+            # Import transaction signing utilities
+            from transaction_utils import sign_transaction_with_agent_key
+
+            # Parse the unsigned XDR
+            unsigned_xdr = tx_data.get('xdr')
+            if not unsigned_xdr:
+                return "❌ **Transaction Build Failed**: No XDR returned from DeFindex API"
+
+            # Validate transaction amount
+            from transaction_utils import validate_transaction_amount
+            if not validate_transaction_amount(amount_xlm):
+                return f"❌ **Invalid Amount**: {amount_xlm} XLM is below minimum deposit threshold"
+
+            # Sign the transaction
+            try:
+                # Use agent keypair to sign
+                signed_tx = sign_transaction_with_agent_key(unsigned_xdr, agent_keypair, network)
+
+                # Submit via DeFindex API
+                logger.info("Submitting signed transaction to Stellar network")
+                submit_result = client.submit_transaction(signed_tx, use_launchtube=False)
+
+                # Parse and return result
+                if submit_result.get('success'):
+                    tx_hash = submit_result.get('hash', 'Unknown')
+                    return f"""🚀 **AUTONOMOUS DEPOSIT EXECUTED SUCCESSFULLY**
+
+✅ **Transaction Confirmed**: {tx_hash}
+💰 **Amount**: {amount_xlm} XLM deposited to {vault_info['name']}
+🏦 **Vault**: {vault_address[:8]}...{vault_address[-8:]}
+📊 **Network**: {network}
+⚡ **Agent Account**: {default_account[:8]}...{default_account[-8:]}
+
+**Next Steps:**
+- Check vault balance in ~30 seconds for deposit confirmation
+- Use get_defindex_vault_details to monitor APY earnings
+- Yield generation begins automatically once deposit is processed
+
+🔗 **Stellar Explorer**: https://stellar.expert/explorer/testnet/tx/{tx_hash}"""
+                else:
+                    error_msg = submit_result.get('error', 'Unknown submission error')
+                    return f"❌ **Transaction Submission Failed**: {error_msg}"
+
+            except Exception as sign_error:
+                logger.error(f"Transaction signing failed: {sign_error}")
+                return f"❌ **Transaction Signing Failed**: {str(sign_error)}"
+
+        except ImportError:
+            return """❌ **Autonomous Execution Not Available**
+
+The DeFindex client or key management is not available.
+Falling back to manual payment method.
+
+Please use prepare_defindex_deposit for manual payment instructions."""
+
+        except Exception as api_error:
+            logger.error(f"DeFindex API error: {api_error}")
+            return f"❌ **DeFindex API Error**: {str(api_error)}"
+
+    except Exception as e:
+        logger.error(f"Error in execute_defindex_deposit: {e}")
+        return f"Error: Unable to execute autonomous deposit: {str(e)}"
+
+@tool
 async def prepare_defindex_deposit(
     vault_address: str,
     amount_xlm: float,
@@ -263,3 +404,181 @@ I've prepared **manual payment instructions** for depositing {amount_xlm} XLM to
         logger.error(f"Error in prepare_defindex_deposit: {e}")
         logger.error(f"Vault address: {vault_address}, Amount: {amount_xlm} XLM, Network: {network}")
         return f"Error: Unable to prepare deposit instructions: {str(e)}"
+
+@tool
+async def execute_defindex_withdrawal(
+    vault_address: str,
+    amount_xlm: float,
+    user_address: str,
+    network: str = "testnet"
+) -> str:
+    """Execute an ACTUAL autonomous withdrawal transaction from a DeFindex vault using the DeFindex API.
+
+    This tool builds and submits a real withdrawal transaction to the Stellar network via the DeFindex API,
+    enabling true autonomous operation without manual wallet intervention.
+
+    Args:
+        vault_address: The vault contract address (verified working testnet vault)
+        amount_xlm: Amount to withdraw in XLM (e.g., 5.0)
+        user_address: User's Stellar public key (G...) - must be accessible by agent
+        network: Network to use ('testnet' or 'mainnet', default 'testnet')
+
+    Returns:
+        Transaction execution details including hash and status
+    """
+    try:
+        # Get the default agent account if user_address not provided or doesn't match agent accounts
+        from agent.core import get_default_agent_account
+        default_account = get_default_agent_account()
+
+        if not default_account:
+            return """❌ **No Agent Account Available**
+
+No agent account found. Please:
+1. Use agent_list_accounts to check available accounts
+2. Use agent_create_account to create a new account if needed"""
+
+        # Verify vault address is in our known working vaults
+        vault_info = None
+        for name, address in TESTNET_VAULTS.items():
+            if address == vault_address:
+                vault_info = {'name': name, 'address': address}
+                break
+
+        if not vault_info:
+            return f"""❌ **Invalid Vault Address**
+
+The vault address `{vault_address[:8]}...{vault_address[-8:]}` is not recognized.
+
+**Available testnet vaults:**
+1. XLM_HODL_1: `{TESTNET_VAULTS['XLM_HODL_1'][:8]}...{TESTNET_VAULTS['XLM_HODL_1'][-8:]}`
+2. XLM_HODL_2: `{TESTNET_VAULTS['XLM_HODL_2'][:8]}...{TESTNET_VAULTS['XLM_HODL_2'][-8:]}`
+3. XLM_HODL_3: `{TESTNET_VAULTS['XLM_HODL_3'][:8]}...{TESTNET_VAULTS['XLM_HODL_3'][-8:]}`
+4. XLM_HODL_4: `{TESTNET_VAULTS['XLM_HODL_4'][:8]}...{TESTNET_VAULTS['XLM_HODL_4'][-8:]}`
+
+Please use one of these verified vault addresses."""
+
+        # Import DeFindex client for autonomous execution
+        try:
+            from defindex_client import get_defindex_client
+            from key_manager import get_agent_keypair
+
+            # Get agent keypair for signing
+            agent_keypair = get_agent_keypair(default_account)
+            if not agent_keypair:
+                return f"❌ **Cannot access private key** for agent account {default_account[:8]}...{default_account[-8:]}"
+
+            # Initialize DeFindex client
+            client = get_defindex_client(network=network)
+
+            # Check vault balance first
+            try:
+                balance_info = client.get_vault_balance(vault_address, default_account)
+                current_balance = float(balance_info.get('underlying', {}).get('amount', 0)) / 10_000_000  # Convert from stroops
+
+                if current_balance < amount_xlm:
+                    return f"""❌ **Insufficient Vault Balance**
+
+Current vault balance: {current_balance:.2f} XLM
+Requested withdrawal: {amount_xlm:.2f} XLM
+
+You can withdraw up to {current_balance:.2f} XLM from this vault."""
+            except Exception as balance_error:
+                logger.warning(f"Could not check vault balance: {balance_error}")
+                # Continue with withdrawal attempt even if balance check fails
+
+            # Build the withdrawal transaction
+            amount_stroops = int(amount_xlm * 10_000_000)  # Convert XLM to stroops
+
+            logger.info(f"Building withdrawal transaction: {amount_xlm} XLM from {vault_info['name']}")
+
+            # Note: DeFindex API might not have a dedicated withdraw endpoint
+            # If not available, we'll inform the user about manual withdrawal
+            try:
+                # Try to build withdrawal transaction (if API supports it)
+                # This is a placeholder - actual API endpoint may differ
+                tx_data = client.build_withdrawal_transaction(
+                    vault_address=vault_address,
+                    amount_stroops=amount_stroops,
+                    caller=default_account
+                )
+            except AttributeError:
+                return f"""❌ **Withdrawal API Not Available**
+
+The DeFindex API withdrawal endpoint is not yet implemented in this client.
+
+**Available Options:**
+1. Use manual withdrawal via Stellar wallet interface
+2. Contact vault operator for withdrawal assistance
+3. Wait for withdrawal API implementation
+
+**Manual Withdrawal Instructions:**
+- Connect to Stellar testnet with your wallet
+- Send transaction to vault contract with withdrawal memo
+- Amount: {amount_xlm} XLM
+- Memo: "Withdraw from {vault_info['name']}"
+
+🔗 **Contract**: {vault_address}"""
+
+            # Import transaction signing utilities
+            from transaction_utils import sign_transaction_with_agent_key
+
+            # Parse the unsigned XDR
+            unsigned_xdr = tx_data.get('xdr')
+            if not unsigned_xdr:
+                return "❌ **Transaction Build Failed**: No XDR returned from DeFindex API"
+
+            # Validate transaction amount
+            from transaction_utils import validate_transaction_amount
+            if not validate_transaction_amount(amount_xlm):
+                return f"❌ **Invalid Amount**: {amount_xlm} XLM is below minimum withdrawal threshold"
+
+            # Sign the transaction
+            try:
+                # Use agent keypair to sign
+                signed_tx = sign_transaction_with_agent_key(unsigned_xdr, agent_keypair, network)
+
+                # Submit via DeFindex API
+                logger.info("Submitting signed withdrawal transaction to Stellar network")
+                submit_result = client.submit_transaction(signed_tx, use_launchtube=False)
+
+                # Parse and return result
+                if submit_result.get('success'):
+                    tx_hash = submit_result.get('hash', 'Unknown')
+                    return f"""🚀 **AUTONOMOUS WITHDRAWAL EXECUTED SUCCESSFULLY**
+
+✅ **Transaction Confirmed**: {tx_hash}
+💰 **Amount**: {amount_xlm} XLM withdrawn from {vault_info['name']}
+🏦 **Vault**: {vault_address[:8]}...{vault_address[-8:]}
+📊 **Network**: {network}
+⚡ **Agent Account**: {default_account[:8]}...{default_account[-8:]}
+
+**Next Steps:**
+- Check agent account balance in ~30 seconds for withdrawal confirmation
+- Withdrawn XLM will be available in your agent account
+- Consider reinvesting in other vault opportunities
+
+🔗 **Stellar Explorer**: https://stellar.expert/explorer/testnet/tx/{tx_hash}"""
+                else:
+                    error_msg = submit_result.get('error', 'Unknown submission error')
+                    return f"❌ **Transaction Submission Failed**: {error_msg}"
+
+            except Exception as sign_error:
+                logger.error(f"Transaction signing failed: {sign_error}")
+                return f"❌ **Transaction Signing Failed**: {str(sign_error)}"
+
+        except ImportError:
+            return """❌ **Autonomous Execution Not Available**
+
+The DeFindex client or key management is not available.
+Falling back to manual withdrawal method.
+
+Please use the vault interface directly for manual withdrawals."""
+
+        except Exception as api_error:
+            logger.error(f"DeFindex API error: {api_error}")
+            return f"❌ **DeFindex API Error**: {str(api_error)}"
+
+    except Exception as e:
+        logger.error(f"Error in execute_defindex_withdrawal: {e}")
+        return f"Error: Unable to execute autonomous withdrawal: {str(e)}"

@@ -102,18 +102,26 @@ async def load_agent_tools():
 
     # Import DeFindex tools
     try:
-        from defindex_tools import discover_high_yield_vaults, get_defindex_vault_details, prepare_defindex_deposit
+        from defindex_tools import (
+            discover_high_yield_vaults,
+            get_defindex_vault_details,
+            prepare_defindex_deposit,
+            execute_defindex_deposit,
+            execute_defindex_withdrawal
+        )
         logger.info(f"Before adding DeFindex tools: {len(agent_tools)} tools loaded")
-        logger.info(f"DeFindex tools to add: {discover_high_yield_vaults}, {get_defindex_vault_details}, {prepare_defindex_deposit}")
+        logger.info(f"DeFindex tools to add: {discover_high_yield_vaults}, {get_defindex_vault_details}, {prepare_defindex_deposit}, {execute_defindex_deposit}, {execute_defindex_withdrawal}")
 
         agent_tools.extend([
             discover_high_yield_vaults,
             get_defindex_vault_details,
-            prepare_defindex_deposit
+            prepare_defindex_deposit,
+            execute_defindex_deposit,  # NEW: Autonomous deposit execution
+            execute_defindex_withdrawal  # NEW: Autonomous withdrawal execution
         ])
 
         logger.info(f"After adding DeFindex tools: {len(agent_tools)} tools loaded")
-        logger.info("DeFindex tools loaded successfully")
+        logger.info("DeFindex tools loaded successfully including autonomous transaction execution")
     except ImportError as e:
         logger.warning(f"DeFindex tools not available: {e}")
     except Exception as e:
