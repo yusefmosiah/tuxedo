@@ -173,6 +173,16 @@ async def request_magic_link(request: MagicLinkRequest):
 async def validate_magic_link(token: str, response: Response):
     """Validate magic link token and create user session"""
     try:
+        # Debug logging
+        logger.info(f"Received magic link validation request with token: {token[:16] if token else 'None'}...")
+
+        if not token:
+            logger.warning("No token provided in magic link validation")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Token is required"
+            )
+
         # Validate the magic link token
         magic_session = db.validate_magic_link(token)
 
@@ -201,19 +211,18 @@ async def validate_magic_link(token: str, response: Response):
 
         logger.info(f"User authenticated: {user['email']}")
 
-        # Set HTTP-only cookie with session token
-        response.set_cookie(
-            key="session_token",
-            value=session_token,
-            max_age=7 * 24 * 60 * 60,  # 7 days
-            httponly=True,
-            secure=False,  # Set to True in production with HTTPS
-            samesite="lax"
-        )
-
-        # Redirect to frontend with success
-        redirect_url = f"{FRONTEND_URL}/auth/success?token={session_token}"
-        return RedirectResponse(url=redirect_url, status_code=status.HTTP_302_FOUND)
+        # Return JSON response with session token for CORS requests
+        return {
+            "success": True,
+            "message": "Magic link validated successfully",
+            "session_token": session_token,
+            "user": {
+                "id": user['id'],
+                "email": user['email'],
+                "public_key": user.get('public_key'),
+                "last_login": user.get('last_login')
+            }
+        }
 
     except HTTPException:
         raise
@@ -229,15 +238,21 @@ async def validate_session(request: Request, session_token: Optional[str] = None
     """Validate user session token"""
     try:
         # Get session token from multiple sources
+        original_token = session_token
         if not session_token:
             session_token = request.cookies.get("session_token")
+            logger.info(f"Trying cookie token: {session_token[:16] if session_token else 'None'}...")
 
         if not session_token:
             session_token = request.headers.get("Authorization")
             if session_token and session_token.startswith("Bearer "):
                 session_token = session_token[7:]  # Remove "Bearer " prefix
+                logger.info(f"Trying header token: {session_token[:16] if session_token else 'None'}...")
+
+        logger.info(f"Session validation request: token_source={'header' if original_token else 'cookie' if request.cookies.get('session_token') else 'none'}, token_preview={session_token[:16] if session_token else 'None'}...")
 
         if not session_token:
+            logger.warning("No session token provided in request")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="No session token provided"
@@ -245,6 +260,7 @@ async def validate_session(request: Request, session_token: Optional[str] = None
 
         # Validate session
         session = db.validate_user_session(session_token)
+        logger.info(f"Database session validation result: {session is not None}")
 
         if not session:
             raise HTTPException(

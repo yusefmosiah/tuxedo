@@ -1,9 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import {
-  Backstop,
-  PoolV2,
-  Reserve,
-} from "@blend-capital/blend-sdk";
+import { Backstop, PoolV2, Reserve } from "@blend-capital/blend-sdk";
 import { BLEND_CONTRACTS } from "../contracts/blend";
 import { network } from "../contracts/util";
 
@@ -11,9 +7,14 @@ import { network } from "../contracts/util";
 const blendNetwork = {
   rpc: network.rpcUrl,
   passphrase: network.passphrase,
-  networkPassphrase: network.passphrase
+  networkPassphrase: network.passphrase,
+  allowHttp: true, // Allow HTTP connections for development
 };
-import { BlendPoolData, PoolReserve, UseBlendPoolsResult } from "../types/blend";
+import {
+  BlendPoolData,
+  PoolReserve,
+  UseBlendPoolsResult,
+} from "../types/blend";
 
 /**
  * Hook to fetch and monitor all Blend pools
@@ -39,8 +40,10 @@ export function useBlendPools(): UseBlendPoolsResult {
     // Calculate actual amounts from scaled values
     const scalar = BigInt(10000000); // 1e7 SCALAR used by Blend
     // Use camelCase property names from SDK
-    const totalSupplied = (BigInt(reserve.data.bSupply) * BigInt(reserve.data.bRate)) / scalar;
-    const totalBorrowed = (BigInt(reserve.data.dSupply) * BigInt(reserve.data.dRate)) / scalar;
+    const totalSupplied =
+      (BigInt(reserve.data.bSupply) * BigInt(reserve.data.bRate)) / scalar;
+    const totalBorrowed =
+      (BigInt(reserve.data.dSupply) * BigInt(reserve.data.dRate)) / scalar;
     const availableLiquidity = totalSupplied - totalBorrowed;
 
     return {
@@ -80,7 +83,10 @@ export function useBlendPools(): UseBlendPoolsResult {
       console.log("🔍 Loading Backstop contract to discover pools...");
 
       // Load the Backstop contract - it contains the list of all active pools
-      const backstop = await Backstop.load(blendNetwork, BLEND_CONTRACTS.backstop);
+      const backstop = await Backstop.load(
+        blendNetwork,
+        BLEND_CONTRACTS.backstop,
+      );
 
       console.log(`  📊 Backstop loaded successfully`);
       console.log(`  📊 Backstop config:`, {
@@ -96,7 +102,9 @@ export function useBlendPools(): UseBlendPoolsResult {
         console.log(`  🏊 Pool ${index + 1}: ${address}`);
       });
 
-      console.log(`  ✅ Discovered ${poolAddresses.length} pool(s) from Backstop`);
+      console.log(
+        `  ✅ Discovered ${poolAddresses.length} pool(s) from Backstop`,
+      );
 
       return poolAddresses;
     } catch (err) {
@@ -115,7 +123,10 @@ export function useBlendPools(): UseBlendPoolsResult {
     setError(null);
 
     try {
-      console.log("🔍 Discovering pools from Backstop:", BLEND_CONTRACTS.backstop);
+      console.log(
+        "🔍 Discovering pools from Backstop:",
+        BLEND_CONTRACTS.backstop,
+      );
 
       // Discover pools from Backstop's reward zone
       let poolAddresses = await discoverPools();
@@ -151,8 +162,12 @@ export function useBlendPools(): UseBlendPoolsResult {
 
           // Determine pool status
           // Status 0 = Active, Status 1 = Admin Frozen, Status 2+ = Other frozen states
-          const status = pool.metadata.status === 0 ? 'active' :
-                        pool.metadata.status === undefined ? 'active' : 'paused';
+          const status =
+            pool.metadata.status === 0
+              ? "active"
+              : pool.metadata.status === undefined
+                ? "active"
+                : "paused";
 
           // Build pool data object
           const poolData: BlendPoolData = {
@@ -176,7 +191,7 @@ export function useBlendPools(): UseBlendPoolsResult {
             reserves: [],
             timestamp: Date.now(),
             totalReserves: 0,
-            status: 'unknown' as const,
+            status: "unknown" as const,
           };
         }
       });
@@ -187,9 +202,9 @@ export function useBlendPools(): UseBlendPoolsResult {
       console.log(`✅ Successfully loaded ${loadedPools.length} pool(s)`);
       setPools(loadedPools);
       setError(null);
-
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to fetch pools";
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to fetch pools";
       console.error("❌ Error fetching pools:", errorMessage, err);
       setError(errorMessage);
       setPools([]);
