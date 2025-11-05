@@ -1,0 +1,74 @@
+{
+  "XLM_HODL_1": {
+    "name": "XLM_HODL_1",
+    "address": "CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA",
+    "tests": {
+      "get_info": {
+        "status": "failed",
+        "error": "DeFindex API error: 400 - {\"message\":\"Trying to call a missing value\",\"errorCode\":0,\"error\":\"Error simulating transaction: HostError: Error(Storage, MissingValue)\\n\\nEvent log (newest first):\\n   0: [Diagnostic Event] contract:CBZV3HBP672BV7FF3ZILVT4CNPW3N5V2WTJ2LAGOAYW5R7L2D5SLUDFZ, topics:[error, Error(Storage, MissingValue)], data:\\\"escalating error to VM trap from failed host function call: call\\\"\\n   1: [Diagnostic Event] contract:CBZV3HBP672BV7FF3ZILVT4CNPW3N5V2WTJ2LAGOAYW5R7L2D5SLUDFZ, topics:[error, Error(Storage, MissingValue)], data:[\\\"contract call failed\\\", get_assets, []]\\n   2: [Diagnostic Event] contract:CBZV3HBP672BV7FF3ZILVT4CNPW3N5V2WTJ2LAGOAYW5R7L2D5SLUDFZ, topics:[error, Error(Storage, MissingValue)], data:\\\"trying to get non-existing value for contract instance\\\"\\n   3: [Diagnostic Event] contract:CBZV3HBP672BV7FF3ZILVT4CNPW3N5V2WTJ2LAGOAYW5R7L2D5SLUDFZ, topics:[fn_call, CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA, get_assets], data:Void\\n   4: [Diagnostic Event] topics:[fn_call, CBZV3HBP672BV7FF3ZILVT4CNPW3N5V2WTJ2LAGOAYW5R7L2D5SLUDFZ, exec], data:[GALAXYVOIDAOPZTDLHILAJQKCVVFMD4IKLXLSZV5YHO7VY74IWZILUTO, [[CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA, get_assets, []], [CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA, fetch_total_managed_funds, []], [CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA, get_fees, []], [CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA, get_manager, []], [CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA, get_emergency_manager, []], [CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA, get_rebalance_manager, []], [CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA, get_fee_receiver, []], [CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA, name, []], [CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA, symbol, []]]]\\n\"}"
+      },
+      "get_apy": {
+        "status": "failed",
+        "error": "APY endpoint not found for vault: CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA"
+      },
+      "build_deposit": {
+        "status": "failed",
+        "error": "DeFindex API bad request: No response text"
+      }
+    }
+  },
+  "XLM_HODL_2": {
+    "name": "XLM_HODL_2",
+    "address": "CCSPRGGUP32M23CTU7RUAGXDNOHSA6O2BS2IK4NVUP5X2JQXKTSIQJKE",
+    "tests": {
+      "get_info": {
+        "status": "failed",
+        "error": "DeFindex API error: 400 - {\"message\":\"Trying to call a missing value\",\"errorCode\":0,\"error\":\"Error simulating transaction: HostError: Error(Storage, MissingValue)\\n\\nEvent log (newest first):\\n   0: [Diagnostic Event] contract:CBZV3HBP672BV7FF3ZILVT4CNPW3N5V2WTJ2LAGOAYW5R7L2D5SLUDFZ, topics:[error, Error(Storage, MissingValue)], data:\\\"escalating error to VM trap from failed host function call: call\\\"\\n   1: [Diagnostic Event] contract:CBZV3HBP672BV7FF3ZILVT4CNPW3N5V2WTJ2LAGOAYW5R7L2D5SLUDFZ, topics:[error, Error(Storage, MissingValue)], data:[\\\"contract call failed\\\", get_assets, []]\\n   2: [Diagnostic Event] contract:CBZV3HBP672BV7FF3ZILVT4CNPW3N5V2WTJ2LAGOAYW5R7L2D5SLUDFZ, topics:[error, Error(Storage, MissingValue)], data:\\\"trying to get non-existing value for contract instance\\\"\\n   3: [Diagnostic Event] contract:CBZV3HBP672BV7FF3ZILVT4CNPW3N5V2WTJ2LAGOAYW5R7L2D5SLUDFZ, topics:[fn_call, CCSPRGGUP32M23CTU7RUAGXDNOHSA6O2BS2IK4NVUP5X2JQXKTSIQJKE, get_assets], data:Void\\n   4: [Diagnostic Event] topics:[fn_call, CBZV3HBP672BV7FF3ZILVT4CNPW3N5V2WTJ2LAGOAYW5R7L2D5SLUDFZ, exec], data:[GALAXYVOIDAOPZTDLHILAJQKCVVFMD4IKLXLSZV5YHO7VY74IWZILUTO, [[CCSPRGGUP32M23CTU7RUAGXDNOHSA6O2BS2IK4NVUP5X2JQXKTSIQJKE, get_assets, []], [CCSPRGGUP32M23CTU7RUAGXDNOHSA6O2BS2IK4NVUP5X2JQXKTSIQJKE, fetch_total_managed_funds, []], [CCSPRGGUP32M23CTU7RUAGXDNOHSA6O2BS2IK4NVUP5X2JQXKTSIQJKE, get_fees, []], [CCSPRGGUP32M23CTU7RUAGXDNOHSA6O2BS2IK4NVUP5X2JQXKTSIQJKE, get_manager, []], [CCSPRGGUP32M23CTU7RUAGXDNOHSA6O2BS2IK4NVUP5X2JQXKTSIQJKE, get_emergency_manager, []], [CCSPRGGUP32M23CTU7RUAGXDNOHSA6O2BS2IK4NVUP5X2JQXKTSIQJKE, get_rebalance_manager, []], [CCSPRGGUP32M23CTU7RUAGXDNOHSA6O2BS2IK4NVUP5X2JQXKTSIQJKE, get_fee_receiver, []], [CCSPRGGUP32M23CTU7RUAGXDNOHSA6O2BS2IK4NVUP5X2JQXKTSIQJKE, name, []], [CCSPRGGUP32M23CTU7RUAGXDNOHSA6O2BS2IK4NVUP5X2JQXKTSIQJKE, symbol, []]]]\\n\"}"
+      },
+      "get_apy": {
+        "status": "failed",
+        "error": "APY endpoint not found for vault: CCSPRGGUP32M23CTU7RUAGXDNOHSA6O2BS2IK4NVUP5X2JQXKTSIQJKE"
+      },
+      "build_deposit": {
+        "status": "failed",
+        "error": "DeFindex API bad request: No response text"
+      }
+    }
+  },
+  "XLM_HODL_3": {
+    "name": "XLM_HODL_3",
+    "address": "CBLXUUHUL7TA3LF3U5G6ZTU7EACBBOSJLR4AYOM5YJKJ4APZ7O547R5T",
+    "tests": {
+      "get_info": {
+        "status": "failed",
+        "error": "DeFindex API error: 400 - {\"message\":\"Trying to call a missing value\",\"errorCode\":0,\"error\":\"Error simulating transaction: HostError: Error(Storage, MissingValue)\\n\\nEvent log (newest first):\\n   0: [Diagnostic Event] contract:CBZV3HBP672BV7FF3ZILVT4CNPW3N5V2WTJ2LAGOAYW5R7L2D5SLUDFZ, topics:[error, Error(Storage, MissingValue)], data:\\\"escalating error to VM trap from failed host function call: call\\\"\\n   1: [Diagnostic Event] contract:CBZV3HBP672BV7FF3ZILVT4CNPW3N5V2WTJ2LAGOAYW5R7L2D5SLUDFZ, topics:[error, Error(Storage, MissingValue)], data:[\\\"contract call failed\\\", get_assets, []]\\n   2: [Diagnostic Event] contract:CBZV3HBP672BV7FF3ZILVT4CNPW3N5V2WTJ2LAGOAYW5R7L2D5SLUDFZ, topics:[error, Error(Storage, MissingValue)], data:\\\"trying to get non-existing value for contract instance\\\"\\n   3: [Diagnostic Event] contract:CBZV3HBP672BV7FF3ZILVT4CNPW3N5V2WTJ2LAGOAYW5R7L2D5SLUDFZ, topics:[fn_call, CBLXUUHUL7TA3LF3U5G6ZTU7EACBBOSJLR4AYOM5YJKJ4APZ7O547R5T, get_assets], data:Void\\n   4: [Diagnostic Event] topics:[fn_call, CBZV3HBP672BV7FF3ZILVT4CNPW3N5V2WTJ2LAGOAYW5R7L2D5SLUDFZ, exec], data:[GALAXYVOIDAOPZTDLHILAJQKCVVFMD4IKLXLSZV5YHO7VY74IWZILUTO, [[CBLXUUHUL7TA3LF3U5G6ZTU7EACBBOSJLR4AYOM5YJKJ4APZ7O547R5T, get_assets, []], [CBLXUUHUL7TA3LF3U5G6ZTU7EACBBOSJLR4AYOM5YJKJ4APZ7O547R5T, fetch_total_managed_funds, []], [CBLXUUHUL7TA3LF3U5G6ZTU7EACBBOSJLR4AYOM5YJKJ4APZ7O547R5T, get_fees, []], [CBLXUUHUL7TA3LF3U5G6ZTU7EACBBOSJLR4AYOM5YJKJ4APZ7O547R5T, get_manager, []], [CBLXUUHUL7TA3LF3U5G6ZTU7EACBBOSJLR4AYOM5YJKJ4APZ7O547R5T, get_emergency_manager, []], [CBLXUUHUL7TA3LF3U5G6ZTU7EACBBOSJLR4AYOM5YJKJ4APZ7O547R5T, get_rebalance_manager, []], [CBLXUUHUL7TA3LF3U5G6ZTU7EACBBOSJLR4AYOM5YJKJ4APZ7O547R5T, get_fee_receiver, []], [CBLXUUHUL7TA3LF3U5G6ZTU7EACBBOSJLR4AYOM5YJKJ4APZ7O547R5T, name, []], [CBLXUUHUL7TA3LF3U5G6ZTU7EACBBOSJLR4AYOM5YJKJ4APZ7O547R5T, symbol, []]]]\\n\"}"
+      },
+      "get_apy": {
+        "status": "failed",
+        "error": "APY endpoint not found for vault: CBLXUUHUL7TA3LF3U5G6ZTU7EACBBOSJLR4AYOM5YJKJ4APZ7O547R5T"
+      },
+      "build_deposit": {
+        "status": "failed",
+        "error": "DeFindex API bad request: No response text"
+      }
+    }
+  },
+  "XLM_HODL_4": {
+    "name": "XLM_HODL_4",
+    "address": "CCGKL6U2DHSNFJ3NU4UPRUKYE2EUGYR4ZFZDYA7KDJLP3TKSPHD5C4UP",
+    "tests": {
+      "get_info": {
+        "status": "failed",
+        "error": "DeFindex API error: 400 - {\"message\":\"Trying to call a missing value\",\"errorCode\":0,\"error\":\"Error simulating transaction: HostError: Error(Storage, MissingValue)\\n\\nEvent log (newest first):\\n   0: [Diagnostic Event] contract:CBZV3HBP672BV7FF3ZILVT4CNPW3N5V2WTJ2LAGOAYW5R7L2D5SLUDFZ, topics:[error, Error(Storage, MissingValue)], data:\\\"escalating error to VM trap from failed host function call: call\\\"\\n   1: [Diagnostic Event] contract:CBZV3HBP672BV7FF3ZILVT4CNPW3N5V2WTJ2LAGOAYW5R7L2D5SLUDFZ, topics:[error, Error(Storage, MissingValue)], data:[\\\"contract call failed\\\", get_assets, []]\\n   2: [Diagnostic Event] contract:CBZV3HBP672BV7FF3ZILVT4CNPW3N5V2WTJ2LAGOAYW5R7L2D5SLUDFZ, topics:[error, Error(Storage, MissingValue)], data:\\\"trying to get non-existing value for contract instance\\\"\\n   3: [Diagnostic Event] contract:CBZV3HBP672BV7FF3ZILVT4CNPW3N5V2WTJ2LAGOAYW5R7L2D5SLUDFZ, topics:[fn_call, CCGKL6U2DHSNFJ3NU4UPRUKYE2EUGYR4ZFZDYA7KDJLP3TKSPHD5C4UP, get_assets], data:Void\\n   4: [Diagnostic Event] topics:[fn_call, CBZV3HBP672BV7FF3ZILVT4CNPW3N5V2WTJ2LAGOAYW5R7L2D5SLUDFZ, exec], data:[GALAXYVOIDAOPZTDLHILAJQKCVVFMD4IKLXLSZV5YHO7VY74IWZILUTO, [[CCGKL6U2DHSNFJ3NU4UPRUKYE2EUGYR4ZFZDYA7KDJLP3TKSPHD5C4UP, get_assets, []], [CCGKL6U2DHSNFJ3NU4UPRUKYE2EUGYR4ZFZDYA7KDJLP3TKSPHD5C4UP, fetch_total_managed_funds, []], [CCGKL6U2DHSNFJ3NU4UPRUKYE2EUGYR4ZFZDYA7KDJLP3TKSPHD5C4UP, get_fees, []], [CCGKL6U2DHSNFJ3NU4UPRUKYE2EUGYR4ZFZDYA7KDJLP3TKSPHD5C4UP, get_manager, []], [CCGKL6U2DHSNFJ3NU4UPRUKYE2EUGYR4ZFZDYA7KDJLP3TKSPHD5C4UP, get_emergency_manager, []], [CCGKL6U2DHSNFJ3NU4UPRUKYE2EUGYR4ZFZDYA7KDJLP3TKSPHD5C4UP, get_rebalance_manager, []], [CCGKL6U2DHSNFJ3NU4UPRUKYE2EUGYR4ZFZDYA7KDJLP3TKSPHD5C4UP, get_fee_receiver, []], [CCGKL6U2DHSNFJ3NU4UPRUKYE2EUGYR4ZFZDYA7KDJLP3TKSPHD5C4UP, name, []], [CCGKL6U2DHSNFJ3NU4UPRUKYE2EUGYR4ZFZDYA7KDJLP3TKSPHD5C4UP, symbol, []]]]\\n\"}"
+      },
+      "get_apy": {
+        "status": "failed",
+        "error": "APY endpoint not found for vault: CCGKL6U2DHSNFJ3NU4UPRUKYE2EUGYR4ZFZDYA7KDJLP3TKSPHD5C4UP"
+      },
+      "build_deposit": {
+        "status": "failed",
+        "error": "DeFindex API bad request: No response text"
+      }
+    }
+  }
+}

@@ -2,6 +2,7 @@ import React from "react";
 import { Heading, Card, Content } from "@stellar/design-system";
 import { useAgent } from "../providers/AgentProvider";
 import PoolsDashboard from "../components/dashboard/PoolsDashboard";
+import { DeFindexVaultsDashboard } from "../components/dashboard/DeFindexVaultsDashboard";
 
 const Dashboard: React.FC = () => {
   const agent = useAgent();
@@ -126,11 +127,24 @@ const Dashboard: React.FC = () => {
         </Content>
       </Card>
 
+      {/* DeFindex Vaults Section */}
+      <Card>
+        <Content>
+          <div style={{ marginBottom: "20px" }}>
+            <Heading as="h2" size="md">🏛️ DeFindex Vaults</Heading>
+            <p style={{ color: 'var(--color-text-secondary)', margin: '8px 0' }}>
+              Yield-generating vaults with AI-powered deposit instructions
+            </p>
+          </div>
+          <DeFindexVaultsDashboard />
+        </Content>
+      </Card>
+
       {/* Pools Section - Agent View */}
       <Card>
         <Content>
           <div style={{ marginBottom: "20px" }}>
-            <Heading as="h2" size="md">Blend Protocol Overview</Heading>
+            <Heading as="h2" size="md">📊 Blend Protocol Overview</Heading>
             <p style={{ color: 'var(--color-text-secondary)', margin: '8px 0' }}>
               Market data for agent decision-making
             </p>
