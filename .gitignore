@@ -70,5 +70,6 @@ wheels/
 MANIFEST
 
 backend/chat_threads.db
+backend/tuxedo.db
 # Stellar account keystores - contain private keys!
 .stellar_keystore*.json
