@@ -440,6 +440,10 @@ async def process_agent_message(
         raise Exception("Agent not initialized")
 
     try:
+        # Auto-select agent account if not provided
+        if not agent_account:
+            agent_account = get_default_agent_account()
+
         # Build system prompt
         system_prompt = build_agent_system_prompt()
 
@@ -630,10 +634,11 @@ You have access to Stellar blockchain tools that can:
 3. **Interpret results clearly** - Translate blockchain data into understandable insights
 4. **Handle gracefully** - If tools fail, explain the issue and suggest alternatives
 5. **Security first** - Never expose private keys or sensitive information
-6. **Agent Account Management** - When users ask about "my wallet", "my account", "my balance", or similar phrases, use your agent account management tools to create accounts or check balances. You manage your own accounts autonomously.
-7. **No external wallets needed** - Emphasize that you are an AI agent that manages its own accounts - users don't need to connect wallets.
-8. **Explain trading limitations** - When orderbooks are empty, explain that most trading happens via liquidity pools and testnet has limited activity.
-9. **Balance check priority** - When users mention balance or account without being specific, check your agent accounts first using agent_list_accounts.
+6. **Agent Account Management** - You manage your own Stellar accounts autonomously. When users ask about "my wallet", "my account", "my balance", or similar phrases, check your existing agent accounts first using agent_list_accounts.
+7. **Prioritize Existing Accounts** - ALWAYS check existing accounts before creating new ones. Use agent_list_accounts first, and only create new accounts with agent_create_account if no suitable accounts exist or when explicitly requested.
+8. **No external wallets needed** - Emphasize that you are an AI agent that manages its own accounts - users don't need to connect wallets.
+9. **Explain trading limitations** - When orderbooks are empty, explain that most trading happens via liquidity pools and testnet has limited activity.
+10. **Balance check priority** - When users mention balance or account without being specific, check your agent accounts first using agent_list_accounts.
 
 **Current Context:**
 - User is on Stellar testnet for educational purposes
@@ -641,6 +646,35 @@ You have access to Stellar blockchain tools that can:
 - Prioritize account balance checks before suggesting operations
 - Always explain risks and transaction costs
 - Be transparent about testnet liquidity limitations"""
+
+def get_default_agent_account() -> Optional[str]:
+    """
+    Get the default agent account to use.
+
+    Returns the first account with a balance, or None if no accounts exist.
+    """
+    try:
+        from tools.agent.account_management import list_agent_accounts
+        accounts = list_agent_accounts()
+
+        if not accounts:
+            return None
+
+        # Find first account with a meaningful balance (at least 1 XLM)
+        for account in accounts:
+            if account.get('balance', 0) >= 1.0:
+                return account['address']
+
+        # If no accounts with significant balance, return the first one
+        if accounts:
+            return accounts[0]['address']
+
+        return None
+
+    except Exception as e:
+        logger.error(f"Error getting default agent account: {e}")
+        return None
+
 
 def build_agent_context(agent_account: str) -> str:
     """Build agent account context for the system prompt"""
@@ -650,7 +684,8 @@ You are currently using agent account: {agent_account}
 When users ask about "my wallet", "my account", "my balance", or similar phrases:
 - This is your active agent account that you manage autonomously
 - Use this address for account operations and balance checks
-- You can create additional accounts using agent_create_account if needed
+- Check existing accounts using agent_list_accounts before creating new ones
+- Only create new accounts when explicitly requested or if no suitable accounts exist
 - No external wallet connection is required - you manage your own accounts
 The address is a Stellar public key starting with 'G'.
 """
