@@ -58,27 +58,33 @@
 
 ## Implementation Timeline
 
-**Week 1**: Delete & Rebuild
-- Day 1-2: Delete all magic link code
-- Day 3-5: Build passkey infrastructure
-- Day 6-7: Build passkey UI
+**UPDATED: Agentic Rapid Iteration Mode**
 
-**Week 2**: Wallet Adapter
-- Day 1-3: Stellar Wallets Kit integration
-- Day 4-5: Wallet export functionality
-- Day 6-7: Wallet management UI
+**Hour 1**: Database + Core Crypto
+- Database migration (magic links → passkeys)
+- PRF fallback strategy (Windows Hello support)
+- Recovery code generation system
+- Multi-agent architecture tables
 
-**Week 3**: Security & Polish
-- Day 1-2: Multi-device passkey management
-- Day 3-4: Recovery mechanisms
-- Day 5-7: Security hardening
+**Hour 2**: Backend Passkey Endpoints
+- WebAuthn registration flow
+- Authentication & verification
+- Session management
+- Agent creation endpoint
 
-**Week 4**: Testing & Launch
-- Day 1-3: Cross-browser testing
-- Day 4-5: Load testing
-- Day 6-7: Documentation & launch
+**Hour 3**: Frontend Integration
+- @simplewebauthn/browser setup
+- PasskeyAuthService implementation
+- AuthContext updates
+- Registration/login UI
 
-**Total**: 4 weeks to production-ready passkey system
+**Hour 4**: Multi-Agent UI + Testing
+- Sidebar meta chat box (agent spawner)
+- Agent creation flows
+- Multi-agent parallel testing
+- End-to-end verification
+
+**Total**: 4 hours to functional passkey system (agentic coding mode)
 
 ---
 
