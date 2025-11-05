@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { Heading, Card, Content } from "@stellar/design-system";
 import { useAgent } from "../providers/AgentProvider";
 import PoolsDashboard from "../components/dashboard/PoolsDashboard";
@@ -46,8 +47,8 @@ const Dashboard: React.FC = () => {
             Our AI agent manages its own testnet accounts and provides real-time, actionable guidance.
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
-            <a
-              href="/chat"
+            <Link
+              to="/chat"
               style={{
                 display: 'inline-block',
                 padding: '12px 24px',
@@ -73,7 +74,7 @@ const Dashboard: React.FC = () => {
               }}
             >
               🚀 Start Chatting with AI Agent
-            </a>
+            </Link>
           </div>
           <p style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', margin: '12px 0 0 0', fontStyle: 'italic' }}>
             🔐 Secure email-based authentication required • No wallet installation needed
