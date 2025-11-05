@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Button, Input, Text } from '@stellar/design-system';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -97,6 +98,26 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           <Text as="p" size="sm" style={{ color: 'var(--color-text-secondary)' }}>
             Sign in with your email to access the AI assistant
           </Text>
+          <div style={{ marginTop: '16px' }}>
+            <Link
+              to="/dashboard"
+              style={{
+                fontSize: '12px',
+                color: 'var(--color-stellar-glow-strong)',
+                textDecoration: 'none',
+                opacity: 0.8,
+                transition: 'opacity 0.2s ease'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.opacity = '1';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.opacity = '0.8';
+              }}
+            >
+              ← Back to Dashboard
+            </Link>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -149,6 +170,20 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             >
               {message.text}
             </Text>
+            {message.type === 'success' && (
+              <Text
+                as="p"
+                size="xs"
+                style={{
+                  color: 'var(--color-text-secondary)',
+                  margin: '8px 0 0 0',
+                  textAlign: 'center',
+                  fontStyle: 'italic'
+                }}
+              >
+                📧 Don't see the email? Check your spam folder and mark "Not Spam" to ensure delivery.
+              </Text>
+            )}
           </div>
         )}
 
@@ -160,11 +195,20 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           <Text as="p" size="xs" style={{
             color: 'var(--color-text-tertiary)',
             textAlign: 'center',
-            margin: 0,
+            margin: '0 0 8px 0',
             lineHeight: 1.5
           }}>
             We'll send you a magic link that signs you in instantly.
             No password needed!
+          </Text>
+          <Text as="p" size="xs" style={{
+            color: 'var(--color-text-tertiary)',
+            textAlign: 'center',
+            margin: 0,
+            lineHeight: 1.4,
+            fontStyle: 'italic'
+          }}>
+            📧 Pro tip: Check your spam folder if you don't see the email within 30 seconds
           </Text>
         </div>
       </div>

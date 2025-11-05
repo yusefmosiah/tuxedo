@@ -27,9 +27,88 @@ const Dashboard: React.FC = () => {
 
   return (
     <div style={{ padding: "24px" }}>
-      <Heading as="h1" size="lg">
-        🤖 AI Agent Dashboard
-      </Heading>
+      <div style={{ marginBottom: "32px", textAlign: "center" }}>
+        <Heading as="h1" size="lg" style={{ marginBottom: "16px" }}>
+          🤖 Tuxedo AI - Your DeFi Agent
+        </Heading>
+        <div style={{
+          backgroundColor: 'var(--color-stellar-glow-subtle)',
+          border: '1px solid var(--color-stellar-glow-strong)',
+          borderRadius: 'var(--border-radius-lg)',
+          padding: '24px',
+          marginBottom: "24px"
+        }}>
+          <Heading as="h2" size="md" style={{ marginBottom: "12px", color: 'var(--color-stellar-glow-strong)' }}>
+            💬 Access Your Personal DeFi Agent Chat
+          </Heading>
+          <p style={{ fontSize: '16px', lineHeight: '1.6', margin: '0 0 16px 0', color: 'var(--color-text-primary)' }}>
+            Get instant help with Stellar DeFi operations, account management, trading strategies, and smart contract interactions.
+            Our AI agent manages its own testnet accounts and provides real-time, actionable guidance.
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+            <a
+              href="/chat"
+              style={{
+                display: 'inline-block',
+                padding: '12px 24px',
+                backgroundColor: 'var(--color-stellar-glow-strong)',
+                color: 'white',
+                textDecoration: 'none',
+                borderRadius: 'var(--border-radius-md)',
+                fontWeight: 'bold',
+                fontSize: '14px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                transition: 'all 0.2s ease',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--color-stellar-glow-deep)';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--color-stellar-glow-strong)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              🚀 Start Chatting with AI Agent
+            </a>
+          </div>
+          <p style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', margin: '12px 0 0 0', fontStyle: 'italic' }}>
+            🔐 Secure email-based authentication required • No wallet installation needed
+          </p>
+        </div>
+      </div>
+
+      {/* Separator */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        margin: '32px 0',
+        gap: '16px'
+      }}>
+        <div style={{
+          flex: 1,
+          height: '1px',
+          background: 'linear-gradient(to right, transparent, var(--color-border), transparent)'
+        }} />
+        <span style={{
+          color: 'var(--color-text-tertiary)',
+          fontSize: '12px',
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em',
+          fontWeight: 'bold',
+          fontFamily: 'var(--font-tertiary-mono)'
+        }}>
+          Agent Activity Dashboard
+        </span>
+        <div style={{
+          flex: 1,
+          height: '1px',
+          background: 'linear-gradient(to right, transparent, var(--color-border), transparent)'
+        }} />
+      </div>
 
       {/* Agent Status Section */}
       <Card>
