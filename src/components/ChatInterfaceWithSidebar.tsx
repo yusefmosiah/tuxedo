@@ -3,7 +3,12 @@ import { Button, Text } from "@stellar/design-system";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
-import { chatApi, StreamMessage, type HealthResponse } from "../lib/api";
+import {
+  chatApi,
+  StreamMessage,
+  type HealthResponse,
+  API_BASE_URL,
+} from "../lib/api";
 import { useChatThreads, ExtendedChatMessage } from "../hooks/useChatThreads";
 import { ThreadSidebar } from "./ThreadSidebar";
 import "../App.module.css";
@@ -59,9 +64,7 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
 
           // Fetch agent accounts (agent-first approach)
           try {
-            const response = await fetch(
-              "http://localhost:8000/api/agent/accounts",
-            );
+            const response = await fetch(`${API_BASE_URL}/api/agent/accounts`);
             if (response.ok) {
               const accounts = await response.json();
               if (accounts.length > 0) {

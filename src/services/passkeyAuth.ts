@@ -3,12 +3,7 @@
  * Handles WebAuthn passkey operations for user authentication
  */
 
-const API_BASE_URL =
-  (typeof import.meta !== 'undefined' &&
-   (import.meta.env?.VITE_API_URL || import.meta.env?.PUBLIC_API_URL)) ||
-  (typeof process !== 'undefined' &&
-   (process.env?.VITE_API_URL || process.env?.PUBLIC_API_URL)) ||
-  "http://localhost:8000";
+import { API_BASE_URL } from "../lib/api";
 
 export interface User {
   id: string;
@@ -56,8 +51,8 @@ class PasskeyAuthService {
       throw new Error("Passkeys are not supported in this browser");
     }
 
-    console.log('🔐 Starting passkey registration with API:', API_BASE_URL);
-    console.log('🌐 Current origin:', window.location.origin);
+    console.log("🔐 Starting passkey registration with API:", API_BASE_URL);
+    console.log("🌐 Current origin:", window.location.origin);
 
     // Step 1: Start registration
     let startResponse: Response;
@@ -68,11 +63,13 @@ class PasskeyAuthService {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email }),
-        }
+        },
       );
     } catch (error: any) {
       console.error("Network error during registration start:", error);
-      throw new Error(`Network error: ${error.message || "Could not connect to server. Please check your internet connection."}`);
+      throw new Error(
+        `Network error: ${error.message || "Could not connect to server. Please check your internet connection."}`,
+      );
     }
 
     if (!startResponse.ok) {
@@ -84,7 +81,10 @@ class PasskeyAuthService {
         // Response is not JSON, try to get text
         try {
           const errorText = await startResponse.text();
-          console.error("Non-JSON error response:", errorText.substring(0, 200));
+          console.error(
+            "Non-JSON error response:",
+            errorText.substring(0, 200),
+          );
           errorMessage = `Server error (${startResponse.status}): ${startResponse.statusText || "Unknown error"}`;
         } catch (textError) {
           console.error("Could not parse error response:", textError);
@@ -129,23 +129,23 @@ class PasskeyAuthService {
       // Provide more specific error messages based on error type
       if (error.name === "NotAllowedError") {
         throw new Error(
-          "Passkey creation was cancelled. Please try again and approve the prompt."
+          "Passkey creation was cancelled. Please try again and approve the prompt.",
         );
       } else if (error.name === "InvalidStateError") {
         throw new Error(
-          "A passkey already exists for this device. Please try signing in instead."
+          "A passkey already exists for this device. Please try signing in instead.",
         );
       } else if (error.name === "NotSupportedError") {
         throw new Error(
-          "Passkeys are not supported on this device or browser."
+          "Passkeys are not supported on this device or browser.",
         );
       } else if (error.name === "SecurityError") {
         throw new Error(
-          "Security error: Please ensure you're accessing the site via HTTPS."
+          "Security error: Please ensure you're accessing the site via HTTPS.",
         );
       }
       throw new Error(
-        `Failed to create passkey: ${error.message || "Please try again."}`
+        `Failed to create passkey: ${error.message || "Please try again."}`,
       );
     }
 
@@ -155,7 +155,7 @@ class PasskeyAuthService {
 
     // Step 3: Verify registration with backend
     const credentialData = this.credentialToJSON(
-      credential as PublicKeyCredential
+      credential as PublicKeyCredential,
     );
 
     let verifyResponse: Response;
@@ -170,11 +170,13 @@ class PasskeyAuthService {
             challenge_id,
             credential: credentialData,
           }),
-        }
+        },
       );
     } catch (error: any) {
       console.error("Network error during registration verification:", error);
-      throw new Error(`Network error: ${error.message || "Could not connect to server. Please check your internet connection."}`);
+      throw new Error(
+        `Network error: ${error.message || "Could not connect to server. Please check your internet connection."}`,
+      );
     }
 
     if (!verifyResponse.ok) {
@@ -186,7 +188,10 @@ class PasskeyAuthService {
         // Response is not JSON, try to get text
         try {
           const errorText = await verifyResponse.text();
-          console.error("Non-JSON error response:", errorText.substring(0, 200));
+          console.error(
+            "Non-JSON error response:",
+            errorText.substring(0, 200),
+          );
           errorMessage = `Server error (${verifyResponse.status}): ${verifyResponse.statusText || "Unknown error"}`;
         } catch (textError) {
           console.error("Could not parse error response:", textError);
@@ -199,7 +204,10 @@ class PasskeyAuthService {
     try {
       result = await verifyResponse.json();
     } catch (error: any) {
-      console.error("Failed to parse registration verification response:", error);
+      console.error(
+        "Failed to parse registration verification response:",
+        error,
+      );
       throw new Error("Invalid server response. Please try again.");
     }
 
@@ -222,23 +230,22 @@ class PasskeyAuthService {
       throw new Error("Email is required for authentication");
     }
 
-    console.log('🔐 Starting passkey authentication with API:', API_BASE_URL);
-    console.log('🌐 Current origin:', window.location.origin);
+    console.log("🔐 Starting passkey authentication with API:", API_BASE_URL);
+    console.log("🌐 Current origin:", window.location.origin);
 
     // Step 1: Start authentication
     let startResponse: Response;
     try {
-      startResponse = await fetch(
-        `${API_BASE_URL}/auth/passkey/login/start`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        }
-      );
+      startResponse = await fetch(`${API_BASE_URL}/auth/passkey/login/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
     } catch (error: any) {
       console.error("Network error during authentication start:", error);
-      throw new Error(`Network error: ${error.message || "Could not connect to server. Please check your internet connection."}`);
+      throw new Error(
+        `Network error: ${error.message || "Could not connect to server. Please check your internet connection."}`,
+      );
     }
 
     if (!startResponse.ok) {
@@ -250,7 +257,10 @@ class PasskeyAuthService {
         // Response is not JSON, try to get text
         try {
           const errorText = await startResponse.text();
-          console.error("Non-JSON error response:", errorText.substring(0, 200));
+          console.error(
+            "Non-JSON error response:",
+            errorText.substring(0, 200),
+          );
           errorMessage = `Server error (${startResponse.status}): ${startResponse.statusText || "Unknown error"}`;
         } catch (textError) {
           console.error("Could not parse error response:", textError);
@@ -290,19 +300,19 @@ class PasskeyAuthService {
       // Provide more specific error messages based on error type
       if (error.name === "NotAllowedError") {
         throw new Error(
-          "Authentication was cancelled. Please try again and approve the prompt."
+          "Authentication was cancelled. Please try again and approve the prompt.",
         );
       } else if (error.name === "NotSupportedError") {
         throw new Error(
-          "Passkeys are not supported on this device or browser."
+          "Passkeys are not supported on this device or browser.",
         );
       } else if (error.name === "SecurityError") {
         throw new Error(
-          "Security error: Please ensure you're accessing the site via HTTPS."
+          "Security error: Please ensure you're accessing the site via HTTPS.",
         );
       }
       throw new Error(
-        `Failed to authenticate: ${error.message || "Please try again."}`
+        `Failed to authenticate: ${error.message || "Please try again."}`,
       );
     }
 
@@ -312,7 +322,7 @@ class PasskeyAuthService {
 
     // Step 3: Verify authentication with backend
     const credentialData = this.credentialToJSON(
-      credential as PublicKeyCredential
+      credential as PublicKeyCredential,
     );
 
     let verifyResponse: Response;
@@ -326,11 +336,13 @@ class PasskeyAuthService {
             challenge_id,
             credential: credentialData,
           }),
-        }
+        },
       );
     } catch (error: any) {
       console.error("Network error during authentication verification:", error);
-      throw new Error(`Network error: ${error.message || "Could not connect to server. Please check your internet connection."}`);
+      throw new Error(
+        `Network error: ${error.message || "Could not connect to server. Please check your internet connection."}`,
+      );
     }
 
     if (!verifyResponse.ok) {
@@ -342,7 +354,10 @@ class PasskeyAuthService {
         // Response is not JSON, try to get text
         try {
           const errorText = await verifyResponse.text();
-          console.error("Non-JSON error response:", errorText.substring(0, 200));
+          console.error(
+            "Non-JSON error response:",
+            errorText.substring(0, 200),
+          );
           errorMessage = `Server error (${verifyResponse.status}): ${verifyResponse.statusText || "Unknown error"}`;
         } catch (textError) {
           console.error("Could not parse error response:", textError);
@@ -355,7 +370,10 @@ class PasskeyAuthService {
     try {
       result = await verifyResponse.json();
     } catch (error: any) {
-      console.error("Failed to parse authentication verification response:", error);
+      console.error(
+        "Failed to parse authentication verification response:",
+        error,
+      );
       throw new Error("Invalid server response. Please try again.");
     }
 
@@ -376,7 +394,7 @@ class PasskeyAuthService {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, code }),
-      }
+      },
     );
 
     if (!response.ok) {
@@ -384,7 +402,7 @@ class PasskeyAuthService {
       if (response.status === 429) {
         throw new Error(
           error.error?.message ||
-            "Too many failed attempts. Please try again later."
+            "Too many failed attempts. Please try again later.",
         );
       }
       throw new Error(error.error?.message || "Invalid recovery code");
@@ -411,7 +429,7 @@ class PasskeyAuthService {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -433,7 +451,7 @@ class PasskeyAuthService {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -480,7 +498,7 @@ class PasskeyAuthService {
    */
   async addPasskey(
     _token: string,
-    _friendlyName?: string
+    _friendlyName?: string,
   ): Promise<PasskeyCredential> {
     if (!this.isSupported()) {
       throw new Error("Passkeys are not supported in this browser");
@@ -502,7 +520,7 @@ class PasskeyAuthService {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -521,7 +539,7 @@ class PasskeyAuthService {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
-      }
+      },
     );
 
     if (!response.ok) {
@@ -579,7 +597,10 @@ class PasskeyAuthService {
     for (let i = 0; i < bytes.byteLength; i++) {
       binary += String.fromCharCode(bytes[i]);
     }
-    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+    return btoa(binary)
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=/g, "");
   }
 
   /**
@@ -589,7 +610,7 @@ class PasskeyAuthService {
     const response = credential.response;
 
     // Check if this is a registration or authentication response
-    const isRegistration = 'attestationObject' in response;
+    const isRegistration = "attestationObject" in response;
 
     if (isRegistration) {
       const attestationResponse = response as AuthenticatorAttestationResponse;
@@ -598,8 +619,12 @@ class PasskeyAuthService {
         rawId: this.bufferToBase64url(credential.rawId),
         type: credential.type,
         response: {
-          clientDataJSON: this.bufferToBase64url(attestationResponse.clientDataJSON),
-          attestationObject: this.bufferToBase64url(attestationResponse.attestationObject),
+          clientDataJSON: this.bufferToBase64url(
+            attestationResponse.clientDataJSON,
+          ),
+          attestationObject: this.bufferToBase64url(
+            attestationResponse.attestationObject,
+          ),
           transports: (credential as any).response?.getTransports
             ? (credential as any).response.getTransports()
             : [],
@@ -612,8 +637,12 @@ class PasskeyAuthService {
         rawId: this.bufferToBase64url(credential.rawId),
         type: credential.type,
         response: {
-          clientDataJSON: this.bufferToBase64url(assertionResponse.clientDataJSON),
-          authenticatorData: this.bufferToBase64url(assertionResponse.authenticatorData),
+          clientDataJSON: this.bufferToBase64url(
+            assertionResponse.clientDataJSON,
+          ),
+          authenticatorData: this.bufferToBase64url(
+            assertionResponse.authenticatorData,
+          ),
           signature: this.bufferToBase64url(assertionResponse.signature),
           userHandle: assertionResponse.userHandle
             ? this.bufferToBase64url(assertionResponse.userHandle)
