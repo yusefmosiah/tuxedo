@@ -1,0 +1,246 @@
+================================================================================
+PASSKEY REGISTRATION 409 ERROR - ANALYSIS SUMMARY
+================================================================================
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║ 1. WHERE IS THE 409 ERROR RETURNED?                                       ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+File: /home/user/tuxedo/backend/api/routes/passkey_auth.py
+Lines: 224-235 (register_start endpoint)
+
+    @router.post("/auth/passkey/register/start")
+    async def register_start(req: Request, request: RegisterStartRequest):
+        existing_user = db.get_user_by_email(request.email)  # Line 229
+        if existing_user:
+            create_error_response(
+                "USER_EXISTS",
+                "An account with this email already exists",
+                status_code=409  # <-- HERE
+            )
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║ 2. WHAT CONDITIONS TRIGGER THE 409?                                       ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+CONDITION:
+    Email already exists in database AND is_active = TRUE
+
+SQL QUERY:
+    SELECT * FROM users WHERE email = ? AND is_active = TRUE
+
+If this query returns a row -> 409 error is returned
+
+KEY POINT: The check ONLY looks for ACTIVE users!
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║ 3. HOW IS USER UNIQUENESS DETERMINED?                                     ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+TWO LAYERS:
+
+Layer 1 - APPLICATION LEVEL (passkey_auth.py):
+    ✓ Only checks for active users (is_active = TRUE)
+    ✓ Returns proper 409 error if found
+    ✓ Allows inactive users to "register" again
+
+Layer 2 - DATABASE LEVEL (database_passkeys.py):
+    CREATE TABLE users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,     <-- UNIQUE constraint on ALL emails
+        is_active BOOLEAN DEFAULT TRUE
+    )
+    
+    ✗ UNIQUE constraint applies to ALL emails (active + inactive)
+    ✗ No error handling for IntegrityError in code
+    ✗ Can cause unhandled 500 errors instead of 409
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║ 4. CRITICAL ISSUES FOUND                                                  ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+ISSUE #1: RACE CONDITION
+─────────────────────────
+
+Timeline:
+  1. User A: POST /register/start with email@example.com
+     → Check passes (no user exists)
+     → Returns challenge_id
+
+  2. User B: POST /register/start with email@example.com (SAME EMAIL!)
+     → Check passes (still no user exists)
+     → Returns challenge_id
+
+  3. User A: POST /register/verify
+     → db.create_user(email) succeeds
+     → User created in database
+
+  4. User B: POST /register/verify
+     → db.create_user(email) FAILS with sqlite3.IntegrityError
+     → NOT CAUGHT by specific handler
+     → Generic exception handler returns 500 instead of 409!
+
+PROBLEM CODE (passkey_auth.py Lines 286-413):
+    @router.post("/auth/passkey/register/verify")
+    async def register_verify(...):
+        try:
+            # ... verification code ...
+            user = db.create_user(request.email)  # Line 361
+            # NO CHECK FOR EXISTING USER BEFORE THIS!
+            # CAN FAIL WITH IntegrityError!
+        except HTTPException:
+            raise
+        except Exception as e:
+            # Catches the IntegrityError but returns wrong status!
+            create_error_response(
+                "REGISTRATION_VERIFY_FAILED",
+                "Failed to complete registration",
+                status_code=500  # <-- WRONG! Should be 409!
+            )
+
+
+ISSUE #2: DEACTIVATED USER CAN'T RE-REGISTER
+──────────────────────────────────────────────
+
+Timeline:
+  1. User has account with email@example.com, is_active = TRUE
+  2. User gets deactivated (is_active = FALSE)
+  3. User tries to register with same email
+  4. /register/start query:
+     SELECT * FROM users WHERE email = ? AND is_active = TRUE
+     → Returns NULL (because is_active is FALSE!)
+  5. Check passes, registration proceeds
+  6. /register/verify calls db.create_user(email)
+     → sqlite3.IntegrityError (UNIQUE constraint)
+     → Returns 500 error instead of informative message
+
+
+ISSUE #3: NO INTEGRITY ERROR HANDLING
+──────────────────────────────────────
+
+Location: database_passkeys.py (Lines 168-183)
+
+    def create_user(self, email: str) -> Dict[str, Any]:
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO users (id, email, created_at)
+                VALUES (?, ?, ?)
+            ''', (user_id, email, datetime.now()))
+            conn.commit()  # <-- No try/except for IntegrityError!
+
+    # If email already exists (from ANY user, active or inactive):
+    # sqlite3.IntegrityError is raised and NOT caught
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║ 5. RP_ID AND ORIGIN ISSUES                                                ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+RP_ID EXTRACTION (Lines 52-91):
+    1. Get origin from request headers
+    2. Validate against ALLOWED_ORIGINS list
+    3. Extract hostname: https://tuxedo.onrender.com → tuxedo.onrender.com
+    4. Special case: localhost/127.0.0.1 → localhost
+
+ALLOWED ORIGINS:
+    - http://localhost:5173
+    - http://localhost:3000
+    - https://tuxedo.onrender.com
+    - https://tuxedo-frontend.onrender.com
+
+POTENTIAL ISSUE:
+    - RP_ID computed in /register/start
+    - RP_ID re-computed in /register/verify
+    - If client origin changes between requests → verification fails
+    - Challenge stores neither RP_ID nor origin
+    - No way to verify consistency between endpoints
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║ 6. EXACT CODE SNIPPETS                                                    ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+WHERE 409 IS RETURNED:
+File: /home/user/tuxedo/backend/api/routes/passkey_auth.py
+Lines: 230-235
+
+    if existing_user:
+        create_error_response(
+            "USER_EXISTS",
+            "An account with this email already exists",
+            status_code=409
+        )
+
+HOW THE ERROR IS CREATED:
+File: /home/user/tuxedo/backend/api/routes/passkey_auth.py
+Lines: 205-220
+
+    def create_error_response(code: str, message: str, details: Optional[Dict] = None, status_code: int = 400):
+        error_data = {
+            "code": code,
+            "message": message
+        }
+        if details:
+            error_data["details"] = details
+
+        raise HTTPException(
+            status_code=status_code,
+            detail={
+                "success": False,
+                "error": error_data
+            }
+        )
+
+USER EXISTENCE CHECK:
+File: /home/user/tuxedo/backend/database_passkeys.py
+Lines: 185-193
+
+    def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM users WHERE email = ? AND is_active = TRUE', (email,))
+            user = cursor.fetchone()
+            return dict(user) if user else None
+
+DATABASE SCHEMA:
+File: /home/user/tuxedo/backend/database_passkeys.py
+Lines: 26-33
+
+    CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,           # <-- UNIQUE constraint on ALL emails
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_login TIMESTAMP,
+        is_active BOOLEAN DEFAULT TRUE        # <-- Soft-delete flag
+    )
+
+MISSING CHECK IN VERIFY:
+File: /home/user/tuxedo/backend/api/routes/passkey_auth.py
+Line: 361
+
+    user = db.create_user(request.email)     # NO check for existing user!
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║ 7. SUMMARY TABLE                                                          ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+Aspect                          | Details
+─────────────────────────────────┼─────────────────────────────────────────
+409 Endpoint                    | POST /auth/passkey/register/start
+Error Code                      | USER_EXISTS
+Error Message                   | "An account with this email already exists"
+Status Code                     | 409 (Conflict)
+Trigger Condition               | email exists AND is_active = TRUE
+Database Constraint             | email TEXT UNIQUE NOT NULL
+Application Level Check         | is_active = TRUE only
+Deactivated User Handling       | Can bypass check (BUG!)
+Race Condition in verify        | YES - unhandled IntegrityError
+Missing Integrity Error Handler | YES - in create_user()
+RP_ID Consistency               | NOT STORED in challenge (potential issue)
+File Count                       | 2 files (passkey_auth.py, database_passkeys.py)
+
+================================================================================

@@ -84,7 +84,13 @@ class PasskeyAuthService {
       try {
         const error = await startResponse.json();
         console.error("📄 Error response body:", error);
-        errorMessage = error.error?.message || error.message || errorMessage;
+        // FastAPI returns errors in {detail: {code, message}} format
+        errorMessage = error.detail?.message || error.error?.message || error.message || errorMessage;
+
+        // Special handling for 409 - user already exists
+        if (startResponse.status === 409) {
+          errorMessage = error.detail?.message || "An account with this email already exists. Please sign in instead.";
+        }
       } catch (jsonError) {
         // Response is not JSON, try to get text
         try {
