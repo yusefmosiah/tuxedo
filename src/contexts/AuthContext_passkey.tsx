@@ -28,7 +28,6 @@ interface AuthContextType {
   }>;
   login: (email: string) => Promise<void>;
   loginWithPreloadedOptions: (
-    email: string,
     preloadedOptions: { challenge_id: string; options: any },
   ) => Promise<void>;
   loginWithRecoveryCode: (email: string, code: string) => Promise<void>;
@@ -161,12 +160,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Login with passkey (with preloaded options - iOS Safari compatible)
   const loginWithPreloadedOptions = async (
-    email: string,
     preloadedOptions: { challenge_id: string; options: any },
   ): Promise<void> => {
     try {
       const result = await passkeyAuthService.loginWithPreloadedOptions(
-        email,
         preloadedOptions,
       );
 

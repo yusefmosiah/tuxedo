@@ -94,7 +94,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         // Authenticate existing user
         if (preloadedOptions) {
           console.log("✅ Using preloaded challenge options for login");
-          await loginWithPreloadedOptions(email, preloadedOptions);
+          await loginWithPreloadedOptions(preloadedOptions);
         } else {
           // Fallback to old method if preload failed or not ready
           console.warn(

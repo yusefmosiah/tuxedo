@@ -422,12 +422,10 @@ class PasskeyAuthService {
    * This method maintains the user gesture chain required by iOS Safari by
    * calling navigator.credentials.get() immediately without any async operations.
    *
-   * @param email - User's email address
    * @param preloadedOptions - Challenge options preloaded by useChallengePreload hook
    * @returns Authentication result with user and session token
    */
   async loginWithPreloadedOptions(
-    email: string,
     preloadedOptions: { challenge_id: string; options: any },
   ): Promise<AuthResult> {
     if (!this.isSupported()) {
