@@ -40,7 +40,7 @@ class MessageWithMetadata(BaseModel):
     created_at: str
 
 # Database integration using SQLite
-from database import db
+from database_passkeys import db
 
 def get_thread_dict(thread_id: str) -> Optional[Dict[str, Any]]:
     """Get thread data as dict"""
@@ -62,7 +62,7 @@ async def get_authenticated_user(request: Request, session_token: Optional[str] 
     if not session_token:
         raise HTTPException(status_code=401, detail="Authentication required")
 
-    user_session = db.validate_user_session(session_token)
+    user_session = db.validate_session(session_token)
     if not user_session:
         raise HTTPException(status_code=401, detail="Invalid or expired session")
 
@@ -80,7 +80,7 @@ async def create_thread(
         user = await get_authenticated_user(request, session_token)
 
         # Create thread for user
-        thread_id = db.create_thread(title=thread_data.title, user_id=user['user_id'])
+        thread_id = db.create_thread(user_id=user['user_id'], title=thread_data.title)
         thread = db.get_thread(thread_id)
 
         if not thread:
@@ -106,7 +106,7 @@ async def get_threads(
         user = await get_authenticated_user(request, session_token)
 
         # Get threads for user
-        threads = db.get_threads(user_id=user['user_id'], limit=limit)
+        threads = db.get_user_threads(user_id=user['user_id'], limit=limit)
         return [Thread(**thread) for thread in threads]
     except HTTPException:
         raise
@@ -191,7 +191,7 @@ async def get_thread_messages(thread_id: str):
         if not thread:
             raise HTTPException(status_code=404, detail="Thread not found")
 
-        messages = db.get_messages(thread_id)
+        messages = db.get_thread_messages(thread_id)
         return [MessageWithMetadata(**msg) for msg in messages]
     except HTTPException:
         raise
