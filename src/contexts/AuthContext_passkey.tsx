@@ -18,6 +18,14 @@ interface AuthContextType {
     recovery_codes: string[];
     recovery_codes_message: string;
   }>;
+  registerWithPreloadedOptions: (
+    email: string,
+    preloadedOptions: { challenge_id: string; options: any },
+  ) => Promise<{
+    user: User;
+    recovery_codes: string[];
+    recovery_codes_message: string;
+  }>;
   login: (email: string) => Promise<void>;
   loginWithRecoveryCode: (email: string, code: string) => Promise<void>;
   acknowledgeRecoveryCodes: () => Promise<void>;
@@ -62,9 +70,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (storedToken && storedUserData) {
         // Validate session with backend
-        const validatedUser = await passkeyAuthService.validateSession(
-          storedToken
-        );
+        const validatedUser =
+          await passkeyAuthService.validateSession(storedToken);
 
         if (validatedUser) {
           setSessionToken(storedToken);
@@ -82,9 +89,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Register new user with passkey
+  // Register new user with passkey (with preloaded options - iOS Safari compatible)
+  const registerWithPreloadedOptions = async (
+    email: string,
+    preloadedOptions: { challenge_id: string; options: any },
+  ): Promise<{
+    user: User;
+    recovery_codes: string[];
+    recovery_codes_message: string;
+  }> => {
+    try {
+      const result = await passkeyAuthService.registerWithPreloadedOptions(
+        email,
+        preloadedOptions,
+      );
+
+      // Set auth state
+      setUser(result.user);
+      setSessionToken(result.session_token);
+
+      return {
+        user: result.user,
+        recovery_codes: result.recovery_codes,
+        recovery_codes_message: result.recovery_codes_message,
+      };
+    } catch (error: any) {
+      console.error("Registration failed:", {
+        name: error?.name,
+        message: error?.message,
+        stack: error?.stack,
+        fullError: error,
+      });
+      throw error;
+    }
+  };
+
+  // Register new user with passkey (original method - may fail on iOS Safari)
   const register = async (
-    email: string
+    email: string,
   ): Promise<{
     user: User;
     recovery_codes: string[];
@@ -130,7 +172,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Login with recovery code
   const loginWithRecoveryCode = async (
     email: string,
-    code: string
+    code: string,
   ): Promise<void> => {
     try {
       const result = await passkeyAuthService.useRecoveryCode(email, code);
@@ -191,6 +233,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     isAuthenticated,
     register,
+    registerWithPreloadedOptions,
     login,
     loginWithRecoveryCode,
     acknowledgeRecoveryCodes,
