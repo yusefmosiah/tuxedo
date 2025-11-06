@@ -1,0 +1,310 @@
+================================================================================
+                    PASSKEY 409 ERROR - FINAL FINDINGS
+================================================================================
+
+ANALYSIS COMPLETED: Very Thorough Analysis of Backend Passkey Registration
+
+Files Analyzed:
+  - /home/user/tuxedo/backend/api/routes/passkey_auth.py (1102 lines)
+  - /home/user/tuxedo/backend/database_passkeys.py (761 lines)
+
+================================================================================
+KEY FINDINGS
+================================================================================
+
+1. EXACT CODE THAT RETURNS 409
+──────────────────────────────
+
+Location: /home/user/tuxedo/backend/api/routes/passkey_auth.py
+Lines: 230-235
+
+    if existing_user:
+        create_error_response(
+            "USER_EXISTS",
+            "An account with this email already exists",
+            status_code=409
+        )
+
+The error is thrown via create_error_response() which raises HTTPException with:
+  - status_code: 409
+  - error.code: "USER_EXISTS"
+  - error.message: "An account with this email already exists"
+
+
+2. CONDITIONS THAT TRIGGER 409
+──────────────────────────────
+
+TRIGGER: When /register/start endpoint receives an email that:
+  1. Already exists in the users table
+  2. AND has is_active = TRUE
+
+The check (line 229):
+  existing_user = db.get_user_by_email(request.email)
+
+Which executes:
+  SELECT * FROM users WHERE email = ? AND is_active = TRUE
+
+IMPORTANT: If is_active = FALSE, the check PASSES (returns None) and 409 is NOT returned!
+
+
+3. HOW USER UNIQUENESS IS DETERMINED
+────────────────────────────────────
+
+Application Level:
+  - File: passkey_auth.py, Line 229-235
+  - Checks: email exists AND is_active = TRUE
+  - Returns: 409 if found
+  
+Database Level:
+  - File: database_passkeys.py, Line 29
+  - Constraint: email TEXT UNIQUE NOT NULL
+  - Applies to: ALL emails (active and inactive)
+  - Exception: sqlite3.IntegrityError if constraint violated
+
+MISMATCH: Application checks only active users, but database constraint applies to all users!
+
+
+4. ISSUES WITH CURRENT IMPLEMENTATION
+──────────────────────────────────────
+
+CRITICAL ISSUE #1: RACE CONDITION
+──────────────────
+
+Scenario: Two users try to register with same email simultaneously
+
+Timeline:
+  1. User A: POST /register/start with email@test.com
+     → Check passes (user doesn't exist)
+     → Gets challenge_id
+
+  2. User B: POST /register/start with email@test.com
+     → Check passes (user STILL doesn't exist)
+     → Gets challenge_id
+
+  3. User A: POST /register/verify
+     → Line 361: db.create_user(email) → SUCCESS
+     → User created
+
+  4. User B: POST /register/verify
+     → Line 361: db.create_user(email) → FAILS
+     → sqlite3.IntegrityError: UNIQUE constraint failed: users.email
+     → NOT CAUGHT by specific handler
+     → Caught by generic Exception handler (line 407)
+     → Returns status_code=500 instead of 409!
+
+Problem Code (passkey_auth.py, lines 286-413):
+  - /register/verify endpoint
+  - Line 361: db.create_user(request.email) with NO PRIOR CHECK
+  - Exception handler returns 500 instead of 409
+
+CRITICAL ISSUE #2: DEACTIVATED USERS
+──────────────────────────────
+
+Scenario: User account is deactivated, user tries to re-register
+
+Timeline:
+  1. User has account with email@test.com, is_active = TRUE
+  2. Account deactivated: is_active = FALSE
+  3. User tries to register again
+  4. /register/start query:
+     SELECT * FROM users WHERE email = ? AND is_active = TRUE
+     → Returns NULL (is_active is FALSE)
+  5. Check PASSES - no error!
+  6. /register/verify calls db.create_user(email)
+     → sqlite3.IntegrityError: UNIQUE constraint
+     → Returns 500 error with wrong message
+
+CRITICAL ISSUE #3: NO INTEGRITY ERROR HANDLING
+──────────────────────────────────────────────
+
+Location: database_passkeys.py, Lines 168-183
+Function: create_user()
+
+    def create_user(self, email: str) -> Dict[str, Any]:
+        # ...
+        cursor.execute('''
+            INSERT INTO users (id, email, created_at)
+            VALUES (?, ?, ?)
+        ''', (user_id, email, datetime.now()))
+        conn.commit()  # <-- No try/except for IntegrityError
+
+Result:
+  - Any UNIQUE constraint violation raises sqlite3.IntegrityError
+  - NOT caught in create_user()
+  - Propagates to caller
+  - Caught by generic Exception handler in register_verify()
+  - Returns 500 with generic error message
+
+
+5. RP_ID AND ORIGIN HANDLING
+────────────────────────────
+
+Implementation (Lines 52-91):
+  1. Get origin from headers: request.headers.get("origin")
+  2. Fallback to referer header if needed
+  3. Default to http://localhost:5173
+  4. Validate against ALLOWED_ORIGINS whitelist
+  5. Extract hostname as RP_ID
+
+ALLOWED_ORIGINS:
+  - "http://localhost:5173"
+  - "http://localhost:3000"
+  - "https://tuxedo.onrender.com"
+  - "https://tuxedo-frontend.onrender.com"
+
+Hostname Extraction:
+  - https://tuxedo.onrender.com → RP_ID: tuxedo.onrender.com
+  - http://localhost:5173 → RP_ID: localhost
+  - http://127.0.0.1:5173 → RP_ID: localhost
+
+POTENTIAL ISSUE:
+  - RP_ID computed fresh in /register/start
+  - RP_ID computed fresh again in /register/verify
+  - If request origin changes → RP_ID may differ
+  - Challenge does NOT store RP_ID or origin
+  - Verification expects exact match (lines 322-328)
+  - Result: Verification fails if origin changed between requests
+
+
+6. STORAGE OF CREDENTIALS AND UNIQUENESS
+─────────────────────────────────────────
+
+Passkey Credential Storage:
+  - Table: passkey_credentials
+  - Line 41: credential_id TEXT UNIQUE NOT NULL
+  - Each passkey has unique credential_id
+  - Multiple passkeys per user are supported
+
+User Uniqueness at DB Level:
+  - email TEXT UNIQUE NOT NULL (Line 29)
+  - Applies globally, not per user
+  - Cannot have duplicate emails across ANY user
+
+
+================================================================================
+CODE LOCATIONS SUMMARY
+================================================================================
+
+409 ERROR RETURN:
+  File: /home/user/tuxedo/backend/api/routes/passkey_auth.py
+  Lines: 230-235
+  Endpoint: POST /auth/passkey/register/start
+
+ERROR CREATION:
+  File: /home/user/tuxedo/backend/api/routes/passkey_auth.py
+  Lines: 205-220
+  Function: create_error_response()
+
+USER EXISTENCE CHECK:
+  File: /home/user/tuxedo/backend/database_passkeys.py
+  Lines: 185-193
+  Function: get_user_by_email()
+
+DATABASE SCHEMA:
+  File: /home/user/tuxedo/backend/database_passkeys.py
+  Lines: 26-33
+  Table: users
+
+RP_ID EXTRACTION:
+  File: /home/user/tuxedo/backend/api/routes/passkey_auth.py
+  Lines: 52-91
+  Function: get_rp_id_and_origin()
+
+REGISTER VERIFY (VULNERABLE):
+  File: /home/user/tuxedo/backend/api/routes/passkey_auth.py
+  Lines: 286-413, especially line 361
+  Endpoint: POST /auth/passkey/register/verify
+
+USER CREATION (NO ERROR HANDLING):
+  File: /home/user/tuxedo/backend/database_passkeys.py
+  Lines: 168-183
+  Function: create_user()
+
+
+================================================================================
+IMPACT ASSESSMENT
+================================================================================
+
+Severity: HIGH
+
+Race Condition Impact:
+  - Multiple simultaneous registrations with same email
+  - First completes successfully
+  - Subsequent attempts get 500 error instead of 409
+  - User confusion and poor UX
+  - Possible account creation inconsistency
+
+Deactivated User Impact:
+  - Users cannot verify if account exists
+  - May attempt registration multiple times
+  - Gets confusing 500 errors
+  - Business logic undefined
+
+Missing Integrity Handling:
+  - Any unforeseen duplicate email scenario returns 500
+  - Difficult to debug
+  - No clear error message to user
+
+
+================================================================================
+RECOMMENDATIONS (Priority Order)
+================================================================================
+
+1. ADD CHECK TO /register/verify (CRITICAL)
+   File: passkey_auth.py, around line 361
+   
+   Before db.create_user(request.email):
+   
+     existing_user = db.get_user_by_email(request.email)
+     if existing_user:
+         create_error_response(
+             "USER_EXISTS",
+             "An account with this email already exists",
+             status_code=409
+         )
+
+2. ADD INTEGRITY ERROR HANDLING (CRITICAL)
+   File: passkey_auth.py, around line 361
+   
+     try:
+         user = db.create_user(request.email)
+     except sqlite3.IntegrityError:
+         create_error_response(
+             "USER_EXISTS",
+             "An account with this email already exists",
+             status_code=409
+         )
+
+3. STORE RP_ID IN CHALLENGE (IMPORTANT)
+   File: database_passkeys.py, function create_challenge()
+   
+   Add parameters: rp_id, origin
+   Modify schema to store these values
+   Retrieve and verify in /register/verify
+
+4. DEFINE DEACTIVATED USER BEHAVIOR (IMPORTANT)
+   Clarify whether deactivated users should:
+     - Be able to re-register with same email?
+     - Require admin reactivation?
+     - Self-delete before re-registering?
+
+
+================================================================================
+FULL DOCUMENTATION
+================================================================================
+
+Two detailed documents have been created:
+
+1. /home/user/tuxedo/PASSKEY_409_ANALYSIS.md
+   - Comprehensive 200+ line analysis
+   - All code snippets with context
+   - Detailed issue explanations
+   - Scenarios and impact analysis
+
+2. /home/user/tuxedo/PASSKEY_409_SUMMARY.txt
+   - Visual summary format
+   - Quick reference tables
+   - Code locations and excerpts
+   - Timeline-based issue explanations
+
+================================================================================
