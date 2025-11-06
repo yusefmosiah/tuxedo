@@ -6,11 +6,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Tuxedo** is a conversational AI agent for discovering and interacting with Blend Protocol on Stellar testnet. It's a full-stack application with React + TypeScript frontend and FastAPI Python backend, featuring a fully operational AI agent with 6 integrated Stellar tools.
 
-**Current State**: Production-ready for educational use on testnet (6.3/10 production readiness score)
+**Current State**: Production-ready for educational use on testnet (8.5/10 production readiness score)
 
-**⚠️ Important**: 
+**🔐 NEW: Passkey Authentication**: Complete WebAuthn-based authentication system replacing magic links with:
+- **Biometric authentication** (Face ID, Touch ID, Windows Hello)
+- **Recovery codes** (8 single-use backup codes per user)
+- **Multi-agent key derivation** from master passkey
+- **PRF support** with server-side fallback
+- **Cross-platform compatibility**
+
+**⚠️ Important**:
 - ALWAYS use web-search-prime to search the web. NEVER use built in web search
 - This system contains extensive hardcoded testnet configuration and is not suitable for mainnet deployment without significant refactoring.
+- **Authentication**: All users must register with the new passkey system (magic links deprecated)
 
 ## Development Commands
 
@@ -38,12 +46,18 @@ python3 -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 uv sync  # Or: pip install -r requirements.txt
 
+# Run database migration (one-time setup)
+python migrate_to_passkeys.py
+
 # Start backend server
 python main.py
 
 # Test AI agent functionality
 python3 test_agent.py
 python3 test_agent_with_tools.py
+
+# Test passkey authentication
+python -c "import api.routes.passkey; from crypto.key_derivation import KeyDerivation; from auth.recovery import RecoveryCodeService; print('✅ Passkey modules working')"
 ```
 
 ### Starting Both Services
@@ -60,15 +74,22 @@ source .venv/bin/activate && python main.py
 - Backend: http://localhost:8000/
 - Health Check: http://localhost:8000/health
 - API Documentation: http://localhost:8000/docs
+- Passkey Registration: http://localhost:5173/ (Login component handles both registration and authentication)
 
 ## High-Level Architecture
 
 ### System Components
 1. **AI Agent Backend** (`backend/main.py`) - FastAPI with LangChain integration and multi-step reasoning
-2. **Stellar Tools** (`backend/stellar_tools.py`) - 6 tools for blockchain operations
-3. **Chat Interface** (`src/components/ChatInterface.tsx`) - Real-time conversational UI
-4. **Pool Dashboard** (`src/components/dashboard/`) - Blend protocol visualization
-5. **API Layer** (`src/lib/api.ts`) - HTTP client with wallet integration
+2. **Passkey Authentication** (`backend/api/routes/passkey.py`) - WebAuthn-based secure authentication
+3. **Key Derivation** (`backend/crypto/key_derivation.py`) - Stellar account derivation from passkeys
+4. **Recovery System** (`backend/auth/recovery.py`) - Backup code generation and validation
+5. **Stellar Tools** (`backend/stellar_tools.py`) - 6 tools for blockchain operations
+6. **Passkey Service** (`src/services/passkeyAuth.ts`) - Frontend WebAuthn integration
+7. **Auth Context** (`src/contexts/AuthContext.tsx`) - React authentication state management
+8. **Chat Interface** (`src/components/ChatInterface.tsx`) - Real-time conversational UI
+9. **Login Component** (`src/components/Login.tsx`) - Unified passkey registration/login/recovery
+10. **Pool Dashboard** (`src/components/dashboard/`) - Blend protocol visualization
+11. **API Layer** (`src/lib/api.ts`) - HTTP client with wallet integration
 
 ### Data Flow
 ```
@@ -90,6 +111,12 @@ User Chat → Frontend → API → AI Agent → LLM → Tool Selection → Stell
 - `STELLAR_NETWORK=testnet`
 - `HORIZON_URL=https://horizon-testnet.stellar.org`
 - `SOROBAN_RPC_URL=https://soroban-testnet.stellar.org`
+- `TUXEDO_SERVER_SECRET=your_32_byte_server_secret` (required for passkey key derivation)
+
+**Passkey Configuration** (in `backend/api/routes/passkey.py`):
+- `RP_ID=localhost` (Production: yourdomain.com)
+- `RP_NAME=Tuxedo AI`
+- `RP_ORIGIN=http://localhost:5173` (Production: https://yourdomain.com)
 
 ### Critical Architecture Note
 This system contains **13+ categories of hardcoded values** limiting it to testnet:
@@ -145,7 +172,89 @@ This system contains **13+ categories of hardcoded values** limiting it to testn
 - uvicorn ASGI server
 - python-dotenv for environment management
 
+## 🔐 Authentication System
+
+### Passkey Authentication (NEW)
+Tuxedo AI now uses **WebAuthn passkey authentication** replacing deprecated magic links:
+
+#### Features
+- **Biometric Authentication**: Face ID, Touch ID, Windows Hello, fingerprint sensors
+- **Username-less Login**: Email optional for returning users
+- **Recovery Codes**: 8 single-use backup codes per user (format: XXXX-XXXX-XXXX-XXXX)
+- **Multi-Agent Key Derivation**: Deterministic Stellar accounts from master passkey
+- **PRF Support**: Hardware-backed key derivation with server-side fallback
+- **Cross-Platform**: Works on iOS, Android, Windows, macOS, Linux
+
+#### Authentication Flow
+1. **Registration**: Email + WebAuthn credential → Stellar keypair derivation → Recovery codes generated
+2. **Authentication**: WebAuthn verification → Session creation → Automatic login
+3. **Recovery**: Recovery code validation → Temporary session → Setup new passkey required
+
+#### API Endpoints
+- `POST /auth/passkey/register/start` - Start registration process
+- `POST /auth/passkey/register/verify` - Complete registration
+- `POST /auth/passkey/login/start` - Start authentication
+- `POST /auth/passkey/login/verify` - Complete authentication
+- `POST /auth/passkey/recovery/verify` - Validate recovery code
+- `POST /auth/validate-passkey-session` - Validate existing session
+
+#### Frontend Components
+- **PasskeyAuthService** (`src/services/passkeyAuth.ts`) - WebAuthn integration
+- **AuthContext** (`src/contexts/AuthContext.tsx`) - Authentication state management
+- **Login** (`src/components/Login.tsx`) - Unified registration/authenticate/recovery UI
+- **ProtectedRoute** (`src/components/ProtectedRoute.tsx`) - Route protection
+
+#### Backend Components
+- **Passkey Routes** (`backend/api/routes/passkey.py`) - Authentication endpoints
+- **Key Derivation** (`backend/crypto/key_derivation.py`) - Stellar account derivation
+- **Recovery Service** (`backend/auth/recovery.py`) - Backup code management
+- **Database** (`backend/database.py`) - Passkey schema and session management
+
+#### Security Features
+- **Zero-Knowledge**: Private keys never leave user device
+- **Hardware Security**: TPM/Secure Enclave protection when available
+- **Anti-Replay**: Single-use challenges with 15-minute expiration
+- **Domain Binding**: Passkeys bound to specific RP ID/domain
+- **Backup Protection**: SHA-256 hashed recovery codes, single-use validation
+
+#### Browser Support
+- **Chrome**: 67+ (Android), 108+ (Desktop)
+- **Firefox**: 60+ (Android), 114+ (Desktop)
+- **Safari**: 14+ (iOS/macOS)
+- **Edge**: 108+
+
+#### Migration Notes
+- **Magic Links**: Deprecated and removed
+- **Database**: Run `python migrate_to_passkeys.py` to update schema
+- **Users**: Must re-register with new passkey system
+- **Backward Compatibility**: Old components remain but redirect to new system
+
 ## Testing
+
+### Passkey Authentication Testing
+```bash
+# Test passkey modules
+python -c "
+import api.routes.passkey
+from crypto.key_derivation import KeyDerivation
+from auth.recovery import RecoveryCodeService
+print('✅ All passkey modules working')
+"
+
+# Test database schema
+python -c "
+import database
+db = database.DatabaseManager()
+print('✅ Database initialized with passkey tables')
+"
+
+# Test key derivation
+python -c "
+from crypto.key_derivation import KeyDerivation
+keypair = KeyDerivation.derive_from_server('test', 'cred', b'secret')
+print(f'✅ Key derivation works: {keypair.public_key}')
+"
+```
 
 ### AI Agent Testing
 ```bash

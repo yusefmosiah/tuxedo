@@ -25,10 +25,7 @@ interface AuthContextType {
   sessionToken: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string) => Promise<void>;
-  requestMagicLink: (
-    email: string,
-  ) => Promise<{ success: boolean; message: string }>;
+  login: (email?: string) => Promise<void>;
   validateSession: (token: string) => Promise<boolean>;
   logout: () => void;
   checkAuth: () => Promise<void>;
@@ -39,6 +36,8 @@ interface AuthContextType {
   ) => Promise<PasskeyAuthenticationResult>;
   useRecoveryCode: (code: string) => Promise<PasskeyAuthenticationResult>;
   isPasskeySupported: boolean;
+  // Deprecated magic link method (for backward compatibility)
+  requestMagicLink: (email: string) => Promise<{ success: boolean; message?: string }>;
 }
 
 // Create context
@@ -102,41 +101,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Request magic link
-  const requestMagicLink = async (
-    email: string,
-  ): Promise<{ success: boolean; message: string }> => {
-    try {
-      const response = await fetch("http://localhost:8000/auth/magic-link", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Magic link request failed:", error);
-      return {
-        success: false,
-        message: "Failed to send magic link. Please try again.",
-      };
-    }
-  };
+  // Magic link functionality removed - now using passkey authentication
 
   // Validate session token
   const validateSession = async (token: string): Promise<boolean> => {
     try {
       const response = await fetch(
-        "http://localhost:8000/auth/validate-session",
+        "http://localhost:8000/auth/validate-passkey-session",
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
+          body: JSON.stringify({ session_token: token }),
         },
       );
 
@@ -157,11 +134,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Handle magic link callback (after email redirect)
-  const login = async (_email: string): Promise<void> => {
-    // This will be called after magic link validation
-    // The actual login happens via magic link validation redirect
-    // For now, we'll trigger a re-check
-    await checkAuth();
+  const login = async (email?: string): Promise<void> => {
+    // Use passkey authentication
+    setIsLoading(true);
+    try {
+      const result = await passkeyService.authenticate(email);
+      if (result.success && result.user) {
+        setUser(result.user);
+        setSessionToken(result.session_token || null);
+        localStorage.setItem(USER_DATA_KEY, JSON.stringify(result.user));
+      } else {
+        throw new Error(result.error || 'Authentication failed');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Logout
@@ -224,6 +211,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Deprecated magic link method (for backward compatibility)
+  const requestMagicLink = async (_email: string): Promise<{ success: boolean; message?: string }> => {
+    // Magic links have been replaced with passkey authentication
+    // This method is kept for backward compatibility with old components
+    return {
+      success: false,
+      message: "Magic links have been deprecated. Please use the new passkey authentication system."
+    };
+  };
+
   // Computed value
   const isAuthenticated = !!user && !!sessionToken;
 
@@ -233,7 +230,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     isAuthenticated,
     login,
-    requestMagicLink,
     validateSession,
     logout,
     checkAuth,
@@ -241,6 +237,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     authenticateWithPasskey,
     useRecoveryCode,
     isPasskeySupported,
+    requestMagicLink,
   };
 
   return <AuthContext value={value}>{children}</AuthContext>;

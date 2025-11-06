@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
 import { Button, Input, Text } from "@stellar/design-system";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -14,13 +13,33 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     type: "success" | "error";
     text: string;
   } | null>(null);
-  const { requestMagicLink } = useAuth();
+  const [isRegistering, setIsRegistering] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    registerWithPasskey,
+    authenticateWithPasskey,
+    useRecoveryCode,
+    isPasskeySupported
+  } = useAuth();
 
-    if (!email.trim()) {
-      setMessage({ type: "error", text: "Please enter your email address" });
+  // Check passkey support on mount
+  React.useEffect(() => {
+    if (!isPasskeySupported) {
+      setMessage({
+        type: "error",
+        text: "Passkeys are not supported on this device/browser. Please use a modern browser.",
+      });
+    }
+  }, [isPasskeySupported]);
+
+  const handleLogin = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+
+    if (!isPasskeySupported) {
+      setMessage({
+        type: "error",
+        text: "Passkeys are not supported on this device/browser.",
+      });
       return;
     }
 
@@ -28,48 +47,104 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setMessage(null);
 
     try {
-      const result = await requestMagicLink(email);
+      const result = await authenticateWithPasskey(email || undefined);
 
       if (result.success) {
         setMessage({
           type: "success",
-          text: "Magic link sent! Check your email and click the link to sign in.",
+          text: "Successfully authenticated!",
         });
         setEmail(""); // Clear the form
-
-        // Poll for authentication status
-        const checkAuthStatus = setInterval(async () => {
-          // Check URL for magic link token
-          const urlParams = new URLSearchParams(window.location.search);
-          const token = urlParams.get("token");
-
-          if (token) {
-            // Magic link detected, redirect will happen automatically
-            clearInterval(checkAuthStatus);
-            return;
-          }
-
-          // Check if user is now authenticated (in case they opened link in another tab)
-          const storedToken = localStorage.getItem("session_token");
-          if (storedToken) {
-            clearInterval(checkAuthStatus);
-            onLoginSuccess?.();
-          }
-        }, 2000);
-
-        // Stop polling after 5 minutes
-        setTimeout(() => clearInterval(checkAuthStatus), 300000);
+        onLoginSuccess?.();
       } else {
         setMessage({
           type: "error",
-          text: result.message || "Failed to send magic link",
+          text: result.error || "Authentication failed",
         });
       }
     } catch (error) {
-      console.error("Login error:", error);
       setMessage({
         type: "error",
-        text: "Something went wrong. Please try again.",
+        text: error instanceof Error ? error.message : "Authentication failed",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!email.trim()) {
+      setMessage({ type: "error", text: "Please enter your email address" });
+      return;
+    }
+
+    if (!isPasskeySupported) {
+      setMessage({
+        type: "error",
+        text: "Passkeys are not supported on this device/browser.",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    setMessage(null);
+
+    try {
+      const result = await registerWithPasskey(email);
+
+      if (result.success) {
+        setMessage({
+          type: "success",
+          text: "Registration successful! You are now logged in.",
+        });
+        setEmail(""); // Clear the form
+        onLoginSuccess?.();
+      } else {
+        setMessage({
+          type: "error",
+          text: result.error || "Registration failed",
+        });
+      }
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Registration failed",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRecoveryCode = async (code: string) => {
+    if (!code.trim()) {
+      setMessage({ type: "error", text: "Please enter a recovery code" });
+      return;
+    }
+
+    setIsLoading(true);
+    setMessage(null);
+
+    try {
+      const result = await useRecoveryCode(code);
+
+      if (result.success) {
+        setMessage({
+          type: "success",
+          text: "Recovery code accepted! You are now logged in.",
+        });
+        onLoginSuccess?.();
+      } else {
+        setMessage({
+          type: "error",
+          text: result.error || "Invalid recovery code",
+        });
+      }
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Recovery code validation failed",
       });
     } finally {
       setIsLoading(false);
@@ -77,182 +152,131 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        minHeight: "100vh",
-        backgroundColor: "var(--color-bg-primary)",
-        padding: "20px",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "400px",
-          width: "100%",
-          padding: "40px",
-          backgroundColor: "var(--color-bg-surface)",
-          borderRadius: "var(--border-radius-lg)",
-          border: "1px solid var(--color-border)",
-          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-        }}
-      >
-        <div style={{ textAlign: "center", marginBottom: "32px" }}>
-          <div
-            style={{
-              fontSize: "48px",
-              marginBottom: "16px",
-            }}
-          >
-            🤖
-          </div>
-          <Text as="h1" size="lg" weight="bold" style={{ marginBottom: "8px" }}>
-            Welcome to Tuxedo AI
+    <div className="Login">
+      <div className="Login-card">
+        <div className="Login-header">
+          <Text size="md" as="h2" style={{ fontWeight: 500 }}>
+            {isRegistering ? "Create Account" : "Sign In"}
           </Text>
-          <Text
-            as="p"
-            size="sm"
-            style={{ color: "var(--color-text-secondary)" }}
-          >
-            Sign in with your email to access the AI assistant
-          </Text>
-          <div style={{ marginTop: "16px" }}>
-            <Link
-              to="/dashboard"
-              style={{
-                fontSize: "12px",
-                color: "var(--color-stellar-glow-strong)",
-                textDecoration: "none",
-                opacity: 0.8,
-                transition: "opacity 0.2s ease",
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.opacity = "1";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.opacity = "0.8";
-              }}
-            >
-              ← Back to Dashboard
-            </Link>
-          </div>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: "20px" }}>
-            <Input
-              id="email-input"
-              fieldSize="md"
-              type="email"
-              label="Email Address"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoading}
-              required
-            />
-          </div>
-
-          <Button
-            type="submit"
-            variant="primary"
-            size="md"
-            isLoading={isLoading}
-            disabled={isLoading || !email.trim()}
-            isFullWidth
-          >
-            {isLoading ? "Sending Magic Link..." : "Send Magic Link"}
-          </Button>
-        </form>
-
         {message && (
-          <div
-            style={{
-              marginTop: "20px",
-              padding: "12px 16px",
-              borderRadius: "var(--border-radius-md)",
-              backgroundColor:
-                message.type === "success"
-                  ? "rgba(52, 211, 153, 0.1)"
-                  : "rgba(239, 68, 68, 0.1)",
-              border: `1px solid ${
-                message.type === "success"
-                  ? "var(--color-positive)"
-                  : "var(--color-negative)"
-              }`,
-            }}
-          >
-            <Text
-              as="p"
-              size="sm"
-              style={{
-                color:
-                  message.type === "success"
-                    ? "var(--color-positive)"
-                    : "var(--color-negative)",
-                margin: 0,
-                textAlign: "center",
-              }}
-            >
-              {message.text}
-            </Text>
-            {message.type === "success" && (
-              <Text
-                as="p"
-                size="xs"
-                style={{
-                  color: "var(--color-text-secondary)",
-                  margin: "8px 0 0 0",
-                  textAlign: "center",
-                  fontStyle: "italic",
-                }}
-              >
-                📧 Don't see the email? Check your spam folder and mark "Not
-                Spam" to ensure delivery.
-              </Text>
-            )}
+          <div className={`Login-message Login-message--${message.type}`}>
+            <Text size="sm" as="p">{message.text}</Text>
           </div>
         )}
 
-        <div
-          style={{
-            marginTop: "32px",
-            paddingTop: "20px",
-            borderTop: "1px solid var(--color-border)",
-          }}
-        >
-          <Text
-            as="p"
-            size="xs"
-            style={{
-              color: "var(--color-text-tertiary)",
-              textAlign: "center",
-              margin: "0 0 8px 0",
-              lineHeight: 1.5,
-            }}
-          >
-            We'll send you a magic link that signs you in instantly. No password
-            needed!
+        {!isRegistering ? (
+          <>
+            <form onSubmit={handleLogin} className="Login-form">
+              <div className="Login-field">
+                <Input
+                  id="login-email"
+                  label="Email (optional)"
+                  type="email"
+                  placeholder="Enter your email (optional)"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
+                  fieldSize="md"
+                />
+                <Text size="sm" as="p" style={{ marginTop: '4px', color: 'var(--color-text-secondary)' }}>
+                  Leave empty to use username-less authentication
+                </Text>
+              </div>
+
+              <div className="Login-actions">
+                <Button
+                  size="md"
+                  variant={isPasskeySupported ? "primary" : "secondary"}
+                  isLoading={isLoading}
+                  disabled={!isPasskeySupported}
+                  onClick={() => handleLogin()}
+                  isFullWidth
+                >
+                  {isLoading ? "Authenticating..." : "Sign In with Passkey"}
+                </Button>
+              </div>
+            </form>
+
+            <div className="Login-alternatives">
+              <Button
+                size="sm"
+                variant="tertiary"
+                onClick={() => setIsRegistering(true)}
+                isFullWidth
+              >
+                Create New Account
+              </Button>
+
+              <Button
+                size="sm"
+                variant="tertiary"
+                onClick={() => {
+                  const code = window.prompt("Enter your recovery code:");
+                  if (code) handleRecoveryCode(code);
+                }}
+                isFullWidth
+              >
+                Use Recovery Code
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <form onSubmit={handleRegister} className="Login-form">
+              <div className="Login-field">
+                <Input
+                  id="register-email"
+                  label="Email"
+                  type="email"
+                  placeholder="Enter your email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
+                  required
+                  fieldSize="md"
+                />
+              </div>
+
+              <div className="Login-actions">
+                <Button
+                  size="md"
+                  variant="primary"
+                  isLoading={isLoading}
+                  disabled={!isPasskeySupported || !email.trim()}
+                  type="submit"
+                  isFullWidth
+                >
+                  {isLoading ? "Creating Account..." : "Create Account with Passkey"}
+                </Button>
+              </div>
+            </form>
+
+            <div className="Login-alternatives">
+              <Button
+                size="sm"
+                variant="tertiary"
+                onClick={() => setIsRegistering(false)}
+                isFullWidth
+              >
+                Back to Sign In
+              </Button>
+            </div>
+          </>
+        )}
+
+        <div className="Login-help">
+          <Text size="sm" as="p">
+            Passkeys provide secure, passwordless authentication using your device's
+            biometric or PIN security.
           </Text>
-          <Text
-            as="p"
-            size="xs"
-            style={{
-              color: "var(--color-text-tertiary)",
-              textAlign: "center",
-              margin: 0,
-              lineHeight: 1.4,
-              fontStyle: "italic",
-            }}
-          >
-            📧 Pro tip: Check your spam folder if you don't see the email within
-            30 seconds
+          <Text size="sm" as="p">
+            Your recovery codes will be shown once during registration. Save them
+            securely to recover your account if needed.
           </Text>
         </div>
       </div>
     </div>
   );
 };
-
-export default Login;

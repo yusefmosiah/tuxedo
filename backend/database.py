@@ -25,6 +25,7 @@ class DatabaseManager:
                     email TEXT UNIQUE NOT NULL,
                     encrypted_private_key TEXT,
                     public_key TEXT UNIQUE,
+                    stellar_public_key TEXT,
                     recovery_method TEXT DEFAULT 'email',
                     recovery_data TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -33,34 +34,57 @@ class DatabaseManager:
                 )
             ''')
 
-            # Create magic link sessions table
+            # Passkey authentication tables
             cursor.execute('''
-                CREATE TABLE IF NOT EXISTS magic_link_sessions (
+                CREATE TABLE IF NOT EXISTS passkey_credentials (
                     id TEXT PRIMARY KEY,
-                    user_id TEXT,
-                    email TEXT NOT NULL,
-                    token TEXT UNIQUE NOT NULL,
-                    expires_at TIMESTAMP NOT NULL,
-                    used_at TIMESTAMP,
+                    user_id TEXT NOT NULL,
+                    credential_id TEXT UNIQUE NOT NULL,
+                    public_key TEXT NOT NULL,
+                    sign_count INTEGER DEFAULT 0,
+                    backup_eligible BOOLEAN DEFAULT FALSE,
+                    transports TEXT,
+                    friendly_name TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES users (id)
+                    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
                 )
             ''')
 
-            # Create user_sessions table for authenticated sessions
             cursor.execute('''
-                CREATE TABLE IF NOT EXISTS user_sessions (
+                CREATE TABLE IF NOT EXISTS passkey_challenges (
+                    id TEXT PRIMARY KEY,
+                    challenge TEXT UNIQUE NOT NULL,
+                    user_id TEXT,
+                    expires_at TIMESTAMP NOT NULL,
+                    used BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS passkey_sessions (
                     id TEXT PRIMARY KEY,
                     user_id TEXT NOT NULL,
                     session_token TEXT UNIQUE NOT NULL,
                     expires_at TIMESTAMP NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES users (id)
+                    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
                 )
             ''')
 
-            # Create agents table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS recovery_codes (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    code_hash TEXT NOT NULL,
+                    used BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    used_at TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+                )
+            ''')
+
+            # Create agents table (updated for multi-agent architecture)
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS agents (
                     id TEXT PRIMARY KEY,
@@ -72,20 +96,22 @@ class DatabaseManager:
                     auto_approve_limit REAL DEFAULT 100.0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     is_active BOOLEAN DEFAULT TRUE,
-                    FOREIGN KEY (user_id) REFERENCES users (id)
+                    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
                 )
             ''')
 
-            # Update threads table to use user_id instead of wallet_address
+            # Update threads table to support agent-based architecture
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS threads (
                     id TEXT PRIMARY KEY,
                     user_id TEXT NOT NULL,
+                    agent_id TEXT,
                     title TEXT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     is_archived BOOLEAN DEFAULT FALSE,
-                    FOREIGN KEY (user_id) REFERENCES users (id)
+                    FOREIGN KEY (user_id) REFERENCES users (id),
+                    FOREIGN KEY (agent_id) REFERENCES agents (id) ON DELETE CASCADE
                 )
             ''')
 
@@ -103,85 +129,50 @@ class DatabaseManager:
             ''')
 
             # Create indexes for better performance
-            cursor.execute('''
-                CREATE INDEX IF NOT EXISTS idx_messages_thread_id
-                ON messages (thread_id)
-            ''')
-
-            cursor.execute('''
-                CREATE INDEX IF NOT EXISTS idx_threads_user_id
-                ON threads (user_id)
-            ''')
-
-            cursor.execute('''
-                CREATE INDEX IF NOT EXISTS idx_threads_updated_at
-                ON threads (updated_at DESC)
-            ''')
-
-            cursor.execute('''
-                CREATE INDEX IF NOT EXISTS idx_magic_link_sessions_token
-                ON magic_link_sessions (token)
-            ''')
-
-            cursor.execute('''
-                CREATE INDEX IF NOT EXISTS idx_magic_link_sessions_email
-                ON magic_link_sessions (email)
-            ''')
-
-            cursor.execute('''
-                CREATE INDEX IF NOT EXISTS idx_user_sessions_token
-                ON user_sessions (session_token)
-            ''')
-
-            cursor.execute('''
-                CREATE INDEX IF NOT EXISTS idx_agents_user_id
-                ON agents (user_id)
-            ''')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_messages_thread_id ON messages (thread_id)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_threads_user_id ON threads (user_id)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_threads_agent_id ON threads (agent_id)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_threads_updated_at ON threads (updated_at DESC)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_agents_user_id ON agents (user_id)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_passkey_credentials_user_id ON passkey_credentials(user_id)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_passkey_credentials_credential_id ON passkey_credentials(credential_id)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_passkey_sessions_user_id ON passkey_sessions(user_id)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_passkey_sessions_token ON passkey_sessions (session_token)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_recovery_codes_user_id ON recovery_codes (user_id)')
 
             conn.commit()
 
-    # Magic link authentication methods
-    def create_magic_link_session(self, email: str) -> str:
-        """Create a magic link session for email authentication"""
-        session_id = f"magic_{secrets.token_urlsafe(32)}"
-        token = secrets.token_urlsafe(32)
-        expires_at = datetime.now() + timedelta(minutes=15)  # 15 minute expiry
-
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT INTO magic_link_sessions (id, email, token, expires_at)
-                VALUES (?, ?, ?, ?)
-            ''', (session_id, email, token, expires_at))
-            conn.commit()
-
-        return token
-
-    def validate_magic_link(self, token: str) -> Optional[Dict[str, Any]]:
-        """Validate magic link token and return user info"""
+    # Passkey session validation
+    def validate_passkey_session(self, session_token: str) -> Optional[Dict[str, Any]]:
+        """Validate passkey session token and return user info"""
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
 
             cursor.execute('''
-                SELECT * FROM magic_link_sessions
-                WHERE token = ? AND expires_at > ? AND used_at IS NULL
-            ''', (token, datetime.now()))
+                SELECT ps.*, u.email, u.public_key, u.stellar_public_key
+                FROM passkey_sessions ps
+                JOIN users u ON ps.user_id = u.id
+                WHERE ps.session_token = ? AND ps.expires_at > ? AND u.is_active = TRUE
+            ''', (session_token, datetime.now()))
 
             session = cursor.fetchone()
             if not session:
                 return None
 
-            # Mark as used
-            cursor.execute('''
-                UPDATE magic_link_sessions
-                SET used_at = ?
-                WHERE id = ?
-            ''', (datetime.now(), session['id']))
-            conn.commit()
-
             return dict(session)
 
+    def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        """Get user by email"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+            user = cursor.fetchone()
+            return dict(user) if user else None
+
+    # Create user session (for backward compatibility)
     def create_user_session(self, user_id: str, days: int = 7) -> str:
         """Create an authenticated user session"""
         session_id = f"session_{secrets.token_urlsafe(32)}"
@@ -423,36 +414,6 @@ class DatabaseManager:
 
             conn.commit()
             return True
-
-    # Passkey session validation
-    def validate_passkey_session(self, session_token: str) -> Optional[Dict[str, Any]]:
-        """Validate passkey session token and return user info"""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-
-            cursor.execute('''
-                SELECT ps.*, u.email, u.public_key, u.stellar_public_key
-                FROM passkey_sessions ps
-                JOIN users u ON ps.user_id = u.id
-                WHERE ps.session_token = ? AND ps.expires_at > ? AND u.is_active = TRUE
-            ''', (session_token, datetime.now()))
-
-            session = cursor.fetchone()
-            if not session:
-                return None
-
-            return dict(session)
-
-    def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
-        """Get user by email"""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-
-            cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
-            user = cursor.fetchone()
-            return dict(user) if user else None
 
 # Global database instance
 db = DatabaseManager()
