@@ -1,6 +1,6 @@
 /**
  * Passkey Authentication Service
- * Handles WebAuthn passkey operations for user authentication
+ * Simplified WebAuthn implementation with comprehensive error handling
  */
 
 import { API_BASE_URL } from "../lib/api";
@@ -32,6 +32,65 @@ export interface AuthResult {
   remaining_codes?: number;
 }
 
+/**
+ * Enhanced error logging that preserves all error details
+ */
+function logWebAuthnError(context: string, error: any): void {
+  console.error(`❌ ${context}:`, {
+    name: error?.name,
+    message: error?.message,
+    code: error?.code,
+    stack: error?.stack,
+    // Log ALL properties of the error object
+    ...Object.getOwnPropertyNames(error || {}).reduce((acc, key) => {
+      acc[key] = error[key];
+      return acc;
+    }, {} as Record<string, any>),
+  });
+
+  // Also log the raw error object for inspection
+  console.error("Full error object:", error);
+}
+
+/**
+ * Creates a user-friendly error message based on WebAuthn error type
+ */
+function getWebAuthnErrorMessage(error: any, operation: "registration" | "login"): string {
+  const errorName = error?.name || "";
+
+  switch (errorName) {
+    case "NotAllowedError":
+      return `${operation === "registration" ? "Passkey creation" : "Authentication"} was cancelled or timed out. Please try again.`;
+
+    case "InvalidStateError":
+      return operation === "registration"
+        ? "A passkey already exists for this device. Please try signing in instead."
+        : "Invalid authentication state. Please refresh and try again.";
+
+    case "NotSupportedError":
+      return "Passkeys are not supported on this device or browser. Please use a modern browser like Chrome, Safari, or Edge.";
+
+    case "SecurityError":
+      return "Security error: Please ensure you're accessing the site via HTTPS.";
+
+    case "AbortError":
+      return "Operation was aborted. Please try again.";
+
+    case "ConstraintError":
+      return "The authenticator doesn't meet the required constraints. Please try a different device or browser.";
+
+    case "NetworkError":
+      return "Network error occurred. Please check your connection and try again.";
+
+    default:
+      // Return the original error message if it's informative, otherwise provide a generic one
+      const originalMessage = error?.message || "";
+      return originalMessage.length > 0 && originalMessage.length < 200
+        ? originalMessage
+        : `${operation === "registration" ? "Registration" : "Login"} failed. Please try again.`;
+  }
+}
+
 class PasskeyAuthService {
   /**
    * Check if WebAuthn is supported in the current browser
@@ -44,30 +103,64 @@ class PasskeyAuthService {
   }
 
   /**
-   * Register a new user with a passkey using preloaded challenge options
-   *
-   * This method maintains the user gesture chain required by iOS Safari by
-   * calling navigator.credentials.create() immediately without any async operations.
-   *
-   * @param email - User's email address
-   * @param preloadedOptions - Challenge options preloaded by useChallengePreload hook
-   * @returns Registration result with user, session token, and recovery codes
+   * Register a new user with a passkey
    */
-  async registerWithPreloadedOptions(
-    email: string,
-    preloadedOptions: { challenge_id: string; options: any },
-  ): Promise<RegistrationResult> {
+  async register(email: string): Promise<RegistrationResult> {
     if (!this.isSupported()) {
       throw new Error("Passkeys are not supported in this browser");
     }
 
-    console.log("🔐 Starting passkey registration with preloaded options");
-    console.log("🌐 Current origin:", window.location.origin);
+    console.log("🔐 Starting passkey registration");
+    console.log("📧 Email:", email);
+    console.log("🌐 Origin:", window.location.origin);
+    console.log("🔒 Protocol:", window.location.protocol);
 
-    const { challenge_id, options } = preloadedOptions;
+    // Step 1: Get challenge from backend
+    let startResponse: Response;
+    try {
+      startResponse = await fetch(
+        `${API_BASE_URL}/auth/passkey/register/start`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        },
+      );
+    } catch (error: any) {
+      logWebAuthnError("Network error during registration start", error);
+      throw new Error(
+        `Network error: ${error.message || "Could not connect to server"}`,
+      );
+    }
 
-    // Step 1: Create credential using WebAuthn (SYNCHRONOUSLY - maintains user gesture)
-    // Convert challenge and user.id from base64url to ArrayBuffer
+    if (!startResponse.ok) {
+      console.error("❌ Registration start failed:", {
+        status: startResponse.status,
+        statusText: startResponse.statusText,
+      });
+
+      let errorMessage = "Failed to start registration";
+      try {
+        const error = await startResponse.json();
+        console.error("📄 Error response:", error);
+        errorMessage =
+          error.detail?.message || error.error?.message || error.message;
+
+        if (startResponse.status === 409) {
+          errorMessage =
+            error.detail?.message ||
+            "An account with this email already exists. Please sign in instead.";
+        }
+      } catch {
+        errorMessage = `Server error (${startResponse.status}): ${startResponse.statusText}`;
+      }
+      throw new Error(errorMessage);
+    }
+
+    const { challenge_id, options } = await startResponse.json();
+    console.log("✅ Challenge received:", challenge_id);
+
+    // Step 2: Create credential using WebAuthn
     const publicKeyOptions: PublicKeyCredentialCreationOptions = {
       challenge: this.base64urlToBuffer(options.challenge),
       rp: {
@@ -90,56 +183,29 @@ class PasskeyAuthService {
       })),
     };
 
-    console.log("🔑 Creating passkey with options:", {
+    console.log("🔑 Calling navigator.credentials.create() with options:", {
       rp: options.rp,
-      user: options.user,
+      user: { name: options.user.name, displayName: options.user.displayName },
       timeout: options.timeout,
       authenticatorSelection: options.authenticatorSelection,
     });
 
     let credential: Credential | null;
     try {
-      // CRITICAL: This is called synchronously within user gesture context
       credential = await navigator.credentials.create({
         publicKey: publicKeyOptions,
       });
+      console.log("✅ Credential created successfully");
     } catch (error: any) {
-      // Enhanced error logging
-      console.error("WebAuthn registration failed:", {
-        name: error.name,
-        message: error.message,
-        code: error.code,
-        stack: error.stack,
-        fullError: error,
-      });
-      // Provide more specific error messages based on error type
-      if (error.name === "NotAllowedError") {
-        throw new Error(
-          "Passkey creation was cancelled. Please try again and approve the prompt.",
-        );
-      } else if (error.name === "InvalidStateError") {
-        throw new Error(
-          "A passkey already exists for this device. Please try signing in instead.",
-        );
-      } else if (error.name === "NotSupportedError") {
-        throw new Error(
-          "Passkeys are not supported on this device or browser.",
-        );
-      } else if (error.name === "SecurityError") {
-        throw new Error(
-          "Security error: Please ensure you're accessing the site via HTTPS.",
-        );
-      }
-      throw new Error(
-        `Failed to create passkey: ${error.name || "Unknown error"} - ${error.message || "Please try again."}`,
-      );
+      logWebAuthnError("WebAuthn registration failed", error);
+      throw new Error(getWebAuthnErrorMessage(error, "registration"));
     }
 
     if (!credential) {
-      throw new Error("Failed to create passkey");
+      throw new Error("Failed to create passkey - no credential returned");
     }
 
-    // Step 2: Verify registration with backend (async is OK here, gesture already used)
+    // Step 3: Verify with backend
     const credentialData = this.credentialToJSON(
       credential as PublicKeyCredential,
     );
@@ -159,45 +225,33 @@ class PasskeyAuthService {
         },
       );
     } catch (error: any) {
-      console.error("Network error during registration verification:", error);
+      logWebAuthnError("Network error during registration verification", error);
       throw new Error(
-        `Network error: ${error.message || "Could not connect to server. Please check your internet connection."}`,
+        `Network error: ${error.message || "Could not connect to server"}`,
       );
     }
 
     if (!verifyResponse.ok) {
+      console.error("❌ Registration verification failed:", {
+        status: verifyResponse.status,
+        statusText: verifyResponse.statusText,
+      });
+
       let errorMessage = "Failed to complete registration";
       try {
         const error = await verifyResponse.json();
+        console.error("📄 Verification error:", error);
         errorMessage = error.error?.message || error.message || errorMessage;
-      } catch (jsonError) {
-        // Response is not JSON, try to get text
-        try {
-          const errorText = await verifyResponse.text();
-          console.error(
-            "Non-JSON error response:",
-            errorText.substring(0, 200),
-          );
-          errorMessage = `Server error (${verifyResponse.status}): ${verifyResponse.statusText || "Unknown error"}`;
-        } catch (textError) {
-          console.error("Could not parse error response:", textError);
-        }
+      } catch {
+        errorMessage = `Server error (${verifyResponse.status}): ${verifyResponse.statusText}`;
       }
       throw new Error(errorMessage);
     }
 
-    let result: RegistrationResult;
-    try {
-      result = await verifyResponse.json();
-    } catch (error: any) {
-      console.error(
-        "Failed to parse registration verification response:",
-        error,
-      );
-      throw new Error("Invalid server response. Please try again.");
-    }
+    const result: RegistrationResult = await verifyResponse.json();
+    console.log("✅ Registration completed successfully");
 
-    // Store session token
+    // Store session
     localStorage.setItem("session_token", result.session_token);
     localStorage.setItem("user_data", JSON.stringify(result.user));
 
@@ -205,240 +259,54 @@ class PasskeyAuthService {
   }
 
   /**
-   * Register a new user with a passkey (original method - fetches challenge inline)
-   *
-   * WARNING: This method may fail on iOS Safari due to breaking the user gesture chain.
-   * Use registerWithPreloadedOptions() instead for better iOS Safari compatibility.
+   * Authenticate with a passkey
    */
-  async register(email: string): Promise<RegistrationResult> {
+  async login(email?: string): Promise<AuthResult> {
     if (!this.isSupported()) {
       throw new Error("Passkeys are not supported in this browser");
     }
 
-    console.log("🔐 Starting passkey registration with API:", API_BASE_URL);
-    console.log("🌐 Current origin:", window.location.origin);
+    console.log("🔐 Starting passkey login");
+    console.log("📧 Email:", email || "none (discoverable)");
+    console.log("🌐 Origin:", window.location.origin);
+    console.log("🔒 Protocol:", window.location.protocol);
 
-    // Step 1: Start registration
+    // Step 1: Get challenge from backend
     let startResponse: Response;
     try {
-      startResponse = await fetch(
-        `${API_BASE_URL}/auth/passkey/register/start`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        },
-      );
+      startResponse = await fetch(`${API_BASE_URL}/auth/passkey/login/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
     } catch (error: any) {
-      console.error("Network error during registration start:", error);
+      logWebAuthnError("Network error during login start", error);
       throw new Error(
-        `Network error: ${error.message || "Could not connect to server. Please check your internet connection."}`,
+        `Network error: ${error.message || "Could not connect to server"}`,
       );
     }
 
     if (!startResponse.ok) {
-      // Log detailed response info
-      console.error("❌ Registration start failed:", {
+      console.error("❌ Login start failed:", {
         status: startResponse.status,
         statusText: startResponse.statusText,
-        headers: Object.fromEntries(startResponse.headers.entries()),
       });
 
-      let errorMessage = "Failed to start registration";
+      let errorMessage = "Failed to start login";
       try {
         const error = await startResponse.json();
-        console.error("📄 Error response body:", error);
-        // FastAPI returns errors in {detail: {code, message}} format
-        errorMessage =
-          error.detail?.message ||
-          error.error?.message ||
-          error.message ||
-          errorMessage;
-
-        // Special handling for 409 - user already exists
-        if (startResponse.status === 409) {
-          errorMessage =
-            error.detail?.message ||
-            "An account with this email already exists. Please sign in instead.";
-        }
-      } catch (jsonError) {
-        // Response is not JSON, try to get text
-        try {
-          const errorText = await startResponse.text();
-          console.error(
-            "📄 Non-JSON error response:",
-            errorText.substring(0, 500),
-          );
-          errorMessage = `Server error (${startResponse.status}): ${startResponse.statusText || "Unknown error"}`;
-        } catch (textError) {
-          console.error("❌ Could not parse error response:", textError);
-        }
-      }
-      throw new Error(errorMessage);
-    }
-
-    let challenge_id: string;
-    let options: any;
-    try {
-      const data = await startResponse.json();
-      challenge_id = data.challenge_id;
-      options = data.options;
-    } catch (error: any) {
-      console.error("Failed to parse registration start response:", error);
-      throw new Error("Invalid server response. Please try again.");
-    }
-
-    // Step 2: Create credential using WebAuthn
-    // Convert challenge and user.id from base64url to ArrayBuffer
-    const publicKeyOptions: PublicKeyCredentialCreationOptions = {
-      ...options,
-      challenge: this.base64urlToBuffer(options.challenge),
-      user: {
-        ...options.user,
-        id: this.base64urlToBuffer(options.user.id),
-      },
-      excludeCredentials: options.excludeCredentials?.map((cred: any) => ({
-        ...cred,
-        id: this.base64urlToBuffer(cred.id),
-      })),
-    };
-
-    console.log("🔑 Creating passkey with options:", {
-      rp: options.rp,
-      user: options.user,
-      timeout: options.timeout,
-      authenticatorSelection: options.authenticatorSelection,
-    });
-
-    let credential: Credential | null;
-    try {
-      credential = await navigator.credentials.create({
-        publicKey: publicKeyOptions,
-      });
-    } catch (error: any) {
-      // Enhanced error logging
-      console.error("WebAuthn registration failed:", {
-        name: error.name,
-        message: error.message,
-        code: error.code,
-        stack: error.stack,
-        fullError: error,
-      });
-      // Provide more specific error messages based on error type
-      if (error.name === "NotAllowedError") {
-        throw new Error(
-          "Passkey creation was cancelled. Please try again and approve the prompt.",
-        );
-      } else if (error.name === "InvalidStateError") {
-        throw new Error(
-          "A passkey already exists for this device. Please try signing in instead.",
-        );
-      } else if (error.name === "NotSupportedError") {
-        throw new Error(
-          "Passkeys are not supported on this device or browser.",
-        );
-      } else if (error.name === "SecurityError") {
-        throw new Error(
-          "Security error: Please ensure you're accessing the site via HTTPS.",
-        );
-      }
-      throw new Error(
-        `Failed to create passkey: ${error.name || "Unknown error"} - ${error.message || "Please try again."}`,
-      );
-    }
-
-    if (!credential) {
-      throw new Error("Failed to create passkey");
-    }
-
-    // Step 3: Verify registration with backend
-    const credentialData = this.credentialToJSON(
-      credential as PublicKeyCredential,
-    );
-
-    let verifyResponse: Response;
-    try {
-      verifyResponse = await fetch(
-        `${API_BASE_URL}/auth/passkey/register/verify`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email,
-            challenge_id,
-            credential: credentialData,
-          }),
-        },
-      );
-    } catch (error: any) {
-      console.error("Network error during registration verification:", error);
-      throw new Error(
-        `Network error: ${error.message || "Could not connect to server. Please check your internet connection."}`,
-      );
-    }
-
-    if (!verifyResponse.ok) {
-      let errorMessage = "Failed to complete registration";
-      try {
-        const error = await verifyResponse.json();
+        console.error("📄 Error response:", error);
         errorMessage = error.error?.message || error.message || errorMessage;
-      } catch (jsonError) {
-        // Response is not JSON, try to get text
-        try {
-          const errorText = await verifyResponse.text();
-          console.error(
-            "Non-JSON error response:",
-            errorText.substring(0, 200),
-          );
-          errorMessage = `Server error (${verifyResponse.status}): ${verifyResponse.statusText || "Unknown error"}`;
-        } catch (textError) {
-          console.error("Could not parse error response:", textError);
-        }
+      } catch {
+        errorMessage = `Server error (${startResponse.status}): ${startResponse.statusText}`;
       }
       throw new Error(errorMessage);
     }
 
-    let result: RegistrationResult;
-    try {
-      result = await verifyResponse.json();
-    } catch (error: any) {
-      console.error(
-        "Failed to parse registration verification response:",
-        error,
-      );
-      throw new Error("Invalid server response. Please try again.");
-    }
+    const { challenge_id, options } = await startResponse.json();
+    console.log("✅ Challenge received:", challenge_id);
 
-    // Store session token
-    localStorage.setItem("session_token", result.session_token);
-    localStorage.setItem("user_data", JSON.stringify(result.user));
-
-    return result;
-  }
-
-  /**
-   * Authenticate with a passkey using preloaded challenge options
-   *
-   * This method maintains the user gesture chain required by iOS Safari by
-   * calling navigator.credentials.get() immediately without any async operations.
-   *
-   * @param preloadedOptions - Challenge options preloaded by useChallengePreload hook
-   * @returns Authentication result with user and session token
-   */
-  async loginWithPreloadedOptions(
-    preloadedOptions: { challenge_id: string; options: any },
-  ): Promise<AuthResult> {
-    if (!this.isSupported()) {
-      throw new Error("Passkeys are not supported in this browser");
-    }
-
-    console.log("🔐 Starting passkey login with preloaded options");
-    console.log("🌐 Current origin:", window.location.origin);
-
-    const { challenge_id, options } = preloadedOptions;
-
-    // Step 1: Get credential using WebAuthn (SYNCHRONOUSLY - maintains user gesture)
-    // Convert challenge and allowCredentials from base64url to ArrayBuffer
+    // Step 2: Get credential using WebAuthn
     const publicKeyOptions: PublicKeyCredentialRequestOptions = {
       challenge: this.base64urlToBuffer(options.challenge),
       rpId: options.rpId,
@@ -451,51 +319,29 @@ class PasskeyAuthService {
       timeout: options.timeout,
     };
 
-    console.log("🔑 Requesting passkey with options:", {
+    console.log("🔑 Calling navigator.credentials.get() with options:", {
       rpId: options.rpId,
       timeout: options.timeout,
       allowCredentials: options.allowCredentials?.length || 0,
+      userVerification: options.userVerification,
     });
 
     let credential: Credential | null;
     try {
-      // CRITICAL: This is called synchronously within user gesture context
       credential = await navigator.credentials.get({
         publicKey: publicKeyOptions,
       });
+      console.log("✅ Credential retrieved successfully");
     } catch (error: any) {
-      // Enhanced error logging
-      console.error("WebAuthn login failed:", {
-        name: error.name,
-        message: error.message,
-        code: error.code,
-        stack: error.stack,
-        fullError: error,
-      });
-      // Provide more specific error messages based on error type
-      if (error.name === "NotAllowedError") {
-        throw new Error(
-          "Authentication was cancelled. Please try again and approve the prompt.",
-        );
-      } else if (error.name === "NotSupportedError") {
-        throw new Error(
-          "Passkeys are not supported on this device or browser.",
-        );
-      } else if (error.name === "SecurityError") {
-        throw new Error(
-          "Security error: Please ensure you're accessing the site via HTTPS.",
-        );
-      }
-      throw new Error(
-        `Failed to authenticate: ${error.name || "Unknown error"} - ${error.message || "Please try again."}`,
-      );
+      logWebAuthnError("WebAuthn login failed", error);
+      throw new Error(getWebAuthnErrorMessage(error, "login"));
     }
 
     if (!credential) {
-      throw new Error("Failed to get passkey");
+      throw new Error("Failed to authenticate - no credential returned");
     }
 
-    // Step 2: Verify authentication with backend (async is OK here, gesture already used)
+    // Step 3: Verify with backend
     const credentialData = this.credentialToJSON(
       credential as PublicKeyCredential,
     );
@@ -514,214 +360,33 @@ class PasskeyAuthService {
         },
       );
     } catch (error: any) {
-      console.error("Network error during login verification:", error);
+      logWebAuthnError("Network error during login verification", error);
       throw new Error(
-        `Network error: ${error.message || "Could not connect to server. Please check your internet connection."}`,
+        `Network error: ${error.message || "Could not connect to server"}`,
       );
     }
 
     if (!verifyResponse.ok) {
+      console.error("❌ Login verification failed:", {
+        status: verifyResponse.status,
+        statusText: verifyResponse.statusText,
+      });
+
       let errorMessage = "Failed to verify authentication";
       try {
         const error = await verifyResponse.json();
+        console.error("📄 Verification error:", error);
         errorMessage = error.error?.message || error.message || errorMessage;
-      } catch (jsonError) {
-        // Response is not JSON, try to get text
-        try {
-          const errorText = await verifyResponse.text();
-          console.error(
-            "Non-JSON error response:",
-            errorText.substring(0, 200),
-          );
-          errorMessage = `Server error (${verifyResponse.status}): ${verifyResponse.statusText || "Unknown error"}`;
-        } catch (textError) {
-          console.error("Could not parse error response:", textError);
-        }
+      } catch {
+        errorMessage = `Server error (${verifyResponse.status}): ${verifyResponse.statusText}`;
       }
       throw new Error(errorMessage);
     }
 
-    let result: AuthResult;
-    try {
-      result = await verifyResponse.json();
-    } catch (error: any) {
-      console.error(
-        "Failed to parse login verification response:",
-        error,
-      );
-      throw new Error("Invalid server response. Please try again.");
-    }
+    const result: AuthResult = await verifyResponse.json();
+    console.log("✅ Login completed successfully");
 
-    // Store session token
-    localStorage.setItem("session_token", result.session_token);
-    localStorage.setItem("user_data", JSON.stringify(result.user));
-
-    return result;
-  }
-
-  /**
-   * Authenticate with a passkey (original method - fetches challenge inline)
-   *
-   * WARNING: This method may fail on iOS Safari due to breaking the user gesture chain.
-   * Use loginWithPreloadedOptions() instead for better iOS Safari compatibility.
-   */
-  async authenticate(email?: string): Promise<AuthResult> {
-    if (!this.isSupported()) {
-      throw new Error("Passkeys are not supported in this browser");
-    }
-
-    if (!email) {
-      throw new Error("Email is required for authentication");
-    }
-
-    console.log("🔐 Starting passkey authentication with API:", API_BASE_URL);
-    console.log("🌐 Current origin:", window.location.origin);
-
-    // Step 1: Start authentication
-    let startResponse: Response;
-    try {
-      startResponse = await fetch(`${API_BASE_URL}/auth/passkey/login/start`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-    } catch (error: any) {
-      console.error("Network error during authentication start:", error);
-      throw new Error(
-        `Network error: ${error.message || "Could not connect to server. Please check your internet connection."}`,
-      );
-    }
-
-    if (!startResponse.ok) {
-      let errorMessage = "Failed to start login";
-      try {
-        const error = await startResponse.json();
-        errorMessage = error.error?.message || error.message || errorMessage;
-      } catch (jsonError) {
-        // Response is not JSON, try to get text
-        try {
-          const errorText = await startResponse.text();
-          console.error(
-            "Non-JSON error response:",
-            errorText.substring(0, 200),
-          );
-          errorMessage = `Server error (${startResponse.status}): ${startResponse.statusText || "Unknown error"}`;
-        } catch (textError) {
-          console.error("Could not parse error response:", textError);
-        }
-      }
-      throw new Error(errorMessage);
-    }
-
-    let challenge_id: string;
-    let options: any;
-    try {
-      const data = await startResponse.json();
-      challenge_id = data.challenge_id;
-      options = data.options;
-    } catch (error: any) {
-      console.error("Failed to parse authentication start response:", error);
-      throw new Error("Invalid server response. Please try again.");
-    }
-
-    // Step 2: Get credential using WebAuthn
-    const publicKeyOptions: PublicKeyCredentialRequestOptions = {
-      ...options,
-      challenge: this.base64urlToBuffer(options.challenge),
-      allowCredentials: options.allowCredentials?.map((cred: any) => ({
-        ...cred,
-        id: this.base64urlToBuffer(cred.id),
-      })),
-    };
-
-    let credential: Credential | null;
-    try {
-      credential = await navigator.credentials.get({
-        publicKey: publicKeyOptions,
-      });
-    } catch (error: any) {
-      console.error("WebAuthn authentication failed:", error);
-      // Provide more specific error messages based on error type
-      if (error.name === "NotAllowedError") {
-        throw new Error(
-          "Authentication was cancelled. Please try again and approve the prompt.",
-        );
-      } else if (error.name === "NotSupportedError") {
-        throw new Error(
-          "Passkeys are not supported on this device or browser.",
-        );
-      } else if (error.name === "SecurityError") {
-        throw new Error(
-          "Security error: Please ensure you're accessing the site via HTTPS.",
-        );
-      }
-      throw new Error(
-        `Failed to authenticate: ${error.message || "Please try again."}`,
-      );
-    }
-
-    if (!credential) {
-      throw new Error("Failed to get passkey");
-    }
-
-    // Step 3: Verify authentication with backend
-    const credentialData = this.credentialToJSON(
-      credential as PublicKeyCredential,
-    );
-
-    let verifyResponse: Response;
-    try {
-      verifyResponse = await fetch(
-        `${API_BASE_URL}/auth/passkey/login/verify`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            challenge_id,
-            credential: credentialData,
-          }),
-        },
-      );
-    } catch (error: any) {
-      console.error("Network error during authentication verification:", error);
-      throw new Error(
-        `Network error: ${error.message || "Could not connect to server. Please check your internet connection."}`,
-      );
-    }
-
-    if (!verifyResponse.ok) {
-      let errorMessage = "Failed to verify authentication";
-      try {
-        const error = await verifyResponse.json();
-        errorMessage = error.error?.message || error.message || errorMessage;
-      } catch (jsonError) {
-        // Response is not JSON, try to get text
-        try {
-          const errorText = await verifyResponse.text();
-          console.error(
-            "Non-JSON error response:",
-            errorText.substring(0, 200),
-          );
-          errorMessage = `Server error (${verifyResponse.status}): ${verifyResponse.statusText || "Unknown error"}`;
-        } catch (textError) {
-          console.error("Could not parse error response:", textError);
-        }
-      }
-      throw new Error(errorMessage);
-    }
-
-    let result: AuthResult;
-    try {
-      result = await verifyResponse.json();
-    } catch (error: any) {
-      console.error(
-        "Failed to parse authentication verification response:",
-        error,
-      );
-      throw new Error("Invalid server response. Please try again.");
-    }
-
-    // Store session token
+    // Store session
     localStorage.setItem("session_token", result.session_token);
     localStorage.setItem("user_data", JSON.stringify(result.user));
 
@@ -754,7 +419,7 @@ class PasskeyAuthService {
 
     const result: AuthResult = await response.json();
 
-    // Store session token
+    // Store session
     localStorage.setItem("session_token", result.session_token);
     localStorage.setItem("user_data", JSON.stringify(result.user));
 
@@ -804,7 +469,6 @@ class PasskeyAuthService {
 
       const data = await response.json();
       if (data.valid) {
-        // Update stored user data
         localStorage.setItem("user_data", JSON.stringify(data.user));
         return data.user;
       }
@@ -835,21 +499,6 @@ class PasskeyAuthService {
 
     const data = await response.json();
     return data.credentials;
-  }
-
-  /**
-   * Add a new passkey to the account
-   */
-  async addPasskey(
-    _token: string,
-    _friendlyName?: string,
-  ): Promise<PasskeyCredential> {
-    if (!this.isSupported()) {
-      throw new Error("Passkeys are not supported in this browser");
-    }
-
-    // For now, this is simplified - in production you'd generate a challenge first
-    throw new Error("Add passkey not yet fully implemented");
   }
 
   /**
@@ -899,7 +548,6 @@ class PasskeyAuthService {
     const token = localStorage.getItem("session_token");
 
     if (token) {
-      // Call logout endpoint (fire and forget)
       fetch(`${API_BASE_URL}/auth/logout`, {
         method: "POST",
         headers: {
@@ -911,7 +559,6 @@ class PasskeyAuthService {
       });
     }
 
-    // Clear local storage
     localStorage.removeItem("session_token");
     localStorage.removeItem("user_data");
   }
@@ -952,8 +599,6 @@ class PasskeyAuthService {
    */
   private credentialToJSON(credential: PublicKeyCredential): any {
     const response = credential.response;
-
-    // Check if this is a registration or authentication response
     const isRegistration = "attestationObject" in response;
 
     if (isRegistration) {

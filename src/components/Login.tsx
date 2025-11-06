@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button, Input, Text } from "@stellar/design-system";
 import { useAuth } from "../contexts/AuthContext_passkey";
-import { useChallengePreload } from "../hooks/useChallengePreload";
 
 interface LoginProps {
   onLoginSuccess?: () => void;
@@ -20,30 +19,14 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     type: "success" | "error" | "info";
     text: string;
   } | null>(null);
+
   const {
     register,
-    registerWithPreloadedOptions,
     login,
-    loginWithPreloadedOptions,
     loginWithRecoveryCode,
     acknowledgeRecoveryCodes,
     isPasskeySupported,
   } = useAuth();
-
-  // Pre-load challenge options for both signup AND signin (iOS Safari compatibility)
-  // iOS Safari requires navigator.credentials API to be called within user gesture chain.
-  // Fetching challenge options AFTER user click breaks this chain, causing silent failures.
-  // Pre-loading ensures options are ready BEFORE click, preserving the gesture chain.
-  const {
-    options: preloadedOptions,
-    loading: preloadingChallenge,
-    error: preloadError,
-  } = useChallengePreload(
-    email,
-    (authMode === "signup" || authMode === "signin") && isPasskeySupported, // Preload for both flows
-    500, // 500ms debounce
-    authMode === "signup" ? "register" : "login", // Use correct endpoint for each mode
-  );
 
   const handlePasskeyAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,42 +49,16 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
     try {
       if (authMode === "signup") {
-        // Register new user with preloaded options (iOS Safari compatible)
-        if (preloadedOptions) {
-          console.log("✅ Using preloaded challenge options");
-          const result = await registerWithPreloadedOptions(
-            email,
-            preloadedOptions,
-          );
-          setRecoveryCodes(result.recovery_codes);
-          setMessage({
-            type: "success",
-            text: "Registration successful! Please save your recovery codes.",
-          });
-        } else {
-          // Fallback to old method if preload failed or not ready
-          console.warn(
-            "⚠️ Preloaded options not available, using fallback method",
-          );
-          const result = await register(email);
-          setRecoveryCodes(result.recovery_codes);
-          setMessage({
-            type: "success",
-            text: "Registration successful! Please save your recovery codes.",
-          });
-        }
+        // Register new user
+        const result = await register(email);
+        setRecoveryCodes(result.recovery_codes);
+        setMessage({
+          type: "success",
+          text: "Registration successful! Please save your recovery codes.",
+        });
       } else {
         // Authenticate existing user
-        if (preloadedOptions) {
-          console.log("✅ Using preloaded challenge options for login");
-          await loginWithPreloadedOptions(preloadedOptions);
-        } else {
-          // Fallback to old method if preload failed or not ready
-          console.warn(
-            "⚠️ Preloaded options not available for login, using fallback method",
-          );
-          await login(email);
-        }
+        await login(email);
         setMessage({
           type: "success",
           text: "Successfully signed in!",
@@ -109,12 +66,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         onLoginSuccess?.();
       }
     } catch (error: any) {
-      console.error("Authentication error:", {
-        name: error?.name,
-        message: error?.message,
-        stack: error?.stack,
-        fullError: error,
-      });
+      console.error("Authentication error:", error);
 
       // Check if error indicates user doesn't exist (should register)
       if (authMode === "signin" && error.message?.includes("not found")) {
@@ -440,15 +392,12 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             type="submit"
             variant="primary"
             size="md"
-            isLoading={
-              isLoading || (authMode === "signup" && preloadingChallenge)
-            }
+            isLoading={isLoading}
             disabled={
               isLoading ||
               !email.trim() ||
               (authMode === "recovery" && !recoveryCode.trim()) ||
-              !isPasskeySupported ||
-              (authMode === "signup" && preloadingChallenge)
+              !isPasskeySupported
             }
             isFullWidth
           >
@@ -458,40 +407,13 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 : authMode === "signup"
                   ? "Creating Account..."
                   : "Signing In..."
-              : preloadingChallenge && authMode === "signup"
-                ? "Preparing..."
-                : authMode === "recovery"
-                  ? "Sign In with Recovery Code"
-                  : authMode === "signup"
-                    ? "Sign Up with Passkey"
-                    : "Sign In with Passkey"}
+              : authMode === "recovery"
+                ? "Sign In with Recovery Code"
+                : authMode === "signup"
+                  ? "Sign Up with Passkey"
+                  : "Sign In with Passkey"}
           </Button>
         </form>
-
-        {/* Show preload error */}
-        {preloadError && authMode === "signup" && (
-          <div
-            style={{
-              marginTop: "20px",
-              padding: "12px 16px",
-              borderRadius: "var(--border-radius-md)",
-              backgroundColor: "rgba(239, 68, 68, 0.1)",
-              border: "1px solid var(--color-negative)",
-            }}
-          >
-            <Text
-              as="p"
-              size="sm"
-              style={{
-                color: "var(--color-negative)",
-                margin: 0,
-                textAlign: "center",
-              }}
-            >
-              {preloadError}
-            </Text>
-          </div>
-        )}
 
         {message && (
           <div
