@@ -36,26 +36,32 @@ function isValidEmail(email: string): boolean {
 }
 
 /**
- * Pre-loads WebAuthn challenge options for passkey registration
+ * Pre-loads WebAuthn challenge options for passkey registration or authentication
  *
  * @param email - User's email address
  * @param enabled - Whether to enable pre-loading (default: true)
  * @param debounceMs - Debounce delay in milliseconds (default: 500)
+ * @param mode - 'register' or 'login' (default: 'register')
  *
  * @returns Object containing preloaded options, loading state, error, and utility functions
  *
  * @example
- * const { options, loading, error } = useChallengePreload(email);
+ * // For registration
+ * const { options, loading, error } = useChallengePreload(email, true, 500, 'register');
  *
- * // When user clicks "Sign Up", options are already loaded
+ * // For login
+ * const { options, loading, error } = useChallengePreload(email, true, 500, 'login');
+ *
+ * // When user clicks, options are already loaded
  * if (options) {
- *   const result = await passkeyAuthService.registerWithPreloadedOptions(email, options);
+ *   const result = await passkeyAuthService.loginWithPreloadedOptions(email, options);
  * }
  */
 export function useChallengePreload(
   email: string,
   enabled: boolean = true,
   debounceMs: number = 500,
+  mode: 'register' | 'login' = 'register',
 ): UseChallengePreloadResult {
   const [options, setOptions] = useState<ChallengeOptions | null>(null);
   const [loading, setLoading] = useState(false);
@@ -88,10 +94,14 @@ export function useChallengePreload(
       setError(null);
 
       try {
-        console.log("🔄 Pre-loading challenge options for:", email);
+        const endpoint = mode === 'register'
+          ? '/auth/passkey/register/start'
+          : '/auth/passkey/login/start';
+
+        console.log(`🔄 Pre-loading ${mode} challenge options for:`, email);
 
         const response = await fetch(
-          `${API_BASE_URL}/auth/passkey/register/start`,
+          `${API_BASE_URL}${endpoint}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -100,13 +110,19 @@ export function useChallengePreload(
         );
 
         if (!response.ok) {
-          // Handle specific error cases
-          if (response.status === 409) {
+          // Handle specific error cases based on mode
+          if (mode === 'register' && response.status === 409) {
             setError(
               "An account with this email already exists. Please sign in instead.",
             );
+          } else if (mode === 'login' && response.status === 404) {
+            setError(
+              "No account found with this email. Please sign up first.",
+            );
           } else {
-            let errorMessage = "Failed to prepare registration";
+            let errorMessage = mode === 'register'
+              ? "Failed to prepare registration"
+              : "Failed to prepare login";
             try {
               const errorData = await response.json();
               errorMessage =
@@ -145,11 +161,11 @@ export function useChallengePreload(
       }
     }, debounceMs);
 
-    // Cleanup: Cancel pending requests when email changes
+    // Cleanup: Cancel pending requests when email or mode changes
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [email, enabled, debounceMs]);
+  }, [email, enabled, debounceMs, mode]);
 
   // Auto-refresh expired challenges (15 minutes)
   useEffect(() => {

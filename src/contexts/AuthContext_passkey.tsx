@@ -27,6 +27,10 @@ interface AuthContextType {
     recovery_codes_message: string;
   }>;
   login: (email: string) => Promise<void>;
+  loginWithPreloadedOptions: (
+    email: string,
+    preloadedOptions: { challenge_id: string; options: any },
+  ) => Promise<void>;
   loginWithRecoveryCode: (email: string, code: string) => Promise<void>;
   acknowledgeRecoveryCodes: () => Promise<void>;
   validateSession: (token: string) => Promise<boolean>;
@@ -155,7 +159,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Login with passkey
+  // Login with passkey (with preloaded options - iOS Safari compatible)
+  const loginWithPreloadedOptions = async (
+    email: string,
+    preloadedOptions: { challenge_id: string; options: any },
+  ): Promise<void> => {
+    try {
+      const result = await passkeyAuthService.loginWithPreloadedOptions(
+        email,
+        preloadedOptions,
+      );
+
+      // Set auth state
+      setUser(result.user);
+      setSessionToken(result.session_token);
+    } catch (error: any) {
+      console.error("Login failed:", {
+        name: error?.name,
+        message: error?.message,
+        stack: error?.stack,
+        fullError: error,
+      });
+      throw error;
+    }
+  };
+
+  // Login with passkey (original method - may fail on iOS Safari)
   const login = async (email: string): Promise<void> => {
     try {
       const result = await passkeyAuthService.authenticate(email);
@@ -235,6 +264,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     registerWithPreloadedOptions,
     login,
+    loginWithPreloadedOptions,
     loginWithRecoveryCode,
     acknowledgeRecoveryCodes,
     validateSession,
