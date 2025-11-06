@@ -73,21 +73,29 @@ class PasskeyAuthService {
     }
 
     if (!startResponse.ok) {
+      // Log detailed response info
+      console.error("❌ Registration start failed:", {
+        status: startResponse.status,
+        statusText: startResponse.statusText,
+        headers: Object.fromEntries(startResponse.headers.entries()),
+      });
+
       let errorMessage = "Failed to start registration";
       try {
         const error = await startResponse.json();
+        console.error("📄 Error response body:", error);
         errorMessage = error.error?.message || error.message || errorMessage;
       } catch (jsonError) {
         // Response is not JSON, try to get text
         try {
           const errorText = await startResponse.text();
           console.error(
-            "Non-JSON error response:",
-            errorText.substring(0, 200),
+            "📄 Non-JSON error response:",
+            errorText.substring(0, 500),
           );
           errorMessage = `Server error (${startResponse.status}): ${startResponse.statusText || "Unknown error"}`;
         } catch (textError) {
-          console.error("Could not parse error response:", textError);
+          console.error("❌ Could not parse error response:", textError);
         }
       }
       throw new Error(errorMessage);
