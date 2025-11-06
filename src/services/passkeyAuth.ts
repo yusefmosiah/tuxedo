@@ -4,7 +4,10 @@
  */
 
 const API_BASE_URL =
-  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) ||
+  (typeof import.meta !== 'undefined' &&
+   (import.meta.env?.VITE_API_URL || import.meta.env?.PUBLIC_API_URL)) ||
+  (typeof process !== 'undefined' &&
+   (process.env?.VITE_API_URL || process.env?.PUBLIC_API_URL)) ||
   "http://localhost:8000";
 
 export interface User {
@@ -53,22 +56,53 @@ class PasskeyAuthService {
       throw new Error("Passkeys are not supported in this browser");
     }
 
-    // Step 1: Start registration
-    const startResponse = await fetch(
-      `${API_BASE_URL}/auth/passkey/register/start`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      }
-    );
+    console.log('🔐 Starting passkey registration with API:', API_BASE_URL);
+    console.log('🌐 Current origin:', window.location.origin);
 
-    if (!startResponse.ok) {
-      const error = await startResponse.json();
-      throw new Error(error.error?.message || "Failed to start registration");
+    // Step 1: Start registration
+    let startResponse: Response;
+    try {
+      startResponse = await fetch(
+        `${API_BASE_URL}/auth/passkey/register/start`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        }
+      );
+    } catch (error: any) {
+      console.error("Network error during registration start:", error);
+      throw new Error(`Network error: ${error.message || "Could not connect to server. Please check your internet connection."}`);
     }
 
-    const { challenge_id, options } = await startResponse.json();
+    if (!startResponse.ok) {
+      let errorMessage = "Failed to start registration";
+      try {
+        const error = await startResponse.json();
+        errorMessage = error.error?.message || error.message || errorMessage;
+      } catch (jsonError) {
+        // Response is not JSON, try to get text
+        try {
+          const errorText = await startResponse.text();
+          console.error("Non-JSON error response:", errorText.substring(0, 200));
+          errorMessage = `Server error (${startResponse.status}): ${startResponse.statusText || "Unknown error"}`;
+        } catch (textError) {
+          console.error("Could not parse error response:", textError);
+        }
+      }
+      throw new Error(errorMessage);
+    }
+
+    let challenge_id: string;
+    let options: any;
+    try {
+      const data = await startResponse.json();
+      challenge_id = data.challenge_id;
+      options = data.options;
+    } catch (error: any) {
+      console.error("Failed to parse registration start response:", error);
+      throw new Error("Invalid server response. Please try again.");
+    }
 
     // Step 2: Create credential using WebAuthn
     // Convert challenge and user.id from base64url to ArrayBuffer
@@ -124,27 +158,50 @@ class PasskeyAuthService {
       credential as PublicKeyCredential
     );
 
-    const verifyResponse = await fetch(
-      `${API_BASE_URL}/auth/passkey/register/verify`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          challenge_id,
-          credential: credentialData,
-        }),
-      }
-    );
-
-    if (!verifyResponse.ok) {
-      const error = await verifyResponse.json();
-      throw new Error(
-        error.error?.message || "Failed to complete registration"
+    let verifyResponse: Response;
+    try {
+      verifyResponse = await fetch(
+        `${API_BASE_URL}/auth/passkey/register/verify`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            challenge_id,
+            credential: credentialData,
+          }),
+        }
       );
+    } catch (error: any) {
+      console.error("Network error during registration verification:", error);
+      throw new Error(`Network error: ${error.message || "Could not connect to server. Please check your internet connection."}`);
     }
 
-    const result: RegistrationResult = await verifyResponse.json();
+    if (!verifyResponse.ok) {
+      let errorMessage = "Failed to complete registration";
+      try {
+        const error = await verifyResponse.json();
+        errorMessage = error.error?.message || error.message || errorMessage;
+      } catch (jsonError) {
+        // Response is not JSON, try to get text
+        try {
+          const errorText = await verifyResponse.text();
+          console.error("Non-JSON error response:", errorText.substring(0, 200));
+          errorMessage = `Server error (${verifyResponse.status}): ${verifyResponse.statusText || "Unknown error"}`;
+        } catch (textError) {
+          console.error("Could not parse error response:", textError);
+        }
+      }
+      throw new Error(errorMessage);
+    }
+
+    let result: RegistrationResult;
+    try {
+      result = await verifyResponse.json();
+    } catch (error: any) {
+      console.error("Failed to parse registration verification response:", error);
+      throw new Error("Invalid server response. Please try again.");
+    }
 
     // Store session token
     localStorage.setItem("session_token", result.session_token);
@@ -165,22 +222,53 @@ class PasskeyAuthService {
       throw new Error("Email is required for authentication");
     }
 
-    // Step 1: Start authentication
-    const startResponse = await fetch(
-      `${API_BASE_URL}/auth/passkey/login/start`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      }
-    );
+    console.log('🔐 Starting passkey authentication with API:', API_BASE_URL);
+    console.log('🌐 Current origin:', window.location.origin);
 
-    if (!startResponse.ok) {
-      const error = await startResponse.json();
-      throw new Error(error.error?.message || "Failed to start login");
+    // Step 1: Start authentication
+    let startResponse: Response;
+    try {
+      startResponse = await fetch(
+        `${API_BASE_URL}/auth/passkey/login/start`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        }
+      );
+    } catch (error: any) {
+      console.error("Network error during authentication start:", error);
+      throw new Error(`Network error: ${error.message || "Could not connect to server. Please check your internet connection."}`);
     }
 
-    const { challenge_id, options } = await startResponse.json();
+    if (!startResponse.ok) {
+      let errorMessage = "Failed to start login";
+      try {
+        const error = await startResponse.json();
+        errorMessage = error.error?.message || error.message || errorMessage;
+      } catch (jsonError) {
+        // Response is not JSON, try to get text
+        try {
+          const errorText = await startResponse.text();
+          console.error("Non-JSON error response:", errorText.substring(0, 200));
+          errorMessage = `Server error (${startResponse.status}): ${startResponse.statusText || "Unknown error"}`;
+        } catch (textError) {
+          console.error("Could not parse error response:", textError);
+        }
+      }
+      throw new Error(errorMessage);
+    }
+
+    let challenge_id: string;
+    let options: any;
+    try {
+      const data = await startResponse.json();
+      challenge_id = data.challenge_id;
+      options = data.options;
+    } catch (error: any) {
+      console.error("Failed to parse authentication start response:", error);
+      throw new Error("Invalid server response. Please try again.");
+    }
 
     // Step 2: Get credential using WebAuthn
     const publicKeyOptions: PublicKeyCredentialRequestOptions = {
@@ -227,24 +315,49 @@ class PasskeyAuthService {
       credential as PublicKeyCredential
     );
 
-    const verifyResponse = await fetch(
-      `${API_BASE_URL}/auth/passkey/login/verify`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          challenge_id,
-          credential: credentialData,
-        }),
-      }
-    );
-
-    if (!verifyResponse.ok) {
-      const error = await verifyResponse.json();
-      throw new Error(error.error?.message || "Failed to verify authentication");
+    let verifyResponse: Response;
+    try {
+      verifyResponse = await fetch(
+        `${API_BASE_URL}/auth/passkey/login/verify`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            challenge_id,
+            credential: credentialData,
+          }),
+        }
+      );
+    } catch (error: any) {
+      console.error("Network error during authentication verification:", error);
+      throw new Error(`Network error: ${error.message || "Could not connect to server. Please check your internet connection."}`);
     }
 
-    const result: AuthResult = await verifyResponse.json();
+    if (!verifyResponse.ok) {
+      let errorMessage = "Failed to verify authentication";
+      try {
+        const error = await verifyResponse.json();
+        errorMessage = error.error?.message || error.message || errorMessage;
+      } catch (jsonError) {
+        // Response is not JSON, try to get text
+        try {
+          const errorText = await verifyResponse.text();
+          console.error("Non-JSON error response:", errorText.substring(0, 200));
+          errorMessage = `Server error (${verifyResponse.status}): ${verifyResponse.statusText || "Unknown error"}`;
+        } catch (textError) {
+          console.error("Could not parse error response:", textError);
+        }
+      }
+      throw new Error(errorMessage);
+    }
+
+    let result: AuthResult;
+    try {
+      result = await verifyResponse.json();
+    } catch (error: any) {
+      console.error("Failed to parse authentication verification response:", error);
+      throw new Error("Invalid server response. Please try again.");
+    }
 
     // Store session token
     localStorage.setItem("session_token", result.session_token);
