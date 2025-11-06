@@ -3,7 +3,9 @@
  * Handles WebAuthn passkey operations for user authentication
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_BASE_URL =
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) ||
+  "http://localhost:8000";
 
 export interface User {
   id: string;
@@ -328,8 +330,8 @@ class PasskeyAuthService {
    * Add a new passkey to the account
    */
   async addPasskey(
-    token: string,
-    friendlyName?: string
+    _token: string,
+    _friendlyName?: string
   ): Promise<PasskeyCredential> {
     if (!this.isSupported()) {
       throw new Error("Passkeys are not supported in this browser");
@@ -435,40 +437,41 @@ class PasskeyAuthService {
    * Convert WebAuthn credential to JSON-serializable format
    */
   private credentialToJSON(credential: PublicKeyCredential): any {
-    const response = credential.response as AuthenticatorAttestationResponse;
+    const response = credential.response;
 
-    return {
-      id: credential.id,
-      rawId: this.bufferToBase64url(credential.rawId),
-      type: credential.type,
-      response: {
-        clientDataJSON: this.bufferToBase64url(response.clientDataJSON),
-        attestationObject: this.bufferToBase64url(
-          (response as AuthenticatorAttestationResponse).attestationObject ||
-            (response as AuthenticatorAssertionResponse).authenticatorData
-        ),
-        authenticatorData:
-          (response as AuthenticatorAssertionResponse).authenticatorData
-            ? this.bufferToBase64url(
-                (response as AuthenticatorAssertionResponse).authenticatorData
-              )
+    // Check if this is a registration or authentication response
+    const isRegistration = 'attestationObject' in response;
+
+    if (isRegistration) {
+      const attestationResponse = response as AuthenticatorAttestationResponse;
+      return {
+        id: credential.id,
+        rawId: this.bufferToBase64url(credential.rawId),
+        type: credential.type,
+        response: {
+          clientDataJSON: this.bufferToBase64url(attestationResponse.clientDataJSON),
+          attestationObject: this.bufferToBase64url(attestationResponse.attestationObject),
+          transports: (credential as any).response?.getTransports
+            ? (credential as any).response.getTransports()
+            : [],
+        },
+      };
+    } else {
+      const assertionResponse = response as AuthenticatorAssertionResponse;
+      return {
+        id: credential.id,
+        rawId: this.bufferToBase64url(credential.rawId),
+        type: credential.type,
+        response: {
+          clientDataJSON: this.bufferToBase64url(assertionResponse.clientDataJSON),
+          authenticatorData: this.bufferToBase64url(assertionResponse.authenticatorData),
+          signature: this.bufferToBase64url(assertionResponse.signature),
+          userHandle: assertionResponse.userHandle
+            ? this.bufferToBase64url(assertionResponse.userHandle)
             : undefined,
-        signature: (response as AuthenticatorAssertionResponse).signature
-          ? this.bufferToBase64url(
-              (response as AuthenticatorAssertionResponse).signature
-            )
-          : undefined,
-        userHandle:
-          (response as AuthenticatorAssertionResponse).userHandle
-            ? this.bufferToBase64url(
-                (response as AuthenticatorAssertionResponse).userHandle
-              )
-            : undefined,
-        transports: (credential as any).response?.getTransports
-          ? (credential as any).response.getTransports()
-          : [],
-      },
-    };
+        },
+      };
+    }
   }
 }
 
