@@ -6,7 +6,8 @@
  * their own accounts autonomously.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
+import { API_BASE_URL } from "../lib/api";
 
 export interface WalletState {
   address: string | null;
@@ -28,7 +29,7 @@ export function useWallet(): WalletState {
     // Fetch agent accounts on mount
     const fetchAgentAccounts = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/agent/accounts');
+        const response = await fetch(`${API_BASE_URL}/api/agent/accounts`);
         if (response.ok) {
           const accounts = await response.json();
           if (accounts.length > 0) {
@@ -36,7 +37,7 @@ export function useWallet(): WalletState {
           }
         }
       } catch (error) {
-        console.log('No agent accounts available, agent works autonomously');
+        console.log("No agent accounts available, agent works autonomously");
       }
     };
 
@@ -46,15 +47,15 @@ export function useWallet(): WalletState {
   return {
     address: agentAddress,
     isConnected: !!agentAddress,
-    network: 'testnet',
+    network: "testnet",
     signTransaction: async (xdr: any, _options?: any) => {
       // In agent-first architecture, agents sign their own transactions
       // This is a no-op for backward compatibility
-      console.log('Agent manages transaction signing autonomously');
+      console.log("Agent manages transaction signing autonomously");
       return { signedTxXdr: xdr };
     },
     isPending: false,
-    networkPassphrase: 'Test SDF Network ; September 2015'
+    networkPassphrase: "Test SDF Network ; September 2015",
   };
 }
 
@@ -62,12 +63,12 @@ export function useWallet(): WalletState {
  * Legacy wallet balance hook for agent-first architecture
  */
 export function useWalletBalance() {
-  const [balance, setBalance] = useState<string>('0');
+  const [balance, setBalance] = useState<string>("0");
 
   useEffect(() => {
     const fetchBalance = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/agent/accounts');
+        const response = await fetch(`${API_BASE_URL}/api/agent/accounts`);
         if (response.ok) {
           const accounts = await response.json();
           if (accounts.length > 0 && accounts[0].balance !== undefined) {
@@ -75,7 +76,7 @@ export function useWalletBalance() {
           }
         }
       } catch (error) {
-        console.log('Could not fetch balance');
+        console.log("Could not fetch balance");
       }
     };
 
