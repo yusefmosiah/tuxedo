@@ -5,24 +5,18 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
+import { passkeyAuth, User, RegistrationResult, AuthResult, RecoveryCodeAuthResult } from "../services/passkeyAuth";
 
 // Types
-interface User {
-  id: string;
-  email: string;
-  public_key?: string | null;
-  last_login?: string | null;
-}
-
 interface AuthContextType {
   user: User | null;
   sessionToken: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string) => Promise<void>;
-  requestMagicLink: (
-    email: string,
-  ) => Promise<{ success: boolean; message: string }>;
+  register: (email: string, friendlyName?: string) => Promise<RegistrationResult>;
+  login: (email: string) => Promise<AuthResult>;
+  loginWithRecoveryCode: (email: string, code: string) => Promise<RecoveryCodeAuthResult>;
+  acknowledgeRecoveryCodes: () => Promise<void>;
   validateSession: (token: string) => Promise<boolean>;
   logout: () => void;
   checkAuth: () => Promise<void>;
@@ -78,53 +72,77 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Request magic link
-  const requestMagicLink = async (
-    email: string,
-  ): Promise<{ success: boolean; message: string }> => {
+  // Register with passkey
+  const register = async (email: string, friendlyName?: string): Promise<RegistrationResult> => {
     try {
-      const response = await fetch("http://localhost:8000/auth/magic-link", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
+      const result = await passkeyAuth.register(email, friendlyName);
 
-      const data = await response.json();
-      return data;
+      setSessionToken(result.session_token);
+      setUser(result.user);
+
+      return result;
     } catch (error) {
-      console.error("Magic link request failed:", error);
-      return {
-        success: false,
-        message: "Failed to send magic link. Please try again.",
-      };
+      console.error("Registration failed:", error);
+      throw error;
+    }
+  };
+
+  // Login with passkey
+  const login = async (email: string): Promise<AuthResult> => {
+    try {
+      const result = await passkeyAuth.authenticate(email);
+
+      setSessionToken(result.session_token);
+      setUser(result.user);
+
+      return result;
+    } catch (error) {
+      console.error("Login failed:", error);
+      throw error;
+    }
+  };
+
+  // Login with recovery code
+  const loginWithRecoveryCode = async (email: string, code: string): Promise<RecoveryCodeAuthResult> => {
+    try {
+      const result = await passkeyAuth.useRecoveryCode(email, code);
+
+      setSessionToken(result.session_token);
+      setUser(result.user);
+
+      return result;
+    } catch (error) {
+      console.error("Recovery code login failed:", error);
+      throw error;
+    }
+  };
+
+  // Acknowledge recovery codes
+  const acknowledgeRecoveryCodes = async (): Promise<void> => {
+    if (!sessionToken) {
+      throw new Error("No active session");
+    }
+
+    try {
+      await passkeyAuth.acknowledgeRecoveryCodes(sessionToken);
+    } catch (error) {
+      console.error("Failed to acknowledge recovery codes:", error);
+      throw error;
     }
   };
 
   // Validate session token
   const validateSession = async (token: string): Promise<boolean> => {
     try {
-      const response = await fetch(
-        "http://localhost:8000/auth/validate-session",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        },
-      );
+      const validatedUser = await passkeyAuth.validateSession(token);
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          // Update user data if changed
-          setUser(data.user);
-          localStorage.setItem(USER_DATA_KEY, JSON.stringify(data.user));
-          return true;
-        }
+      if (validatedUser) {
+        // Update user data if changed
+        setUser(validatedUser);
+        localStorage.setItem(USER_DATA_KEY, JSON.stringify(validatedUser));
+        return true;
       }
+
       return false;
     } catch (error) {
       console.error("Session validation failed:", error);
@@ -132,20 +150,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Handle magic link callback (after email redirect)
-  const login = async (_email: string): Promise<void> => {
-    // This will be called after magic link validation
-    // The actual login happens via magic link validation redirect
-    // For now, we'll trigger a re-check
-    await checkAuth();
-  };
-
   // Logout
   const logout = () => {
+    passkeyAuth.logout();
     setUser(null);
     setSessionToken(null);
-    localStorage.removeItem(SESSION_TOKEN_KEY);
-    localStorage.removeItem(USER_DATA_KEY);
   };
 
   // Computed value
@@ -156,8 +165,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     sessionToken,
     isLoading,
     isAuthenticated,
+    register,
     login,
-    requestMagicLink,
+    loginWithRecoveryCode,
+    acknowledgeRecoveryCodes,
     validateSession,
     logout,
     checkAuth,
