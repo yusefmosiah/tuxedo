@@ -417,7 +417,153 @@ class PasskeyAuthService {
   }
 
   /**
-   * Authenticate with a passkey
+   * Authenticate with a passkey using preloaded challenge options
+   *
+   * This method maintains the user gesture chain required by iOS Safari by
+   * calling navigator.credentials.get() immediately without any async operations.
+   *
+   * @param preloadedOptions - Challenge options preloaded by useChallengePreload hook
+   * @returns Authentication result with user and session token
+   */
+  async loginWithPreloadedOptions(
+    preloadedOptions: { challenge_id: string; options: any },
+  ): Promise<AuthResult> {
+    if (!this.isSupported()) {
+      throw new Error("Passkeys are not supported in this browser");
+    }
+
+    console.log("🔐 Starting passkey login with preloaded options");
+    console.log("🌐 Current origin:", window.location.origin);
+
+    const { challenge_id, options } = preloadedOptions;
+
+    // Step 1: Get credential using WebAuthn (SYNCHRONOUSLY - maintains user gesture)
+    // Convert challenge and allowCredentials from base64url to ArrayBuffer
+    const publicKeyOptions: PublicKeyCredentialRequestOptions = {
+      challenge: this.base64urlToBuffer(options.challenge),
+      rpId: options.rpId,
+      allowCredentials: options.allowCredentials?.map((cred: any) => ({
+        type: cred.type,
+        id: this.base64urlToBuffer(cred.id),
+        transports: cred.transports,
+      })),
+      userVerification: options.userVerification,
+      timeout: options.timeout,
+    };
+
+    console.log("🔑 Requesting passkey with options:", {
+      rpId: options.rpId,
+      timeout: options.timeout,
+      allowCredentials: options.allowCredentials?.length || 0,
+    });
+
+    let credential: Credential | null;
+    try {
+      // CRITICAL: This is called synchronously within user gesture context
+      credential = await navigator.credentials.get({
+        publicKey: publicKeyOptions,
+      });
+    } catch (error: any) {
+      // Enhanced error logging
+      console.error("WebAuthn login failed:", {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        stack: error.stack,
+        fullError: error,
+      });
+      // Provide more specific error messages based on error type
+      if (error.name === "NotAllowedError") {
+        throw new Error(
+          "Authentication was cancelled. Please try again and approve the prompt.",
+        );
+      } else if (error.name === "NotSupportedError") {
+        throw new Error(
+          "Passkeys are not supported on this device or browser.",
+        );
+      } else if (error.name === "SecurityError") {
+        throw new Error(
+          "Security error: Please ensure you're accessing the site via HTTPS.",
+        );
+      }
+      throw new Error(
+        `Failed to authenticate: ${error.name || "Unknown error"} - ${error.message || "Please try again."}`,
+      );
+    }
+
+    if (!credential) {
+      throw new Error("Failed to get passkey");
+    }
+
+    // Step 2: Verify authentication with backend (async is OK here, gesture already used)
+    const credentialData = this.credentialToJSON(
+      credential as PublicKeyCredential,
+    );
+
+    let verifyResponse: Response;
+    try {
+      verifyResponse = await fetch(
+        `${API_BASE_URL}/auth/passkey/login/verify`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            challenge_id,
+            credential: credentialData,
+          }),
+        },
+      );
+    } catch (error: any) {
+      console.error("Network error during login verification:", error);
+      throw new Error(
+        `Network error: ${error.message || "Could not connect to server. Please check your internet connection."}`,
+      );
+    }
+
+    if (!verifyResponse.ok) {
+      let errorMessage = "Failed to verify authentication";
+      try {
+        const error = await verifyResponse.json();
+        errorMessage = error.error?.message || error.message || errorMessage;
+      } catch (jsonError) {
+        // Response is not JSON, try to get text
+        try {
+          const errorText = await verifyResponse.text();
+          console.error(
+            "Non-JSON error response:",
+            errorText.substring(0, 200),
+          );
+          errorMessage = `Server error (${verifyResponse.status}): ${verifyResponse.statusText || "Unknown error"}`;
+        } catch (textError) {
+          console.error("Could not parse error response:", textError);
+        }
+      }
+      throw new Error(errorMessage);
+    }
+
+    let result: AuthResult;
+    try {
+      result = await verifyResponse.json();
+    } catch (error: any) {
+      console.error(
+        "Failed to parse login verification response:",
+        error,
+      );
+      throw new Error("Invalid server response. Please try again.");
+    }
+
+    // Store session token
+    localStorage.setItem("session_token", result.session_token);
+    localStorage.setItem("user_data", JSON.stringify(result.user));
+
+    return result;
+  }
+
+  /**
+   * Authenticate with a passkey (original method - fetches challenge inline)
+   *
+   * WARNING: This method may fail on iOS Safari due to breaking the user gesture chain.
+   * Use loginWithPreloadedOptions() instead for better iOS Safari compatibility.
    */
   async authenticate(email?: string): Promise<AuthResult> {
     if (!this.isSupported()) {

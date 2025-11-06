@@ -24,20 +24,25 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     register,
     registerWithPreloadedOptions,
     login,
+    loginWithPreloadedOptions,
     loginWithRecoveryCode,
     acknowledgeRecoveryCodes,
     isPasskeySupported,
   } = useAuth();
 
-  // Pre-load challenge options for signup (iOS Safari compatibility)
+  // Pre-load challenge options for both signup AND signin (iOS Safari compatibility)
+  // iOS Safari requires navigator.credentials API to be called within user gesture chain.
+  // Fetching challenge options AFTER user click breaks this chain, causing silent failures.
+  // Pre-loading ensures options are ready BEFORE click, preserving the gesture chain.
   const {
     options: preloadedOptions,
     loading: preloadingChallenge,
     error: preloadError,
   } = useChallengePreload(
     email,
-    authMode === "signup" && isPasskeySupported, // Only preload during signup
+    (authMode === "signup" || authMode === "signin") && isPasskeySupported, // Preload for both flows
     500, // 500ms debounce
+    authMode === "signup" ? "register" : "login", // Use correct endpoint for each mode
   );
 
   const handlePasskeyAuth = async (e: React.FormEvent) => {
@@ -87,7 +92,16 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         }
       } else {
         // Authenticate existing user
-        await login(email);
+        if (preloadedOptions) {
+          console.log("✅ Using preloaded challenge options for login");
+          await loginWithPreloadedOptions(preloadedOptions);
+        } else {
+          // Fallback to old method if preload failed or not ready
+          console.warn(
+            "⚠️ Preloaded options not available for login, using fallback method",
+          );
+          await login(email);
+        }
         setMessage({
           type: "success",
           text: "Successfully signed in!",
