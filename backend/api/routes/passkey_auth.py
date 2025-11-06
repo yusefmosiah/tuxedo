@@ -18,6 +18,7 @@ from webauthn import (
     verify_authentication_response,
     options_to_json,
 )
+from webauthn.helpers import parse_registration_credential_json
 from webauthn.helpers.structs import (
     PublicKeyCredentialDescriptor,
     AuthenticatorSelectionCriteria,
@@ -27,6 +28,7 @@ from webauthn.helpers.structs import (
     AttestationConveyancePreference,
 )
 from webauthn.helpers.cose import COSEAlgorithmIdentifier
+import traceback
 
 from database_passkeys import db
 from services.email import email_service
@@ -297,19 +299,58 @@ async def register_verify(req: Request, request: RegisterVerifyRequest):
         # Get dynamic RP_ID and origin based on request
         rp_id, origin = get_rp_id_and_origin(req)
 
+        logger.info(f"🔍 Verifying registration for {request.email}")
+        logger.info(f"   RP ID: {rp_id}")
+        logger.info(f"   Origin: {origin}")
+        logger.info(f"   Challenge ID: {request.challenge_id}")
+        logger.info(f"   Credential ID: {request.credential.get('id', 'N/A')[:20]}...")
+
         # Verify the registration response
         try:
+            # Try to parse the credential using the webauthn helper
+            # This ensures proper handling of base64url encoding
+            try:
+                # Convert credential dict to JSON string for parsing
+                credential_json = json.dumps(request.credential)
+                parsed_credential = parse_registration_credential_json(credential_json)
+                logger.info("✅ Successfully parsed credential using parse_registration_credential_json")
+            except Exception as parse_error:
+                logger.warning(f"⚠️ Failed to parse credential with helper, using raw dict: {parse_error}")
+                # Fallback to using the credential dict directly
+                parsed_credential = request.credential
+
             verification = verify_registration_response(
-                credential=request.credential,
+                credential=parsed_credential,
                 expected_challenge=challenge_data['challenge'].encode(),
                 expected_origin=origin,
                 expected_rp_id=rp_id,
+                require_user_verification=True,  # Match the REQUIRED setting from registration options
             )
+            logger.info("✅ Registration verification successful")
         except Exception as e:
-            logger.error(f"Registration verification failed: {e}")
+            # Enhanced error logging for debugging
+            error_type = type(e).__name__
+            error_msg = str(e)
+            error_trace = traceback.format_exc()
+
+            logger.error(f"❌ Registration verification failed:")
+            logger.error(f"   Error Type: {error_type}")
+            logger.error(f"   Error Message: {error_msg}")
+            logger.error(f"   RP ID: {rp_id}")
+            logger.error(f"   Origin: {origin}")
+            logger.error(f"   Traceback:\n{error_trace}")
+
+            # Return more detailed error to help with debugging
+            error_details = {
+                "error_type": error_type,
+                "rp_id": rp_id,
+                "origin": origin,
+            }
+
             create_error_response(
                 "INVALID_CREDENTIAL",
-                "Failed to verify passkey credential",
+                f"Failed to verify passkey credential: {error_type}",
+                details=error_details,
                 status_code=401
             )
 
@@ -521,6 +562,9 @@ async def login_verify(req: Request, request: LoginVerifyRequest):
             )
 
         # Verify the authentication response
+        logger.info(f"🔍 Verifying authentication")
+        logger.info(f"   RP ID: {rp_id}")
+        logger.info(f"   Origin: {origin}")
         try:
             verification = verify_authentication_response(
                 credential=request.credential,
@@ -529,12 +573,25 @@ async def login_verify(req: Request, request: LoginVerifyRequest):
                 expected_rp_id=rp_id,
                 credential_public_key=base64.urlsafe_b64decode(stored_credential['public_key'] + '=='),
                 credential_current_sign_count=stored_credential['sign_count'],
+                require_user_verification=True,
             )
+            logger.info("✅ Authentication verification successful")
         except Exception as e:
-            logger.error(f"Authentication verification failed: {e}")
+            error_type = type(e).__name__
+            error_msg = str(e)
+            error_trace = traceback.format_exc()
+
+            logger.error(f"❌ Authentication verification failed:")
+            logger.error(f"   Error Type: {error_type}")
+            logger.error(f"   Error Message: {error_msg}")
+            logger.error(f"   RP ID: {rp_id}")
+            logger.error(f"   Origin: {origin}")
+            logger.error(f"   Traceback:\n{error_trace}")
+
             create_error_response(
                 "INVALID_CREDENTIAL",
-                "Failed to verify passkey",
+                f"Failed to verify passkey: {error_type}",
+                details={"error_type": error_type, "rp_id": rp_id, "origin": origin},
                 status_code=401
             )
 
