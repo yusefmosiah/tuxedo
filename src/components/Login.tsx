@@ -65,7 +65,12 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         onLoginSuccess?.();
       }
     } catch (error: any) {
-      console.error("Authentication error:", error);
+      console.error("Authentication error:", {
+        name: error?.name,
+        message: error?.message,
+        stack: error?.stack,
+        fullError: error,
+      });
 
       // Check if error indicates user doesn't exist (should register)
       if (authMode === "signin" && error.message?.includes("not found")) {
