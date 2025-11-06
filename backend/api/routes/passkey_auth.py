@@ -36,10 +36,57 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Configuration
-RP_ID = os.getenv("RP_ID", "localhost")
-RP_NAME = os.getenv("RP_NAME", "Choir")
-ORIGIN = os.getenv("ORIGIN", "http://localhost:5173")
+RP_NAME = os.getenv("RP_NAME", "Tuxedo AI")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
+# Allowed origins for passkey authentication (should match CORS config)
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://tuxedo.onrender.com",
+    "https://tuxedo-frontend.onrender.com"
+]
+
+def get_rp_id_and_origin(request: Request) -> tuple[str, str]:
+    """
+    Dynamically determine RP_ID and origin from request headers.
+
+    This ensures passkey authentication works across different domains
+    (localhost, production, staging, etc.) by extracting the origin
+    from the request and validating it against allowed origins.
+    """
+    # Try to get origin from request headers
+    origin = request.headers.get("origin")
+    referer = request.headers.get("referer")
+
+    # Fallback to referer if origin is not present
+    if not origin and referer:
+        from urllib.parse import urlparse
+        parsed = urlparse(referer)
+        origin = f"{parsed.scheme}://{parsed.netloc}"
+
+    # Default to localhost for development
+    if not origin:
+        origin = "http://localhost:5173"
+
+    # Validate origin is in allowed list
+    if origin not in ALLOWED_ORIGINS:
+        logger.warning(f"Origin {origin} not in allowed list, using default")
+        origin = "http://localhost:5173"
+
+    # Extract RP_ID (hostname) from origin
+    from urllib.parse import urlparse
+    parsed = urlparse(origin)
+    rp_id = parsed.hostname or "localhost"
+
+    # For localhost, use "localhost" as RP_ID
+    # For production domains, use the full hostname
+    if rp_id in ["localhost", "127.0.0.1"]:
+        rp_id = "localhost"
+
+    logger.info(f"Using RP_ID: {rp_id}, Origin: {origin}")
+
+    return rp_id, origin
 
 
 # Pydantic models
@@ -173,7 +220,7 @@ def create_error_response(code: str, message: str, details: Optional[Dict] = Non
 
 # Registration endpoints
 @router.post("/auth/passkey/register/start", response_model=RegisterStartResponse)
-async def register_start(request: RegisterStartRequest):
+async def register_start(req: Request, request: RegisterStartRequest):
     """Start passkey registration flow"""
     try:
         # Check if user already exists
@@ -185,12 +232,15 @@ async def register_start(request: RegisterStartRequest):
                 status_code=409
             )
 
+        # Get dynamic RP_ID and origin based on request
+        rp_id, origin = get_rp_id_and_origin(req)
+
         # Create challenge
         challenge_id, challenge = db.create_challenge()
 
         # Generate registration options
         registration_options = generate_registration_options(
-            rp_id=RP_ID,
+            rp_id=rp_id,
             rp_name=RP_NAME,
             user_id=request.email.encode(),  # We'll create user ID after verification
             user_name=request.email,
@@ -213,7 +263,7 @@ async def register_start(request: RegisterStartRequest):
         # Convert options to JSON-serializable format
         options_json = json.loads(options_to_json(registration_options))
 
-        logger.info(f"Registration started for email: {request.email}")
+        logger.info(f"Registration started for email: {request.email} with RP_ID: {rp_id}")
 
         return RegisterStartResponse(
             challenge_id=challenge_id,
@@ -232,7 +282,7 @@ async def register_start(request: RegisterStartRequest):
 
 
 @router.post("/auth/passkey/register/verify", response_model=RegisterVerifyResponse)
-async def register_verify(request: RegisterVerifyRequest):
+async def register_verify(req: Request, request: RegisterVerifyRequest):
     """Verify passkey registration and create user"""
     try:
         # Get challenge
@@ -244,13 +294,16 @@ async def register_verify(request: RegisterVerifyRequest):
                 status_code=401
             )
 
+        # Get dynamic RP_ID and origin based on request
+        rp_id, origin = get_rp_id_and_origin(req)
+
         # Verify the registration response
         try:
             verification = verify_registration_response(
                 credential=request.credential,
                 expected_challenge=challenge_data['challenge'].encode(),
-                expected_origin=ORIGIN,
-                expected_rp_id=RP_ID,
+                expected_origin=origin,
+                expected_rp_id=rp_id,
             )
         except Exception as e:
             logger.error(f"Registration verification failed: {e}")
@@ -364,7 +417,7 @@ async def acknowledge_recovery_codes(
 
 # Authentication endpoints
 @router.post("/auth/passkey/login/start", response_model=LoginStartResponse)
-async def login_start(request: LoginStartRequest):
+async def login_start(req: Request, request: LoginStartRequest):
     """Start passkey login flow"""
     try:
         # Get user by email
@@ -386,6 +439,9 @@ async def login_start(request: LoginStartRequest):
                 status_code=404
             )
 
+        # Get dynamic RP_ID and origin based on request
+        rp_id, origin = get_rp_id_and_origin(req)
+
         # Create challenge
         challenge_id, challenge = db.create_challenge(user['id'])
 
@@ -399,7 +455,7 @@ async def login_start(request: LoginStartRequest):
 
         # Generate authentication options
         authentication_options = generate_authentication_options(
-            rp_id=RP_ID,
+            rp_id=rp_id,
             challenge=challenge.encode(),
             allow_credentials=allowed_credentials,
             user_verification=UserVerificationRequirement.REQUIRED,
@@ -409,7 +465,7 @@ async def login_start(request: LoginStartRequest):
         # Convert options to JSON-serializable format
         options_json = json.loads(options_to_json(authentication_options))
 
-        logger.info(f"Login started for email: {request.email}")
+        logger.info(f"Login started for email: {request.email} with RP_ID: {rp_id}")
 
         return LoginStartResponse(
             challenge_id=challenge_id,
@@ -428,7 +484,7 @@ async def login_start(request: LoginStartRequest):
 
 
 @router.post("/auth/passkey/login/verify", response_model=LoginVerifyResponse)
-async def login_verify(request: LoginVerifyRequest):
+async def login_verify(req: Request, request: LoginVerifyRequest):
     """Verify passkey login"""
     try:
         # Get challenge
@@ -446,6 +502,9 @@ async def login_verify(request: LoginVerifyRequest):
                 "Challenge not associated with a user",
                 status_code=401
             )
+
+        # Get dynamic RP_ID and origin based on request
+        rp_id, origin = get_rp_id_and_origin(req)
 
         # Get credential from request
         credential_id = base64.urlsafe_b64encode(
@@ -466,8 +525,8 @@ async def login_verify(request: LoginVerifyRequest):
             verification = verify_authentication_response(
                 credential=request.credential,
                 expected_challenge=challenge_data['challenge'].encode(),
-                expected_origin=ORIGIN,
-                expected_rp_id=RP_ID,
+                expected_origin=origin,
+                expected_rp_id=rp_id,
                 credential_public_key=base64.urlsafe_b64decode(stored_credential['public_key'] + '=='),
                 credential_current_sign_count=stored_credential['sign_count'],
             )
