@@ -1,6 +1,7 @@
 # Passkey Registration 409 Error Analysis
 
 ## Executive Summary
+
 The 409 (Conflict) error in passkey registration is triggered when attempting to register with an email that already has an active user account. However, there are several critical issues in the implementation that could cause database IntegrityErrors and unhandled race conditions.
 
 ---
@@ -56,11 +57,13 @@ The 409 error is triggered in the `/auth/passkey/register/start` endpoint when:
 3. **AND** a user already exists in the database with that email where `is_active = TRUE`
 
 ### Database Query (Line 229):
+
 ```python
 existing_user = db.get_user_by_email(request.email)
 ```
 
 ### User Lookup Implementation (`database_passkeys.py` Lines 185-193):
+
 ```python
 def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
     """Get user by email"""
@@ -80,6 +83,7 @@ def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
 ## 3. HOW USER UNIQUENESS IS DETERMINED
 
 ### Database Schema (`database_passkeys.py` Lines 26-33):
+
 ```python
 CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
@@ -97,7 +101,6 @@ CREATE TABLE IF NOT EXISTS users (
 1. **At Application Level** (`/register/start`):
    - Checks if `email` exists with `is_active = TRUE`
    - Returns 409 if found
-   
 2. **At Database Level**:
    - Email has `UNIQUE NOT NULL` constraint
    - Would raise `sqlite3.IntegrityError` if constraint is violated
@@ -106,6 +109,7 @@ CREATE TABLE IF NOT EXISTS users (
 ### The Problem:
 
 The check at line 229 in `passkey_auth.py` only checks for **active** users, but the database constraint applies to **all** users (active and inactive). This creates a scenario where:
+
 - Inactive users can prevent new registrations (database constraint violation)
 - No proper error handling for this case
 
@@ -116,6 +120,7 @@ The check at line 229 in `passkey_auth.py` only checks for **active** users, but
 ### Issue #1: Race Condition in Registration Flow
 
 **Flow:**
+
 1. **User A** → `/register/start` with email@example.com
    - Check passes: no active user found
    - Generates challenge_id: `challenge_abc123`
@@ -144,12 +149,12 @@ async def register_verify(req: Request, request: RegisterVerifyRequest):
     """Verify passkey registration and create user"""
     try:
         # ... validation code ...
-        
+
         # Create user - NO CHECK FOR EXISTING USER!
         user = db.create_user(request.email)  # Line 361 - CAN FAIL WITH IntegrityError!
-        
+
         # ... rest of registration ...
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -166,14 +171,18 @@ async def register_verify(req: Request, request: RegisterVerifyRequest):
 ### Issue #2: Deactivated User Scenario
 
 **Flow:**
+
 1. User has account with email@example.com and `is_active = TRUE`
 2. User gets deactivated: `is_active = FALSE` (possibly from admin action)
 3. User tries to re-register with same email@example.com
 4. `/register/start` check:
+
    ```python
    cursor.execute('SELECT * FROM users WHERE email = ? AND is_active = TRUE', (email,))
    ```
+
    - Returns: `None` (because is_active is FALSE)
+
 5. Check passes! 409 is NOT returned
 6. User goes through `/register/verify` and calls:
    ```python
@@ -206,6 +215,7 @@ def create_user(self, email: str) -> Dict[str, Any]:
 ```
 
 **Missing Exception Handling:**
+
 - No `try/except` for `sqlite3.IntegrityError`
 - No check before insert to verify email is truly unique
 - Database constraint violations propagate as unhandled exceptions
@@ -262,6 +272,7 @@ def get_rp_id_and_origin(request: Request) -> tuple[str, str]:
    - Default: `http://localhost:5173`
 
 2. **Validate against whitelist**:
+
    ```python
    ALLOWED_ORIGINS = [
        "http://localhost:5173",
@@ -286,6 +297,7 @@ If a client connects from different origins (e.g., `localhost:5173` vs `127.0.0.
 - **This causes credential verification to fail**
 
 The verification at line 322-328 expects:
+
 ```python
 verification = verify_registration_response(
     credential=parsed_credential,
@@ -300,22 +312,24 @@ verification = verify_registration_response(
 
 ## 6. SUMMARY TABLE
 
-| Aspect | Details |
-|--------|---------|
-| **409 Endpoint** | `POST /auth/passkey/register/start` |
-| **409 Trigger** | User with email already exists AND `is_active = TRUE` |
-| **Error Code** | `USER_EXISTS` |
-| **Error Message** | `"An account with this email already exists"` |
-| **Database Constraint** | `email TEXT UNIQUE NOT NULL` on `users` table |
-| **Active User Check** | `is_active = TRUE` in SQL query |
-| **Critical Gap** | No matching check in `/register/verify` endpoint |
+| Aspect                  | Details                                               |
+| ----------------------- | ----------------------------------------------------- |
+| **409 Endpoint**        | `POST /auth/passkey/register/start`                   |
+| **409 Trigger**         | User with email already exists AND `is_active = TRUE` |
+| **Error Code**          | `USER_EXISTS`                                         |
+| **Error Message**       | `"An account with this email already exists"`         |
+| **Database Constraint** | `email TEXT UNIQUE NOT NULL` on `users` table         |
+| **Active User Check**   | `is_active = TRUE` in SQL query                       |
+| **Critical Gap**        | No matching check in `/register/verify` endpoint      |
 
 ---
 
 ## 7. RECOMMENDATIONS
 
 ### Priority 1 - Fix Race Condition:
+
 Add email existence check to `register_verify` endpoint:
+
 ```python
 # Before db.create_user(request.email)
 existing_user = db.get_user_by_email(request.email)
@@ -328,7 +342,9 @@ if existing_user:
 ```
 
 ### Priority 2 - Handle IntegrityError:
+
 Wrap `create_user()` with try/except:
+
 ```python
 try:
     user = db.create_user(request.email)
@@ -341,7 +357,9 @@ except sqlite3.IntegrityError:
 ```
 
 ### Priority 3 - Store RP_ID in Challenge:
+
 Store RP_ID and origin in challenge to ensure consistency:
+
 ```python
 challenge_data = db.create_challenge(
     user_id=None,
@@ -352,4 +370,5 @@ challenge_data = db.create_challenge(
 ```
 
 ### Priority 4 - Document Deactivated User Behavior:
+
 Clarify whether deactivated users should be able to re-register or not.

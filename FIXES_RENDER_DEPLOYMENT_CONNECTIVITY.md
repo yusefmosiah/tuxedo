@@ -19,18 +19,27 @@ The deployed frontend at `https://tuxedo-frontend.onrender.com` was unable to co
 **File**: `src/lib/api.ts`
 
 **Before**:
+
 ```typescript
-const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.PUBLIC_API_URL ||
+  "http://localhost:8000";
 ```
 
 **After**:
+
 ```typescript
-const API_BASE_URL = import.meta.env.VITE_API_URL ||
-                     import.meta.env.PUBLIC_API_URL ||
-                     (import.meta.env.DEV ? 'http://localhost:8000' : 'https://tuxedo-backend.onrender.com');
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.PUBLIC_API_URL ||
+  (import.meta.env.DEV
+    ? "http://localhost:8000"
+    : "https://tuxedo-backend.onrender.com");
 ```
 
 **Changes**:
+
 - Added environment-specific URL detection
 - Dev mode: Uses `http://localhost:8000` for local development
 - Production: Uses `https://tuxedo-backend.onrender.com` for Render deployment
@@ -41,6 +50,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL ||
 **Removed**: `.env.frontend` and `.env.backend` files (should not be committed)
 
 **Platform Environment Variables**:
+
 - Frontend uses `VITE_API_URL=https://tuxedo-backend.onrender.com` from Render dashboard
 - Backend uses environment variables configured in Render dashboard
 - No local .env files are copied to Docker containers
@@ -50,12 +60,14 @@ const API_BASE_URL = import.meta.env.VITE_API_URL ||
 **File**: `docker-compose.yaml`
 
 **Before**:
+
 ```yaml
 environment:
   - VITE_API_URL=http://backend:8000
 ```
 
 **After**:
+
 ```yaml
 environment:
   - VITE_API_URL=https://tuxedo-backend.onrender.com
@@ -64,12 +76,14 @@ environment:
 **File**: `Dockerfile.frontend`
 
 **Removed**:
+
 ```dockerfile
 # Copy environment file for build-time variables
 COPY .env.frontend .env.production
 ```
 
 **Replaced with**:
+
 ```dockerfile
 # Copy source code (excluding .env files via .dockerignore)
 COPY . .
@@ -82,6 +96,7 @@ RUN npx vite build --mode production
 ### 4. Documentation Port References Fixed
 
 **Files Updated**:
+
 - `README.md`: Updated port references from 8002 to 8000
 - `backend/tests/test_agent.py`: Updated API URL from port 8002 to 8000
 - `backend/tests/test_chat/test_multiturn.py`: Updated API URL from port 8002 to 8000
@@ -91,16 +106,19 @@ RUN npx vite build --mode production
 ## Current Architecture
 
 ### Development Environment
+
 - **Frontend**: `http://localhost:5173` (Vite dev server)
 - **Backend**: `http://localhost:8000` (FastAPI)
 - **Connection**: Frontend connects to `http://localhost:8000`
 
 ### Production Environment (Render)
+
 - **Frontend**: `https://tuxedo-frontend.onrender.com`
 - **Backend**: `https://tuxedo-backend.onrender.com`
 - **Connection**: Frontend connects to `https://tuxedo-backend.onrender.com`
 
 ### Docker Environment
+
 - **Frontend**: Container on port 8080
 - **Backend**: Container on port 8000
 - **Connection**: Frontend configured to connect to Render URL for external deployment
@@ -174,6 +192,7 @@ When migrating from Render to Phala or other platforms:
 ## Summary
 
 This fix ensures the frontend correctly connects to the backend in all deployment environments by:
+
 1. Using proper environment-specific URLs
 2. Maintaining build-time environment variable injection
 3. Providing clear documentation and consistent configuration

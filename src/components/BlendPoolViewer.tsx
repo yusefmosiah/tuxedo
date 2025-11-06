@@ -49,8 +49,14 @@ export const BlendPoolViewer: React.FC = () => {
             Tokens
           </Text>
           <div style={{ marginTop: "10px" }}>
-            <ContractRow name="BLND Token" address={BLEND_CONTRACTS.blndToken} />
-            <ContractRow name="USDC Token" address={BLEND_CONTRACTS.usdcToken} />
+            <ContractRow
+              name="BLND Token"
+              address={BLEND_CONTRACTS.blndToken}
+            />
+            <ContractRow
+              name="USDC Token"
+              address={BLEND_CONTRACTS.usdcToken}
+            />
             <ContractRow name="XLM Token" address={BLEND_CONTRACTS.xlmToken} />
           </div>
         </Card>
@@ -58,12 +64,20 @@ export const BlendPoolViewer: React.FC = () => {
 
       <div style={{ marginTop: "20px", padding: "20px" }}>
         <Card>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <Text as="h3" size="md">
               Comet Pool (BLND:USDC)
             </Text>
             {poolData.loading && (
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+              >
                 <Loader size="sm" />
                 <Text as="span" size="sm" style={{ color: "#666" }}>
                   Connecting...
@@ -82,7 +96,10 @@ export const BlendPoolViewer: React.FC = () => {
             )}
           </div>
 
-          <ContractRow name="Pool Address" address={BLEND_CONTRACTS.cometPool} />
+          <ContractRow
+            name="Pool Address"
+            address={BLEND_CONTRACTS.cometPool}
+          />
 
           <div style={{ marginTop: "20px" }}>
             <Text as="p" size="sm">
@@ -117,7 +134,9 @@ export const BlendPoolViewer: React.FC = () => {
             <Text as="p" size="sm" style={{ fontWeight: "bold" }}>
               Next Steps:
             </Text>
-            <ol style={{ fontSize: "14px", lineHeight: "1.8", marginTop: "10px" }}>
+            <ol
+              style={{ fontSize: "14px", lineHeight: "1.8", marginTop: "10px" }}
+            >
               <li>
                 Install Blend SDK:{" "}
                 <code style={{ background: "#e0e0e0", padding: "2px 6px" }}>
@@ -127,9 +146,7 @@ export const BlendPoolViewer: React.FC = () => {
               <li>Or generate TypeScript bindings using Stellar CLI</li>
               <li>Connect your wallet using the WalletProvider</li>
               <li>Fund your testnet account using Friendbot</li>
-              <li>
-                Build transactions to interact with the pool contracts
-              </li>
+              <li>Build transactions to interact with the pool contracts</li>
             </ol>
           </div>
 
@@ -140,7 +157,7 @@ export const BlendPoolViewer: React.FC = () => {
             onClick={() => {
               window.open(
                 "https://docs.blend.capital/tech-docs/integrations/integrate-pool",
-                "_blank"
+                "_blank",
               );
             }}
           >

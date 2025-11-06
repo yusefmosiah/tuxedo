@@ -17,12 +17,14 @@ The `experimental-passkey` branch represents a comprehensive attempt to implemen
 ## What Was Attempted
 
 ### 1. Complete Authentication System Replacement
+
 - **Replaced** magic link authentication with WebAuthn passkeys
 - **Added** PRF (Pseudo-Random Function) support with server-side fallback
 - **Implemented** recovery code system (8 single-use codes)
 - **Created** session management with secure tokens
 
 ### 2. Multi-Agent Architecture
+
 ```
 User (Master Passkey)
 ├── Agent 1 (Derived Stellar Account) → Thread 1
@@ -31,6 +33,7 @@ User (Master Passkey)
 ```
 
 Each agent would have:
+
 - Unique Stellar account (derived from master key)
 - Dedicated conversation thread
 - Independent identity and permissions
@@ -38,6 +41,7 @@ Each agent would have:
 ### 3. Key Technical Components
 
 #### Backend Files Created:
+
 - `backend/api/routes/passkey.py` - Complete passkey authentication endpoints
 - `backend/api/routes/agents.py` - Agent creation and management
 - `backend/crypto/key_derivation.py` - Stellar key derivation with HKDF
@@ -45,12 +49,15 @@ Each agent would have:
 - `backend/migrate_to_passkeys.py` - Database migration script
 
 #### Frontend Files Created:
+
 - `src/services/passkeyAuth.ts` - WebAuthn client service
 - `src/components/Sidebar.tsx` - Multi-agent sidebar with meta chat
 - `src/components/Sidebar.css` - Mobile-first responsive styling
 
 #### Database Schema Changes:
+
 **New Tables**:
+
 - `passkey_credentials` - WebAuthn credential storage
 - `passkey_challenges` - Authentication challenges
 - `passkey_sessions` - Secure session tokens
@@ -59,6 +66,7 @@ Each agent would have:
 - `threads` - Updated to support agent association
 
 **Dropped Tables**:
+
 - `magic_link_sessions` - Replaced by passkey system
 - `user_sessions` - Replaced by passkey sessions
 
@@ -69,6 +77,7 @@ Each agent would have:
 ### 1. Build System Failures
 
 #### TypeScript Compilation Errors
+
 ```
 src/App.tsx(1,48): error TS2307: Cannot find module 'react-router-dom'
 src/App.tsx(7,30): error TS2307: Cannot find module '@stellar/design-system'
@@ -82,6 +91,7 @@ src/App.tsx(9,18): error TS2503: Cannot find namespace 'React'
 ### 2. Backend Dependencies Not Installed
 
 #### Missing Python WebAuthn Module
+
 ```bash
 $ python -c "import webauthn"
 ModuleNotFoundError: No module named 'webauthn'
@@ -96,6 +106,7 @@ ModuleNotFoundError: No module named 'webauthn'
 The user mentioned: "we did run the database migration in prod before reverting back to Commit 3d06698"
 
 **Concerns**:
+
 - Is production database still in "passkey schema" state?
 - Are old `magic_link_sessions` tables deleted?
 - Can users still authenticate if tables are missing?
@@ -108,12 +119,14 @@ The user mentioned: "we did run the database migration in prod before reverting 
 ## What Worked Well
 
 ### 1. Architecture Quality
+
 - **Clean separation of concerns**: Auth logic separated from business logic
 - **Security-first design**: Proper key derivation, hashed recovery codes
 - **Comprehensive error handling**: Try/catch blocks throughout
 - **Well-documented**: Three detailed markdown files explaining implementation
 
 ### 2. API Design
+
 ```
 POST /auth/passkey/register/start    - Begin registration
 POST /auth/passkey/register/verify   - Complete registration
@@ -131,6 +144,7 @@ DELETE /api/agents/{id}              - Deactivate agent
 Clean, RESTful design following best practices.
 
 ### 3. Security Features
+
 - **Key derivation**: HKDF-based deterministic generation
 - **No private key storage**: Keys derived on-demand
 - **Recovery code hashing**: SHA-256 hashed storage
@@ -155,12 +169,14 @@ Clean, RESTful design following best practices.
 ## Why It Failed
 
 ### Immediate Causes:
+
 1. **npm install was never run** - `node_modules` not updated with new dependencies
 2. **Backend dependencies not installed** - `uv sync` or `pip install` not run in production
 3. **Build verification skipped** - No `npm run build` check before deployment
 4. **No integration testing** - Backend/frontend compatibility never tested end-to-end
 
 ### Systemic Issues:
+
 1. **No deployment checklist** - Missing standard deployment procedures
 2. **No rollback plan** - Database migration without clear rollback path
 3. **No staging environment** - Direct to production deployment
@@ -171,6 +187,7 @@ Clean, RESTful design following best practices.
 ## Salvageable Components
 
 ### Can Be Reused:
+
 ✅ **Backend route structure** (`backend/api/routes/passkey.py`) - Well-designed
 ✅ **Database schema** (`backend/migrate_to_passkeys.py`) - Clean and efficient
 ✅ **Recovery code system** (`backend/auth/recovery.py`) - Solid implementation
@@ -178,12 +195,14 @@ Clean, RESTful design following best practices.
 ✅ **Frontend service** (`src/services/passkeyAuth.ts`) - Good WebAuthn patterns
 
 ### Needs Rework:
+
 ⚠️ **Login UI integration** - Never completed
 ⚠️ **Sidebar component** - Not integrated with main app
 ⚠️ **Agent creation flow** - Backend exists, no frontend
 ⚠️ **Session management** - AuthContext partially updated
 
 ### Should Be Discarded:
+
 ❌ **Backup files** (`*Old.tsx`, `*old.py`) - Cleanup artifacts
 ❌ **Hardcoded configs** - Development-only settings (localhost, etc.)
 
@@ -194,17 +213,20 @@ Clean, RESTful design following best practices.
 ### Production Database State (CRITICAL)
 
 **Known**:
+
 - Migration script was run in production
 - System was reverted to commit 3d06698
 - Current codebase expects old magic link schema
 
 **Unknown**:
+
 - Are passkey tables still present?
 - Are magic link tables still present?
 - Can users currently authenticate?
 - Was a rollback migration performed?
 
 **Action Required**:
+
 ```bash
 # Connect to production database and check
 sqlite3 tuxedo.db ".tables"
@@ -220,6 +242,7 @@ sqlite3 tuxedo.db ".tables"
 ## Recommended Next Steps
 
 ### Phase 1: Assess Production State (URGENT)
+
 1. **Check production database schema**
    ```bash
    sqlite3 tuxedo.db ".schema" > prod_schema.sql
@@ -229,7 +252,9 @@ sqlite3 tuxedo.db ".tables"
 4. **Document current state**
 
 ### Phase 2: Fix the Branch (If Salvaging)
+
 1. **Install dependencies**
+
    ```bash
    # Frontend
    npm install
@@ -241,12 +266,14 @@ sqlite3 tuxedo.db ".tables"
    ```
 
 2. **Fix TypeScript errors**
+
    ```bash
    npm run build
    # Address any remaining errors
    ```
 
 3. **Test backend health**
+
    ```bash
    cd backend
    python main.py
@@ -260,6 +287,7 @@ sqlite3 tuxedo.db ".tables"
    ```
 
 ### Phase 3: Proper Deployment (If Continuing)
+
 1. **Create staging environment**
 2. **Test end-to-end authentication flow**
 3. **Load test with multiple users**
@@ -267,7 +295,9 @@ sqlite3 tuxedo.db ".tables"
 5. **Deploy with monitoring**
 
 ### Phase 4: Alternative Approach (Recommended)
+
 **Start fresh with a more conservative implementation**:
+
 1. Keep magic link auth as fallback
 2. Add passkey as optional enhancement
 3. Gradual migration (don't drop old tables immediately)
@@ -279,12 +309,14 @@ sqlite3 tuxedo.db ".tables"
 ## Key Learnings
 
 ### What Went Right:
+
 - Ambitious vision for multi-agent architecture
 - Clean code architecture and separation of concerns
 - Strong security practices in key derivation and storage
 - Good documentation of implementation
 
 ### What Went Wrong:
+
 - Skipped basic deployment checklist
 - No testing before production deployment
 - Database migration without rollback plan
@@ -292,6 +324,7 @@ sqlite3 tuxedo.db ".tables"
 - No staging environment for validation
 
 ### For Next Time:
+
 1. **Always run build before deploy**: `npm run build && npm run build` (backend equivalent)
 2. **Test database migrations**: Forward and rollback paths
 3. **Use staging environment**: Never test auth changes in production first
@@ -303,17 +336,20 @@ sqlite3 tuxedo.db ".tables"
 ## Comparison to Current Task
 
 ### Current Sprint Goal:
+
 Implement passkey authentication on branch `claude/passkey-sprint-implementation-011CUrX8KMdv29HzAMRKTsZb`
 
 ### Can We Reuse the Experimental Branch?
 
 **Pros**:
+
 - 80% of backend code is solid
 - Database schema is well-designed
 - Security patterns are correct
 - Documentation already exists
 
 **Cons**:
+
 - Needs dependency installation fixes
 - Needs build system repairs
 - Integration testing never completed
@@ -353,6 +389,7 @@ If the experimental branch were deployed as-is, it would introduce:
 The `experimental-passkey` branch represents a **well-architected but incompletely deployed** authentication system. The code quality is high, the security practices are sound, and the multi-agent vision is compelling.
 
 **However**, the deployment process was rushed, skipping critical steps:
+
 - Dependency installation
 - Build verification
 - Integration testing
@@ -374,16 +411,19 @@ The experimental branch is a valuable reference implementation, but needs a more
 ## Files for Further Review
 
 ### High Priority:
+
 - `backend/api/routes/passkey.py` - Core authentication logic (lines 1-300+)
 - `backend/migrate_to_passkeys.py` - Database migration (all 110 lines)
 - `src/services/passkeyAuth.ts` - WebAuthn client (all 215 lines)
 
 ### Medium Priority:
+
 - `backend/crypto/key_derivation.py` - Stellar key derivation
 - `backend/auth/recovery.py` - Recovery code system
 - `src/components/Sidebar.tsx` - Multi-agent UI
 
 ### Low Priority:
+
 - `PASSKEY_IMPLEMENTATION_REPORT.md` - Documentation
 - `PASSKEY_DEPLOYMENT_GUIDE.md` - Deployment instructions
 - Backup files (`*Old.*`) - Can be deleted
@@ -393,6 +433,7 @@ The experimental branch is a valuable reference implementation, but needs a more
 **Analysis Complete** ✅
 
 Would you like me to:
+
 1. Extract specific files from experimental-passkey?
 2. Check production database state?
 3. Begin fresh passkey implementation on current branch?

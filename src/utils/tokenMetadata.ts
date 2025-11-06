@@ -59,7 +59,7 @@ export function setTokenMetadata(metadata: TokenMetadata): void {
 export function formatTokenAmount(
   amount: bigint,
   decimals: number = 7,
-  maxDecimals: number = 2
+  maxDecimals: number = 2,
 ): string {
   const divisor = BigInt(10 ** decimals);
   const whole = amount / divisor;

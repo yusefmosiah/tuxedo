@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import { Button, Text } from "@stellar/design-system";
 import { useBlendPools } from "../../hooks/useBlendPools";
 import { useWallet } from "../../hooks/useWallet";
@@ -18,14 +18,24 @@ interface CompleteDashboardProps {
  * - Wallet integration
  * - Summary statistics across both platforms
  */
-export const CompleteDashboard: React.FC<CompleteDashboardProps> = ({ className }) => {
-  const { pools, loading: blendLoading, error: blendError, refetch } = useBlendPools();
+export const CompleteDashboard: React.FC<CompleteDashboardProps> = ({
+  className,
+}) => {
+  const {
+    pools,
+    loading: blendLoading,
+    error: blendError,
+    refetch,
+  } = useBlendPools();
   const { address: walletAddress } = useWallet();
   const [activeTab, setActiveTab] = useState<"blend">("blend");
 
   // Calculate Blend stats
   const totalPools = pools.length;
-  const totalReserves = pools.reduce((sum, pool) => sum + pool.totalReserves, 0);
+  const totalReserves = pools.reduce(
+    (sum, pool) => sum + pool.totalReserves,
+    0,
+  );
   const activePools = pools.filter((p) => p.status === "active").length;
 
   const tabs = [
@@ -42,7 +52,8 @@ export const CompleteDashboard: React.FC<CompleteDashboardProps> = ({ className 
                   Blend Pools Dashboard
                 </h1>
                 <p className="text-text-secondary">
-                  Lend and borrow assets through Stellar's premier liquidity protocol
+                  Lend and borrow assets through Stellar's premier liquidity
+                  protocol
                 </p>
               </div>
               <Button onClick={refetch} variant="secondary" size="sm">
@@ -61,7 +72,9 @@ export const CompleteDashboard: React.FC<CompleteDashboardProps> = ({ className 
             </div>
             <div className="card p-4 bg-surface border border-border">
               <div className="text-center">
-                <p className="text-2xl font-bold text-green-600">{activePools}</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {activePools}
+                </p>
                 <p className="text-sm text-text-secondary">Active Pools</p>
               </div>
             </div>
@@ -78,11 +91,15 @@ export const CompleteDashboard: React.FC<CompleteDashboardProps> = ({ className 
           {/* Blend Pools List */}
           {blendLoading ? (
             <div className="flex items-center justify-center p-8">
-              <Text as="p" size="sm">Loading Blend pools...</Text>
+              <Text as="p" size="sm">
+                Loading Blend pools...
+              </Text>
             </div>
           ) : blendError ? (
             <div className="card p-4 bg-red-50 border border-red-200">
-              <Text as="p" size="sm">Error loading pools: {blendError}</Text>
+              <Text as="p" size="sm">
+                Error loading pools: {blendError}
+              </Text>
               <Button onClick={refetch} variant="secondary" size="sm">
                 Retry
               </Button>
@@ -110,7 +127,8 @@ export const CompleteDashboard: React.FC<CompleteDashboardProps> = ({ className 
                   TUX Yield Farming
                 </h1>
                 <p className="text-text-secondary">
-                  Earn TUX tokens by providing liquidity to Stellar DeFi protocols
+                  Earn TUX tokens by providing liquidity to Stellar DeFi
+                  protocols
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -119,7 +137,8 @@ export const CompleteDashboard: React.FC<CompleteDashboardProps> = ({ className 
                 </div>
                 {walletAddress && (
                   <Text as="p" size="sm">
-                    Connected: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                    Connected: {walletAddress.slice(0, 6)}...
+                    {walletAddress.slice(-4)}
                   </Text>
                 )}
               </div>
@@ -138,7 +157,8 @@ export const CompleteDashboard: React.FC<CompleteDashboardProps> = ({ className 
           Tuxedo DeFi Hub
         </h1>
         <p className="text-lg text-text-secondary max-w-2xl mx-auto">
-          Your gateway to Stellar DeFi. Lend, borrow, and farm yields across Blend and TUX protocols.
+          Your gateway to Stellar DeFi. Lend, borrow, and farm yields across
+          Blend and TUX protocols.
         </p>
       </div>
 
@@ -157,30 +177,31 @@ export const CompleteDashboard: React.FC<CompleteDashboardProps> = ({ className 
       </div>
 
       {/* Tab Content */}
-      <div>
-        {tabs.find((tab) => tab.id === activeTab)?.component}
-      </div>
+      <div>{tabs.find((tab) => tab.id === activeTab)?.component}</div>
 
       {/* Wallet Not Connected Alert */}
       {!walletAddress && (
         <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-yellow-800">Connect Your Wallet</h3>
+              <h3 className="font-semibold text-yellow-800">
+                Connect Your Wallet
+              </h3>
               <p className="text-yellow-600 text-sm mt-1">
-                Connect your Stellar wallet to see your positions and manage your investments.
+                Connect your Stellar wallet to see your positions and manage
+                your investments.
               </p>
             </div>
-            <Button variant="primary" size="sm">Connect Wallet</Button>
+            <Button variant="primary" size="sm">
+              Connect Wallet
+            </Button>
           </div>
         </div>
       )}
 
       {/* Footer */}
       <div className="mt-12 text-center text-text-tertiary text-sm">
-        <p>
-          Powered by Stellar Network • TUX tokens • Blend Protocol
-        </p>
+        <p>Powered by Stellar Network • TUX tokens • Blend Protocol</p>
         <p className="mt-2">
           Testnet Environment • For demonstration purposes only
         </p>

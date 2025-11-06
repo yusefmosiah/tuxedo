@@ -12,10 +12,12 @@ After refactoring from `main_old.py` to modular architecture, the backend was mi
 ### ✅ Added Missing Endpoints (Agent-First Compatible)
 
 #### 1. Threads API (`/backend/api/routes/threads.py`)
+
 **Purpose**: Conversation thread management for chat history persistence
 **Frontend Expectation**: 9 endpoints for thread CRUD operations
 
 **Endpoints Added**:
+
 - `POST /threads` - Create new thread
 - `GET /threads` - List threads (with wallet filtering)
 - `GET /threads/{thread_id}` - Get specific thread
@@ -28,24 +30,29 @@ After refactoring from `main_old.py` to modular architecture, the backend was mi
 **Implementation**: Simple in-memory storage for demo purposes (can be enhanced with database.py later)
 
 #### 2. Stellar Tools Status (`/backend/app.py`)
+
 **Purpose**: Frontend needs to know what tools are available
 **Frontend Expectation**: `/stellar-tools/status` endpoint
 
 **Implementation**: Dynamic tool detection that checks:
+
 - Stellar tools (account_manager, trading, trustlines, etc.)
 - Agent account tools (create, list, get info)
 - DeFindex tools (vault discovery, details, deposit)
 
 #### 3. Streaming Chat Endpoint Aliases (`/backend/api/routes/chat.py`)
+
 **Purpose**: Frontend expects specific endpoint names for streaming
 **Frontend Expectation**: `/chat-stream`, `/chat-live-summary`
 **Backend Had**: `/chat/stream`, `/chat/status`
 
 **Fix**: Added alias endpoints that match frontend expectations:
+
 - `POST /chat-stream` → calls existing `/chat/stream`
 - `POST /chat-live-summary` → new live summary functionality
 
 #### 4. Direct Stellar Tool Calling (`/backend/app.py`)
+
 **Purpose**: Frontend can call stellar tools directly
 **Frontend Expectation**: `POST /stellar-tool/{tool_name}`
 
@@ -54,10 +61,12 @@ After refactoring from `main_old.py` to modular architecture, the backend was mi
 ### ❌ Removed Anti-Agent-First Endpoints
 
 #### Transaction API Router (`/backend/api/routes/transactions.py`)
+
 **Purpose**: Manual transaction preparation endpoints
 **Why Removed**: Goes against agent-first architecture
 
 **Removed Endpoints**:
+
 - `POST /prepare-transaction`
 - `GET /mining-status/{user_address}`
 - `POST /simulate-mining-completion`
@@ -67,6 +76,7 @@ After refactoring from `main_old.py` to modular architecture, the backend was mi
 ## 📋 Architecture Impact
 
 ### Before (Problematic):
+
 ```
 Frontend → Multiple API endpoints → Manual operations
          → /prepare-transaction → Handle XDR → Sign → etc.
@@ -75,6 +85,7 @@ Frontend → Multiple API endpoints → Manual operations
 ```
 
 ### After (Agent-First):
+
 ```
 Frontend → Chat Interface → AI Agent → Autonomous Operations
          → /threads → ✅ Working
@@ -85,6 +96,7 @@ Frontend → Chat Interface → AI Agent → Autonomous Operations
 ## 🎯 User Experience Flow
 
 ### Agent-First Transaction Flow:
+
 ```
 User: "I want to deposit 50 XLM to the high-yield vault"
 Agent: "I'll help you deposit 50 XLM to the best vault..."
@@ -93,6 +105,7 @@ Agent: ✅ "Successfully deposited 50 XLM! You'll earn ~12.5% APY"
 ```
 
 ### NOT the Old Flow:
+
 ```
 User → Click deposit button → Form → Prepare transaction → Handle XDR → Sign → etc.
 ```
@@ -100,37 +113,44 @@ User → Click deposit button → Form → Prepare transaction → Handle XDR �
 ## 🚀 Deployment Status
 
 ### Files Modified:
+
 1. **`/backend/app.py`** - Added stellar-tools/status and stellar-tool endpoints
 2. **`/backend/api/routes/chat.py`** - Added streaming endpoint aliases
 3. **`/backend/api/routes/threads.py`** - New file with complete threads API
 4. **`/backend/api/routes/transactions.py`** - DELETED (anti-agent-first)
 
 ### Files Added:
+
 - `/backend/api/routes/threads.py` - Complete thread management API
 
 ### Files Deleted:
+
 - `/backend/api/routes/transactions.py` - Manual transaction endpoints
 
 ## 🔧 Technical Implementation Details
 
 ### CORS Configuration
+
 Already correctly configured for both:
+
 - `https://tuxedo-frontend.onrender.com` ✅
 - `https://tuxedo.onrender.com` ✅ (备用)
 
 ### Frontend API Client Compatibility
+
 All frontend API calls in `src/lib/api.ts` now have corresponding backend endpoints:
 
 ```typescript
 // ✅ These now work:
-api.get('/threads')                    // → threads router
-api.get('/stellar-tools/status')       // → app.py endpoint
-fetch('/chat-stream')                  // → chat router alias
-fetch('/chat-live-summary')            // → chat router new endpoint
-api.post('/stellar-tool/{toolName}')   // → app.py endpoint
+api.get("/threads"); // → threads router
+api.get("/stellar-tools/status"); // → app.py endpoint
+fetch("/chat-stream"); // → chat router alias
+fetch("/chat-live-summary"); // → chat router new endpoint
+api.post("/stellar-tool/{toolName}"); // → app.py endpoint
 ```
 
 ### Error Handling
+
 - Graceful degradation when tools aren't available
 - Proper HTTP status codes (404 for missing, 503 for unavailable)
 - Structured error responses matching frontend expectations
@@ -148,6 +168,7 @@ After deploying these changes:
 ## 📊 Endpoints Summary
 
 ### ✅ Working Endpoints (15 total):
+
 - `GET /` - Root
 - `GET /health` - Health check
 - `POST /chat` - Basic chat
@@ -168,6 +189,7 @@ After deploying these changes:
   - `GET /api/agent/accounts/{address}`
 
 ### ❌ Removed Endpoints (3 total):
+
 - `POST /prepare-transaction` → Agent handles via chat
 - `GET /mining-status/{user_address}` → Agent handles via chat
 - `POST /simulate-mining-completion` → Agent handles via chat

@@ -9,12 +9,14 @@
 ## What Changed
 
 ### From: Gradual Migration Strategy
+
 - ❌ Phase 1: Soft launch (passkeys optional, magic links primary)
 - ❌ Phase 2: Passkey-first (magic links fallback)
 - ❌ Phase 3: Passkey-only (magic links deprecated)
 - ❌ Three-tier auth model
 
 ### To: Quantum Leap (Passkey-Only)
+
 - ✅ **Delete magic links entirely** (Day 1)
 - ✅ **Passkey-ONLY authentication** from launch
 - ✅ **No backwards compatibility**
@@ -35,6 +37,7 @@
 ## Architecture Changes
 
 ### Deleted
+
 ```
 ❌ Magic link endpoints
 ❌ Magic link sessions table
@@ -45,6 +48,7 @@
 ```
 
 ### Added
+
 ```
 ✅ Passkey-only authentication
 ✅ WebAuthn credentials table
@@ -61,24 +65,28 @@
 **UPDATED: Agentic Rapid Iteration Mode**
 
 **Hour 1**: Database + Core Crypto
+
 - Database migration (magic links → passkeys)
 - PRF fallback strategy (Windows Hello support)
 - Recovery code generation system
 - Multi-agent architecture tables
 
 **Hour 2**: Backend Passkey Endpoints
+
 - WebAuthn registration flow
 - Authentication & verification
 - Session management
 - Agent creation endpoint
 
 **Hour 3**: Frontend Integration
+
 - @simplewebauthn/browser setup
 - PasskeyAuthService implementation
 - AuthContext updates
 - Registration/login UI
 
 **Hour 4**: Multi-Agent UI + Testing
+
 - Sidebar meta chat box (agent spawner)
 - Agent creation flows
 - Multi-agent parallel testing
@@ -91,12 +99,14 @@
 ## Database Changes
 
 ### Drop (Magic Links)
+
 ```sql
 DROP TABLE IF EXISTS magic_link_sessions;
 DROP TABLE IF EXISTS user_sessions;
 ```
 
 ### Create (Passkeys)
+
 ```sql
 CREATE TABLE webauthn_credentials (...);
 CREATE TABLE webauthn_challenges (...);
@@ -109,12 +119,14 @@ CREATE TABLE wallet_connections (...);  -- Optional
 ## API Changes
 
 ### Deleted Endpoints
+
 ```
 ❌ POST /auth/magic-link
 ❌ GET /auth/magic-link/validate
 ```
 
 ### New Endpoints
+
 ```
 ✅ POST /auth/register/options
 ✅ POST /auth/register/verify
@@ -132,21 +144,25 @@ CREATE TABLE wallet_connections (...);  -- Optional
 ## Key Decisions
 
 ### 1. No Backwards Compatibility
+
 **Decision**: Delete magic links entirely on Day 1
 **Rationale**: No users to migrate, no technical debt to carry
 **Impact**: Clean codebase, faster development
 
 ### 2. Passkey-Only From Launch
+
 **Decision**: No fallback authentication methods
 **Rationale**: Passkeys work on 96.36% of browsers, hardware-backed security
 **Impact**: Set the security standard from day one
 
 ### 3. Wallet Adapter as Advanced Feature
+
 **Decision**: Separate wallet import/export from core auth
 **Rationale**: Serve both crypto-natives AND next 4 billion users
 **Impact**: Flexibility without complexity
 
 ### 4. Fix Forward, Not Backward
+
 **Decision**: No rollback plan to magic links
 **Rationale**: If passkeys break, fix passkeys
 **Impact**: Commitment to security best practices
@@ -156,23 +172,27 @@ CREATE TABLE wallet_connections (...);  -- Optional
 ## Success Metrics
 
 ### Week 1
+
 - ✅ Passkey registration works (all browsers)
 - ✅ Passkey authentication works (all browsers)
 - ✅ <1% authentication failure rate
 - ✅ All magic link code deleted
 
 ### Week 2
+
 - ✅ Wallet import works (Freighter, xBull)
 - ✅ Wallet export works (QR code, encrypted key)
 - ✅ Multi-wallet support functional
 
 ### Week 3
+
 - ✅ Multi-device passkey management
 - ✅ Recovery codes generated and validated
 - ✅ Rate limiting active
 - ✅ Audit logging complete
 
 ### Week 4 (Launch)
+
 - ✅ Cross-browser tested
 - ✅ Mobile tested
 - ✅ Load tested (100 concurrent users)
@@ -197,23 +217,27 @@ No compromises. No technical debt. No legacy support.
 ## Next Steps
 
 **Today** (Complete):
+
 - ✅ Research comprehensive passkey standards
 - ✅ Architecture proposal created
 - ✅ Quantum leap strategy defined
 - ✅ Documentation updated
 
 **Tomorrow** (Day 1):
+
 - [ ] Delete magic link code (backend + frontend)
 - [ ] Install passkey dependencies
 - [ ] Database migrations
 - [ ] Begin passkey endpoints
 
 **This Week**:
+
 - [ ] Complete passkey infrastructure
 - [ ] Test on localhost
 - [ ] Verify magic links fully removed
 
 **Launch** (4 weeks):
+
 - [ ] Passkey-only authentication live
 - [ ] Wallet adapter available
 - [ ] Security hardened
@@ -224,18 +248,21 @@ No compromises. No technical debt. No legacy support.
 ## Technical Stack
 
 **Backend**:
+
 - `webauthn` (Python 2.7.0+)
 - FastAPI passkey endpoints
 - SQLite with WebAuthn tables
 - Session management (24-hour tokens)
 
 **Frontend**:
+
 - `@simplewebauthn/browser` (v13.x)
 - React passkey components
 - AuthContext updated for passkeys
 - Wallet adapter UI
 
 **Wallet Integration**:
+
 - `@creit.tech/stellar-wallets-kit` (v1.9.5)
 - Freighter, xBull, Lobstr support
 - Import/export functionality
@@ -245,6 +272,7 @@ No compromises. No technical debt. No legacy support.
 ## Security Highlights
 
 **Passkeys Provide**:
+
 - ✅ Phishing-resistant (cryptographic origin binding)
 - ✅ Hardware-backed security (Secure Enclave, TPM)
 - ✅ No email interception risk
@@ -252,6 +280,7 @@ No compromises. No technical debt. No legacy support.
 - ✅ Cloning detection (sign counter)
 
 **Implementations**:
+
 - ✅ `userVerification: "required"` (enforce biometric)
 - ✅ 24-hour session timeout
 - ✅ Rate limiting (10 req/min per IP)
@@ -277,6 +306,7 @@ No compromises. No technical debt. No legacy support.
 ## Documentation
 
 All research and architecture details in:
+
 - `PASSKEY_SECURITY_ARCHITECTURE.md` (1,640 lines)
 - `QUANTUM_LEAP_SUMMARY.md` (this file)
 

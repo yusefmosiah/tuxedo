@@ -39,12 +39,12 @@ The Tuxedo AI Agent now provides **fully autonomous** DeFindex vault operations 
 
 All vaults are **LIVE** on Stellar testnet and ready for autonomous operations.
 
-| Vault | Address | Type | APY | TVL | Status | Strategy |
-|-------|---------|------|-----|-----|--------|----------|
-| **XLM_HODL_1** | `CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA` | Volatile (XLM) | 0.0% | $0 | ✅ Active | HODL |
-| **XLM_HODL_2** | `CCSPRGGUP32M23CTU7RUAGXDNOHSA6O2BS2IK4NVUP5X2JQXKTSIQJKE` | Volatile (XLM) | 0.0% | $0 | ✅ Active | HODL |
-| **XLM_HODL_3** | `CBLXUUHUL7TA3LF3U5G6ZTU7EACBBOSJLR4AYOM5YJKJ4APZ7O547R5T` | Volatile (XLM) | 0.0% | $0 | ✅ Active | HODL |
-| **XLM_HODL_4** | `CCGKL6U2DHSNFJ3NU4UPRUKYE2EUGYR4ZFZDYA7KDJLP3TKSPHD5C4UP` | Volatile (XLM) | 0.0% | $0 | ✅ Active | HODL |
+| Vault          | Address                                                    | Type           | APY  | TVL | Status    | Strategy |
+| -------------- | ---------------------------------------------------------- | -------------- | ---- | --- | --------- | -------- |
+| **XLM_HODL_1** | `CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA` | Volatile (XLM) | 0.0% | $0  | ✅ Active | HODL     |
+| **XLM_HODL_2** | `CCSPRGGUP32M23CTU7RUAGXDNOHSA6O2BS2IK4NVUP5X2JQXKTSIQJKE` | Volatile (XLM) | 0.0% | $0  | ✅ Active | HODL     |
+| **XLM_HODL_3** | `CBLXUUHUL7TA3LF3U5G6ZTU7EACBBOSJLR4AYOM5YJKJ4APZ7O547R5T` | Volatile (XLM) | 0.0% | $0  | ✅ Active | HODL     |
+| **XLM_HODL_4** | `CCGKL6U2DHSNFJ3NU4UPRUKYE2EUGYR4ZFZDYA7KDJLP3TKSPHD5C4UP` | Volatile (XLM) | 0.0% | $0  | ✅ Active | HODL     |
 
 ### Fee Structure (All Vaults)
 
@@ -97,17 +97,20 @@ Supported Operations:
 **Tool Type**: LangChain async tool
 
 **Signature**:
+
 ```python
 @tool
 async def discover_high_yield_vaults(min_apy: Optional[float] = 0.0) -> str
 ```
 
 **Parameters**:
+
 - `min_apy` (optional): Minimum APY threshold as percentage (default 0.0%)
 
 **Returns**: Complete list of available vaults sorted by APY with full details
 
 **Usage Examples**:
+
 ```python
 # Get all vaults
 await discover_high_yield_vaults.ainvoke({"min_apy": 0.0})
@@ -117,6 +120,7 @@ await discover_high_yield_vaults.ainvoke({"min_apy": 15.0})
 ```
 
 **Sample Output**:
+
 ```
 Found 4 available DeFindex vaults on testnet (sorted by APY):
 
@@ -133,17 +137,20 @@ Found 4 available DeFindex vaults on testnet (sorted by APY):
 **Tool Type**: LangChain async tool
 
 **Signature**:
+
 ```python
 @tool
 async def get_defindex_vault_details(vault_address: str) -> str
 ```
 
 **Parameters**:
+
 - `vault_address` (required): The contract address of the vault
 
 **Returns**: Comprehensive vault information including strategies and performance
 
 **Usage Examples**:
+
 ```python
 await get_defindex_vault_details.ainvoke({
     "vault_address": "CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA"
@@ -157,6 +164,7 @@ await get_defindex_vault_details.ainvoke({
 **Tool Type**: LangChain async tool
 
 **Signature**:
+
 ```python
 @tool
 async def execute_defindex_deposit(
@@ -168,6 +176,7 @@ async def execute_defindex_deposit(
 ```
 
 **Parameters**:
+
 - `vault_address` (required): Verified testnet vault address
 - `amount_xlm` (required): Amount to deposit in XLM (e.g., 10.5)
 - `user_address` (required): User's Stellar public key (agent account)
@@ -176,6 +185,7 @@ async def execute_defindex_deposit(
 **Returns**: Transaction execution details including hash and status
 
 **Usage Examples**:
+
 ```python
 await execute_defindex_deposit.ainvoke({
     "vault_address": "CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA",
@@ -186,6 +196,7 @@ await execute_defindex_deposit.ainvoke({
 ```
 
 **Sample Success Output**:
+
 ```
 🚀 AUTONOMOUS DEPOSIT EXECUTED SUCCESSFULLY
 
@@ -205,6 +216,7 @@ await execute_defindex_deposit.ainvoke({
 **Tool Type**: LangChain async tool
 
 **Signature**:
+
 ```python
 @tool
 async def execute_defindex_withdrawal(
@@ -216,6 +228,7 @@ async def execute_defindex_withdrawal(
 ```
 
 **Parameters**:
+
 - `vault_address` (required): Verified testnet vault address
 - `amount_xlm` (required): Amount to withdraw in XLM (e.g., 5.0)
 - `user_address` (required): User's Stellar public key (agent account)
@@ -224,6 +237,7 @@ async def execute_defindex_withdrawal(
 **Returns**: Transaction execution details including hash and status
 
 **Usage Examples**:
+
 ```python
 await execute_defindex_withdrawal.ainvoke({
     "vault_address": "CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA",
@@ -240,6 +254,7 @@ await execute_defindex_withdrawal.ainvoke({
 **Tool Type**: LangChain async tool
 
 **Signature**:
+
 ```python
 @tool
 async def prepare_defindex_deposit(
@@ -379,6 +394,7 @@ async for response in process_agent_message_streaming(
 ```
 
 **Expected Agent Response**:
+
 ```
 🔧 Executing discover_high_yield_vaults...
 Found 4 available DeFindex vaults on testnet...
@@ -536,6 +552,7 @@ backend/
 The autonomous DeFindex integration is **production-ready** for educational use on Stellar testnet. All tools are tested, documented, and integrated into the AI agent system.
 
 **Start Using**: Simply chat with the agent using natural language commands like:
+
 - "Show me available vaults"
 - "Deposit 10 XLM to the best vault"
 - "Check my vault balance"

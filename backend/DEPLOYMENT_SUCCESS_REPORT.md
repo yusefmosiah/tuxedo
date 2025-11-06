@@ -9,13 +9,13 @@ All 5 DeFindex strategies have been successfully uploaded to Stellar testnet! Th
 
 ### ✅ Deployed Strategies
 
-| Strategy | WASM Size | Status | Transaction Hash |
-|----------|-----------|---------|------------------|
-| **HODL** | 5,136 bytes | ✅ Installed | `7b7e5aa31b2d5de82529fe6b481926699bbad5a73c4680deab2321a3c0c748eb` |
-| **XYCLOANS** | 10,134 bytes | ✅ Installed | `a4fd52c96bd2cb31a19d1b46b3d9f0d994312fbb25ddc65a17be593e9b61c341` |
-| **SOROSWAP** | 9,950 bytes | ✅ Installed | `c86f74fa6f93f706a1ba8d4ac3010028b4fdb0ef55d646b3dfe552bacf13ad88` |
-| **FIXED_APR** | 8,877 bytes | ✅ Installed | `e96480dfaf2e4a0fa7dc77ec24cd78411d2065e04ee464485607615936919563` |
-| **BLEND** | 26,087 bytes | ✅ Installed | `1db0be18de5994e97ed52766e86f5fb9716b1c03609bb9d91012905e75697c11` |
+| Strategy      | WASM Size    | Status       | Transaction Hash                                                   |
+| ------------- | ------------ | ------------ | ------------------------------------------------------------------ |
+| **HODL**      | 5,136 bytes  | ✅ Installed | `7b7e5aa31b2d5de82529fe6b481926699bbad5a73c4680deab2321a3c0c748eb` |
+| **XYCLOANS**  | 10,134 bytes | ✅ Installed | `a4fd52c96bd2cb31a19d1b46b3d9f0d994312fbb25ddc65a17be593e9b61c341` |
+| **SOROSWAP**  | 9,950 bytes  | ✅ Installed | `c86f74fa6f93f706a1ba8d4ac3010028b4fdb0ef55d646b3dfe552bacf13ad88` |
+| **FIXED_APR** | 8,877 bytes  | ✅ Installed | `e96480dfaf2e4a0fa7dc77ec24cd78411d2065e04ee464485607615936919563` |
+| **BLEND**     | 26,087 bytes | ✅ Installed | `1db0be18de5994e97ed52766e86f5fb9716b1c03609bb9d91012905e75697c11` |
 
 **Total WASM Deployed:** 60,184 bytes (~59 KB)
 

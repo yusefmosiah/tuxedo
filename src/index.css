@@ -5,7 +5,9 @@
 @import "./styles/tuxedo.css";
 
 /* Ensure full-page dark theme */
-html, body, #root {
+html,
+body,
+#root {
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
   margin: 0;

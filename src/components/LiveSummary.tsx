@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StreamMessage } from '../lib/api';
+import React, { useState } from "react";
+import { StreamMessage } from "../lib/api";
 
 interface LiveSummaryProps {
   message: StreamMessage;
@@ -14,7 +14,7 @@ interface LiveSummaryProps {
 export const LiveSummary: React.FC<LiveSummaryProps> = ({
   message,
   onToggleExpand,
-  isExpanded
+  isExpanded,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [currentSummary, setCurrentSummary] = useState(message.content);
@@ -33,7 +33,7 @@ export const LiveSummary: React.FC<LiveSummaryProps> = ({
     }
   }, [message.content, currentSummary]);
 
-  if (!message.type?.startsWith('live_summary')) {
+  if (!message.type?.startsWith("live_summary")) {
     return null;
   }
 
@@ -43,21 +43,21 @@ export const LiveSummary: React.FC<LiveSummaryProps> = ({
   // Determine status icon
   const getStatusIcon = () => {
     if (isLive) {
-      return '🔄';
+      return "🔄";
     }
-    return '📄';
+    return "📄";
   };
 
   const getToolCount = () => {
-    const toolMessages = fullContent.filter(msg =>
-      msg.type === 'tool_result' || msg.type === 'tool_error'
+    const toolMessages = fullContent.filter(
+      (msg) => msg.type === "tool_result" || msg.type === "tool_error",
     );
     return toolMessages.length;
   };
 
   const getTimestamp = () => {
     // For now, return a relative time - could be enhanced with actual timestamps
-    return 'just now';
+    return "just now";
   };
 
   return (
@@ -68,31 +68,37 @@ export const LiveSummary: React.FC<LiveSummaryProps> = ({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         style={{
-          padding: '8px 0',
-          margin: '4px 0',
-          cursor: 'pointer',
-          transition: 'opacity 0.3s ease-in-out',
-          fontSize: '14px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          opacity: isFading ? 0 : (isLive ? 1 : 0.9),
-          transform: isFading ? 'translateY(2px)' : 'translateY(0)',
+          padding: "8px 0",
+          margin: "4px 0",
+          cursor: "pointer",
+          transition: "opacity 0.3s ease-in-out",
+          fontSize: "14px",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          opacity: isFading ? 0 : isLive ? 1 : 0.9,
+          transform: isFading ? "translateY(2px)" : "translateY(0)",
         }}
       >
-        <span className="status-icon" style={{
-          fontSize: '14px',
-          opacity: 0.7,
-          minWidth: '20px'
-        }}>
+        <span
+          className="status-icon"
+          style={{
+            fontSize: "14px",
+            opacity: 0.7,
+            minWidth: "20px",
+          }}
+        >
           {getStatusIcon()}
         </span>
 
-        <span className="summary-text" style={{
-          flex: 1,
-          color: '#666',
-          fontStyle: isLive ? 'italic' : 'normal'
-        }}>
+        <span
+          className="summary-text"
+          style={{
+            flex: 1,
+            color: "#666",
+            fontStyle: isLive ? "italic" : "normal",
+          }}
+        >
           {currentSummary}
         </span>
 
@@ -100,11 +106,11 @@ export const LiveSummary: React.FC<LiveSummaryProps> = ({
           <span
             className="expand-hint"
             style={{
-              fontSize: '11px',
+              fontSize: "11px",
               opacity: isHovered ? 0.7 : 0.5,
-              fontStyle: 'italic',
-              color: '#999',
-              transition: 'opacity 0.2s ease',
+              fontStyle: "italic",
+              color: "#999",
+              transition: "opacity 0.2s ease",
             }}
           >
             [details]
@@ -115,10 +121,10 @@ export const LiveSummary: React.FC<LiveSummaryProps> = ({
           <span
             className="collapse-hint"
             style={{
-              fontSize: '11px',
+              fontSize: "11px",
               opacity: 0.7,
-              fontStyle: 'italic',
-              color: '#999',
+              fontStyle: "italic",
+              color: "#999",
             }}
           >
             [hide]
@@ -144,127 +150,147 @@ export const LiveSummary: React.FC<LiveSummaryProps> = ({
         <div
           className="expanded-content"
           style={{
-            background: '#ffffff',
-            border: '1px solid #e0e0e0',
-            borderRadius: '6px',
-            marginTop: '8px',
-            padding: '12px',
-            maxHeight: '400px',
-            overflowY: 'auto',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            background: "#ffffff",
+            border: "1px solid #e0e0e0",
+            borderRadius: "6px",
+            marginTop: "8px",
+            padding: "12px",
+            maxHeight: "400px",
+            overflowY: "auto",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
           }}
         >
           <div
             className="expanded-header"
             style={{
-              borderBottom: '1px solid #f0f0f0',
-              paddingBottom: '8px',
-              marginBottom: '12px',
-              fontSize: '12px',
-              color: '#666',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
+              borderBottom: "1px solid #f0f0f0",
+              paddingBottom: "8px",
+              marginBottom: "12px",
+              fontSize: "12px",
+              color: "#666",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
             }}
           >
             <span>Full Conversation Details</span>
-            <span style={{ fontSize: '11px' }}>
+            <span style={{ fontSize: "11px" }}>
               {getToolCount() > 0 && `🔧 ${getToolCount()} tools • `}
               {getTimestamp()}
             </span>
           </div>
 
           {fullContent.map((contentMessage, index) => (
-            <div key={index} style={{ marginBottom: '8px' }}>
-              {contentMessage.type === 'llm_response' && (
-                <div style={{
-                  background: '#e3f2fd',
-                  padding: '8px',
-                  borderRadius: '4px',
-                  borderLeft: '3px solid #2196f3'
-                }}>
-                  <div style={{
-                    fontSize: '11px',
-                    color: '#666',
-                    marginBottom: '4px',
-                    fontWeight: 'bold'
-                  }}>
+            <div key={index} style={{ marginBottom: "8px" }}>
+              {contentMessage.type === "llm_response" && (
+                <div
+                  style={{
+                    background: "#e3f2fd",
+                    padding: "8px",
+                    borderRadius: "4px",
+                    borderLeft: "3px solid #2196f3",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      color: "#666",
+                      marginBottom: "4px",
+                      fontWeight: "bold",
+                    }}
+                  >
                     💭 AI Response
                   </div>
-                  <div style={{ fontSize: '13px', whiteSpace: 'pre-wrap' }}>
+                  <div style={{ fontSize: "13px", whiteSpace: "pre-wrap" }}>
                     {contentMessage.content}
                   </div>
                 </div>
               )}
 
-              {contentMessage.type === 'tool_result' && (
-                <div style={{
-                  background: '#e8f5e8',
-                  padding: '8px',
-                  borderRadius: '4px',
-                  borderLeft: '3px solid #4caf50'
-                }}>
-                  <div style={{
-                    fontSize: '11px',
-                    color: '#666',
-                    marginBottom: '4px',
-                    fontWeight: 'bold'
-                  }}>
+              {contentMessage.type === "tool_result" && (
+                <div
+                  style={{
+                    background: "#e8f5e8",
+                    padding: "8px",
+                    borderRadius: "4px",
+                    borderLeft: "3px solid #4caf50",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      color: "#666",
+                      marginBottom: "4px",
+                      fontWeight: "bold",
+                    }}
+                  >
                     ✅ Tool Result: {contentMessage.tool_name}
                   </div>
-                  <div style={{
-                    fontSize: '12px',
-                    fontFamily: 'monospace',
-                    whiteSpace: 'pre-wrap',
-                    maxHeight: '150px',
-                    overflowY: 'auto'
-                  }}>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      fontFamily: "monospace",
+                      whiteSpace: "pre-wrap",
+                      maxHeight: "150px",
+                      overflowY: "auto",
+                    }}
+                  >
                     {contentMessage.content}
                   </div>
                 </div>
               )}
 
-              {contentMessage.type === 'tool_error' && (
-                <div style={{
-                  background: '#ffebee',
-                  padding: '8px',
-                  borderRadius: '4px',
-                  borderLeft: '3px solid #f44336'
-                }}>
-                  <div style={{
-                    fontSize: '11px',
-                    color: '#666',
-                    marginBottom: '4px',
-                    fontWeight: 'bold'
-                  }}>
+              {contentMessage.type === "tool_error" && (
+                <div
+                  style={{
+                    background: "#ffebee",
+                    padding: "8px",
+                    borderRadius: "4px",
+                    borderLeft: "3px solid #f44336",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      color: "#666",
+                      marginBottom: "4px",
+                      fontWeight: "bold",
+                    }}
+                  >
                     ❌ Tool Error: {contentMessage.tool_name}
                   </div>
-                  <div style={{
-                    fontSize: '12px',
-                    color: '#c62828',
-                    whiteSpace: 'pre-wrap'
-                  }}>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "#c62828",
+                      whiteSpace: "pre-wrap",
+                    }}
+                  >
                     {contentMessage.content}
                   </div>
                 </div>
               )}
 
-              {contentMessage.type === 'final_response' && (
-                <div style={{
-                  background: '#f3e5f5',
-                  padding: '8px',
-                  borderRadius: '4px',
-                  borderLeft: '3px solid #9c27b0'
-                }}>
-                  <div style={{
-                    fontSize: '11px',
-                    color: '#666',
-                    marginBottom: '4px',
-                    fontWeight: 'bold'
-                  }}>
+              {contentMessage.type === "final_response" && (
+                <div
+                  style={{
+                    background: "#f3e5f5",
+                    padding: "8px",
+                    borderRadius: "4px",
+                    borderLeft: "3px solid #9c27b0",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      color: "#666",
+                      marginBottom: "4px",
+                      fontWeight: "bold",
+                    }}
+                  >
                     🎯 Final Response
                   </div>
-                  <div style={{ fontSize: '13px', whiteSpace: 'pre-wrap' }}>
+                  <div style={{ fontSize: "13px", whiteSpace: "pre-wrap" }}>
                     {contentMessage.content}
                   </div>
                 </div>

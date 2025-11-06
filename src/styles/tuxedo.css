@@ -8,34 +8,40 @@
 :root {
   /* Dark Mode Foundation */
   --color-bg-primary: #000000; /* true black - OLED power savings */
-  --color-bg-surface: #0A0A0A; /* cards, panels */
-  --color-border: #1A1D23; /* barely visible structure */
+  --color-bg-surface: #0a0a0a; /* cards, panels */
+  --color-border: #1a1d23; /* barely visible structure */
 
   /* Typography */
-  --color-text-primary: #F4F1E8; /* "Electrum" - cream-gold tint, reads white at glance */
-  --color-text-secondary: #C4C1B8; /* dimmed electrum, 77% opacity */
-  --color-text-tertiary: #8B8980; /* 50% opacity */
+  --color-text-primary: #f4f1e8; /* "Electrum" - cream-gold tint, reads white at glance */
+  --color-text-secondary: #c4c1b8; /* dimmed electrum, 77% opacity */
+  --color-text-tertiary: #8b8980; /* 50% opacity */
 
   /* Stellar Night Accents */
-  --color-deep-space: #2C3E50; /* hover states, inactive buttons */
-  --color-stellar-glow-subtle: rgba(0, 212, 255, 0.1); /* subtle highlights, focus rings */
+  --color-deep-space: #2c3e50; /* hover states, inactive buttons */
+  --color-stellar-glow-subtle: rgba(
+    0,
+    212,
+    255,
+    0.1
+  ); /* subtle highlights, focus rings */
   --color-stellar-glow-medium: rgba(0, 212, 255, 0.25); /* active states */
-  --color-stellar-glow-strong: #00D4FF; /* strong accents */
+  --color-stellar-glow-strong: #00d4ff; /* strong accents */
 
   /* Semantic Colors (APY/Numbers Only) */
-  --color-yield-high: #10B981; /* emerald green */
-  --color-yield-medium: #F59E0B; /* amber */
-  --color-yield-low: #6B7280; /* neutral grey */
-  --color-negative: #EF4444; /* red, use sparingly */
+  --color-yield-high: #10b981; /* emerald green */
+  --color-yield-medium: #f59e0b; /* amber */
+  --color-yield-low: #6b7280; /* neutral grey */
+  --color-negative: #ef4444; /* red, use sparingly */
 
   /* AI Response Colors */
-  --color-ai-text: #FFFFFF; /* bright white for AI responses */
-  --color-ai-bg: #1A2332; /* dark blue for AI response cards */
+  --color-ai-text: #ffffff; /* bright white for AI responses */
+  --color-ai-bg: #1a2332; /* dark blue for AI response cards */
 
   /* Typography System */
-  --font-primary-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-secondary-serif: 'Georgia', 'Times New Roman', serif;
-  --font-tertiary-mono: 'Inconsolata', 'SF Mono', Monaco, 'Cascadia Code', monospace;
+  --font-primary-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-secondary-serif: "Georgia", "Times New Roman", serif;
+  --font-tertiary-mono:
+    "Inconsolata", "SF Mono", Monaco, "Cascadia Code", monospace;
 
   /* Spacing & Sizing */
   --border-radius-sm: 4px;
@@ -262,17 +268,33 @@ body {
 }
 
 /* ===== UTILITY CLASSES ===== */
-.text-electrum { color: var(--color-text-primary); }
-.text-electrum-dim { color: var(--color-text-secondary); }
-.text-electrum-dimmer { color: var(--color-text-tertiary); }
+.text-electrum {
+  color: var(--color-text-primary);
+}
+.text-electrum-dim {
+  color: var(--color-text-secondary);
+}
+.text-electrum-dimmer {
+  color: var(--color-text-tertiary);
+}
 
-.bg-primary { background-color: var(--color-bg-primary); }
-.bg-surface { background-color: var(--color-bg-surface); }
+.bg-primary {
+  background-color: var(--color-bg-primary);
+}
+.bg-surface {
+  background-color: var(--color-bg-surface);
+}
 
-.border-stellar { border-color: var(--color-stellar-glow-strong); }
-.border-subtle { border-color: var(--color-border); }
+.border-stellar {
+  border-color: var(--color-stellar-glow-strong);
+}
+.border-subtle {
+  border-color: var(--color-border);
+}
 
-.glow-stellar { box-shadow: 0 0 8px var(--color-stellar-glow-subtle); }
+.glow-stellar {
+  box-shadow: 0 0 8px var(--color-stellar-glow-subtle);
+}
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {

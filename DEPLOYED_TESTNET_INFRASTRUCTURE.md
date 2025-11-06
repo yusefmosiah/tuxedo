@@ -10,12 +10,12 @@ The following DeFindex vault contracts are **LIVE** on Stellar testnet and ready
 
 ### XLM HODL Vaults
 
-| Vault Name | Contract Address | Type | APY | TVL | Status |
-|-------------|------------------|------|-----|-----|--------|
-| **XLM_HODL_1** | `CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA` | Volatile (XLM) | 0.0% | $0 | ✅ Active |
-| **XLM_HODL_2** | `CCSPRGGUP32M23CTU7RUAGXDNOHSA6O2BS2IK4NVUP5X2JQXKTSIQJKE` | Volatile (XLM) | 0.0% | $0 | ✅ Active |
-| **XLM_HODL_3** | `CBLXUUHUL7TA3LF3U5G6ZTU7EACBBOSJLR4AYOM5YJKJ4APZ7O547R5T` | Volatile (XLM) | 0.0% | $0 | ✅ Active |
-| **XLM_HODL_4** | `CCGKL6U2DHSNFJ3NU4UPRUKYE2EUGYR4ZFZDYA7KDJLP3TKSPHD5C4UP` | Volatile (XLM) | 0.0% | $0 | ✅ Active |
+| Vault Name     | Contract Address                                           | Type           | APY  | TVL | Status    |
+| -------------- | ---------------------------------------------------------- | -------------- | ---- | --- | --------- |
+| **XLM_HODL_1** | `CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA` | Volatile (XLM) | 0.0% | $0  | ✅ Active |
+| **XLM_HODL_2** | `CCSPRGGUP32M23CTU7RUAGXDNOHSA6O2BS2IK4NVUP5X2JQXKTSIQJKE` | Volatile (XLM) | 0.0% | $0  | ✅ Active |
+| **XLM_HODL_3** | `CBLXUUHUL7TA3LF3U5G6ZTU7EACBBOSJLR4AYOM5YJKJ4APZ7O547R5T` | Volatile (XLM) | 0.0% | $0  | ✅ Active |
+| **XLM_HODL_4** | `CCGKL6U2DHSNFJ3NU4UPRUKYE2EUGYR4ZFZDYA7KDJLP3TKSPHD5C4UP` | Volatile (XLM) | 0.0% | $0  | ✅ Active |
 
 ### Fee Structure (All Vaults)
 

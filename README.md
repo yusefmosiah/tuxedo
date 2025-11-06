@@ -11,6 +11,7 @@ Conversational AI agent for discovering and interacting with DeFi protocols on S
 ## 🎯 Quick Start
 
 ### Local Development (Current Setup)
+
 ```bash
 # Backend (Port 8000)
 cd backend && source .venv/bin/activate && python main.py
@@ -22,6 +23,7 @@ npm run dev
 ```
 
 ### AWS SSH Port Forwarding
+
 ```bash
 # Forward ports for remote access
 ssh -L 5173:localhost:5173 -L 8000:localhost:8000 user@your-server
@@ -32,18 +34,21 @@ ssh -L 5173:localhost:5173 -L 8000:localhost:8000 user@your-server
 ## 🚀 Core Features
 
 ### 🤖 AI Agent
+
 - **Multi-step reasoning** with LangChain integration
 - **9 Integrated Tools**: 6 Stellar tools + 3 TUX farming tools
 - **Natural language** blockchain interaction
 - **Real-time streaming** responses
 
 ### 🏦 DeFi Integration
+
 - **Blend Protocol**: Pool discovery and APY tracking
 - **TUX Yield Farming**: Synthetic rewards with 100M token supply
 - **Smart Contracts**: Soroban contracts on Stellar testnet
 - **Hardware Wallet**: USB ledger support
 
 ### 💫 Modern UI
+
 - **Real-time chat** with tool execution indicators
 - **Wallet integration** via Stellar Wallets Kit
 - **Responsive design** with Stellar Design System
@@ -54,6 +59,7 @@ ssh -L 5173:localhost:5173 -L 8000:localhost:8000 user@your-server
 ## 🔧 Architecture
 
 ### AI Agent Backend (Port 8000)
+
 ```
 FastAPI + LangChain + OpenAI gpt-oss 120b
 ├─ Agent Loop (10 iterations max)
@@ -63,6 +69,7 @@ FastAPI + LangChain + OpenAI gpt-oss 120b
 ```
 
 ### Frontend (Port 5173)
+
 ```
 React 19 + TypeScript + Vite
 ├─ ChatInterface.tsx (main AI chat)
@@ -72,6 +79,7 @@ React 19 + TypeScript + Vite
 ```
 
 ### Smart Contracts
+
 ```
 Stellar Testnet (Soroban)
 ├─ TUX Token (100M supply)
@@ -84,13 +92,16 @@ Stellar Testnet (Soroban)
 ## 🛠️ Development
 
 ### Smart Contract Integration
+
 Tuxedo interacts with Blend Protocol's smart contracts on Stellar testnet:
 
 **Core Contracts:**
+
 - **Backstop Contract:** `CBHWKF4RHIKOKSURAKXSJRIIA7RJAMJH4VHRVPYGUF4AJ5L544LYZ35X`
 - **Comet Pool Contract:** `CCQ74HNBMLYICEFUGNLM23QQJU7BKZS7CXC7OAOX4IHRT3LDINZ4V3AF`
 
 **Architecture:**
+
 1. **Pool Discovery:** Queries Backstop.contract.rewardZone to discover active lending pools
 2. **Data Fetching:** Uses Blend SDK to fetch pool metadata, reserves, and APY rates
 3. **AI Agent:** FastAPI backend with LangChain integration processes natural language queries
@@ -98,6 +109,7 @@ Tuxedo interacts with Blend Protocol's smart contracts on Stellar testnet:
 5. **Real-time Updates:** Dashboard displays live pool data and utilization metrics
 
 **Technical Flow:**
+
 ```
 User Query → AI Agent → Tool Selection → Stellar Blockchain → Response → UI Update
 ```
@@ -108,7 +120,8 @@ User Query → AI Agent → Tool Selection → Stellar Blockchain → Response �
 
 [Detailed Project Walkthrough - Coming Soon]
 
-*In this video, I explain:*
+_In this video, I explain:_
+
 - Project architecture and how components interact
 - GitHub repository structure and key files
 - Live demo of AI agent and dashboard functionality
@@ -121,7 +134,8 @@ User Query → AI Agent → Tool Selection → Stellar Blockchain → Response �
 
 **Demo URL:** https://your-demo-url.com
 
-*Features available for judging:*
+_Features available for judging:_
+
 - Connect Stellar wallet (Freighter)
 - Chat with AI agent about Stellar operations
 - View real-time Blend pool data and APY rates
@@ -133,6 +147,7 @@ User Query → AI Agent → Tool Selection → Stellar Blockchain → Response �
 ## 🔗 Block Explorer Links
 
 **Stellar Testnet Contracts:**
+
 - **Backstop Contract:** [View on Stellar Explorer](https://stellar.expert/explorer/testnet/contract/CBHWKF4RHIKOKSURAKXSJRIIA7RJAMJH4VHRVPYGUF4AJ5L544LYZ35X)
 - **Comet Pool Contract:** [View on Stellar Explorer](https://stellar.expert/explorer/testnet/contract/CCQ74HNBMLYICEFUGNLM23QQJU7BKZS7CXC7OAOX4IHRT3LDINZ4V3AF)
 - **BLND Token:** [View on Stellar Explorer](https://stellar.expert/explorer/testnet/asset/CB22KRA3YZVCNCQI64JQ5WE7UY2VAV7WFLK6A2JN3HEX56T2EDAFO7QF-BLND)
@@ -163,6 +178,7 @@ blend-pools/
 ```
 
 **Key Files:**
+
 - `backend/main.py` - AI agent with LangChain integration
 - `backend/stellar_tools.py` - Stellar blockchain operations
 - `src/components/ChatInterface.tsx` - Conversational AI interface

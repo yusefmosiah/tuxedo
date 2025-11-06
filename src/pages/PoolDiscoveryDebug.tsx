@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { generatePoolTokenReport, logPoolStats, discoverAllPools } from "../utils/poolDiscovery";
+import {
+  generatePoolTokenReport,
+  logPoolStats,
+  discoverAllPools,
+} from "../utils/poolDiscovery";
 
 /**
  * Debug page to exhaustively discover all Blend pools and tokens on testnet
@@ -29,7 +33,7 @@ export function PoolDiscoveryDebug() {
 
       // Extract tokens from reports
       const allTokens = new Set<string>();
-      reports.forEach(report => {
+      reports.forEach((report) => {
         report.tokens.forEach((token: any) => {
           allTokens.add(token.address);
         });
@@ -101,23 +105,43 @@ export function PoolDiscoveryDebug() {
             ) : (
               <ul style={{ paddingLeft: "20px" }}>
                 {results.pools.map((pool, i) => {
-                  const report = results.reports.find(r => r.poolAddress === pool);
+                  const report = results.reports.find(
+                    (r) => r.poolAddress === pool,
+                  );
                   return (
                     <li key={pool} style={{ marginBottom: "15px" }}>
                       <div>
                         <strong>Pool {i + 1}:</strong> {pool}
                       </div>
                       {report && (
-                        <div style={{ marginLeft: "20px", marginTop: "5px", fontSize: "14px" }}>
+                        <div
+                          style={{
+                            marginLeft: "20px",
+                            marginTop: "5px",
+                            fontSize: "14px",
+                          }}
+                        >
                           <div>
                             <strong>Name:</strong> {report.poolName}
                           </div>
                           <div>
                             <strong>Tokens ({report.tokenCount}):</strong>
                           </div>
-                          <ul style={{ fontSize: "12px", paddingLeft: "20px", marginTop: "5px" }}>
+                          <ul
+                            style={{
+                              fontSize: "12px",
+                              paddingLeft: "20px",
+                              marginTop: "5px",
+                            }}
+                          >
                             {report.tokens.map((token: any) => (
-                              <li key={token.address} style={{ fontFamily: "monospace", wordBreak: "break-all" }}>
+                              <li
+                                key={token.address}
+                                style={{
+                                  fontFamily: "monospace",
+                                  wordBreak: "break-all",
+                                }}
+                              >
                                 {token.address}
                               </li>
                             ))}
@@ -136,7 +160,13 @@ export function PoolDiscoveryDebug() {
             {results.tokens.length === 0 ? (
               <p style={{ color: "#999" }}>No tokens found</p>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "10px" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+                  gap: "10px",
+                }}
+              >
                 {results.tokens.map((token, i) => (
                   <div
                     key={token}
@@ -156,9 +186,17 @@ export function PoolDiscoveryDebug() {
             )}
           </section>
 
-          <section style={{ marginTop: "30px", padding: "15px", backgroundColor: "#eef", borderRadius: "4px" }}>
+          <section
+            style={{
+              marginTop: "30px",
+              padding: "15px",
+              backgroundColor: "#eef",
+              borderRadius: "4px",
+            }}
+          >
             <p style={{ margin: "0", fontSize: "12px", color: "#666" }}>
-              💡 Check browser console (F12) for detailed logs about pool discovery process
+              💡 Check browser console (F12) for detailed logs about pool
+              discovery process
             </p>
           </section>
         </div>

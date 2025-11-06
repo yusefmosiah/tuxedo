@@ -7,14 +7,14 @@
 
 ## Current Passkey Documentation (6 files, 4167 lines)
 
-| File | Lines | Date | Status | Recommendation |
-|------|-------|------|--------|----------------|
-| PASSKEY_ARCHITECTURE_V2.md | 747 | Nov 6 | ✅ Current | **KEEP** - Source of truth |
-| EXPERIMENTAL_PASSKEY_ANALYSIS.md | 399 | Nov 6 | ✅ Historical | **KEEP** - Lessons learned |
-| PASSKEY_4HOUR_SPRINT.md | 1044 | Nov 5 | ❌ Outdated | **DELETE** - Wrong architecture |
-| PASSKEY_TECHNICAL_SPECIFICATION.md | 1243 | Nov 5 | ❌ Outdated | **DELETE** - Wrong approach |
-| PASSKEY_SECURITY_ARCHITECTURE.md | 445 | Nov 5 | ❌ Outdated | **DELETE** - Research for wrong approach |
-| PASSKEY_RECONCILIATION.md | 289 | Nov 5 | ❌ Outdated | **DELETE** - Meta-doc about old docs |
+| File                               | Lines | Date  | Status        | Recommendation                           |
+| ---------------------------------- | ----- | ----- | ------------- | ---------------------------------------- |
+| PASSKEY_ARCHITECTURE_V2.md         | 747   | Nov 6 | ✅ Current    | **KEEP** - Source of truth               |
+| EXPERIMENTAL_PASSKEY_ANALYSIS.md   | 399   | Nov 6 | ✅ Historical | **KEEP** - Lessons learned               |
+| PASSKEY_4HOUR_SPRINT.md            | 1044  | Nov 5 | ❌ Outdated   | **DELETE** - Wrong architecture          |
+| PASSKEY_TECHNICAL_SPECIFICATION.md | 1243  | Nov 5 | ❌ Outdated   | **DELETE** - Wrong approach              |
+| PASSKEY_SECURITY_ARCHITECTURE.md   | 445   | Nov 5 | ❌ Outdated   | **DELETE** - Research for wrong approach |
+| PASSKEY_RECONCILIATION.md          | 289   | Nov 5 | ❌ Outdated   | **DELETE** - Meta-doc about old docs     |
 
 ---
 
@@ -25,6 +25,7 @@
 **Why**: Current source of truth, reflects correct architecture decisions
 
 **Contains**:
+
 - ✅ Passkey auth ONLY (no multi-agent coupling)
 - ✅ Email-based flow (username, not usernameless)
 - ✅ Production financial platform context
@@ -43,6 +44,7 @@
 **Why**: Historical reference documenting what went wrong
 
 **Contains**:
+
 - ✅ Analysis of failed experimental-passkey branch
 - ✅ Build failures and missing dependencies
 - ✅ Over-coupling problems identified
@@ -58,6 +60,7 @@
 **Why**: Contains wrong architecture that we explicitly rejected
 
 **Problems**:
+
 - ❌ Multi-agent architecture coupled to passkey auth
 - ❌ PRF extension for Stellar key derivation
 - ❌ Agent-per-thread 1:1 relationship
@@ -65,6 +68,7 @@
 - ❌ "4-hour sprint" timeline (we need proper implementation)
 
 **Specific Wrong Sections**:
+
 ```
 ## Multi-Agent Architecture (CRITICAL)
 User (passkey auth)
@@ -81,12 +85,14 @@ User (passkey auth)
 **Why**: Detailed spec for wrong approach
 
 **Problems**:
+
 - ❌ PRF extension implementation detailed
 - ❌ Stellar key derivation from passkeys
 - ❌ Complex crypto flows we're avoiding
 - ❌ Conflates authentication with application features
 
 **Excerpt showing wrong approach**:
+
 ```sql
 CREATE TABLE users (
     stellar_public_key TEXT UNIQUE NOT NULL,
@@ -94,6 +100,7 @@ CREATE TABLE users (
     ...
 )
 ```
+
 (Stellar keys stored in users table - wrong coupling)
 
 **Action**: DELETE - Entire approach is wrong
@@ -105,12 +112,14 @@ CREATE TABLE users (
 **Why**: Research document for PRF-based approach
 
 **Problems**:
+
 - ❌ Focuses on PRF extension capabilities
 - ❌ "Revolutionary Capability: Deterministic Key Derivation"
 - ❌ "Stateless Key Management: No long-term private key storage"
 - ❌ Research for approach we explicitly rejected
 
 **Excerpt**:
+
 ```
 ### Passkey PRF Extension for Crypto
 **Revolutionary Capability:**
@@ -126,6 +135,7 @@ CREATE TABLE users (
 **Why**: Meta-document about reconciling old docs
 
 **Problems**:
+
 - ❌ Documents structure of docs we're now deleting
 - ❌ References "PASSKEY_4HOUR_SPRINT.md [NEW - PRIMARY]" (which we're deleting)
 - ❌ Meta-documentation no longer relevant
@@ -138,6 +148,7 @@ CREATE TABLE users (
 ## Summary of Changes
 
 ### Before Cleanup:
+
 ```
 /home/user/tuxedo/
 ├── PASSKEY_ARCHITECTURE_V2.md              (747 lines) ✅
@@ -151,6 +162,7 @@ Total: 6 files, 4167 lines
 ```
 
 ### After Cleanup:
+
 ```
 /home/user/tuxedo/
 ├── PASSKEY_ARCHITECTURE_V2.md              (747 lines) ✅
@@ -184,6 +196,7 @@ Total: 2 files, 1146 lines (72% reduction)
    - We need simple auth first
 
 **We explicitly decided**:
+
 - ✅ Passkey auth ONLY (Phase 1)
 - ✅ Agents are application features (Phase 2)
 - ✅ Email-based for financial platform
@@ -274,6 +287,7 @@ After cleanup, **one file** contains all implementation guidance:
 **PASSKEY_ARCHITECTURE_V2.md**
 
 This document includes:
+
 - ✅ Database schema
 - ✅ API endpoints
 - ✅ Frontend implementation

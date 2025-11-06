@@ -7,18 +7,21 @@
 ## 🎯 Objectives
 
 ### Immediate (Hackathon Week)
+
 1. **Remove wallet dependencies** and establish agent-first paradigm
 2. **Clean up project structure** for professional presentation
 3. **Fix testing organization** (move tests out of root)
 4. **Remove TUX farming code** and focus on real protocols
 
 ### Medium-term (Post-Hackathon)
+
 1. **Modular architecture** supporting multiple agents
 2. **Clean separation** between web app and agent core
 3. **Extensible protocol integration** framework
 4. **Production-ready security** and configuration
 
 ### Long-term (Choir Integration)
+
 1. **Multi-agent architecture** supporting social features
 2. **API-first design** for mobile/web client support
 3. **Plugin system** for different agent capabilities
@@ -27,14 +30,16 @@
 ## 📊 Current State Analysis
 
 ### Critical Issues
+
 - **Backend main.py**: 2000+ lines, agent logic mixed with API
 - **Frontend wallet dependencies**: WalletProvider throughout component tree
-- **Test files in root**: test_*.py files at project root (unprofessional)
+- **Test files in root**: test\_\*.py files at project root (unprofessional)
 - **TUX farming mock code**: Entire mock system needs removal
 - **Configuration scattered**: Hardcoded values in 15+ locations
 - **Monolithic structure**: Difficult to extend or modify
 
 ### Files Needing Immediate Attention
+
 - `backend/main.py` - Split into agent core, API, and tools
 - `src/providers/WalletProvider.tsx` - Remove entirely
 - `src/components/` - Remove wallet dependencies from all components
@@ -45,6 +50,7 @@
 ## 🏗️ Target Architecture
 
 ### Project Structure
+
 ```
 tuxedo/
 ├── README.md                     # Main project overview
@@ -229,9 +235,11 @@ tuxedo/
 ### Phase 1: Critical Cleanup (Hackathon Day 1)
 
 #### 1.1 Remove Wallet Dependencies
+
 **Priority**: CRITICAL for hackathon success
 
 **Actions**:
+
 ```bash
 # Remove wallet provider system
 rm src/providers/WalletProvider.tsx
@@ -260,9 +268,11 @@ export const AgentProvider = ({ children }: { children: React.ReactNode }) => {
 ```
 
 #### 1.2 Fix Testing Structure
+
 **Priority**: HIGH for professional appearance
 
 **Actions**:
+
 ```bash
 # Create proper test structure
 mkdir -p tests/{integration,e2e,fixtures}
@@ -276,9 +286,11 @@ mv test_wallet_fix.py backend/tests/test_agent_management/
 ```
 
 #### 1.3 Remove TUX Farming System
+
 **Priority**: HIGH for hackathon focus
 
 **Actions**:
+
 ```bash
 # Remove TUX farming components
 rm -rf src/components/tux_farming/
@@ -297,15 +309,18 @@ rm test_tux_farming.py
 ### Phase 2: Backend Refactoring (Hackathon Day 1-2)
 
 #### 2.1 Split main.py into Focused Modules
+
 **Target**: Reduce from 2000+ lines to ~200 lines
 
 **Current structure issues**:
+
 - Agent logic mixed with FastAPI setup
 - Tool definitions scattered throughout
 - Configuration hardcoded
 - No clear separation of concerns
 
 **New structure**:
+
 ```python
 # backend/main.py - Simplified entry point
 from app import create_app
@@ -348,6 +363,7 @@ def create_app() -> FastAPI:
 ```
 
 #### 2.2 Extract Agent Core Logic
+
 **Target**: Clean agent module focused on AI reasoning
 
 ```python
@@ -421,6 +437,7 @@ class TuxedoAgent:
 ```
 
 #### 2.3 Create Agent Management Tools
+
 **Target**: Tools for agent-controlled account management
 
 ```python
@@ -493,6 +510,7 @@ class AccountManagementTool(BaseTool):
 ### Phase 3: Frontend Refactoring (Hackathon Day 2-3)
 
 #### 3.1 Create Agent-First UI Components
+
 **Target**: Replace wallet UI with agent management UI
 
 ```typescript
@@ -547,12 +565,13 @@ export const AccountManager: React.FC = () => {
 ```
 
 #### 3.2 Create Agent State Management Hook
+
 **Target**: Replace wallet hooks with agent hooks
 
 ```typescript
 // src/hooks/useAgent.ts
-import { useState, useEffect, useCallback } from 'react';
-import { agentService } from '../services/agentService';
+import { useState, useEffect, useCallback } from "react";
+import { agentService } from "../services/agentService";
 
 export interface AgentAccount {
   address: string;
@@ -586,7 +605,7 @@ export const useAgent = () => {
         setActiveAccount(accountList[0].address);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load accounts');
+      setError(err instanceof Error ? err.message : "Failed to load accounts");
     } finally {
       setIsLoading(false);
     }
@@ -598,11 +617,11 @@ export const useAgent = () => {
 
     try {
       const newAccount = await agentService.createAccount(name);
-      setAccounts(prev => [...prev, newAccount]);
+      setAccounts((prev) => [...prev, newAccount]);
       setActiveAccount(newAccount.address);
       return newAccount.address;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create account');
+      setError(err instanceof Error ? err.message : "Failed to create account");
       throw err;
     } finally {
       setIsLoading(false);
@@ -616,7 +635,7 @@ export const useAgent = () => {
     createAccount,
     isLoading,
     error,
-    refreshAccounts: loadAccounts
+    refreshAccounts: loadAccounts,
   };
 };
 ```
@@ -624,6 +643,7 @@ export const useAgent = () => {
 ### Phase 4: Configuration Management (Hackathon Day 3)
 
 #### 4.1 Centralize Configuration
+
 **Target**: Single source of truth for all settings
 
 ```python
@@ -678,44 +698,45 @@ settings = Settings()
 // src/config/constants.ts
 export const NETWORK_CONFIG = {
   testnet: {
-    horizon: 'https://horizon-testnet.stellar.org',
-    rpc: 'https://soroban-testnet.stellar.org',
-    network: 'Test SDF Network ; September 2015',
-    friendbot: 'https://friendbot.stellar.org'
+    horizon: "https://horizon-testnet.stellar.org",
+    rpc: "https://soroban-testnet.stellar.org",
+    network: "Test SDF Network ; September 2015",
+    friendbot: "https://friendbot.stellar.org",
   },
   mainnet: {
-    horizon: 'https://horizon.stellar.org',
-    rpc: 'https://soroban.stellar.org',
-    network: 'Public Global Stellar Network ; September 2015',
-    friendbot: null
-  }
+    horizon: "https://horizon.stellar.org",
+    rpc: "https://soroban.stellar.org",
+    network: "Public Global Stellar Network ; September 2015",
+    friendbot: null,
+  },
 };
 
 export const API_ENDPOINTS = {
-  chat: '/api/chat',
-  agent: '/api/agent',
-  health: '/api/health',
-  tools: '/api/tools'
+  chat: "/api/chat",
+  agent: "/api/agent",
+  health: "/api/health",
+  tools: "/api/tools",
 };
 
 export const AGENT_CONFIG = {
   maxAccounts: 10,
   conversationLimit: 100,
   defaultFunding: 10000,
-  messageTimeout: 30000
+  messageTimeout: 30000,
 };
 
 export const UI_CONFIG = {
   maxMessages: 100,
   typingIndicatorDelay: 500,
   toolExecutionTimeout: 30000,
-  refreshInterval: 30000
+  refreshInterval: 30000,
 };
 ```
 
 ### Phase 5: Testing Infrastructure (Post-Hackathon)
 
 #### 5.1 Comprehensive Test Structure
+
 **Target**: Professional testing setup with proper organization
 
 ```python
@@ -763,6 +784,7 @@ def test_agent(mock_llm_client):
 ```
 
 #### 5.2 Integration Test Framework
+
 **Target**: Test complete user workflows
 
 ```python
@@ -821,6 +843,7 @@ class TestAgentWorkflows:
 ## 🗓️ Implementation Timeline
 
 ### Hackathon Week (Days 1-5)
+
 - **Day 1**: Critical cleanup, wallet removal, testing structure
 - **Day 2**: Backend refactoring, agent core extraction
 - **Day 3**: Frontend agent UI, configuration management
@@ -828,16 +851,19 @@ class TestAgentWorkflows:
 - **Day 5**: Demo preparation, testing, documentation
 
 ### Week 2-3: Production Readiness
+
 - **Backend**: Complete modularization, comprehensive testing
 - **Frontend**: Component optimization, state management refinement
 - **Configuration**: Environment management, deployment setup
 
 ### Week 4-6: Advanced Features
+
 - **Multi-agent support**: Foundation for Choir integration
 - **Protocol expansion**: More DeFi protocols
 - **Advanced security**: TEE preparation, encryption
 
 ### Month 2-3: Choir Integration
+
 - **API abstraction**: Multi-client support (web/mobile)
 - **Social features**: Agent sharing and collaboration
 - **Cross-chain preparation**: Multi-network support
@@ -845,18 +871,21 @@ class TestAgentWorkflows:
 ## 📈 Expected Benefits
 
 ### Immediate Benefits (Hackathon)
+
 - **Professional appearance**: Proper file organization, no root-level tests
 - **Clear innovation**: Agent-first paradigm immediately obvious
 - **Focused demo**: No wallet distractions, pure agent experience
 - **Clean codebase**: Easy to explain and demonstrate
 
 ### Medium-term Benefits (Production)
+
 - **Maintainability**: Clear separation of concerns, modular architecture
 - **Extensibility**: Easy to add new protocols and features
 - **Testability**: Comprehensive test coverage, reliable deployment
 - **Developer experience**: Intuitive structure, easy onboarding
 
 ### Long-term Benefits (Choir Integration)
+
 - **Multi-agent architecture**: Foundation for social agent interactions
 - **API-first design**: Support for web, mobile, and future clients
 - **Scalable security**: Ready for TEE and advanced encryption
@@ -865,6 +894,7 @@ class TestAgentWorkflows:
 ## 🎯 Success Metrics
 
 ### Hackathon Success Criteria
+
 - [ ] Wallet dependencies completely removed
 - [ ] Agent account management working seamlessly
 - [ ] Professional project structure (no root tests)
@@ -872,12 +902,14 @@ class TestAgentWorkflows:
 - [ ] Clear differentiation from wallet-dependent projects
 
 ### Code Quality Metrics
+
 - [ ] Average file size: < 300 lines
 - [ ] Test coverage: > 80% for critical components
 - [ ] Configuration: Centralized, environment-specific
 - [ ] Documentation: Clear, up-to-date, comprehensive
 
 ### Developer Experience Metrics
+
 - [ ] New developer onboarding: < 2 hours
 - [ ] Feature implementation time: Reduced by 50%
 - [ ] Bug fix time: Reduced by 60%
@@ -886,6 +918,7 @@ class TestAgentWorkflows:
 ## 🔄 Migration Strategy
 
 ### Incremental Approach
+
 1. **Critical path first**: Focus on hackathon-winning features
 2. **Parallel development**: New structure alongside existing code
 3. **Gradual migration**: Move functionality piece by piece
@@ -893,6 +926,7 @@ class TestAgentWorkflows:
 5. **Documentation updates**: Keep docs in sync with changes
 
 ### Risk Mitigation
+
 - **Backup strategy**: Git branches for each major change
 - **Rollback plan**: Quick revert to working state
 - **Testing pipeline**: Automated tests prevent breaking changes
@@ -902,12 +936,14 @@ class TestAgentWorkflows:
 ## 📝 Next Steps
 
 ### Immediate (This Week)
+
 1. **Start with wallet removal** - Highest impact for hackathon
 2. **Fix testing structure** - Professional appearance
 3. **Extract agent core** - Clean separation of concerns
 4. **Create agent UI** - Replace wallet interface
 
 ### Post-Hackathon
+
 1. **Complete modularization** - Full backend refactoring
 2. **Add comprehensive testing** - Production readiness
 3. **Optimize for deployment** - Phala/cloud preparation

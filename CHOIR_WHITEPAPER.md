@@ -7,7 +7,7 @@ Choir_Whitepaper_v4.0_FINAL.md
 
 **Version 4.0 - October 30, 2025**
 
------
+---
 
 ## Intelligence That Creates Value Should Share In That Value
 
@@ -25,7 +25,7 @@ The thought bank makes intellectual property productive the way traditional bank
 
 **And you never need to deposit money to participate.** The gradient exists for those who can and want to, but your contribution of thought itself has value—measurable, economic value that compounds over time.
 
------
+---
 
 ## The Participation Gradient: Enter Where You Are
 
@@ -608,9 +608,9 @@ Intelligence that creates value should share in that value. That’s the princip
 
 **Choir: The Thought Bank**
 
-*Your ideas make AI smarter. When AI makes money, you should too.*
+_Your ideas make AI smarter. When AI makes money, you should too._
 
------
+---
 
 ## Appendix A: The AI Idiot Test
 
@@ -772,7 +772,7 @@ You don’t need to. The thought bank handles all complexity in the background. 
 
 Token launch Q4 2025 on Sui blockchain. Stellar DeFi integration is already live. Android applications will be community-built through 2026. The full feature set including advanced capabilities like tax-aware optimization should be complete by the end of 2026. The thought bank opens for deposits in phases as features mature.
 
------
+---
 
 **For more information:**
 
@@ -781,10 +781,10 @@ Token launch Q4 2025 on Sui blockchain. Stellar DeFi integration is already live
 - GitHub: [github.com/yusefmosiah/choir-scales](http://github.com/yusefmosiah/choir.chat)
 - Contact: hello@choir.chat
 
------
+---
 
 **Choir: The Thought Bank**
 
-*Your ideas make AI smarter. When AI makes money, you should too.*
+_Your ideas make AI smarter. When AI makes money, you should too._
 
 **Version 4.0 - October 30, 2025**

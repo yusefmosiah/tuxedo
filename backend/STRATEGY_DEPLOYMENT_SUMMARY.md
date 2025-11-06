@@ -29,13 +29,13 @@ We have successfully prepared **all 5 DeFindex strategy templates** for deployme
 
 ## 📊 Strategy Details
 
-| Strategy | WASM File | Size | Status |
-|----------|-----------|------|---------|
-| HODL | `hodl_strategy.wasm` | 5,136 bytes | ✅ Ready |
-| BLEND | `blend_strategy.wasm` | 26,087 bytes | ✅ Ready |
-| SOROSWAP | `soroswap_strategy.wasm` | 9,950 bytes | ✅ Ready |
-| XYCLOANS | `xycloans_adapter.wasm` | 10,134 bytes | ✅ Ready |
-| FIXED_APR | `fixed_apr_strategy.wasm` | 8,877 bytes | ✅ Ready |
+| Strategy  | WASM File                 | Size         | Status   |
+| --------- | ------------------------- | ------------ | -------- |
+| HODL      | `hodl_strategy.wasm`      | 5,136 bytes  | ✅ Ready |
+| BLEND     | `blend_strategy.wasm`     | 26,087 bytes | ✅ Ready |
+| SOROSWAP  | `soroswap_strategy.wasm`  | 9,950 bytes  | ✅ Ready |
+| XYCLOANS  | `xycloans_adapter.wasm`   | 10,134 bytes | ✅ Ready |
+| FIXED_APR | `fixed_apr_strategy.wasm` | 8,877 bytes  | ✅ Ready |
 
 **Total WASM Size:** 60,184 bytes (~59 KB)
 
@@ -92,6 +92,7 @@ cd /home/ubuntu/blend-pools/backend
 ```
 
 This script will:
+
 - Deploy all 5 strategies automatically
 - Log results with timestamps
 - Extract contract IDs when deployment succeeds

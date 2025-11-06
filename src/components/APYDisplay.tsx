@@ -1,9 +1,9 @@
-import React from 'react';
+import React from "react";
 
 interface APYDisplayProps {
   apy: number;
   showUnit?: boolean;
-  size?: 'small' | 'medium' | 'large';
+  size?: "small" | "medium" | "large";
 }
 
 /**
@@ -17,13 +17,13 @@ interface APYDisplayProps {
 export const APYDisplay: React.FC<APYDisplayProps> = ({
   apy,
   showUnit = true,
-  size = 'medium'
+  size = "medium",
 }) => {
   // Determine semantic color class
   const getAPYClass = (value: number) => {
-    if (value > 10) return 'high';
-    if (value >= 5) return 'medium';
-    return 'low';
+    if (value > 10) return "high";
+    if (value >= 5) return "medium";
+    return "low";
   };
 
   const apyClass = getAPYClass(apy);
@@ -31,27 +31,30 @@ export const APYDisplay: React.FC<APYDisplayProps> = ({
   // Size mapping
   const sizeStyles = {
     small: {
-      number: { fontSize: '16px' },
-      unit: { fontSize: '10px' }
+      number: { fontSize: "16px" },
+      unit: { fontSize: "10px" },
     },
     medium: {
-      number: { fontSize: '24px' },
-      unit: { fontSize: '12px' }
+      number: { fontSize: "24px" },
+      unit: { fontSize: "12px" },
     },
     large: {
-      number: { fontSize: '32px' },
-      unit: { fontSize: '14px' }
-    }
+      number: { fontSize: "32px" },
+      unit: { fontSize: "14px" },
+    },
   };
 
   return (
-    <div className="apy-display" style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+    <div
+      className="apy-display"
+      style={{ display: "flex", alignItems: "baseline", gap: "4px" }}
+    >
       <span
         className={`apy-value ${apyClass}`}
         style={{
-          fontFamily: 'var(--font-primary-serif)',
-          fontWeight: 'bold',
-          ...sizeStyles[size].number
+          fontFamily: "var(--font-primary-serif)",
+          fontWeight: "bold",
+          ...sizeStyles[size].number,
         }}
       >
         {apy.toFixed(2)}
@@ -60,11 +63,11 @@ export const APYDisplay: React.FC<APYDisplayProps> = ({
         <span
           className="apy-unit"
           style={{
-            fontFamily: 'var(--font-tertiary-mono)',
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            ...sizeStyles[size].unit
+            fontFamily: "var(--font-tertiary-mono)",
+            fontWeight: "bold",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            ...sizeStyles[size].unit,
           }}
         >
           % APY

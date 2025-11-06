@@ -1,5 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import api from '../lib/api';
+import React, {
+  createContext,
+  use,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import api from "../lib/api";
 
 interface AgentAccount {
   address: string;
@@ -10,7 +16,7 @@ interface AgentAccount {
 }
 
 interface AgentContextType {
-  status: 'active' | 'idle' | 'error';
+  status: "active" | "idle" | "error";
   accounts: AgentAccount[]; // Read-only
   activeAccount: string; // Read-only
   isLoading: boolean;
@@ -18,14 +24,14 @@ interface AgentContextType {
 }
 
 const AgentContext = createContext<AgentContextType>({
-  status: 'idle',
+  status: "idle",
   accounts: [],
-  activeAccount: '',
+  activeAccount: "",
   isLoading: false,
   error: null,
 });
 
-export const useAgent = () => useContext(AgentContext);
+export const useAgent = () => use(AgentContext);
 
 interface AgentProviderProps {
   children: ReactNode;
@@ -33,8 +39,8 @@ interface AgentProviderProps {
 
 export const AgentProvider: React.FC<AgentProviderProps> = ({ children }) => {
   const [accounts, setAccounts] = useState<AgentAccount[]>([]);
-  const [activeAccount, setActiveAccount] = useState<string>('');
-  const [status, setStatus] = useState<'active' | 'idle' | 'error'>('idle');
+  const [activeAccount, setActiveAccount] = useState<string>("");
+  const [status, setStatus] = useState<"active" | "idle" | "error">("idle");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,35 +56,39 @@ export const AgentProvider: React.FC<AgentProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
 
-      const response = await api.get('/api/agent/accounts');
+      const response = await api.get("/api/agent/accounts");
       if (response.data) {
         setAccounts(response.data);
         if (response.data.length > 0 && !activeAccount) {
           setActiveAccount(response.data[0].address);
         }
-        setStatus('active');
+        setStatus("active");
       } else {
-        setStatus('idle');
+        setStatus("idle");
       }
       setError(null);
     } catch (err) {
-      console.error('Failed to load agent accounts:', err);
-      setStatus('error');
-      setError(err instanceof Error ? err.message : 'Failed to load agent accounts');
+      console.error("Failed to load agent accounts:", err);
+      setStatus("error");
+      setError(
+        err instanceof Error ? err.message : "Failed to load agent accounts",
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <AgentContext.Provider value={{
-      status,
-      accounts, // Read-only
-      activeAccount, // Read-only
-      isLoading,
-      error
-    }}>
+    <AgentContext
+      value={{
+        status,
+        accounts, // Read-only
+        activeAccount, // Read-only
+        isLoading,
+        error,
+      }}
+    >
       {children}
-    </AgentContext.Provider>
+    </AgentContext>
   );
 };

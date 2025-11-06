@@ -43,7 +43,14 @@ export const ReserveRow: React.FC<ReserveRowProps> = ({ reserve }) => {
       }}
     >
       {/* Asset Symbol */}
-      <div style={{ fontWeight: "600", display: "flex", alignItems: "center", gap: "8px" }}>
+      <div
+        style={{
+          fontWeight: "600",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+        }}
+      >
         <div
           style={{
             width: "32px",
@@ -62,7 +69,9 @@ export const ReserveRow: React.FC<ReserveRowProps> = ({ reserve }) => {
         </div>
         <div>
           <div>{token.symbol}</div>
-          <div style={{ fontSize: "11px", color: "#666", fontWeight: "normal" }}>
+          <div
+            style={{ fontSize: "11px", color: "#666", fontWeight: "normal" }}
+          >
             {token.name}
           </div>
         </div>
@@ -77,7 +86,9 @@ export const ReserveRow: React.FC<ReserveRowProps> = ({ reserve }) => {
         >
           {formatApy(reserve.estSupplyApy)}
         </Text>
-        <div style={{ fontSize: "11px", color: "#888", marginTop: "2px" }}>Supply</div>
+        <div style={{ fontSize: "11px", color: "#888", marginTop: "2px" }}>
+          Supply
+        </div>
       </div>
 
       {/* Borrow APY */}
@@ -89,7 +100,9 @@ export const ReserveRow: React.FC<ReserveRowProps> = ({ reserve }) => {
         >
           {formatApy(reserve.estBorrowApy)}
         </Text>
-        <div style={{ fontSize: "11px", color: "#888", marginTop: "2px" }}>Borrow</div>
+        <div style={{ fontSize: "11px", color: "#888", marginTop: "2px" }}>
+          Borrow
+        </div>
       </div>
 
       {/* Utilization Bar */}
@@ -132,7 +145,9 @@ export const ReserveRow: React.FC<ReserveRowProps> = ({ reserve }) => {
         <div style={{ fontWeight: "600", fontSize: "14px" }}>
           {formatTokenAmount(reserve.availableLiquidity, token.decimals, 2)}
         </div>
-        <div style={{ fontSize: "11px", color: "#888", marginTop: "2px" }}>Available</div>
+        <div style={{ fontSize: "11px", color: "#888", marginTop: "2px" }}>
+          Available
+        </div>
       </div>
     </div>
   );

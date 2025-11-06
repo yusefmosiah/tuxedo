@@ -11,17 +11,20 @@ The real issue is **not** that we need sync operations - it's that our tool exec
 ## Architectural Best Practices
 
 ### 1. **Keep Async Operations** ✅
+
 - Soroban operations should remain async
 - Network calls should be non-blocking
 - All tool execution should be async-native
 - FastAPI applications should be fully async to prevent blocking
 
 ### 2. **Fix the Real Problem: Tool Execution Logic**
+
 The issue is in `agent/core.py` lines 274-277. Instead of accessing `tool.func` directly, we should use LangChain's proper invocation methods.
 
 ### 3. **Proper Async Tool Invocation Pattern**
 
 From the LangChain documentation, the correct pattern is:
+
 ```python
 # For async tools - use ainvoke
 result = await tool.ainvoke(tool_args)
@@ -33,12 +36,14 @@ result = tool.invoke(tool_args)
 ## Current State Analysis
 
 ### What Works Now
+
 - ✅ `discover_high_yield_vaults` tool executes successfully
 - ✅ Returns real vault data with APYs and TVL
 - ✅ Integrates with SSE streaming system
 - ✅ No functional errors
 
 ### What's Architecturally Wrong
+
 - ❌ Uses sync `SorobanServer` instead of async `SorobanServerAsync`
 - ❌ Blocks the event loop during network calls
 - ❌ Goes against FastAPI async best practices
@@ -47,23 +52,27 @@ result = tool.invoke(tool_args)
 ## Implementation Plan
 
 ### Phase 1: Restore Async Foundation
+
 1. **Revert `defindex_soroban.py`** to use async `create_soroban_client_with_ssl`
 2. **Import async dependencies** properly
 3. **Update class initialization** to handle async clients
 
 ### Phase 2: Fix Tool Execution Logic
+
 1. **Update `agent/core.py`** tool execution logic
 2. **Prioritize `tool.ainvoke()`** for async tools
 3. **Fallback to `tool.invoke()`** for sync tools
 4. **Remove direct `.func` access** pattern
 
 ### Phase 3: Ensure Proper Async Tool Design
+
 1. **Verify all DeFindex tools** are properly async
 2. **Update tool functions** to use async/await
 3. **Handle async context managers** correctly
 4. **Test async tool execution**
 
 ### Phase 4: Testing & Validation
+
 1. **Test same query**: "Call the discover_high_yield_vaults tool with min_apy parameter set to 30"
 2. **Verify functionality** remains identical
 3. **Check performance** under load
@@ -72,6 +81,7 @@ result = tool.invoke(tool_args)
 ## Technical Implementation Details
 
 ### Step 1: Restore Async Soroban Client
+
 ```python
 # defindex_soroban.py
 from stellar_ssl import create_soroban_client_with_ssl
@@ -85,6 +95,7 @@ class DeFindexSoroban:
 ```
 
 ### Step 2: Fix Tool Execution Logic
+
 ```python
 # agent/core.py
 if hasattr(tool_func, 'ainvoke') and callable(tool_func.ainvoke):
@@ -102,6 +113,7 @@ elif hasattr(tool_func, 'func') and tool_func.func is not None:
 ```
 
 ### Step 3: Update Tool Functions
+
 ```python
 # defindex_tools.py
 @tool
@@ -122,11 +134,13 @@ async def discover_high_yield_vaults(min_apy: Optional[float] = 30.0) -> str:
 ## Risk Mitigation
 
 ### Low Risk
+
 - Changes are well-understood async patterns
 - LangChain has robust async support
 - Current functionality is preserved
 
 ### Rollback Plan
+
 - If issues arise, revert to current sync implementation
 - Current sync version works as a safety net
 - No breaking changes to external APIs

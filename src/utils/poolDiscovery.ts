@@ -15,7 +15,7 @@ import { network } from "../contracts/util";
 const blendNetwork = {
   rpc: network.rpcUrl,
   passphrase: network.passphrase,
-  networkPassphrase: network.passphrase
+  networkPassphrase: network.passphrase,
 };
 
 interface PoolDiscoveryResult {
@@ -45,10 +45,16 @@ interface PoolTokenReport {
 export async function discoverPoolsViaBackstop(): Promise<string[]> {
   try {
     console.log("🔍 [Strategy 1] Loading pools from Backstop reward zone...");
-    const backstop = await Backstop.load(blendNetwork, BLEND_CONTRACTS.backstop);
+    const backstop = await Backstop.load(
+      blendNetwork,
+      BLEND_CONTRACTS.backstop,
+    );
 
     const pools = backstop.config.rewardZone;
-    console.log(`  ✅ Found ${pools.length} pool(s) in Backstop reward zone:`, pools);
+    console.log(
+      `  ✅ Found ${pools.length} pool(s) in Backstop reward zone:`,
+      pools,
+    );
 
     return pools;
   } catch (err) {
@@ -65,7 +71,9 @@ export async function discoverPoolsViaBackstop(): Promise<string[]> {
  * Can be re-enabled once Stellar RPC event querying is fully tested
  */
 export async function discoverPoolsViaFactory(): Promise<string[]> {
-  console.log("🔍 [Strategy 2] Pool Factory event discovery disabled (use Backstop + known pools)");
+  console.log(
+    "🔍 [Strategy 2] Pool Factory event discovery disabled (use Backstop + known pools)",
+  );
   // TODO: Re-implement once event handling is stable
   return [];
 }
@@ -160,14 +168,14 @@ export async function generatePoolTokenReport(): Promise<PoolTokenReport[]> {
       console.log(`\n📦 Loading tokens for pool: ${poolAddress}`);
 
       const pool = await PoolV2.load(blendNetwork, poolAddress);
-      const tokens = Array.from(pool.reserves.keys()).map(assetId => ({
+      const tokens = Array.from(pool.reserves.keys()).map((assetId) => ({
         address: assetId,
         symbol: assetId.slice(0, 8),
         decimals: 7,
       }));
 
       console.log(`  ✅ Found ${tokens.length} tokens:`);
-      tokens.forEach(token => {
+      tokens.forEach((token) => {
         console.log(`    💰 ${token.address}`);
       });
 
@@ -186,8 +194,8 @@ export async function generatePoolTokenReport(): Promise<PoolTokenReport[]> {
 
   // Collect all unique tokens
   const allTokensSet = new Set<string>();
-  reports.forEach(report => {
-    report.tokens.forEach(token => {
+  reports.forEach((report) => {
+    report.tokens.forEach((token) => {
       allTokensSet.add(token.address);
     });
   });
@@ -208,18 +216,20 @@ export async function logPoolStats(): Promise<void> {
   const discovery = await discoverAllPools();
   const reports = await generatePoolTokenReport();
 
-  console.log("\n\n═══════════════════════════════════════════════════════════");
+  console.log(
+    "\n\n═══════════════════════════════════════════════════════════",
+  );
   console.log("📊 COMPREHENSIVE BLEND POOLS ANALYSIS");
   console.log("═══════════════════════════════════════════════════════════\n");
 
   console.log("🏊 POOLS:");
   discovery.allPoolsUnique.forEach((pool, i) => {
-    const report = reports.find(r => r.poolAddress === pool);
+    const report = reports.find((r) => r.poolAddress === pool);
     console.log(`  ${i + 1}. ${pool}`);
     console.log(`     Name: ${report?.poolName || "Unknown"}`);
     console.log(`     Tokens: ${report?.tokenCount || 0}`);
     if (report?.tokens) {
-      report.tokens.forEach(token => {
+      report.tokens.forEach((token) => {
         console.log(`       - ${token.address}`);
       });
     }
@@ -227,8 +237,8 @@ export async function logPoolStats(): Promise<void> {
 
   console.log("\n💰 TOKENS (All unique tokens across all pools):");
   const allTokens = new Set<string>();
-  reports.forEach(report => {
-    report.tokens.forEach(token => {
+  reports.forEach((report) => {
+    report.tokens.forEach((token) => {
       allTokens.add(token.address);
     });
   });
@@ -238,6 +248,8 @@ export async function logPoolStats(): Promise<void> {
     console.log(`  ${i + 1}. ${token}`);
   });
 
-  console.log(`\n✅ Total: ${discovery.allPoolsUnique.length} pools, ${tokenArray.length} unique tokens`);
+  console.log(
+    `\n✅ Total: ${discovery.allPoolsUnique.length} pools, ${tokenArray.length} unique tokens`,
+  );
   console.log("═══════════════════════════════════════════════════════════\n");
 }

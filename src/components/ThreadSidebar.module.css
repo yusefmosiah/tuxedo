@@ -26,7 +26,7 @@
 
 .sidebar.open {
   transform: translateX(0);
-  box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Desktop styles */
@@ -44,7 +44,7 @@
   .sidebar.open {
     /* Show sidebar when isOpen prop is true */
     transform: translateX(0);
-    box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
   }
 }
 

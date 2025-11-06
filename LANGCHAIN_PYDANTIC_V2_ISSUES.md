@@ -7,6 +7,7 @@ The agent-first architecture implementation is failing due to Pydantic v2 JSON s
 ## Error Details
 
 ### Primary Error
+
 ```
 Cannot generate a JsonSchema for core_schema.IsInstanceSchema (<class 'key_manager.KeyManager'>)
 
@@ -14,6 +15,7 @@ For further information visit https://errors.pydantic.dev/2.12/u/invalid-for-jso
 ```
 
 ### Secondary Error
+
 ```
 Arg key_manager in docstring not found in function signature.
 ```
@@ -21,6 +23,7 @@ Arg key_manager in docstring not found in function signature.
 ## Root Cause Analysis
 
 ### 1. Custom Class Type Annotations
+
 The Stellar tools use `KeyManager` as a parameter type in function signatures:
 
 ```python
@@ -35,6 +38,7 @@ def account_manager(
 LangChain's `convert_to_openai_function` uses Pydantic to generate JSON schemas from function signatures. Pydantic v2 cannot serialize custom classes like `KeyManager` that are not Pydantic models.
 
 ### 2. Docstring Parameter Mismatch
+
 The function docstrings have parameter descriptions that don't match the actual function signature order, causing validation errors:
 
 ```python
@@ -50,6 +54,7 @@ Args:
 ```
 
 ### 3. LangChain Architecture Pattern
+
 The current system attempts to directly import and use existing Stellar functions as LangChain tools:
 
 ```python
@@ -59,6 +64,7 @@ agent_tools.extend([account_manager, trading, trustline_manager, market_data, ut
 ```
 
 This approach works for simple functions but fails when:
+
 - Functions have custom class type annotations
 - Functions have complex parameter dependencies
 - Docstrings don't perfectly match signatures
@@ -66,6 +72,7 @@ This approach works for simple functions but fails when:
 ## Current Status
 
 ### Working Components
+
 - ✅ Agent-first frontend architecture (ChatInterface, Dashboard, AgentProvider)
 - ✅ Backend agent initialization and LLM setup
 - ✅ Agent account management tools (properly wrapped with @tool decorator)
@@ -74,6 +81,7 @@ This approach works for simple functions but fails when:
 - ✅ 25 pre-existing agent accounts available
 
 ### Failing Components
+
 - ❌ Stellar tools (account_manager, trading, trustline_manager, market_data, utilities)
 - ❌ Soroban operations tool
 - ❌ Chat endpoint functionality due to tool loading failure
@@ -81,12 +89,14 @@ This approach works for simple functions but fails when:
 ## Files Affected
 
 ### Backend Files
+
 - `backend/stellar_tools.py` - Contains 5 composite tools with KeyManager dependencies
 - `backend/stellar_soroban.py` - Soroban operations tool with KeyManager dependency
 - `backend/agent/core.py` - Tool loading and conversion logic
 - `backend/key_manager.py` - Custom class causing schema generation issues
 
 ### attempted Fixes Applied
+
 1. **Removed KeyManager type annotations** - Fixed primary error but revealed secondary docstring mismatch error
 2. **Fixed docstring parameter order** - Still encountering validation issues
 3. **Syntax corrections** - Fixed indentation errors during editing
@@ -94,12 +104,14 @@ This approach works for simple functions but fails when:
 ## Architectural Considerations
 
 ### Current Architecture Issues
+
 1. **Tight Coupling**: Stellar tools are tightly coupled to KeyManager class
 2. **Mixed Responsibilities**: Tools handle both business logic and key management
 3. **Schema Generation Complexity**: Complex function signatures with custom types
 4. **Documentation Mismatch**: Docstrings not aligned with actual function signatures
 
 ### Design Principles to Consider
+
 1. **Single Responsibility**: Tools should focus on their specific domain
 2. **Dependency Injection**: Dependencies should be injected, not passed as parameters
 3. **Schema-First Design**: Function signatures should be schema-compatible from the start
@@ -108,6 +120,7 @@ This approach works for simple functions but fails when:
 ## Potential Solutions (Research Needed)
 
 ### Option 1: Proper LangChain Tool Wrappers
+
 Create dedicated @tool decorated wrappers that handle KeyManager internally:
 
 ```python
@@ -123,6 +136,7 @@ def stellar_account_manager(action: str, account_id: Optional[str] = None, ...) 
 **Cons**: Code duplication, maintenance overhead
 
 ### Option 2: Refactor Stellar Functions
+
 Make KeyManager a global singleton or inject it differently:
 
 ```python
@@ -137,6 +151,7 @@ def account_manager(action: str, horizon: Server, ...):  # No key_manager parame
 **Cons**: Global state, testing complexity
 
 ### Option 3: Pydantic Model Integration
+
 Convert KeyManager to a proper Pydantic model or create Pydantic schemas for tool parameters:
 
 ```python
@@ -150,6 +165,7 @@ class ToolParameters(BaseModel):
 **Cons**: Major refactoring effort
 
 ### Option 4: Alternative LangChain Patterns
+
 Research if LangChain has other patterns for handling complex dependencies or if there are better ways to integrate existing functions.
 
 ## Next Steps
@@ -162,6 +178,7 @@ Research if LangChain has other patterns for handling complex dependencies or if
 ## Technical Debt
 
 This issue reveals underlying technical debt in the Stellar tools layer:
+
 - Functions were designed for direct use, not for AI agent integration
 - Key management is mixed with business logic
 - Lack of schema-first design consideration
@@ -171,13 +188,16 @@ Addressing this properly will improve maintainability and enable better AI agent
 ## Impact Assessment
 
 ### High Priority
+
 - Chat functionality completely broken
 - Agent cannot access Stellar blockchain features
 - Core value proposition of AI agent + Stellar integration unavailable
 
 ### Medium Priority
+
 - Frontend agent-first architecture complete but unusable
 - Agent account management works but limited without Stellar tools
 
 ### Low Priority
+
 - Non-Stellar features (DeFindex, agent account creation) still functional

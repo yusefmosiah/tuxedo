@@ -11,6 +11,7 @@ Transform Tuxedo from a wallet-dependent DeFi interface into a truly autonomous 
 ### Current Frontend Structure (49 components)
 
 #### ✅ **Keep & Enhance**
+
 - `ChatInterface.tsx` - Core AI conversation interface (NEEDS MODIFICATIONS)
 - `Home.tsx` - Simple chat container
 - `PoolsDashboard.tsx` - Display agent positions (NEEDS REFACTOR)
@@ -18,6 +19,7 @@ Transform Tuxedo from a wallet-dependent DeFi interface into a truly autonomous 
 - API client (`lib/api.ts`) - Backend communication
 
 #### ❌ **Remove Entirely**
+
 - `AgentConnectAccount.tsx` - Manual account creation
 - `ConnectAccount.tsx` - Wallet connection
 - `WalletButton.tsx` - Wallet management
@@ -28,12 +30,14 @@ Transform Tuxedo from a wallet-dependent DeFi interface into a truly autonomous 
 - `useWalletBalance.ts` - Wallet balance checking
 
 #### 🔧 **Refactor to Agent-First**
+
 - `Dashboard.tsx` - Show agent status, not user wallet
 - `AgentProvider.tsx` - Simplify to status-only provider
 - `useBlendPools.ts` - Agent positions, not user positions
 - `useAutoDeposit.ts` - Agent-managed deposits
 
 #### 🗂️ **Debug Components (Optional)**
+
 - All `/debug/` components - Keep for development
 - Remove from production build
 
@@ -56,12 +60,14 @@ User opens Tuxedo → AI Agent ready → User: "Earn yield on XLM"
 ```
 
 ### Frontend Responsibilities
+
 1. **Natural Language Interface** - Chat with AI agent
 2. **Agent Status Display** - Show what agent is doing
 3. **Results Presentation** - Display balances, positions, transactions
 4. **Agent Management** - Reset, view accounts (optional)
 
 ### Backend Responsibilities
+
 1. **Account Management** - Create/fund agent accounts automatically
 2. **Transaction Execution** - Sign and submit with agent keys
 3. **AI Decision Making** - LLM-powered DeFi strategies
@@ -74,24 +80,28 @@ User opens Tuxedo → AI Agent ready → User: "Earn yield on XLM"
 ### Phase 1: Remove Wallet Dependencies (High Priority)
 
 #### [ ] Remove Manual Account Creation
+
 - [ ] Delete `AgentConnectAccount.tsx`
 - [ ] Remove "Create Agent Account" buttons
 - [ ] Remove account creation UI elements
 - [ ] Update `AgentProvider.tsx` to remove `createAccount` method
 
 #### [ ] Remove Wallet Connection Components
+
 - [ ] Delete `ConnectAccount.tsx`
 - [ ] Delete `WalletButton.tsx`
 - [ ] Delete `FundAccountButton.tsx`
 - [ ] Remove wallet connection states from UI
 
 #### [ ] Remove Transaction Signing Components
+
 - [ ] Delete `AutoTransactionCard.tsx`
 - [ ] Delete `TransactionCard.tsx`
 - [ ] Remove all `signTransaction` calls
 - [ ] Remove wallet signing flows
 
 #### [ ] Remove Wallet Hooks
+
 - [ ] Delete `useWallet.ts` (already legacy)
 - [ ] Delete `useWalletBalance.ts`
 - [ ] Remove wallet imports from components
@@ -99,24 +109,28 @@ User opens Tuxedo → AI Agent ready → User: "Earn yield on XLM"
 ### Phase 2: Refactor to Agent-First Architecture
 
 #### [ ] Update Agent Provider
+
 - [ ] Simplify `AgentProvider.tsx` to status-only
 - [ ] Remove `createAccount` method
 - [ ] Add `getAgentStatus` method
 - [ ] Focus on displaying agent activity, not controlling
 
 #### [ ] Refactor Dashboard
+
 - [ ] Update `Dashboard.tsx` to show agent status
 - [ ] Replace wallet metrics with agent metrics
 - [ ] Show agent account balances
 - [ ] Display agent positions/activities
 
 #### [ ] Update Chat Interface
+
 - [ ] Remove wallet address passing
 - [ ] Remove transaction parsing for client signing
 - [ ] Focus on pure conversational interface
 - [ ] Add agent status indicators
 
 #### [ ] Update Data Hooks
+
 - [ ] Refactor `useBlendPools.ts` for agent positions
 - [ ] Remove `useAutoDeposit.ts` (automatic now)
 - [ ] Create `useAgentStatus.ts` hook
@@ -124,18 +138,21 @@ User opens Tuxedo → AI Agent ready → User: "Earn yield on XLM"
 ### Phase 3: Simplify Frontend Experience
 
 #### [ ] Update Navigation/Structure
+
 - [ ] Simplify `App.tsx` routes
 - [ ] Remove wallet-related navigation
 - [ ] Focus on Chat and Status pages
 - [ ] Remove unnecessary pages
 
 #### [ ] Create Agent Status Components
+
 - [ ] `AgentStatus.tsx` - Display current agent state
 - [ ] `AgentAccounts.tsx` - Show agent account info
 - [ ] `AgentActivity.tsx` - Display recent agent actions
 - [ ] `AgentMetrics.tsx` - Performance/earnings display
 
 #### [ ] Update API Integration
+
 - [ ] Remove wallet address from all API calls
 - [ ] Update error handling for agent operations
 - [ ] Add agent status polling
@@ -144,23 +161,27 @@ User opens Tuxedo → AI Agent ready → User: "Earn yield on XLM"
 ### Phase 4: Testing & Polish
 
 #### [ ] Update Environment Configuration
+
 - [ ] Set correct backend URLs for deployment
 - [ ] Remove wallet environment variables
 - [ ] Add agent status endpoints
 
 #### [ ] Fix TypeScript Errors
+
 - [ ] Remove unused imports (Design System, etc.)
 - [ ] Fix component interfaces
 - [ ] Update type definitions
 - [ ] Ensure clean build
 
 #### [ ] Integration Testing
+
 - [ ] Test agent account creation (automatic)
 - [ ] Test agent operations via chat
 - [ ] Test status display updates
 - [ ] Test error handling
 
 #### [ ] Deployment Testing
+
 - [ ] Test frontend-backend connection
 - [ ] Test CORS configuration
 - [ ] Test environment variables
@@ -171,6 +192,7 @@ User opens Tuxedo → AI Agent ready → User: "Earn yield on XLM"
 ## 🎯 Specific Component Changes
 
 ### `src/components/ChatInterface.tsx`
+
 ```typescript
 // BEFORE
 const agent = useAgent(); // Has createAccount, activeAccount
@@ -183,6 +205,7 @@ const agent = useAgent(); // Only status, no control
 ```
 
 ### `src/components/Dashboard.tsx`
+
 ```typescript
 // BEFORE
 <Heading>📊 DeFindex Dashboard</Heading>
@@ -197,6 +220,7 @@ const agent = useAgent(); // Only status, no control
 ```
 
 ### `src/providers/AgentProvider.tsx`
+
 ```typescript
 // BEFORE
 interface AgentContextType {
@@ -207,7 +231,7 @@ interface AgentContextType {
 
 // AFTER
 interface AgentContextType {
-  status: 'active' | 'idle' | 'error';
+  status: "active" | "idle" | "error";
   accounts: AgentAccount[]; // Read-only
   recentActivity: Activity[];
   // No control methods, just status
@@ -263,18 +287,21 @@ src/
 ## 🎉 Expected Outcomes
 
 ### User Experience
+
 - **Simplified Interface** - Just chat with AI, no complex UI
 - **Autonomous Operations** - Agent handles everything automatically
 - **Real-time Feedback** - See what agent is doing instantly
 - **No Learning Curve** - Natural language interaction
 
 ### Technical Benefits
+
 - **Reduced Complexity** - No wallet integration, no key management
 - **Better Security** - Keys never touch frontend
 - **Cleaner Architecture** - Clear separation of concerns
 - **Easier Maintenance** - Simpler codebase, fewer dependencies
 
 ### Business Impact
+
 - **Competitive Advantage** - True AI agent autonomy
 - **Better User Adoption** - No wallet setup required
 - **Scalable Architecture** - Easy to add new agent capabilities

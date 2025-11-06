@@ -17,6 +17,7 @@ Implemented Phase 1 of Passkey Architecture v2, replacing magic link authenticat
 ### ✅ Backend (Complete)
 
 #### 1. New Database (`backend/database_passkeys.py`)
+
 - **File:** `backend/database_passkeys.py`
 - **Database:** `tuxedo_passkeys.db` (new database, no migration)
 - **Tables:**
@@ -31,6 +32,7 @@ Implemented Phase 1 of Passkey Architecture v2, replacing magic link authenticat
   - `messages` - Chat messages
 
 #### 2. Email Service (`backend/services/email.py`)
+
 - **SendGrid Integration** for transactional emails
 - **5 Email Templates:**
   1. Welcome email with recovery codes
@@ -40,6 +42,7 @@ Implemented Phase 1 of Passkey Architecture v2, replacing magic link authenticat
   5. New passkey added alert
 
 #### 3. Passkey Authentication Routes (`backend/api/routes/passkey_auth.py`)
+
 - **Registration:**
   - `POST /auth/passkey/register/start` - Start registration
   - `POST /auth/passkey/register/verify` - Complete registration
@@ -65,16 +68,19 @@ Implemented Phase 1 of Passkey Architecture v2, replacing magic link authenticat
   - `DELETE /auth/passkey/credentials/:id` - Remove passkey
 
 #### 4. App Integration (`backend/app.py`)
+
 - Registered `passkey_auth_router` instead of old `auth_router`
 - Updated imports to use new passkey routes
 - Removed magic link routes
 
 #### 5. Thread Routes Update (`backend/api/routes/threads.py`)
+
 - Updated to use `database_passkeys` instead of `database`
 - Changed `db.validate_user_session()` to `db.validate_session()`
 - Updated method calls to match new database API
 
 #### 6. Dependencies (`backend/pyproject.toml`)
+
 - Added `webauthn>=2.0.0` for WebAuthn support
 - ✅ Installed successfully
 
@@ -83,6 +89,7 @@ Implemented Phase 1 of Passkey Architecture v2, replacing magic link authenticat
 ### ✅ Frontend (Partial Complete)
 
 #### 1. Passkey Auth Service (`src/services/passkeyAuth.ts`)
+
 - **Complete WebAuthn Implementation:**
   - `isSupported()` - Check browser support
   - `register(email)` - Register with passkey
@@ -101,6 +108,7 @@ Implemented Phase 1 of Passkey Architecture v2, replacing magic link authenticat
   - `credentialToJSON()` - Serialize WebAuthn credentials
 
 #### 2. Auth Context (`src/contexts/AuthContext_passkey.tsx`)
+
 - **Created New File:** `AuthContext_passkey.tsx` (ready to replace `AuthContext.tsx`)
 - **Methods:**
   - `register(email)` - Register new user
@@ -119,6 +127,7 @@ Implemented Phase 1 of Passkey Architecture v2, replacing magic link authenticat
 ### Frontend Tasks
 
 1. **Replace AuthContext:**
+
    ```bash
    mv src/contexts/AuthContext.tsx src/contexts/AuthContext_old.tsx
    mv src/contexts/AuthContext_passkey.tsx src/contexts/AuthContext.tsx
@@ -163,24 +172,28 @@ Implemented Phase 1 of Passkey Architecture v2, replacing magic link authenticat
 ## Architecture Decisions
 
 ### Why New Database?
+
 - **Clean slate** for passkey architecture
 - **No migration complexity** during R&D phase
 - **Easier to iterate** on schema design
 - Can migrate data later if needed
 
 ### Why Email-Based Flow?
+
 - **Better UX** - Users remember emails, not usernames
 - **Wider compatibility** - Works with all authenticators
 - **Future-proof** - Can add usernameless later
 - **Simpler implementation** - No resident key requirements
 
 ### Why Recovery Codes?
+
 - **Account recovery** if passkey lost
 - **Rate limiting** prevents brute force
 - **Single-use** for security
 - **Email alerts** for suspicious activity
 
 ### Security Features
+
 - **Sliding session expiration** (24h idle, 7d absolute)
 - **Rate limiting** on recovery codes (5 attempts/hour)
 - **SHA-256 hashed** recovery codes
@@ -216,10 +229,12 @@ src/
 ## Dependencies Installed
 
 ### Backend
+
 - `webauthn>=2.0.0` - WebAuthn server library
 - Already has: `sendgrid>=6.12.5`, `email-validator>=2.3.0`
 
 ### Frontend
+
 - No new dependencies needed (WebAuthn is browser native)
 
 ---
@@ -246,6 +261,7 @@ src/
 ## Configuration Required
 
 ### Backend `.env`
+
 ```bash
 # Database
 # (uses default: tuxedo_passkeys.db)
@@ -265,6 +281,7 @@ ORIGIN=http://localhost:5173
 ```
 
 ### Frontend `.env.local`
+
 ```bash
 VITE_API_URL=http://localhost:8000
 ```
@@ -274,6 +291,7 @@ VITE_API_URL=http://localhost:8000
 ## Production Readiness
 
 ### ✅ Ready
+
 - Database schema
 - Backend authentication routes
 - Email service
@@ -283,6 +301,7 @@ VITE_API_URL=http://localhost:8000
 - WebAuthn client service
 
 ### ⚠️ Needs Work
+
 - Frontend UI components
 - Email recovery flow testing
 - Add passkey functionality
@@ -292,6 +311,7 @@ VITE_API_URL=http://localhost:8000
 - Accessibility
 
 ### 📝 For Later (Phase 2)
+
 - Multi-agent system
 - Stellar key integration
 - Sidebar UI

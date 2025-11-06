@@ -7,14 +7,14 @@
  */
 export interface ReserveConfig {
   decimals: number;
-  c_factor: number;  // Collateral factor
-  l_factor: number;  // Liability factor
-  util: number;      // Target utilization
-  max_util: number;  // Maximum utilization
-  r_base: number;    // Base rate
-  r_one: number;     // Rate at target utilization
-  r_two: number;     // Rate at max utilization
-  r_three: number;   // Rate above max utilization
+  c_factor: number; // Collateral factor
+  l_factor: number; // Liability factor
+  util: number; // Target utilization
+  max_util: number; // Maximum utilization
+  r_base: number; // Base rate
+  r_one: number; // Rate at target utilization
+  r_two: number; // Rate at max utilization
+  r_three: number; // Rate above max utilization
   reactivity: number;
   index: number;
 }
@@ -23,11 +23,11 @@ export interface ReserveConfig {
  * Reserve data (balances and rates)
  */
 export interface ReserveData {
-  b_rate: bigint;    // Supply rate
-  d_rate: bigint;    // Borrow rate
-  b_supply: bigint;  // Total supplied (scaled)
-  d_supply: bigint;  // Total borrowed (scaled)
-  ir_mod: number;    // Interest rate modifier
+  b_rate: bigint; // Supply rate
+  d_rate: bigint; // Borrow rate
+  b_supply: bigint; // Total supplied (scaled)
+  d_supply: bigint; // Total borrowed (scaled)
+  ir_mod: number; // Interest rate modifier
   last_time: bigint; // Last update timestamp
   backstop_credit: bigint;
 }
@@ -37,7 +37,7 @@ export interface ReserveData {
  */
 export interface EmissionsData {
   expiration: bigint;
-  eps: bigint;  // Emissions per second
+  eps: bigint; // Emissions per second
 }
 
 /**
@@ -58,10 +58,10 @@ export interface PoolReserve {
   estSupplyApy: number;
 
   // Calculated values
-  totalSupplied: bigint;     // Actual amount supplied
-  totalBorrowed: bigint;     // Actual amount borrowed
+  totalSupplied: bigint; // Actual amount supplied
+  totalBorrowed: bigint; // Actual amount borrowed
   availableLiquidity: bigint;
-  utilization: number;       // 0-1 float
+  utilization: number; // 0-1 float
 
   // Optional emissions
   borrowEmissions?: EmissionsData;
@@ -80,15 +80,15 @@ export interface PoolMetadata {
  * Complete pool information
  */
 export interface BlendPoolData {
-  id: string;                     // Pool contract address
-  name?: string;                  // Pool name (if available)
+  id: string; // Pool contract address
+  name?: string; // Pool name (if available)
   metadata?: PoolMetadata;
-  reserves: PoolReserve[];        // All reserves in the pool
-  timestamp: number;              // Last update time
+  reserves: PoolReserve[]; // All reserves in the pool
+  timestamp: number; // Last update time
 
   // Aggregate stats
-  totalReserves: number;          // Number of different assets
-  status: 'active' | 'paused' | 'unknown';
+  totalReserves: number; // Number of different assets
+  status: "active" | "paused" | "unknown";
 }
 
 /**

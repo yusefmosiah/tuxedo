@@ -33,7 +33,9 @@ The DeFindex API integration is **working correctly from a technical standpoint*
 **The primary issue is that DeFindex vault contracts on Stellar testnet are not properly initialized.**
 
 #### Error Pattern Analysis
+
 All vault queries return this consistent error:
+
 ```json
 {
   "message": "Trying to call a missing value",
@@ -42,32 +44,39 @@ All vault queries return this consistent error:
 ```
 
 **Event logs show:**
+
 - `contract call failed: get_assets`
 - `trying to get non-existing value for contract instance`
 - `MissingValue` storage errors
 
 #### Addresses Tested
+
 All tested vault addresses (both from quick-start guide and hardcoded in the system) return the same error:
 
 **Quick-start guide addresses:**
+
 - XLM: `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` ❌
 - USDC: `CBBHRKEP5M3NUDRISGLJKGHDHX3DA2CN2AZBQY6WLVUJ7VNLGSKBDUCM` ❌
 
 **System hardcoded testnet vaults:**
+
 - XLM_HODL_1: `CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA` ❌
 - XLM_HODL_2: `CCSPRGGUP32M23CTU7RUAGXDNOHSA6O2BS2IK4NVUP5X2JQXKTSIQJKE` ❌
 
 **Mainnet vaults:**
+
 - USDC_Blend_Fixed: `CDB2WMKQQNVZMEBY7Q7GZ5C7E7IAFSNMZ7GGVD6WKTCEWK7XOIAVZSAP` ❌
 - XLM_Blend_Fixed: `CDPWNUW7UMCSVO36VAJSQHQECISPJLCPDASKHRC5SEROAAZDUQ5DG2Z` ❌ (Invalid address format)
 
 ### Current System Status
 
 **Factory Contract:** `CDKFHFJIET3A73A2YN4KV7NSV32S6YGQMUFH3DNJXLBWL4SKEGVRNFKI`
+
 - ✅ **Accessible via API**
 - ❓ **Vault listing endpoints not available** (404 responses)
 
 **API Health:** ✅ **FULLY OPERATIONAL**
+
 - Authentication: ✅ Working
 - Rate limiting: ✅ Implemented (429 responses observed)
 - Error handling: ✅ Proper
@@ -83,7 +92,9 @@ All tested vault addresses (both from quick-start guide and hardcoded in the sys
 ### Alternative Approaches
 
 #### Option 1: Manual XLM Payments (Current Workaround)
+
 The system already includes this fallback in `defindex_tools.py:224-249`:
+
 ```python
 # Manual XLM Payment: Send XLM directly to the vault address
 # Destination: {vault_address}
@@ -92,11 +103,14 @@ The system already includes this fallback in `defindex_tools.py:224-249`:
 ```
 
 #### Option 2: Switch to Mainnet
+
 - **Pros**: Full functionality available
 - **Cons**: Requires real funds, not suitable for testing
 
 #### Option 3: Enhanced Error Messages
+
 The current error handling already provides clear guidance:
+
 ```
 ⚠️ DeFindex API Testnet Limitation Detected
 

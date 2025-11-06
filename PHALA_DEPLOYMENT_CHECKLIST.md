@@ -9,11 +9,13 @@ This checklist provides step-by-step instructions for deploying Tuxedo AI to Pha
 ## Prerequisites
 
 ### ✅ Account Setup
+
 - [ ] Phala Cloud account created with credits available
 - [ ] Phala Cloud API key obtained from dashboard
 - [ ] Docker Hub account (for private images if needed)
 
 ### ✅ Local Development
+
 - [ ] Docker installed locally
 - [ ] Node.js 18+ installed
 - [ ] Project builds successfully: `npm run build`
@@ -22,6 +24,7 @@ This checklist provides step-by-step instructions for deploying Tuxedo AI to Pha
 ## Step 1: Install Phala CLI
 
 ### Option A: Using npx (Recommended)
+
 ```bash
 # Install globally
 npm install -g @phala-cloud/cli
@@ -31,11 +34,13 @@ npx phala --help
 ```
 
 ### Option B: Direct installation
+
 ```bash
 curl -sSL https://install.phala.network | bash
 ```
 
 ### Authentication
+
 ```bash
 # Login with API key from Phala Cloud dashboard
 phala auth login
@@ -52,7 +57,7 @@ phala account status
 Create `docker-compose.phala.yaml`:
 
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   tuxedo-backend:
@@ -61,7 +66,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - phala-data:/app/data  # Persistent TEE encrypted storage
+      - phala-data:/app/data # Persistent TEE encrypted storage
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_BASE_URL=https://openrouter.ai/api/v1
@@ -110,6 +115,7 @@ class DatabaseManager:
 ## Step 3: Build and Push Docker Images
 
 ### ✅ Backend Docker Image
+
 ```bash
 # Build backend image
 docker build -f Dockerfile.backend -t your-dockerhub-username/tuxedo-backend:latest .
@@ -123,6 +129,7 @@ docker push your-dockerhub-username/tuxedo-backend:v1.0.0
 ```
 
 ### ✅ Frontend Docker Image
+
 ```bash
 # Build frontend image
 docker build -f Dockerfile.frontend -t your-dockerhub-username/tuxedo-frontend:latest .
@@ -138,6 +145,7 @@ docker push your-dockerhub-username/tuxedo-frontend:v1.0.0
 ## Step 4: Deploy to Phala Cloud
 
 ### ✅ Create CVM (Confidential Virtual Machine)
+
 ```bash
 # Deploy using CLI
 phala cvms create \
@@ -155,6 +163,7 @@ phala cvms create \
 ```
 
 ### ✅ Verify Deployment
+
 ```bash
 # List all CVMs
 phala cvms list
@@ -172,6 +181,7 @@ phala cvms shell tuxedo-ai
 ## Step 5: Configure Environment Variables
 
 ### ✅ Set Secure Environment Variables
+
 ```bash
 # Update environment variables
 phala cvms update \
@@ -184,6 +194,7 @@ phala cvms update \
 ```
 
 ### ✅ Verify Services
+
 ```bash
 # Check health endpoint
 curl https://your-cvm-url.phala.network/health
@@ -195,6 +206,7 @@ open https://your-cvm-url.phala.network
 ## Step 6: Database Persistence Verification
 
 ### ✅ Verify SQLite Persistence
+
 ```bash
 # Access backend container
 phala cvms shell tuxedo-ai
@@ -210,6 +222,7 @@ exit
 ```
 
 ### ✅ Test Data Persistence
+
 1. Create a chat thread via the web interface
 2. Restart the CVM: `phala cvms restart tuxedo-ai`
 3. Verify chat thread still exists
@@ -217,6 +230,7 @@ exit
 ## Step 7: Updates and Maintenance
 
 ### ✅ Update Application
+
 ```bash
 # Build new version with incremented tag
 docker build -f Dockerfile.backend -t your-dockerhub-username/tuxedo-backend:v1.0.1 .
@@ -233,6 +247,7 @@ phala cvms logs -f tuxedo-ai
 ```
 
 ### ✅ Backup Strategy
+
 ```bash
 # Create data backup
 phala cvms exec tuxedo-ai -- tar -czf /tmp/backup.tar.gz -C /app data/
@@ -246,6 +261,7 @@ phala cvms download tuxedo-ai /tmp/backup.tar.gz ./backup-$(date +%Y%m%d).tar.gz
 ### 🔍 Common Issues
 
 **Deployment Fails:**
+
 ```bash
 # Check compose file syntax
 docker-compose -f docker-compose.phala.yaml config
@@ -258,6 +274,7 @@ phala account status
 ```
 
 **Container Won't Start:**
+
 ```bash
 # View detailed logs
 phala cvms logs tuxedo-ai --tail 100
@@ -267,6 +284,7 @@ phala cvms stats tuxedo-ai
 ```
 
 **Database Connection Issues:**
+
 ```bash
 # Access container and check database
 phala cvms shell tuxedo-ai
@@ -276,6 +294,7 @@ sqlite3 chat_threads.db ".schema"
 ```
 
 **Network Issues:**
+
 ```bash
 # Check port mappings
 phala cvms exec tuxedo-ai -- netstat -tlnp
@@ -287,6 +306,7 @@ phala cvms exec tuxedo-frontend -- curl http://tuxedo-backend:8000/health
 ## Security Best Practices
 
 ### 🔒 TEE Security
+
 - [ ] Verify TEE attestation at `https://proof.t16z.com`
 - [ ] Use environment variables for secrets (never hardcode)
 - [ ] Enable health checks for monitoring
@@ -294,6 +314,7 @@ phala cvms exec tuxedo-frontend -- curl http://tuxedo-backend:8000/health
 - [ ] Monitor logs for unusual activity
 
 ### 🔒 API Security
+
 - [ ] Use HTTPS endpoints
 - [ ] Validate all user inputs
 - [ ] Implement rate limiting
@@ -302,12 +323,14 @@ phala cvms exec tuxedo-frontend -- curl http://tuxedo-backend:8000/health
 ## Cost Optimization
 
 ### 💰 Resource Management
+
 - [ ] Monitor resource usage: `phala cvms stats tuxedo-ai`
 - [ ] Right-size CPU and memory allocation
 - [ ] Set up auto-shutdown for non-production environments
 - [ ] Use appropriate instance regions
 
 ### 💰 Credits Management
+
 - [ ] Monitor credit usage in dashboard
 - [ ] Set up usage alerts
 - [ ] Consider reserved instances for production
@@ -358,6 +381,7 @@ jobs:
 ```
 
 ### Required GitHub Secrets
+
 - `DOCKER_USERNAME`
 - `DOCKER_PASSWORD`
 - `PHALA_API_KEY`
@@ -366,6 +390,7 @@ jobs:
 ## Post-Deployment Verification
 
 ### ✅ Health Checks
+
 - [ ] Backend health endpoint: `/health`
 - [ ] Frontend loads correctly
 - [ ] Database connectivity works
@@ -374,6 +399,7 @@ jobs:
 - [ ] CORS properly configured
 
 ### ✅ Performance Monitoring
+
 - [ ] Response times acceptable
 - [ ] Memory usage stable
 - [ ] CPU usage within limits
@@ -382,6 +408,7 @@ jobs:
 ## Rollback Plan
 
 ### 🔄 Emergency Rollback
+
 ```bash
 # Update docker-compose.yaml with previous working image tag
 phala cvms update -n tuxedo-ai -c docker-compose.phala.yaml.rollback
@@ -391,6 +418,7 @@ phala cvms restart tuxedo-ai
 ```
 
 ### 🔄 Data Recovery
+
 ```bash
 # Restore from backup
 phala cvms upload tuxedo-ai ./backup-latest.tar.gz /tmp/
@@ -401,6 +429,7 @@ phala cvms restart tuxedo-ai
 ## Next Steps
 
 ### 🎯 Future Enhancements
+
 - [ ] Vector database integration (ChromaDB, FAISS)
 - [ ] Performance monitoring and alerting
 - [ ] Multi-region deployment
@@ -426,8 +455,8 @@ phala account status                # Check credits
 
 ---
 
-**Deployment Date:** ___________
-**Deployed By:** _________________
-**Version:** ____________________
-**CVM URL:** ____________________
-**Notes:** _______________________
+**Deployment Date:** \***\*\_\_\_\*\***
+**Deployed By:** **\*\*\*\***\_**\*\*\*\***
+**Version:** **\*\*\*\***\_\_\_\_**\*\*\*\***
+**CVM URL:** **\*\*\*\***\_\_\_\_**\*\*\*\***
+**Notes:** ****\*\*****\_\_\_****\*\*****

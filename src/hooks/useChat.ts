@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { ChatRequest, ChatResponse, chatApi } from '../lib/api';
+import { useState, useCallback } from "react";
+import { ChatRequest, ChatResponse, chatApi } from "../lib/api";
 
 export interface UseChatReturn {
   message: string | null;
@@ -14,31 +14,34 @@ export const useChat = (): UseChatReturn => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const sendMessage = useCallback(async (content: string, walletAddress?: string) => {
-    setMessage(null);
-    setError(null);
-    setLoading(true);
+  const sendMessage = useCallback(
+    async (content: string, walletAddress?: string) => {
+      setMessage(null);
+      setError(null);
+      setLoading(true);
 
-    try {
-      const request: ChatRequest = {
-        message: content,
-        history: [], // Simple chat with no history for dashboard
-        wallet_address: walletAddress || null
-      };
+      try {
+        const request: ChatRequest = {
+          message: content,
+          history: [], // Simple chat with no history for dashboard
+          wallet_address: walletAddress || null,
+        };
 
-      const response: ChatResponse = await chatApi.sendMessage(request);
+        const response: ChatResponse = await chatApi.sendMessage(request);
 
-      if (response.success) {
-        setMessage(response.response);
-      } else {
-        setError(response.error || 'Unknown error occurred');
+        if (response.success) {
+          setMessage(response.response);
+        } else {
+          setError(response.error || "Unknown error occurred");
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to send message");
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send message');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   const clearMessage = useCallback(() => {
     setMessage(null);
@@ -50,6 +53,6 @@ export const useChat = (): UseChatReturn => {
     loading,
     error,
     sendMessage,
-    clearMessage
+    clearMessage,
   };
 };

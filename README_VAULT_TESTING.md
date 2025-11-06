@@ -41,6 +41,7 @@ python3 run_complete_vault_test.py
 ```
 
 This will:
+
 1. Execute deposit test (2.5 XLM)
 2. Wait 60 seconds for processing
 3. Execute withdrawal test (1.0 XLM)
@@ -49,6 +50,7 @@ This will:
 ### Option 2: Run Individual Tests
 
 #### Deposit Test Only
+
 ```bash
 cd backend
 source .venv/bin/activate
@@ -57,6 +59,7 @@ python3 test_deposit_to_vault.py
 ```
 
 #### Withdrawal Test Only (after deposit)
+
 ```bash
 cd backend
 source .venv/bin/activate
@@ -95,24 +98,30 @@ python3 test_withdraw_from_vault.py
 ## 🔧 Technical Details
 
 ### Vault Configuration
+
 - **Vault Address**: `CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA`
 - **Network**: Stellar Testnet
 - **Test Account**: Fixed test account (see scripts for details)
 
 ### Test Account
+
 The tests use a fixed test account. For production use, you would:
+
 1. Generate a new keypair for each test
 2. Fund the account via Friendbot
 3. Use the new account for testing
 
 ### Deposit Method
+
 **Manual XLM Payment** (the optimal approach):
+
 - Send XLM directly to vault address
 - Include memo: "Deposit to DeFindex Vault"
 - Vault contract automatically recognizes as deposit
 - Bypasses all API issues completely
 
 ### Withdrawal Methods Tried
+
 1. **DeFindex API**: ❌ Not working (MissingValue errors)
 2. **Direct Soroban RPC**: ⚠️ Limited success (function signature issues)
 3. **Payment Request**: ❌ Not supported by vaults
@@ -122,22 +131,26 @@ The tests use a fixed test account. For production use, you would:
 After running tests, `reports.md` contains:
 
 ### Executive Summary
+
 - Overall test status
 - Key findings and recommendations
 - Success/failure analysis
 
 ### Technical Analysis
+
 - Transaction details and hashes
 - Performance metrics
 - Blockchain state analysis
 - Contract interaction analysis
 
 ### Financial Analysis
+
 - Deposit amounts and confirmations
 - Withdrawal attempts and results
 - Net position changes
 
 ### Recommendations
+
 - Production deployment guidance
 - User experience improvements
 - Technical considerations
@@ -145,17 +158,20 @@ After running tests, `reports.md` contains:
 ## 🎯 Key Findings
 
 ### ✅ What Works Perfectly
+
 1. **Manual XLM Deposits**: Send XLM directly to vault with memo
 2. **Vault Contract**: Accepts and processes payments correctly
 3. **Transaction Confirmation**: Proper blockchain verification
 4. **API Bypass**: Complete independence from DeFindex API
 
 ### ⚠️ Limitations Discovered
+
 1. **Testnet Withdrawals**: May have limited functionality
 2. **Direct RPC**: Function signatures vary between vaults
 3. **API Integration**: Completely broken on testnet
 
 ### 🚀 Production Recommendations
+
 1. **Primary Method**: Manual XLM payments for deposits
 2. **API Fallback**: Use when/if API becomes available
 3. **Withdrawal Strategy**: Use vault dApp or alternative methods
@@ -166,31 +182,41 @@ After running tests, `reports.md` contains:
 ### Common Issues
 
 **Account Not Found**
+
 ```
 Error: Account not found on network
 ```
+
 - Solution: Ensure test account exists or use Friendbot to fund
 
 **Insufficient Balance**
+
 ```
 Error: Insufficient balance
 ```
+
 - Solution: Fund account via Friendbot (testnet only)
 
 **Transaction Failed**
+
 ```
 Error: Transaction failed
 ```
+
 - Solution: Check vault address and network configuration
 
 **RPC Timeouts**
+
 ```
 Error: RPC timeout
 ```
+
 - Solution: Network connectivity issues, retry test
 
 ### Debug Mode
+
 For detailed debugging, check these files:
+
 - `DEFINDEX_DEBUG_ANALYSIS.md`
 - `DEBUGGING_SUMMARY.md`
 - Individual script logs
@@ -198,6 +224,7 @@ For detailed debugging, check these files:
 ## 🚀 Production Implementation
 
 ### Step 1: Implement Manual Payment Method
+
 ```python
 # Send XLM directly to vault
 transaction = (
@@ -214,11 +241,13 @@ transaction = (
 ```
 
 ### Step 2: Add User Guidance
+
 - Clear instructions for manual payments
 - Wallet compatibility information
 - Transaction status monitoring
 
 ### Step 3: Implement Monitoring
+
 - Transaction confirmation checking
 - Balance verification
 - Error handling and user feedback
@@ -226,11 +255,13 @@ transaction = (
 ## 📞 Support
 
 ### Test Resources
+
 - **Stellar Testnet Friendbot**: https://friendbot.stellar.org
 - **Stellar Laboratory**: https://laboratory.stellar.org
 - **Testnet Explorer**: https://steexp.com
 
 ### Documentation
+
 - **Stellar Docs**: https://developers.stellar.org
 - **DeFindex Docs**: https://docs.defindex.io
 - **Soroban Docs**: https://soroban.stellar.org

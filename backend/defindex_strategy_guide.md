@@ -45,6 +45,7 @@ From the GitHub repository (`apps/contracts/strategies/`):
 ### 3. Core Interface: `DeFindexStrategyTrait`
 
 **Required Methods:**
+
 ```rust
 pub trait DeFindexStrategyTrait {
     // Core Functions
@@ -99,6 +100,7 @@ yarn deploy-strategy <strategy_name> testnet
 **Easiest Path - Modify existing HODL strategy:**
 
 1. **Clone DeFindex Repository:**
+
    ```bash
    git clone https://github.com/paltalabs/defindex.git
    cd defindex/apps/contracts/strategies/hodl
@@ -121,6 +123,7 @@ yarn deploy-strategy <strategy_name> testnet
 **Advanced Path - Build from scratch:**
 
 1. **Implement `DeFindexStrategyTrait`:**
+
    ```rust
    #[contract]
    pub struct CustomStrategy;
@@ -140,6 +143,7 @@ yarn deploy-strategy <strategy_name> testnet
 ### Option 3: Use Pre-deployed Strategy Addresses
 
 **Contact DeFindex Team** for:
+
 - Available testnet strategy contracts
 - Pre-deployed strategy addresses
 - Documentation of existing strategies
@@ -244,6 +248,7 @@ result = creator.create_vault(vault_config)
 ## Prerequisites Summary
 
 **Required Tools:**
+
 - ✅ Rust toolchain
 - ✅ Soroban CLI
 - ✅ Stellar CLI
@@ -251,12 +256,14 @@ result = creator.create_vault(vault_config)
 - ✅ Testnet XLM for deployment fees
 
 **Required Knowledge:**
+
 - ✅ Rust programming
 - ✅ Soroban smart contracts
 - ✅ Stellar transaction signing
 - ✅ Contract deployment
 
 **Required Resources:**
+
 - ✅ Stellar testnet account with XLM
 - ✅ DeFindex repository access
 - ✅ Contract compilation environment
@@ -264,6 +271,7 @@ result = creator.create_vault(vault_config)
 ## Time and Cost Estimates
 
 **Time Commitment:**
+
 - Environment Setup: 1-2 hours
 - Strategy Development: 4-8 hours (depending on complexity)
 - Deployment and Testing: 1-2 hours
@@ -271,6 +279,7 @@ result = creator.create_vault(vault_config)
 - **Total: 7-14 hours**
 
 **Cost:**
+
 - Testnet XLM: ~100 XLM for deployment fees
 - Development Time: Engineer hours as above
 - **Total Cost: Minimal (testnet is free)**

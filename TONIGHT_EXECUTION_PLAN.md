@@ -6,9 +6,11 @@
 ## 🚀 Execution Order
 
 ### Step 1: Clean Up Dead Code (30 minutes)
+
 **Goal**: Remove TUX farming and other dead code, ensure everything still works
 
 **Actions**:
+
 ```bash
 # Remove TUX farming components
 rm -rf src/components/tux_farming/
@@ -30,9 +32,11 @@ git commit -m "Remove TUX farming dead code"
 ```
 
 ### Step 2: Fix Testing Structure (15 minutes)
+
 **Goal**: Professional appearance, move tests out of root
 
 **Actions**:
+
 ```bash
 # Create proper test structure
 mkdir -p tests/{integration,e2e,fixtures}
@@ -52,9 +56,11 @@ git commit -m "Fix testing structure, move tests out of root"
 ```
 
 ### Step 3: Remove Wallet Dependencies (45 minutes)
+
 **Goal**: Remove all wallet code, replace with agent-first approach
 
 **Actions**:
+
 ```bash
 # Remove wallet provider system
 rm src/providers/WalletProvider.tsx
@@ -74,9 +80,11 @@ git commit -m "Remove wallet dependencies, add agent provider"
 ```
 
 ### Step 4: Create Agent-First Account Tool (45 minutes)
+
 **Goal**: Replace wallet with filesystem-based agent account management
 
 **Actions**:
+
 ```python
 # backend/tools/agent/account_management.py
 # (Create new tool for agent account management)
@@ -89,9 +97,11 @@ git commit -m "Remove wallet dependencies, add agent provider"
 ```
 
 ### Step 5: Update AI Agent to Use Agent Accounts (30 minutes)
+
 **Goal**: AI agent manages and uses its own accounts
 
 **Actions**:
+
 ```python
 # Update AI agent tools to include account management
 # Remove wallet references from prompts
@@ -99,9 +109,11 @@ git commit -m "Remove wallet dependencies, add agent provider"
 ```
 
 ### Step 6: Deploy to Phala (30 minutes)
+
 **Goal**: Get working version on Phala TEE
 
 **Actions**:
+
 ```bash
 # Update docker-compose.phala.yaml
 # Deploy to Phala using existing checklist
@@ -146,6 +158,7 @@ mv test_wallet_fix.py backend/tests/test_agent_management/
 ### Step 3: Remove Wallet Dependencies (After Step 2)
 
 #### 3.1 Remove Wallet Files
+
 ```bash
 rm src/providers/WalletProvider.tsx
 rm src/components/WalletButton.tsx
@@ -153,6 +166,7 @@ rm src/util/wallet.ts
 ```
 
 #### 3.2 Create Agent Provider
+
 ```typescript
 // src/providers/AgentProvider.tsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -252,6 +266,7 @@ export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 ```
 
 #### 3.3 Update App.tsx
+
 ```typescript
 // Replace WalletProvider with AgentProvider
 import { AgentProvider } from './providers/AgentProvider';
@@ -265,6 +280,7 @@ import { AgentProvider } from './providers/AgentProvider';
 ### Step 4: Create Agent Account Management Tool (After Step 3)
 
 #### 4.1 Backend Account Management Tool
+
 ```python
 # backend/tools/agent/account_management.py
 from typing import Dict, Optional, List
@@ -335,6 +351,7 @@ class AccountManagementTool(BaseTool):
 ```
 
 #### 4.2 Agent API Routes
+
 ```python
 # backend/api/routes/agent.py
 from fastapi import APIRouter, HTTPException
@@ -364,6 +381,7 @@ async def list_accounts():
 ```
 
 #### 4.3 Agent Management UI
+
 ```typescript
 // src/components/agent/AccountManager.tsx
 import React from 'react';
@@ -491,6 +509,7 @@ curl -X POST https://your-phala-url/api/agent/create-account
 ## ✅ Success Criteria
 
 Each step should:
+
 - ✅ Commit changes to git
 - ✅ Wait for Render deployment success
 - ✅ Verify functionality still works
@@ -499,6 +518,7 @@ Each step should:
 ## 🚨 Rollback Plan
 
 If any step breaks the deployment:
+
 ```bash
 git log --oneline  # See recent commits
 git revert HEAD    # Revert last commit
