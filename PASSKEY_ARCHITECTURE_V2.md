@@ -37,9 +37,11 @@ Replace magic link authentication with WebAuthn passkey authentication.
 **In Scope**:
 - User registration with passkey
 - User login with passkey
-- Session management (token-based)
-- Recovery codes (8 single-use backup codes)
+- Session management (token-based with sliding expiration)
+- Recovery codes (8 single-use backup codes with rate limiting)
 - Session validation endpoint
+- Recovery code acknowledgment flow
+- Multiple passkeys per user support
 
 **Out of Scope** (for this sprint):
 - Multi-agent system
@@ -60,8 +62,9 @@ Replace magic link authentication with WebAuthn passkey authentication.
 │  2. Browser creates passkey (WebAuthn)                       │
 │  3. Server stores credential + links to user account         │
 │  4. Server generates 8 recovery codes                        │
-│  5. Server sends welcome email with recovery codes (SendGrid)│
-│  6. Server creates session token                             │
+│  5. User acknowledges saving recovery codes                  │
+│  6. Server sends welcome email with recovery codes (SendGrid)│
+│  7. Server creates session token                             │
 │  → User is authenticated                                     │
 │                                                              │
 │  Login:                                                      │
@@ -84,7 +87,9 @@ Replace magic link authentication with WebAuthn passkey authentication.
 │  2. Server sends email recovery link (SendGrid)              │
 │  3. User clicks link, verifies identity                      │
 │  4. User creates new passkey                                 │
-│  5. Server generates new recovery codes                      │
+│  5. Server invalidates ALL old passkeys (security)           │
+│  6. Server generates new recovery codes                      │
+│  7. Server sends confirmation email                          │
 │  → User regains access                                       │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
@@ -156,6 +161,16 @@ CREATE TABLE email_recovery_tokens (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
+
+-- Store recovery code attempts (rate limiting)
+CREATE TABLE recovery_attempts (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    success BOOLEAN DEFAULT FALSE,
+    ip_address TEXT,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
 ```
 
 #### Indexes
@@ -168,6 +183,8 @@ CREATE INDEX idx_passkey_sessions_token ON passkey_sessions(session_token);
 CREATE INDEX idx_recovery_codes_user_id ON recovery_codes(user_id);
 CREATE INDEX idx_email_recovery_tokens_user_id ON email_recovery_tokens(user_id);
 CREATE INDEX idx_email_recovery_tokens_token ON email_recovery_tokens(token);
+CREATE INDEX idx_recovery_attempts_user_id ON recovery_attempts(user_id);
+CREATE INDEX idx_recovery_attempts_attempted_at ON recovery_attempts(attempted_at);
 ```
 
 #### Tables to Remove
@@ -192,8 +209,14 @@ Response: {
     user: { id, email },
     session_token: string,
     recovery_codes: string[],  // Only shown once!
-    recovery_codes_message: string
+    recovery_codes_message: string,
+    must_acknowledge: true
 }
+
+POST /auth/passkey/recovery-codes/acknowledge
+Request:  { session_token: string }
+Headers:  Authorization: Bearer <session_token>
+Response: { success: true, acknowledged: true }
 ```
 
 #### Authentication
@@ -221,8 +244,18 @@ Response: {
     session_token: string,
     remaining_codes: number  // How many recovery codes left
 }
+Error (429 Too Many Requests): {
+    success: false,
+    error: {
+        code: "RATE_LIMITED",
+        message: "Too many failed attempts. Account locked for 1 hour.",
+        retry_after: 3600
+    }
+}
 
-NOTE: Sends security alert email via SendGrid after successful recovery code use
+NOTE:
+- Sends security alert email via SendGrid after successful recovery code use
+- Rate limited: Max 5 failed attempts per hour, then 1-hour lockout
 ```
 
 #### Email Recovery (Lost Passkeys + Codes)
@@ -243,10 +276,14 @@ Response: {
     user: { id, email },
     session_token: string,
     recovery_codes: string[],  // New recovery codes generated
-    recovery_codes_message: string
+    recovery_codes_message: string,
+    must_acknowledge: true
 }
 
-NOTE: Sends confirmation email with new recovery codes via SendGrid
+NOTE:
+- Invalidates ALL old passkeys for security
+- Sends confirmation email with new recovery codes via SendGrid
+- User must acknowledge saving new recovery codes
 ```
 
 #### Session Management
@@ -261,6 +298,40 @@ Headers:  Authorization: Bearer <session_token>
 Response: { success: true }
 ```
 
+#### Passkey Management (Multiple Passkeys)
+
+```
+GET /auth/passkey/credentials
+Headers:  Authorization: Bearer <session_token>
+Response: {
+    credentials: [
+        {
+            id: string,
+            friendly_name: string,
+            created_at: timestamp,
+            last_used_at: timestamp,
+            backup_eligible: boolean
+        }
+    ]
+}
+
+POST /auth/passkey/credentials/add
+Headers:  Authorization: Bearer <session_token>
+Request:  { challenge_id: string, credential: object, friendly_name?: string }
+Response: {
+    credential: { id, friendly_name, created_at },
+    message: "New passkey added successfully"
+}
+
+NOTE: Sends security alert email when new passkey is added
+
+DELETE /auth/passkey/credentials/:id
+Headers:  Authorization: Bearer <session_token>
+Response: { success: true, message: "Passkey removed" }
+
+NOTE: Cannot delete last remaining passkey
+```
+
 ### Frontend Implementation
 
 #### Core Service
@@ -270,8 +341,12 @@ Response: { success: true }
 export class PasskeyAuthService {
   async register(email: string): Promise<RegistrationResult>
   async authenticate(email?: string): Promise<AuthResult>
-  async useRecoveryCode(code: string): Promise<AuthResult>
+  async useRecoveryCode(email: string, code: string): Promise<AuthResult>
+  async acknowledgeRecoveryCodes(token: string): Promise<void>
   async validateSession(token: string): Promise<User | null>
+  async listPasskeys(token: string): Promise<Passkey[]>
+  async addPasskey(token: string, friendlyName?: string): Promise<Passkey>
+  async removePasskey(token: string, passkeyId: string): Promise<void>
   logout(): void
   isSupported(): boolean
 }
@@ -382,15 +457,26 @@ async def send_passkey_added_alert(email: str, device_info: str):
 
 #### Session Tokens
 - Random 32-byte tokens (URL-safe base64)
-- 7-day expiration (configurable)
+- Sliding expiration: 24 hours of inactivity
+- Absolute timeout: 7 days maximum
 - Stored in localStorage
 - Sent as Bearer token in Authorization header
+- `last_active_at` updated on each authenticated request
+- Session extended automatically if within absolute timeout
 
 #### Recovery Codes
 - 8 codes, each 24 characters (128-bit entropy)
 - SHA-256 hashed before storage
 - Single-use only (marked as used after validation)
 - Displayed once during registration
+- User must acknowledge saving codes before proceeding
+
+#### Rate Limiting
+- **Recovery code attempts**: Max 5 failed attempts per hour
+- **Lockout period**: 1 hour after exceeding limit
+- **Tracking**: All attempts logged in `recovery_attempts` table
+- **Security alerts**: Email sent after lockout triggered
+- **IP tracking**: Optional IP address logging for forensics
 
 #### Challenges
 - 32-byte random challenges
@@ -399,11 +485,71 @@ async def send_passkey_added_alert(email: str, device_info: str):
 - Cleaned up after use or expiration
 
 #### WebAuthn Configuration
-- Relying Party ID: Domain name (e.g., "localhost" for dev)
-- User Verification: Required
-- Resident Key: Required (for usernameless flow)
-- Authenticator Attachment: Platform preferred
-- Attestation: None (simplest, most compatible)
+```typescript
+{
+  rp: {
+    name: "Choir",
+    id: domain  // e.g., "localhost" for dev, "choir.chat" for prod
+  },
+  user: {
+    id: userIdBytes,
+    name: email,
+    displayName: email
+  },
+  challenge: challengeBytes,
+  pubKeyCredParams: [
+    { alg: -7, type: "public-key" },   // ES256
+    { alg: -257, type: "public-key" }  // RS256
+  ],
+  authenticatorSelection: {
+    authenticatorAttachment: "platform",  // Prefer TouchID, Windows Hello
+    residentKey: "preferred",  // Not required since we use email-based flow
+    requireResidentKey: false,
+    userVerification: "required"
+  },
+  attestation: "none",  // Simplest, most compatible
+  timeout: 60000
+}
+```
+
+**Rationale**:
+- `residentKey: "preferred"` not "required" - We use email-based flow, so discoverable credentials are optional
+- Better hardware compatibility (security keys, older devices)
+- Still supports usernameless flow if authenticator supports it
+
+#### API Error Responses
+
+All errors follow a standardized format for consistent frontend handling:
+
+```typescript
+{
+  success: false,
+  error: {
+    code: string,  // Machine-readable error code
+    message: string,  // User-friendly error message
+    details?: object  // Additional context (dev/debug only)
+  }
+}
+```
+
+**Error Codes**:
+- `INVALID_CHALLENGE` - Challenge expired or invalid
+- `INVALID_CREDENTIAL` - Passkey verification failed
+- `EXPIRED_SESSION` - Session token expired
+- `RATE_LIMITED` - Too many failed attempts
+- `INVALID_RECOVERY_CODE` - Recovery code invalid or already used
+- `NO_RECOVERY_CODES` - All recovery codes exhausted
+- `INVALID_EMAIL_TOKEN` - Email recovery token invalid/expired
+- `CANNOT_DELETE_LAST_PASSKEY` - At least one passkey required
+- `USER_NOT_FOUND` - Email not registered
+- `VALIDATION_ERROR` - Request validation failed
+
+**HTTP Status Codes**:
+- 400 - Bad Request (validation errors)
+- 401 - Unauthorized (auth failed)
+- 404 - Not Found (user/resource not found)
+- 429 - Too Many Requests (rate limited)
+- 500 - Internal Server Error
 
 ### Testing Strategy
 
@@ -413,31 +559,55 @@ async def send_passkey_added_alert(email: str, device_info: str):
 - [ ] Session token generation and validation
 - [ ] Recovery code generation and hashing
 - [ ] Recovery code single-use enforcement
+- [ ] Rate limiting logic
+- [ ] Session sliding expiration
+- [ ] Old passkey invalidation on recovery
 
 #### Integration Tests
-- [ ] Full registration flow
+- [ ] Full registration flow with acknowledgment
 - [ ] Full login flow
-- [ ] Recovery code flow
+- [ ] Recovery code flow with rate limiting
 - [ ] Session validation
-- [ ] Session expiration
+- [ ] Session expiration (idle and absolute)
 - [ ] Invalid credential rejection
+- [ ] Multiple passkey management
+- [ ] Email recovery with passkey invalidation
+
+#### Load/Security Tests
+- [ ] 1000 failed recovery code attempts (verify rate limiting)
+- [ ] 100 concurrent email recovery requests
+- [ ] 50 concurrent passkey registrations
+- [ ] Session token validation under load
+- [ ] Recovery code brute force protection
+- [ ] Concurrent session management (same user, multiple devices)
 
 #### Manual Testing Checklist
 - [ ] Register new user with passkey
+- [ ] Acknowledge recovery codes before proceeding
 - [ ] Receive welcome email with recovery codes
 - [ ] Login with passkey using email
 - [ ] Login fails with wrong passkey
+- [ ] Add second passkey to account
+- [ ] Receive security alert email for new passkey
 - [ ] Login with recovery code
 - [ ] Receive security alert email after recovery code use
 - [ ] Recovery code only works once
+- [ ] Trigger rate limit with 5+ failed recovery attempts
+- [ ] Verify 1-hour lockout after rate limit
 - [ ] Request email recovery link
 - [ ] Receive recovery email with valid link
 - [ ] Complete email recovery and create new passkey
+- [ ] Verify old passkeys are invalidated
 - [ ] Receive confirmation email with new recovery codes
 - [ ] Session persists across page refresh
+- [ ] Session extends with activity (sliding expiration)
+- [ ] Session expires after 24 hours of inactivity
+- [ ] Session expires after 7 days (absolute timeout)
+- [ ] Remove passkey from account
+- [ ] Cannot delete last remaining passkey
 - [ ] Logout clears session
-- [ ] Session expires after 7 days
 - [ ] All SendGrid emails deliver successfully
+- [ ] All error messages display correctly
 
 ### Deployment Checklist
 
@@ -516,6 +686,122 @@ If deployment fails:
 
 ---
 
+## Operations & Monitoring
+
+### Metrics to Track
+
+**Authentication Metrics**:
+- Registration attempts vs. completions
+- Login success/failure rates
+- Average session duration
+- Passkey usage by device type
+- Recovery code usage patterns
+
+**Security Metrics**:
+- Failed authentication attempts per user
+- Rate limit triggers per day
+- Recovery code exhaustion warnings
+- Email recovery requests per day
+- Passkey additions/removals per day
+
+**Performance Metrics**:
+- WebAuthn challenge generation time
+- Credential verification latency
+- Session validation response time
+- Database query performance
+- SendGrid email delivery time
+
+### Alerts & Notifications
+
+**Critical Alerts** (Immediate attention):
+- More than 10 rate limit triggers in 5 minutes (potential attack)
+- SendGrid delivery failure rate > 5%
+- Database connection failures
+- Session validation errors > 10/minute
+
+**Warning Alerts** (Review within 1 hour):
+- User down to last recovery code (alert user)
+- Failed recovery attempts for single user > 3 in 10 minutes
+- Email recovery token generation > 50/hour
+- Abnormal spike in registrations (>100/hour)
+
+**Info Alerts** (Daily summary):
+- Daily authentication stats
+- Recovery code usage summary
+- New user registrations
+- Passkey additions/removals
+
+### Logging Strategy
+
+**What to Log**:
+- All authentication attempts (success/failure)
+- Recovery code usage
+- Email recovery requests
+- Rate limit triggers
+- Passkey additions/removals
+- Session creation/expiration
+- API errors with stack traces
+
+**What NOT to Log**:
+- Recovery codes (plain text)
+- Session tokens (plain text)
+- WebAuthn credentials
+- User passwords (we don't have any)
+
+**Log Levels**:
+- `INFO`: Successful auth, registrations
+- `WARN`: Failed auth attempts, rate limits
+- `ERROR`: System errors, email failures
+- `DEBUG`: Challenge generation, session validation (dev only)
+
+### Monitoring Tools
+
+**Recommended Setup**:
+- **Application Performance**: Sentry or similar for error tracking
+- **Uptime Monitoring**: Pingdom, UptimeRobot for /health endpoint
+- **Log Aggregation**: CloudWatch, Papertrail, or similar
+- **Metrics Dashboard**: Grafana or built-in analytics
+- **Email Delivery**: SendGrid analytics dashboard
+
+### Security Best Practices
+
+**Environment-Specific Configuration**:
+```bash
+# Development
+CORS_ORIGINS=http://localhost:5173
+RP_ID=localhost
+SESSION_SECURE_COOKIE=false
+LOG_LEVEL=DEBUG
+
+# Staging
+CORS_ORIGINS=https://staging.choir.chat
+RP_ID=staging.choir.chat
+SESSION_SECURE_COOKIE=true
+LOG_LEVEL=INFO
+
+# Production
+CORS_ORIGINS=https://choir.chat
+RP_ID=choir.chat
+SESSION_SECURE_COOKIE=true
+LOG_LEVEL=WARN
+RATE_LIMIT_ENABLED=true
+IP_TRACKING_ENABLED=true
+```
+
+**Compliance Considerations**:
+- **GDPR**: Email storage with consent, right to deletion
+- **CCPA**: User data export capability
+- **SOC 2**: Audit logs, access controls
+- **PCI DSS**: Not applicable (no payment card data)
+
+**Regular Security Tasks**:
+- [ ] Weekly: Review failed auth attempts
+- [ ] Monthly: Audit rate limit effectiveness
+- [ ] Quarterly: Review and update recovery code policies
+- [ ] Annually: Security audit of authentication system
+
+---
+
 ## Phase 2: Multi-Agent System (Future)
 
 **Not in current sprint. Document for future reference.**
@@ -560,6 +846,7 @@ Add ability for authenticated users to create and manage multiple AI agents.
 - User manages agents via API (CRUD operations)
 - Agents are created **after** authentication
 - No cryptographic coupling between passkey and agent keys
+- **Agent permissions**: Consider read-only vs. full access (future enhancement)
 
 ### Database Schema (Future)
 
@@ -614,9 +901,14 @@ Add sidebar component for agent management and thread switching.
 
 ### Components
 
-- `Sidebar.tsx` - Agent list and thread switcher
+- `Sidebar.tsx` - Agent list and thread switcher (keyboard-accessible)
 - `AgentSettings.tsx` - Agent configuration
 - `ThreadHistory.tsx` - Conversation history
+
+**UX Considerations**:
+- Agent switching should be keyboard-accessible (Cmd+K, Ctrl+K)
+- Quick switcher for frequent agent changes
+- Visual indicators for active agent
 
 **Implementation**: After Phase 1 and Phase 2 are complete and tested.
 
@@ -626,13 +918,18 @@ Add sidebar component for agent management and thread switching.
 
 ### Phase 1 (Current Sprint)
 - [ ] Users can register with passkey
+- [ ] Users must acknowledge recovery codes
 - [ ] Users can login with passkey
-- [ ] Recovery codes work
-- [ ] Sessions persist correctly
-- [ ] All tests pass
+- [ ] Recovery codes work with rate limiting
+- [ ] Users can manage multiple passkeys
+- [ ] Sessions persist with sliding expiration
+- [ ] Email recovery invalidates old passkeys
+- [ ] All tests pass (unit + integration + load)
 - [ ] Build succeeds
 - [ ] Deployment works
 - [ ] No security vulnerabilities
+- [ ] Monitoring and alerts configured
+- [ ] All SendGrid emails deliver correctly
 
 ### Phase 2 (Future)
 - [ ] Users can create agents
@@ -713,19 +1010,27 @@ vs. Experimental branch: ~2000 lines of tightly coupled code
 - Database schema design (for passkeys)
 - Recovery code system
 - Frontend service patterns
+- Email-based flow (vs. usernameless)
 
 ### What Didn't Work ❌
 - Coupling passkeys to agent key derivation
 - PRF extension complexity
 - Sidebar in auth sprint
 - Skipping deployment checklist
+- Insufficient rate limiting
+- Missing monitoring strategy
 
 ### Applying the Lessons ✅
 - Focus on ONE thing: passkey auth
 - Save agent system for Phase 2
 - Save UI changes for Phase 3
 - Follow deployment checklist religiously
-- Test at each step
+- Test at each step (unit + integration + load)
+- Add rate limiting from day one
+- Plan for monitoring and alerts
+- Standardize error responses
+- Support multiple passkeys per user
+- Use sliding session expiration for better UX/security
 
 ---
 
@@ -742,6 +1047,16 @@ Then, and only then, move to Phase 2.
 
 ---
 
-**Document Version**: 2.0
+**Document Version**: 2.1
 **Last Updated**: 2025-11-06
-**Status**: Current architectural plan
+**Status**: Current architectural plan (with security enhancements)
+**Changes from v2.0**:
+- Added rate limiting for recovery codes
+- Added sliding session expiration (24h idle, 7d absolute)
+- Added multiple passkeys per user support
+- Added recovery code acknowledgment flow
+- Fixed WebAuthn configuration (residentKey: "preferred")
+- Added email recovery passkey invalidation
+- Added standardized API error responses
+- Added comprehensive Operations & Monitoring section
+- Added load/security testing requirements
