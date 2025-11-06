@@ -1,9 +1,35 @@
 /**
  * Passkey Authentication Service
- * Simplified WebAuthn implementation with comprehensive error handling
+ * Simplified WebAuthn implementation with comprehensive error handling and debugging
  */
 
 import { API_BASE_URL } from "../lib/api";
+
+// Global debug log storage for UI display
+export const debugLogs: string[] = [];
+
+/**
+ * Add a debug log entry with timestamp
+ */
+function addDebugLog(message: string, data?: any): void {
+  const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+  const logEntry = `[${timestamp}] ${message}`;
+  console.log(logEntry, data || '');
+  debugLogs.push(data ? `${logEntry} ${JSON.stringify(data, null, 2)}` : logEntry);
+
+  // Keep only last 100 logs
+  if (debugLogs.length > 100) {
+    debugLogs.shift();
+  }
+}
+
+/**
+ * Clear all debug logs
+ */
+export function clearDebugLogs(): void {
+  debugLogs.length = 0;
+  console.log('🧹 Debug logs cleared');
+}
 
 export interface User {
   id: string;
@@ -106,27 +132,49 @@ class PasskeyAuthService {
    * Register a new user with a passkey
    */
   async register(email: string): Promise<RegistrationResult> {
+    addDebugLog("🔐 STARTING PASSKEY REGISTRATION");
+    addDebugLog("📧 Email", { email });
+    addDebugLog("🌐 Environment", {
+      origin: window.location.origin,
+      protocol: window.location.protocol,
+      hostname: window.location.hostname,
+      href: window.location.href,
+      apiBaseUrl: API_BASE_URL,
+    });
+
     if (!this.isSupported()) {
+      addDebugLog("❌ Passkeys not supported in this browser");
       throw new Error("Passkeys are not supported in this browser");
     }
-
-    console.log("🔐 Starting passkey registration");
-    console.log("📧 Email:", email);
-    console.log("🌐 Origin:", window.location.origin);
-    console.log("🔒 Protocol:", window.location.protocol);
+    addDebugLog("✅ WebAuthn is supported");
 
     // Step 1: Get challenge from backend
+    addDebugLog("📡 Step 1: Requesting registration challenge from backend");
+    const registerStartUrl = `${API_BASE_URL}/auth/passkey/register/start`;
+    addDebugLog("🔗 URL", { url: registerStartUrl });
+
     let startResponse: Response;
     try {
-      startResponse = await fetch(
-        `${API_BASE_URL}/auth/passkey/register/start`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        },
-      );
+      const startTime = performance.now();
+      startResponse = await fetch(registerStartUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const endTime = performance.now();
+      addDebugLog(`⏱️  Request completed in ${(endTime - startTime).toFixed(2)}ms`);
+      addDebugLog("📊 Response status", {
+        status: startResponse.status,
+        statusText: startResponse.statusText,
+        ok: startResponse.ok,
+        headers: Object.fromEntries(startResponse.headers.entries()),
+      });
     } catch (error: any) {
+      addDebugLog("❌ Network error during registration start", {
+        errorName: error?.name,
+        errorMessage: error?.message,
+        errorStack: error?.stack,
+      });
       logWebAuthnError("Network error during registration start", error);
       throw new Error(
         `Network error: ${error.message || "Could not connect to server"}`,
@@ -134,7 +182,7 @@ class PasskeyAuthService {
     }
 
     if (!startResponse.ok) {
-      console.error("❌ Registration start failed:", {
+      addDebugLog("❌ Registration start failed", {
         status: startResponse.status,
         statusText: startResponse.statusText,
       });
@@ -142,7 +190,7 @@ class PasskeyAuthService {
       let errorMessage = "Failed to start registration";
       try {
         const error = await startResponse.json();
-        console.error("📄 Error response:", error);
+        addDebugLog("📄 Error response body", error);
         errorMessage =
           error.detail?.message || error.error?.message || error.message;
 
@@ -151,16 +199,28 @@ class PasskeyAuthService {
             error.detail?.message ||
             "An account with this email already exists. Please sign in instead.";
         }
-      } catch {
+      } catch (parseError) {
+        addDebugLog("⚠️  Failed to parse error response", { parseError });
         errorMessage = `Server error (${startResponse.status}): ${startResponse.statusText}`;
       }
       throw new Error(errorMessage);
     }
 
-    const { challenge_id, options } = await startResponse.json();
-    console.log("✅ Challenge received:", challenge_id);
+    const responseData = await startResponse.json();
+    const { challenge_id, options } = responseData;
+    addDebugLog("✅ Challenge received", {
+      challenge_id,
+      options: {
+        rp: options.rp,
+        user: { name: options.user?.name, displayName: options.user?.displayName },
+        timeout: options.timeout,
+        authenticatorSelection: options.authenticatorSelection,
+        excludeCredentialsCount: options.excludeCredentials?.length || 0,
+      },
+    });
 
     // Step 2: Create credential using WebAuthn
+    addDebugLog("📡 Step 2: Creating passkey credential");
     const publicKeyOptions: PublicKeyCredentialCreationOptions = {
       challenge: this.base64urlToBuffer(options.challenge),
       rp: {
@@ -183,48 +243,86 @@ class PasskeyAuthService {
       })),
     };
 
-    console.log("🔑 Calling navigator.credentials.create() with options:", {
+    addDebugLog("🔑 Calling navigator.credentials.create()", {
       rp: options.rp,
       user: { name: options.user.name, displayName: options.user.displayName },
       timeout: options.timeout,
       authenticatorSelection: options.authenticatorSelection,
+      pubKeyCredParamsCount: options.pubKeyCredParams?.length || 0,
     });
 
     let credential: Credential | null;
     try {
+      const createStartTime = performance.now();
       credential = await navigator.credentials.create({
         publicKey: publicKeyOptions,
       });
-      console.log("✅ Credential created successfully");
+      const createEndTime = performance.now();
+      addDebugLog(`✅ Credential created in ${(createEndTime - createStartTime).toFixed(2)}ms`);
+
+      if (credential) {
+        addDebugLog("🔍 Credential details", {
+          id: credential.id,
+          type: credential.type,
+        });
+      }
     } catch (error: any) {
+      addDebugLog("❌ WebAuthn credential creation failed", {
+        errorName: error?.name,
+        errorMessage: error?.message,
+        errorCode: error?.code,
+      });
       logWebAuthnError("WebAuthn registration failed", error);
       throw new Error(getWebAuthnErrorMessage(error, "registration"));
     }
 
     if (!credential) {
+      addDebugLog("❌ No credential returned from navigator.credentials.create()");
       throw new Error("Failed to create passkey - no credential returned");
     }
+    addDebugLog("✅ Passkey credential created successfully");
 
     // Step 3: Verify with backend
+    addDebugLog("📡 Step 3: Verifying credential with backend");
     const credentialData = this.credentialToJSON(
       credential as PublicKeyCredential,
     );
+    addDebugLog("🔍 Serialized credential", {
+      id: credentialData.id,
+      type: credentialData.type,
+      hasResponse: !!credentialData.response,
+      transportsCount: credentialData.response?.transports?.length || 0,
+    });
+
+    const registerVerifyUrl = `${API_BASE_URL}/auth/passkey/register/verify`;
+    addDebugLog("🔗 Verification URL", { url: registerVerifyUrl });
 
     let verifyResponse: Response;
     try {
-      verifyResponse = await fetch(
-        `${API_BASE_URL}/auth/passkey/register/verify`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email,
-            challenge_id,
-            credential: credentialData,
-          }),
-        },
-      );
+      const verifyStartTime = performance.now();
+      verifyResponse = await fetch(registerVerifyUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          challenge_id,
+          credential: credentialData,
+        }),
+      });
+      const verifyEndTime = performance.now();
+      addDebugLog(`⏱️  Verification request completed in ${(verifyEndTime - verifyStartTime).toFixed(2)}ms`);
+      addDebugLog("📊 Verification response status", {
+        status: verifyResponse.status,
+        statusText: verifyResponse.statusText,
+        ok: verifyResponse.ok,
+        headers: Object.fromEntries(verifyResponse.headers.entries()),
+      });
     } catch (error: any) {
+      addDebugLog("❌ Network error during verification", {
+        errorName: error?.name,
+        errorMessage: error?.message,
+        errorStack: error?.stack,
+      });
       logWebAuthnError("Network error during registration verification", error);
       throw new Error(
         `Network error: ${error.message || "Could not connect to server"}`,
@@ -232,7 +330,7 @@ class PasskeyAuthService {
     }
 
     if (!verifyResponse.ok) {
-      console.error("❌ Registration verification failed:", {
+      addDebugLog("❌ Registration verification failed", {
         status: verifyResponse.status,
         statusText: verifyResponse.statusText,
       });
@@ -240,16 +338,21 @@ class PasskeyAuthService {
       let errorMessage = "Failed to complete registration";
       try {
         const error = await verifyResponse.json();
-        console.error("📄 Verification error:", error);
-        errorMessage = error.error?.message || error.message || errorMessage;
-      } catch {
+        addDebugLog("📄 Verification error response", error);
+        errorMessage = error.error?.message || error.detail?.message || error.message || errorMessage;
+      } catch (parseError) {
+        addDebugLog("⚠️  Failed to parse verification error response", { parseError });
         errorMessage = `Server error (${verifyResponse.status}): ${verifyResponse.statusText}`;
       }
       throw new Error(errorMessage);
     }
 
     const result: RegistrationResult = await verifyResponse.json();
-    console.log("✅ Registration completed successfully");
+    addDebugLog("✅ REGISTRATION COMPLETED SUCCESSFULLY", {
+      userId: result.user.id,
+      email: result.user.email,
+      recoveryCodesCount: result.recovery_codes.length,
+    });
 
     // Store session
     localStorage.setItem("session_token", result.session_token);
@@ -262,24 +365,48 @@ class PasskeyAuthService {
    * Authenticate with a passkey
    */
   async login(email?: string): Promise<AuthResult> {
+    addDebugLog("🔐 STARTING PASSKEY LOGIN");
+    addDebugLog("📧 Email", { email: email || "none (discoverable)" });
+    addDebugLog("🌐 Environment", {
+      origin: window.location.origin,
+      protocol: window.location.protocol,
+      hostname: window.location.hostname,
+      apiBaseUrl: API_BASE_URL,
+    });
+
     if (!this.isSupported()) {
+      addDebugLog("❌ Passkeys not supported in this browser");
       throw new Error("Passkeys are not supported in this browser");
     }
-
-    console.log("🔐 Starting passkey login");
-    console.log("📧 Email:", email || "none (discoverable)");
-    console.log("🌐 Origin:", window.location.origin);
-    console.log("🔒 Protocol:", window.location.protocol);
+    addDebugLog("✅ WebAuthn is supported");
 
     // Step 1: Get challenge from backend
+    addDebugLog("📡 Step 1: Requesting login challenge from backend");
+    const loginStartUrl = `${API_BASE_URL}/auth/passkey/login/start`;
+    addDebugLog("🔗 URL", { url: loginStartUrl });
+
     let startResponse: Response;
     try {
-      startResponse = await fetch(`${API_BASE_URL}/auth/passkey/login/start`, {
+      const startTime = performance.now();
+      startResponse = await fetch(loginStartUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
+      const endTime = performance.now();
+      addDebugLog(`⏱️  Request completed in ${(endTime - startTime).toFixed(2)}ms`);
+      addDebugLog("📊 Response status", {
+        status: startResponse.status,
+        statusText: startResponse.statusText,
+        ok: startResponse.ok,
+        headers: Object.fromEntries(startResponse.headers.entries()),
+      });
     } catch (error: any) {
+      addDebugLog("❌ Network error during login start", {
+        errorName: error?.name,
+        errorMessage: error?.message,
+        errorStack: error?.stack,
+      });
       logWebAuthnError("Network error during login start", error);
       throw new Error(
         `Network error: ${error.message || "Could not connect to server"}`,
@@ -287,7 +414,7 @@ class PasskeyAuthService {
     }
 
     if (!startResponse.ok) {
-      console.error("❌ Login start failed:", {
+      addDebugLog("❌ Login start failed", {
         status: startResponse.status,
         statusText: startResponse.statusText,
       });
@@ -295,18 +422,29 @@ class PasskeyAuthService {
       let errorMessage = "Failed to start login";
       try {
         const error = await startResponse.json();
-        console.error("📄 Error response:", error);
-        errorMessage = error.error?.message || error.message || errorMessage;
-      } catch {
+        addDebugLog("📄 Error response body", error);
+        errorMessage = error.error?.message || error.detail?.message || error.message || errorMessage;
+      } catch (parseError) {
+        addDebugLog("⚠️  Failed to parse error response", { parseError });
         errorMessage = `Server error (${startResponse.status}): ${startResponse.statusText}`;
       }
       throw new Error(errorMessage);
     }
 
-    const { challenge_id, options } = await startResponse.json();
-    console.log("✅ Challenge received:", challenge_id);
+    const responseData = await startResponse.json();
+    const { challenge_id, options } = responseData;
+    addDebugLog("✅ Challenge received", {
+      challenge_id,
+      options: {
+        rpId: options.rpId,
+        timeout: options.timeout,
+        allowCredentialsCount: options.allowCredentials?.length || 0,
+        userVerification: options.userVerification,
+      },
+    });
 
     // Step 2: Get credential using WebAuthn
+    addDebugLog("📡 Step 2: Getting passkey credential");
     const publicKeyOptions: PublicKeyCredentialRequestOptions = {
       challenge: this.base64urlToBuffer(options.challenge),
       rpId: options.rpId,
@@ -319,47 +457,83 @@ class PasskeyAuthService {
       timeout: options.timeout,
     };
 
-    console.log("🔑 Calling navigator.credentials.get() with options:", {
+    addDebugLog("🔑 Calling navigator.credentials.get()", {
       rpId: options.rpId,
       timeout: options.timeout,
-      allowCredentials: options.allowCredentials?.length || 0,
+      allowCredentialsCount: options.allowCredentials?.length || 0,
       userVerification: options.userVerification,
     });
 
     let credential: Credential | null;
     try {
+      const getStartTime = performance.now();
       credential = await navigator.credentials.get({
         publicKey: publicKeyOptions,
       });
-      console.log("✅ Credential retrieved successfully");
+      const getEndTime = performance.now();
+      addDebugLog(`✅ Credential retrieved in ${(getEndTime - getStartTime).toFixed(2)}ms`);
+
+      if (credential) {
+        addDebugLog("🔍 Credential details", {
+          id: credential.id,
+          type: credential.type,
+        });
+      }
     } catch (error: any) {
+      addDebugLog("❌ WebAuthn authentication failed", {
+        errorName: error?.name,
+        errorMessage: error?.message,
+        errorCode: error?.code,
+      });
       logWebAuthnError("WebAuthn login failed", error);
       throw new Error(getWebAuthnErrorMessage(error, "login"));
     }
 
     if (!credential) {
+      addDebugLog("❌ No credential returned from navigator.credentials.get()");
       throw new Error("Failed to authenticate - no credential returned");
     }
+    addDebugLog("✅ Passkey credential retrieved successfully");
 
     // Step 3: Verify with backend
+    addDebugLog("📡 Step 3: Verifying credential with backend");
     const credentialData = this.credentialToJSON(
       credential as PublicKeyCredential,
     );
+    addDebugLog("🔍 Serialized credential", {
+      id: credentialData.id,
+      type: credentialData.type,
+      hasResponse: !!credentialData.response,
+    });
+
+    const loginVerifyUrl = `${API_BASE_URL}/auth/passkey/login/verify`;
+    addDebugLog("🔗 Verification URL", { url: loginVerifyUrl });
 
     let verifyResponse: Response;
     try {
-      verifyResponse = await fetch(
-        `${API_BASE_URL}/auth/passkey/login/verify`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            challenge_id,
-            credential: credentialData,
-          }),
-        },
-      );
+      const verifyStartTime = performance.now();
+      verifyResponse = await fetch(loginVerifyUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          challenge_id,
+          credential: credentialData,
+        }),
+      });
+      const verifyEndTime = performance.now();
+      addDebugLog(`⏱️  Verification request completed in ${(verifyEndTime - verifyStartTime).toFixed(2)}ms`);
+      addDebugLog("📊 Verification response status", {
+        status: verifyResponse.status,
+        statusText: verifyResponse.statusText,
+        ok: verifyResponse.ok,
+        headers: Object.fromEntries(verifyResponse.headers.entries()),
+      });
     } catch (error: any) {
+      addDebugLog("❌ Network error during verification", {
+        errorName: error?.name,
+        errorMessage: error?.message,
+        errorStack: error?.stack,
+      });
       logWebAuthnError("Network error during login verification", error);
       throw new Error(
         `Network error: ${error.message || "Could not connect to server"}`,
@@ -367,7 +541,7 @@ class PasskeyAuthService {
     }
 
     if (!verifyResponse.ok) {
-      console.error("❌ Login verification failed:", {
+      addDebugLog("❌ Login verification failed", {
         status: verifyResponse.status,
         statusText: verifyResponse.statusText,
       });
@@ -375,16 +549,20 @@ class PasskeyAuthService {
       let errorMessage = "Failed to verify authentication";
       try {
         const error = await verifyResponse.json();
-        console.error("📄 Verification error:", error);
-        errorMessage = error.error?.message || error.message || errorMessage;
-      } catch {
+        addDebugLog("📄 Verification error response", error);
+        errorMessage = error.error?.message || error.detail?.message || error.message || errorMessage;
+      } catch (parseError) {
+        addDebugLog("⚠️  Failed to parse verification error response", { parseError });
         errorMessage = `Server error (${verifyResponse.status}): ${verifyResponse.statusText}`;
       }
       throw new Error(errorMessage);
     }
 
     const result: AuthResult = await verifyResponse.json();
-    console.log("✅ Login completed successfully");
+    addDebugLog("✅ LOGIN COMPLETED SUCCESSFULLY", {
+      userId: result.user.id,
+      email: result.user.email,
+    });
 
     // Store session
     localStorage.setItem("session_token", result.session_token);
