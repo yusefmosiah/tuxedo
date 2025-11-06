@@ -49,26 +49,45 @@ class PasskeyAuthService {
    * Register a new user with a passkey
    */
   async register(email: string): Promise<RegistrationResult> {
+    console.log("[PasskeyAuth] Starting registration for:", email);
+    console.log("[PasskeyAuth] API_BASE_URL:", API_BASE_URL);
+
     if (!this.isSupported()) {
       throw new Error("Passkeys are not supported in this browser");
     }
 
     // Step 1: Start registration
-    const startResponse = await fetch(
-      `${API_BASE_URL}/auth/passkey/register/start`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      }
-    );
+    console.log("[PasskeyAuth] Calling register/start endpoint...");
+    let startResponse: Response;
+    try {
+      startResponse = await fetch(
+        `${API_BASE_URL}/auth/passkey/register/start`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        }
+      );
+      console.log("[PasskeyAuth] Register/start response status:", startResponse.status);
+    } catch (error: any) {
+      console.error("[PasskeyAuth] Network error calling register/start:", error);
+      throw new Error(`Network error: ${error.message || "Failed to connect to server"}`);
+    }
 
     if (!startResponse.ok) {
-      const error = await startResponse.json();
-      throw new Error(error.error?.message || "Failed to start registration");
+      let errorMessage = "Failed to start registration";
+      try {
+        const error = await startResponse.json();
+        console.error("[PasskeyAuth] Register/start error response:", error);
+        errorMessage = error.error?.message || errorMessage;
+      } catch (e) {
+        console.error("[PasskeyAuth] Failed to parse error response:", e);
+      }
+      throw new Error(errorMessage);
     }
 
     const { challenge_id, options } = await startResponse.json();
+    console.log("[PasskeyAuth] Received challenge_id:", challenge_id);
 
     // Step 2: Create credential using WebAuthn
     // Convert challenge and user.id from base64url to ArrayBuffer
