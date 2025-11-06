@@ -221,7 +221,7 @@ class PasskeyService:
             credential_id=credential_id,
             public_key=public_key,
             sign_count=verification.sign_count,
-            backup_eligible=verification.credential_backup_flags.backup_eligible,
+            backup_eligible=verification.credential_backed_up,
             transports=credential.get('response', {}).get('transports', []),
             friendly_name="Primary passkey"
         )
