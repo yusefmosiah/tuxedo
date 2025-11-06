@@ -18,18 +18,7 @@ interface AuthContextType {
     recovery_codes: string[];
     recovery_codes_message: string;
   }>;
-  registerWithPreloadedOptions: (
-    email: string,
-    preloadedOptions: { challenge_id: string; options: any },
-  ) => Promise<{
-    user: User;
-    recovery_codes: string[];
-    recovery_codes_message: string;
-  }>;
-  login: (email: string) => Promise<void>;
-  loginWithPreloadedOptions: (
-    preloadedOptions: { challenge_id: string; options: any },
-  ) => Promise<void>;
+  login: (email?: string) => Promise<void>;
   loginWithRecoveryCode: (email: string, code: string) => Promise<void>;
   acknowledgeRecoveryCodes: () => Promise<void>;
   validateSession: (token: string) => Promise<boolean>;
@@ -92,42 +81,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Register new user with passkey (with preloaded options - iOS Safari compatible)
-  const registerWithPreloadedOptions = async (
-    email: string,
-    preloadedOptions: { challenge_id: string; options: any },
-  ): Promise<{
-    user: User;
-    recovery_codes: string[];
-    recovery_codes_message: string;
-  }> => {
-    try {
-      const result = await passkeyAuthService.registerWithPreloadedOptions(
-        email,
-        preloadedOptions,
-      );
-
-      // Set auth state
-      setUser(result.user);
-      setSessionToken(result.session_token);
-
-      return {
-        user: result.user,
-        recovery_codes: result.recovery_codes,
-        recovery_codes_message: result.recovery_codes_message,
-      };
-    } catch (error: any) {
-      console.error("Registration failed:", {
-        name: error?.name,
-        message: error?.message,
-        stack: error?.stack,
-        fullError: error,
-      });
-      throw error;
-    }
-  };
-
-  // Register new user with passkey (original method - may fail on iOS Safari)
+  // Register new user with passkey
   const register = async (
     email: string,
   ): Promise<{
@@ -148,49 +102,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         recovery_codes_message: result.recovery_codes_message,
       };
     } catch (error: any) {
-      console.error("Registration failed:", {
-        name: error?.name,
-        message: error?.message,
-        stack: error?.stack,
-        fullError: error,
-      });
+      console.error("Registration failed in AuthContext:", error);
       throw error;
     }
   };
 
-  // Login with passkey (with preloaded options - iOS Safari compatible)
-  const loginWithPreloadedOptions = async (
-    preloadedOptions: { challenge_id: string; options: any },
-  ): Promise<void> => {
+  // Login with passkey
+  const login = async (email?: string): Promise<void> => {
     try {
-      const result = await passkeyAuthService.loginWithPreloadedOptions(
-        preloadedOptions,
-      );
-
-      // Set auth state
-      setUser(result.user);
-      setSessionToken(result.session_token);
-    } catch (error: any) {
-      console.error("Login failed:", {
-        name: error?.name,
-        message: error?.message,
-        stack: error?.stack,
-        fullError: error,
-      });
-      throw error;
-    }
-  };
-
-  // Login with passkey (original method - may fail on iOS Safari)
-  const login = async (email: string): Promise<void> => {
-    try {
-      const result = await passkeyAuthService.authenticate(email);
+      const result = await passkeyAuthService.login(email);
 
       // Set auth state
       setUser(result.user);
       setSessionToken(result.session_token);
     } catch (error) {
-      console.error("Login failed:", error);
+      console.error("Login failed in AuthContext:", error);
       throw error;
     }
   };
@@ -259,9 +185,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     isAuthenticated,
     register,
-    registerWithPreloadedOptions,
     login,
-    loginWithPreloadedOptions,
     loginWithRecoveryCode,
     acknowledgeRecoveryCodes,
     validateSession,
