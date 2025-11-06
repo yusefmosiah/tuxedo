@@ -102,8 +102,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         recovery_codes: result.recovery_codes,
         recovery_codes_message: result.recovery_codes_message,
       };
-    } catch (error) {
-      console.error("Registration failed:", error);
+    } catch (error: any) {
+      console.error("Registration failed:", {
+        name: error?.name,
+        message: error?.message,
+        stack: error?.stack,
+        fullError: error,
+      });
       throw error;
     }
   };

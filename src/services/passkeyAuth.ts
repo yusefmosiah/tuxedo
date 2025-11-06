@@ -119,13 +119,27 @@ class PasskeyAuthService {
       })),
     };
 
+    console.log("🔑 Creating passkey with options:", {
+      rp: options.rp,
+      user: options.user,
+      timeout: options.timeout,
+      authenticatorSelection: options.authenticatorSelection,
+    });
+
     let credential: Credential | null;
     try {
       credential = await navigator.credentials.create({
         publicKey: publicKeyOptions,
       });
     } catch (error: any) {
-      console.error("WebAuthn registration failed:", error);
+      // Enhanced error logging
+      console.error("WebAuthn registration failed:", {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        stack: error.stack,
+        fullError: error,
+      });
       // Provide more specific error messages based on error type
       if (error.name === "NotAllowedError") {
         throw new Error(
@@ -145,7 +159,7 @@ class PasskeyAuthService {
         );
       }
       throw new Error(
-        `Failed to create passkey: ${error.message || "Please try again."}`,
+        `Failed to create passkey: ${error.name || "Unknown error"} - ${error.message || "Please try again."}`,
       );
     }
 
