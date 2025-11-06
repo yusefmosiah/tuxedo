@@ -90,9 +90,29 @@ class PasskeyAuthService {
       credential = await navigator.credentials.create({
         publicKey: publicKeyOptions,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("WebAuthn registration failed:", error);
-      throw new Error("Failed to create passkey. Please try again.");
+      // Provide more specific error messages based on error type
+      if (error.name === "NotAllowedError") {
+        throw new Error(
+          "Passkey creation was cancelled. Please try again and approve the prompt."
+        );
+      } else if (error.name === "InvalidStateError") {
+        throw new Error(
+          "A passkey already exists for this device. Please try signing in instead."
+        );
+      } else if (error.name === "NotSupportedError") {
+        throw new Error(
+          "Passkeys are not supported on this device or browser."
+        );
+      } else if (error.name === "SecurityError") {
+        throw new Error(
+          "Security error: Please ensure you're accessing the site via HTTPS."
+        );
+      }
+      throw new Error(
+        `Failed to create passkey: ${error.message || "Please try again."}`
+      );
     }
 
     if (!credential) {
@@ -177,9 +197,25 @@ class PasskeyAuthService {
       credential = await navigator.credentials.get({
         publicKey: publicKeyOptions,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("WebAuthn authentication failed:", error);
-      throw new Error("Failed to authenticate with passkey. Please try again.");
+      // Provide more specific error messages based on error type
+      if (error.name === "NotAllowedError") {
+        throw new Error(
+          "Authentication was cancelled. Please try again and approve the prompt."
+        );
+      } else if (error.name === "NotSupportedError") {
+        throw new Error(
+          "Passkeys are not supported on this device or browser."
+        );
+      } else if (error.name === "SecurityError") {
+        throw new Error(
+          "Security error: Please ensure you're accessing the site via HTTPS."
+        );
+      }
+      throw new Error(
+        `Failed to authenticate: ${error.message || "Please try again."}`
+      );
     }
 
     if (!credential) {
