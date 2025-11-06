@@ -27,6 +27,13 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     isPasskeySupported,
   } = useAuth();
 
+  // Log passkey support status on component mount
+  React.useEffect(() => {
+    console.log("Login component mounted");
+    console.log("Passkey supported:", isPasskeySupported);
+    console.log("Current auth mode:", authMode);
+  }, []);
+
   const handlePasskeyAuth = async (e: React.FormEvent) => {
     e.preventDefault();
 

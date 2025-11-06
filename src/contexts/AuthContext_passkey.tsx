@@ -44,8 +44,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check if passkeys are supported
-  const isPasskeySupported = passkeyAuthService.isSupported();
+  // Check if passkeys are supported (with error handling)
+  const isPasskeySupported = (() => {
+    try {
+      return passkeyAuthService.isSupported();
+    } catch (error) {
+      console.error("Error checking passkey support:", error);
+      return false;
+    }
+  })();
 
   // Check authentication on mount
   useEffect(() => {
@@ -61,21 +68,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const storedUserData = localStorage.getItem(USER_DATA_KEY);
 
       if (storedToken && storedUserData) {
-        // Validate session with backend
-        const validatedUser = await passkeyAuthService.validateSession(
-          storedToken
-        );
+        // Validate session with backend (with timeout and error handling)
+        try {
+          const validatedUser =
+            await passkeyAuthService.validateSession(storedToken);
 
-        if (validatedUser) {
-          setSessionToken(storedToken);
-          setUser(validatedUser);
-        } else {
-          // Clear invalid session
-          logout();
+          if (validatedUser) {
+            setSessionToken(storedToken);
+            setUser(validatedUser);
+          } else {
+            // Clear invalid session
+            console.warn("Session validation failed, clearing session");
+            logout();
+          }
+        } catch (validationError) {
+          // If validation fails (e.g., backend is down), keep the stored session
+          // but log the error for debugging
+          console.warn(
+            "Could not validate session with backend:",
+            validationError,
+          );
+
+          // Try to parse stored user data to maintain session
+          try {
+            const parsedUser = JSON.parse(storedUserData);
+            setSessionToken(storedToken);
+            setUser(parsedUser);
+            console.info("Using cached session data (backend unavailable)");
+          } catch (parseError) {
+            console.error("Failed to parse stored user data:", parseError);
+            logout();
+          }
         }
       }
     } catch (error) {
       console.error("Auth check failed:", error);
+      // Don't throw - just clear auth state
       logout();
     } finally {
       setIsLoading(false);
@@ -84,7 +112,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Register new user with passkey
   const register = async (
-    email: string
+    email: string,
   ): Promise<{
     user: User;
     recovery_codes: string[];
@@ -125,7 +153,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Login with recovery code
   const loginWithRecoveryCode = async (
     email: string,
-    code: string
+    code: string,
   ): Promise<void> => {
     try {
       const result = await passkeyAuthService.useRecoveryCode(email, code);

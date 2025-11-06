@@ -8,6 +8,7 @@ import { NotificationProvider } from "./providers/NotificationProvider.tsx";
 import { AuthProvider } from "./contexts/AuthContext_passkey.tsx";
 import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ErrorBoundary } from "./components/ErrorBoundary.tsx";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,16 +21,18 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById("root") as HTMLElement).render(
   <StrictMode>
-    <NotificationProvider>
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <AuthProvider>
-            <AgentProvider>
-              <App />
-            </AgentProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </QueryClientProvider>
-    </NotificationProvider>
+    <ErrorBoundary>
+      <NotificationProvider>
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
+            <AuthProvider>
+              <AgentProvider>
+                <App />
+              </AgentProvider>
+            </AuthProvider>
+          </BrowserRouter>
+        </QueryClientProvider>
+      </NotificationProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );
