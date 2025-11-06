@@ -228,9 +228,13 @@ async def register_start(req: Request, request: RegisterStartRequest):
         # Check if user already exists
         existing_user = db.get_user_by_email(request.email)
         if existing_user:
+            # Get user's existing passkeys to help with error message
+            passkeys = db.get_user_passkeys(existing_user['id'])
+            passkey_count = len(passkeys)
+
             create_error_response(
                 "USER_EXISTS",
-                "An account with this email already exists",
+                f"An account with this email already exists with {passkey_count} passkey(s). Please sign in instead of creating a new account.",
                 status_code=409
             )
 
@@ -240,14 +244,32 @@ async def register_start(req: Request, request: RegisterStartRequest):
         # Create challenge
         challenge_id, challenge = db.create_challenge()
 
-        # Generate registration options
+        # Build excludeCredentials list to prevent duplicate passkey creation
+        # Note: We check for existing user above, but this is extra protection
+        # in case of race conditions or if we later allow re-registration
+        exclude_credentials = []
+
+        # If somehow a user exists (shouldn't happen due to check above),
+        # get their credentials for the exclude list
+        if existing_user:
+            passkeys = db.get_user_passkeys(existing_user['id'])
+            exclude_credentials = [
+                PublicKeyCredentialDescriptor(
+                    id=base64.urlsafe_b64decode(pk['credential_id'])
+                )
+                for pk in passkeys
+            ]
+            logger.info(f"Added {len(exclude_credentials)} credentials to exclude list for {request.email}")
+
+        # Generate registration options with excludeCredentials
         registration_options = generate_registration_options(
             rp_id=rp_id,
             rp_name=RP_NAME,
-            user_id=request.email.encode(),  # We'll create user ID after verification
+            user_id=challenge_id.encode(),  # Use challenge_id as temporary user_id (will be replaced after verification)
             user_name=request.email,
             user_display_name=request.email,
             challenge=challenge.encode(),
+            exclude_credentials=exclude_credentials,  # Prevent duplicate passkey creation
             authenticator_selection=AuthenticatorSelectionCriteria(
                 authenticator_attachment=AuthenticatorAttachment.PLATFORM,
                 resident_key=ResidentKeyRequirement.PREFERRED,
@@ -357,8 +379,32 @@ async def register_verify(req: Request, request: RegisterVerifyRequest):
         # Mark challenge as used
         db.mark_challenge_used(request.challenge_id)
 
-        # Create user
-        user = db.create_user(request.email)
+        # CRITICAL: Re-check if user exists to prevent race condition
+        # Two users might have gotten past the /register/start check simultaneously
+        existing_user = db.get_user_by_email(request.email)
+        if existing_user:
+            create_error_response(
+                "USER_EXISTS",
+                "An account with this email was created while registration was in progress. Please sign in instead.",
+                status_code=409
+            )
+
+        # Create user with IntegrityError handling
+        try:
+            user = db.create_user(request.email)
+        except Exception as e:
+            # Handle database constraint violations (e.g., unique email constraint)
+            error_msg = str(e).lower()
+            if 'unique' in error_msg or 'constraint' in error_msg or 'integrity' in error_msg:
+                logger.error(f"IntegrityError creating user: {e}")
+                create_error_response(
+                    "USER_EXISTS",
+                    "An account with this email already exists",
+                    status_code=409
+                )
+            else:
+                # Re-raise other unexpected errors
+                raise
 
         # Store passkey credential
         credential_id = base64.urlsafe_b64encode(verification.credential_id).decode('utf-8')
