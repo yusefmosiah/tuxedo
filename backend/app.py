@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 from api.routes.chat import router as chat_router
 from api.routes.agent import router as agent_router
 from api.routes.threads import router as threads_router
-from api.routes.passkey_auth import router as passkey_auth_router
+# Use refactored passkey auth routes (reduced from 1148 to ~450 lines)
+from api.routes.passkey_auth_refactored import router as passkey_auth_router
 
 # Import agent system
 from agent.core import initialize_agent, cleanup_agent
