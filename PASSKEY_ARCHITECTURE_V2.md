@@ -12,6 +12,20 @@ Application features answer: "What can you do?"
 
 **Do not conflate these concerns.**
 
+## Context: Production Financial Platform
+
+**Choir is a production financial platform launching Q4 2025**, not an educational testnet tool. Users:
+- Earn real money (stablecoins from citation rewards)
+- Deploy real capital (DeFi yield mining on mainnet)
+- Build valuable IP (research articles earning passive income)
+- Accumulate financial assets (tokens, citation history, capital)
+
+**Account loss = financial loss.** Therefore:
+- ✅ Email required for account recovery
+- ✅ Persistent accounts non-negotiable
+- ✅ Transactional emails via SendGrid (already configured)
+- ✅ Security-first approach to authentication
+
 ---
 
 ## Phase 1: Passkey Authentication (Current Sprint)
@@ -44,23 +58,34 @@ Replace magic link authentication with WebAuthn passkey authentication.
 │  Registration:                                               │
 │  1. User enters email                                        │
 │  2. Browser creates passkey (WebAuthn)                       │
-│  3. Server stores credential                                 │
+│  3. Server stores credential + links to user account         │
 │  4. Server generates 8 recovery codes                        │
-│  5. Server creates session token                             │
+│  5. Server sends welcome email with recovery codes (SendGrid)│
+│  6. Server creates session token                             │
 │  → User is authenticated                                     │
 │                                                              │
 │  Login:                                                      │
-│  1. User clicks "Login with Passkey"                         │
-│  2. Browser prompts for passkey                              │
+│  1. User enters email                                        │
+│  2. Browser requests passkey for that email                  │
 │  3. Server verifies credential                               │
 │  4. Server creates session token                             │
 │  → User is authenticated                                     │
 │                                                              │
 │  Recovery:                                                   │
-│  1. User enters recovery code                                │
-│  2. Server validates and marks code as used                  │
-│  3. Server creates session token                             │
+│  1. User enters email + recovery code                        │
+│  2. Server validates code for that user                      │
+│  3. Server marks code as used                                │
+│  4. Server sends security alert email                        │
+│  5. Server creates session token                             │
 │  → User is authenticated                                     │
+│                                                              │
+│  Email Recovery (if lost passkeys + codes):                  │
+│  1. User clicks "Lost access?"                               │
+│  2. Server sends email recovery link (SendGrid)              │
+│  3. User clicks link, verifies identity                      │
+│  4. User creates new passkey                                 │
+│  5. Server generates new recovery codes                      │
+│  → User regains access                                       │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -70,6 +95,10 @@ Replace magic link authentication with WebAuthn passkey authentication.
 #### New Tables
 
 ```sql
+-- Update users table to include email (required)
+-- NOTE: users table already exists, may need migration
+-- Ensure: email TEXT UNIQUE NOT NULL
+
 -- Store WebAuthn credentials
 CREATE TABLE passkey_credentials (
     id TEXT PRIMARY KEY,
@@ -79,6 +108,7 @@ CREATE TABLE passkey_credentials (
     sign_count INTEGER DEFAULT 0,
     backup_eligible BOOLEAN DEFAULT FALSE,
     transports TEXT,  -- JSON array
+    friendly_name TEXT,  -- e.g., "MacBook Pro", "iPhone 15"
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_used_at TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
@@ -88,7 +118,7 @@ CREATE TABLE passkey_credentials (
 CREATE TABLE passkey_challenges (
     id TEXT PRIMARY KEY,
     challenge TEXT UNIQUE NOT NULL,
-    user_id TEXT,  -- NULL for login start
+    user_id TEXT,  -- Set after email provided
     expires_at TIMESTAMP NOT NULL,
     used BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -105,7 +135,7 @@ CREATE TABLE passkey_sessions (
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
--- Store recovery codes
+-- Store recovery codes (8 per user)
 CREATE TABLE recovery_codes (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
@@ -113,6 +143,17 @@ CREATE TABLE recovery_codes (
     used BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     used_at TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+-- Store email recovery tokens (for lost passkeys + codes)
+CREATE TABLE email_recovery_tokens (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    token TEXT UNIQUE NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    used BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 ```
@@ -125,6 +166,8 @@ CREATE INDEX idx_passkey_credentials_credential_id ON passkey_credentials(creden
 CREATE INDEX idx_passkey_sessions_user_id ON passkey_sessions(user_id);
 CREATE INDEX idx_passkey_sessions_token ON passkey_sessions(session_token);
 CREATE INDEX idx_recovery_codes_user_id ON recovery_codes(user_id);
+CREATE INDEX idx_email_recovery_tokens_user_id ON email_recovery_tokens(user_id);
+CREATE INDEX idx_email_recovery_tokens_token ON email_recovery_tokens(token);
 ```
 
 #### Tables to Remove
@@ -157,7 +200,7 @@ Response: {
 
 ```
 POST /auth/passkey/login/start
-Request:  { email?: string }  // Optional for usernameless flow
+Request:  { email: string }  // Required - email-based flow
 Response: { challenge_id: string, options: PublicKeyCredentialRequestOptions }
 
 POST /auth/passkey/login/verify
@@ -168,15 +211,42 @@ Response: {
 }
 ```
 
-#### Recovery
+#### Recovery Code Authentication
 
 ```
 POST /auth/passkey/recovery/verify
-Request:  { code: string }
+Request:  { email: string, code: string }
 Response: {
     user: { id, email },
-    session_token: string
+    session_token: string,
+    remaining_codes: number  // How many recovery codes left
 }
+
+NOTE: Sends security alert email via SendGrid after successful recovery code use
+```
+
+#### Email Recovery (Lost Passkeys + Codes)
+
+```
+POST /auth/passkey/email-recovery/request
+Request:  { email: string }
+Response: { success: true, message: "Recovery link sent to email" }
+
+NOTE: Sends email with time-limited recovery link via SendGrid
+
+GET /auth/passkey/email-recovery/verify?token=<token>
+Response: Redirect to frontend with token, or error page if invalid/expired
+
+POST /auth/passkey/email-recovery/complete
+Request:  { token: string, credential: object }  // New passkey created
+Response: {
+    user: { id, email },
+    session_token: string,
+    recovery_codes: string[],  // New recovery codes generated
+    recovery_codes_message: string
+}
+
+NOTE: Sends confirmation email with new recovery codes via SendGrid
 ```
 
 #### Session Management
@@ -214,6 +284,99 @@ export class PasskeyAuthService {
 - Update `src/contexts/AuthContext.tsx` to manage passkey sessions
 - **NO sidebar changes**
 - **NO layout changes**
+
+### SendGrid Email Integration
+
+Choir already has SendGrid configured for transactional emails. Passkey system requires:
+
+#### Email Templates Needed
+
+**1. Welcome Email (After Registration)**
+```
+Subject: Welcome to Choir - Your Recovery Codes
+Body:
+  - Welcome message
+  - Your 8 recovery codes (displayed once)
+  - Instructions to save codes securely
+  - Link to passkey management
+```
+
+**2. Recovery Code Used Alert**
+```
+Subject: Security Alert: Recovery Code Used
+Body:
+  - Notification that recovery code was used
+  - Date/time and approximate location
+  - Remaining recovery codes: X/8
+  - Link to regenerate codes if suspicious
+```
+
+**3. Email Recovery Link**
+```
+Subject: Choir Account Recovery Request
+Body:
+  - You requested account recovery
+  - Click link to create new passkey (expires in 1 hour)
+  - If you didn't request this, ignore email
+  - Contact support if suspicious
+```
+
+**4. Account Recovered Confirmation**
+```
+Subject: Your Choir Account Has Been Recovered
+Body:
+  - New passkey created successfully
+  - New recovery codes generated (displayed in email)
+  - Old passkeys have been revoked
+  - Review account activity
+```
+
+**5. New Passkey Added**
+```
+Subject: New Passkey Added to Your Account
+Body:
+  - New passkey registered
+  - Device info (if available)
+  - Date/time
+  - Remove passkey if not authorized
+```
+
+#### Email Environment Variables
+
+```bash
+# backend/.env (already configured)
+SENDGRID_API_KEY=your_key
+SENDGRID_FROM_EMAIL=no-reply@choir.chat
+SENDGRID_FROM_NAME=Choir
+```
+
+#### Email Service Module
+
+```python
+# backend/services/email.py
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+
+async def send_welcome_email(email: str, recovery_codes: list[str]):
+    """Send welcome email with recovery codes"""
+    pass
+
+async def send_recovery_alert(email: str, remaining_codes: int):
+    """Send security alert after recovery code use"""
+    pass
+
+async def send_recovery_link(email: str, token: str):
+    """Send email recovery link"""
+    pass
+
+async def send_recovery_confirmation(email: str, recovery_codes: list[str]):
+    """Send confirmation after account recovery"""
+    pass
+
+async def send_passkey_added_alert(email: str, device_info: str):
+    """Send alert when new passkey is added"""
+    pass
+```
 
 ### Security Considerations
 
@@ -261,14 +424,20 @@ export class PasskeyAuthService {
 
 #### Manual Testing Checklist
 - [ ] Register new user with passkey
-- [ ] Login with passkey
+- [ ] Receive welcome email with recovery codes
+- [ ] Login with passkey using email
 - [ ] Login fails with wrong passkey
-- [ ] Save recovery codes
 - [ ] Login with recovery code
+- [ ] Receive security alert email after recovery code use
 - [ ] Recovery code only works once
+- [ ] Request email recovery link
+- [ ] Receive recovery email with valid link
+- [ ] Complete email recovery and create new passkey
+- [ ] Receive confirmation email with new recovery codes
 - [ ] Session persists across page refresh
 - [ ] Logout clears session
 - [ ] Session expires after 7 days
+- [ ] All SendGrid emails deliver successfully
 
 ### Deployment Checklist
 
