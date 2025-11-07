@@ -34,6 +34,20 @@ logger = logging.getLogger(__name__)
 RP_NAME = os.getenv("RP_NAME", "Tuxedo AI")
 
 
+def base64url_decode_with_padding(encoded_str: str) -> bytes:
+    """
+    Decode base64url-encoded string, adding padding if needed.
+
+    WebAuthn uses base64url encoding without padding, but Python's
+    base64.urlsafe_b64decode() requires proper padding.
+    """
+    # Add padding if needed (padding length should make total length divisible by 4)
+    padding_needed = (4 - len(encoded_str) % 4) % 4
+    if padding_needed:
+        encoded_str += '=' * padding_needed
+    return base64.urlsafe_b64decode(encoded_str)
+
+
 class PasskeyService:
     """Service for handling passkey authentication operations"""
 
@@ -90,7 +104,7 @@ class PasskeyService:
             passkeys = self.db.get_user_passkeys(existing_user['id'])
             exclude_credentials = [
                 PublicKeyCredentialDescriptor(
-                    id=base64.urlsafe_b64decode(pk['credential_id'])
+                    id=base64url_decode_with_padding(pk['credential_id'])
                 )
                 for pk in passkeys
             ]
@@ -213,8 +227,9 @@ class PasskeyService:
             raise
 
         # Store passkey credential
-        credential_id = base64.urlsafe_b64encode(verification.credential_id).decode('utf-8')
-        public_key = base64.urlsafe_b64encode(verification.credential_public_key).decode('utf-8')
+        # Per WebAuthn spec, base64url encoding must not include padding
+        credential_id = base64.urlsafe_b64encode(verification.credential_id).decode('utf-8').rstrip('=')
+        public_key = base64.urlsafe_b64encode(verification.credential_public_key).decode('utf-8').rstrip('=')
 
         self.db.store_passkey_credential(
             user_id=user['id'],
@@ -285,7 +300,7 @@ class PasskeyService:
         # Create allowed credentials list
         allowed_credentials = [
             PublicKeyCredentialDescriptor(
-                id=base64.urlsafe_b64decode(pk['credential_id'])
+                id=base64url_decode_with_padding(pk['credential_id'])
             )
             for pk in passkeys
         ]
@@ -370,7 +385,7 @@ class PasskeyService:
                 expected_challenge=challenge_data['challenge'].encode(),
                 expected_origin=origin,
                 expected_rp_id=rp_id,
-                credential_public_key=base64.urlsafe_b64decode(stored_credential['public_key'] + '=='),
+                credential_public_key=base64url_decode_with_padding(stored_credential['public_key']),
                 credential_current_sign_count=stored_credential['sign_count'],
                 require_user_verification=True,
             )
