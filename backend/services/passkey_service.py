@@ -345,10 +345,22 @@ class PasskeyService:
         credential_id = credential.get('id', '')
         logger.debug(f"   Looking up credential: {credential_id[:20]}...")
 
+        # DEBUG: Log all credentials for this user to diagnose lookup issue
+        user_passkeys = self.db.get_user_passkeys(challenge_data.get('user_id'))
+        logger.debug(f"   User has {len(user_passkeys)} passkey(s)")
+        for pk in user_passkeys:
+            logger.debug(f"   Stored credential: {pk['credential_id'][:20]}...")
+            logger.debug(f"   Match: {pk['credential_id'] == credential_id}")
+
         # Get stored credential
         stored_credential = self.db.get_passkey_credential(credential_id)
         if not stored_credential:
             logger.error(f"❌ Credential not found: {credential_id[:20]}...")
+            logger.error(f"   Full credential ID from client: {credential_id}")
+            if user_passkeys:
+                logger.error(f"   Stored credential IDs:")
+                for pk in user_passkeys:
+                    logger.error(f"     - {pk['credential_id']}")
             raise ValueError("Credential not found")
 
         # Verify the authentication response
