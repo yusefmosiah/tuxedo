@@ -113,6 +113,20 @@ class PasskeyDatabaseManager:
                 )
             ''')
 
+            # Agent accounts table (Stellar accounts linked to users)
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS agent_accounts (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    stellar_public_key TEXT UNIQUE NOT NULL,
+                    stellar_secret_key_encrypted TEXT NOT NULL,
+                    name TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    last_used_at TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+                )
+            ''')
+
             # Create threads table (for chat history)
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS threads (
@@ -156,6 +170,8 @@ class PasskeyDatabaseManager:
             'CREATE INDEX IF NOT EXISTS idx_email_recovery_tokens_token ON email_recovery_tokens(token)',
             'CREATE INDEX IF NOT EXISTS idx_recovery_attempts_user_id ON recovery_attempts(user_id)',
             'CREATE INDEX IF NOT EXISTS idx_recovery_attempts_attempted_at ON recovery_attempts(attempted_at)',
+            'CREATE INDEX IF NOT EXISTS idx_agent_accounts_user_id ON agent_accounts(user_id)',
+            'CREATE INDEX IF NOT EXISTS idx_agent_accounts_stellar_public_key ON agent_accounts(stellar_public_key)',
             'CREATE INDEX IF NOT EXISTS idx_threads_user_id ON threads(user_id)',
             'CREATE INDEX IF NOT EXISTS idx_threads_updated_at ON threads(updated_at DESC)',
             'CREATE INDEX IF NOT EXISTS idx_messages_thread_id ON messages(thread_id)'
@@ -623,6 +639,91 @@ class PasskeyDatabaseManager:
                 UPDATE email_recovery_tokens SET used = TRUE WHERE token = ?
             ''', (token,))
             conn.commit()
+
+    # Agent account management
+    def create_agent_account(
+        self,
+        user_id: str,
+        stellar_public_key: str,
+        stellar_secret_key_encrypted: str,
+        name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Create agent account linked to user"""
+        account_id = f"agent_{secrets.token_urlsafe(16)}"
+
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            cursor.execute('''
+                INSERT INTO agent_accounts
+                (id, user_id, stellar_public_key, stellar_secret_key_encrypted, name, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (
+                account_id,
+                user_id,
+                stellar_public_key,
+                stellar_secret_key_encrypted,
+                name or f"Agent Account {datetime.now().strftime('%Y-%m-%d')}",
+                datetime.now()
+            ))
+            conn.commit()
+
+            cursor.execute('SELECT * FROM agent_accounts WHERE id = ?', (account_id,))
+            return dict(cursor.fetchone())
+
+    def get_agent_accounts_by_user(self, user_id: str) -> List[Dict[str, Any]]:
+        """Get all agent accounts for a specific user"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            cursor.execute('''
+                SELECT * FROM agent_accounts
+                WHERE user_id = ?
+                ORDER BY created_at DESC
+            ''', (user_id,))
+
+            return [dict(row) for row in cursor.fetchall()]
+
+    def get_agent_account(
+        self,
+        stellar_public_key: str
+    ) -> Optional[Dict[str, Any]]:
+        """Get agent account by Stellar public key"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            cursor.execute('''
+                SELECT * FROM agent_accounts
+                WHERE stellar_public_key = ?
+            ''', (stellar_public_key,))
+
+            account = cursor.fetchone()
+            return dict(account) if account else None
+
+    def update_agent_account_last_used(self, stellar_public_key: str):
+        """Update last_used_at timestamp"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                UPDATE agent_accounts
+                SET last_used_at = ?
+                WHERE stellar_public_key = ?
+            ''', (datetime.now(), stellar_public_key))
+            conn.commit()
+
+    def delete_agent_account(self, user_id: str, stellar_public_key: str) -> bool:
+        """Delete agent account (only if owned by user)"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                DELETE FROM agent_accounts
+                WHERE user_id = ? AND stellar_public_key = ?
+            ''', (user_id, stellar_public_key))
+            conn.commit()
+            return cursor.rowcount > 0
 
     # Thread management (for chat history)
     def create_thread(self, user_id: str, title: str) -> str:

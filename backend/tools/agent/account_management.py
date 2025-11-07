@@ -1,13 +1,11 @@
 """
-Agent Account Management Tools
-Functions for AI agents to manage their own Stellar accounts
+Agent Account Management Tools (User-Isolated)
+Functions for AI agents to manage their own Stellar accounts with user authentication
 """
 
 from typing import Dict, Optional, List
-from stellar_sdk import Keypair
 from stellar_sdk.server import Server
-from key_manager import KeyManager
-import json
+from agent_account_manager import AgentAccountManager
 import os
 import requests
 
@@ -16,40 +14,28 @@ HORIZON_URL = os.getenv("HORIZON_URL", "https://horizon-testnet.stellar.org")
 FRIENDBOT_URL = os.getenv("FRIENDBOT_URL", "https://friendbot.stellar.org")
 server = Server(HORIZON_URL)
 
-def create_agent_account(account_name: Optional[str] = None) -> Dict:
-    """Create new agent-controlled account"""
+def create_agent_account(user_id: str, account_name: Optional[str] = None) -> Dict:
+    """Create new agent-controlled account for user"""
     try:
-        # Generate new keypair
-        keypair = Keypair.random()
+        # Create account using AgentAccountManager
+        manager = AgentAccountManager()
+        result = manager.create_account(user_id=user_id, name=account_name)
 
-        # Initialize key manager
-        key_manager = KeyManager()
-
-        # Store in key manager with metadata
-        metadata = {
-            "name": account_name or f"Account {len(key_manager.list_accounts()) + 1}",
-            "created_at": "2025-01-03T00:00:00Z",
-            "network": "testnet"
-        }
-
-        key_manager.store(keypair.public_key, keypair.secret)
+        if not result.get("success"):
+            return result
 
         # Fund with testnet lumens
         funded = False
         try:
-            response = requests.get(f"{FRIENDBOT_URL}?addr={keypair.public_key}")
+            response = requests.get(f"{FRIENDBOT_URL}?addr={result['address']}")
             if response.status_code == 200:
                 funded = True
         except Exception as e:
             print(f"Failed to fund account: {e}")
 
-        return {
-            "address": keypair.public_key,
-            "name": metadata["name"],
-            "funded": funded,
-            "network": "testnet",
-            "success": True
-        }
+        result["funded"] = funded
+        result["network"] = "testnet"
+        return result
 
     except Exception as e:
         return {
@@ -57,49 +43,51 @@ def create_agent_account(account_name: Optional[str] = None) -> Dict:
             "success": False
         }
 
-def list_agent_accounts() -> List[Dict]:
-    """List all agent-controlled accounts"""
+def list_agent_accounts(user_id: str) -> List[Dict]:
+    """List agent-controlled accounts for user"""
     try:
-        key_manager = KeyManager()
-        accounts = []
+        manager = AgentAccountManager()
+        accounts = manager.get_user_accounts(user_id)
 
-        for address in key_manager.list_accounts():
+        # Enhance with Stellar network data
+        enhanced_accounts = []
+        for account in accounts:
             try:
                 # Get account info from Stellar
-                account = server.load_account(address)
+                stellar_account = server.load_account(account['address'])
                 balance = 0
                 # Access balances from raw_data
-                for balance_item in account.raw_data.get('balances', []):
+                for balance_item in stellar_account.raw_data.get('balances', []):
                     if balance_item.get('asset_type') == "native":
                         balance = float(balance_item.get('balance', '0'))
                         break
 
-                accounts.append({
-                    "address": address,
-                    "balance": balance,
-                    "network": "testnet"
-                })
+                account['balance'] = balance
+                account['network'] = "testnet"
             except Exception as e:
                 # Account exists but might not be funded
-                print(f"Warning: Could not load account {address}: {e}")
-                accounts.append({
-                    "address": address,
-                    "balance": 0,
-                    "network": "testnet"
-                })
+                print(f"Warning: Could not load account {account['address']}: {e}")
+                account['balance'] = 0
+                account['network'] = "testnet"
 
-        return accounts
+            enhanced_accounts.append(account)
+
+        return enhanced_accounts
 
     except Exception as e:
         return [{"error": str(e)}]
 
-def get_agent_account_info(address: str) -> Dict:
-    """Get detailed account information"""
+def get_agent_account_info(user_id: str, address: str) -> Dict:
+    """Get detailed account information (if user owns it)"""
     try:
-        key_manager = KeyManager()
+        manager = AgentAccountManager()
 
-        if not key_manager.has_account(address):
-            return {"error": f"Account {address} not found", "success": False}
+        # Permission check
+        if not manager.has_account(user_id, address):
+            return {
+                "error": f"Account {address} not found or not owned by user",
+                "success": False
+            }
 
         # Get stellar account data
         balance = 0
@@ -114,10 +102,13 @@ def get_agent_account_info(address: str) -> Dict:
             print(f"Warning: Could not load account {address}: {e}")
             balance = 0
 
-        # Simple metadata since KeyManager doesn't support complex metadata
+        # Get account metadata from database
+        accounts = manager.get_user_accounts(user_id)
+        account_info = next((a for a in accounts if a['address'] == address), None)
+
         metadata = {
-            "name": "Agent Account",
-            "created_at": "2025-01-03T00:00:00Z"
+            "name": account_info['name'] if account_info else "Unknown",
+            "created_at": account_info['created_at'] if account_info else None
         }
 
         return {
