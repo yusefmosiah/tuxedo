@@ -2,6 +2,8 @@ import { Routes, Route, Outlet, NavLink } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
+import Account from "./pages/Account";
+import AccountSecurity from "./pages/AccountSecurity";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { useAuth } from "./contexts/AuthContext_passkey";
 import { Button, Text } from "@stellar/design-system";
@@ -83,35 +85,38 @@ const AppLayout: React.FC = () => {
 
           {isAuthenticated && user && (
             <>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "4px 12px",
-                  backgroundColor: "var(--color-bg-primary)",
-                  borderRadius: "var(--border-radius-md)",
-                  border: "1px solid var(--color-border)",
-                }}
-              >
+              <NavLink to="/account/security" style={{ textDecoration: "none" }}>
                 <div
                   style={{
-                    width: "24px",
-                    height: "24px",
-                    borderRadius: "50%",
-                    backgroundColor: "var(--color-stellar-glow-subtle)",
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "12px",
+                    gap: "8px",
+                    padding: "4px 12px",
+                    backgroundColor: "var(--color-bg-primary)",
+                    borderRadius: "var(--border-radius-md)",
+                    border: "1px solid var(--color-border)",
+                    cursor: "pointer",
                   }}
                 >
-                  👤
+                  <div
+                    style={{
+                      width: "24px",
+                      height: "24px",
+                      borderRadius: "50%",
+                      backgroundColor: "var(--color-stellar-glow-subtle)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "12px",
+                    }}
+                  >
+                    👤
+                  </div>
+                  <Text as="span" size="sm" style={{ margin: 0 }}>
+                    {user.email}
+                  </Text>
                 </div>
-                <Text as="span" size="sm" style={{ margin: 0 }}>
-                  {user.email}
-                </Text>
-              </div>
+              </NavLink>
               <Button
                 variant="tertiary"
                 size="sm"
@@ -150,6 +155,22 @@ function App() {
           element={
             <ProtectedRoute>
               <Home />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/account"
+          element={
+            <ProtectedRoute>
+              <Account />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/account/security"
+          element={
+            <ProtectedRoute>
+              <AccountSecurity />
             </ProtectedRoute>
           }
         />
