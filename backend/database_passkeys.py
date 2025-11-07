@@ -234,15 +234,31 @@ class PasskeyDatabaseManager:
         return cred_id
 
     def get_passkey_credential(self, credential_id: str) -> Optional[Dict[str, Any]]:
-        """Get passkey credential by credential_id"""
+        """
+        Get passkey credential by credential_id.
+
+        Handles both padded and unpadded base64url encoding for backward compatibility.
+        """
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
 
+            # Try exact match first (unpadded, per WebAuthn spec)
             cursor.execute('''
                 SELECT * FROM passkey_credentials WHERE credential_id = ?
             ''', (credential_id,))
             cred = cursor.fetchone()
+
+            # If not found, try with padding for backward compatibility
+            if not cred:
+                # Add padding to match old format
+                padding_needed = (4 - len(credential_id) % 4) % 4
+                if padding_needed:
+                    padded_id = credential_id + ('=' * padding_needed)
+                    cursor.execute('''
+                        SELECT * FROM passkey_credentials WHERE credential_id = ?
+                    ''', (padded_id,))
+                    cred = cursor.fetchone()
 
             if cred:
                 result = dict(cred)
@@ -273,14 +289,32 @@ class PasskeyDatabaseManager:
             return results
 
     def update_passkey_sign_count(self, credential_id: str, sign_count: int):
-        """Update passkey sign count and last used timestamp"""
+        """
+        Update passkey sign count and last used timestamp.
+
+        Handles both padded and unpadded base64url encoding for backward compatibility.
+        """
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
+
+            # Try unpadded first
             cursor.execute('''
                 UPDATE passkey_credentials
                 SET sign_count = ?, last_used_at = ?
                 WHERE credential_id = ?
             ''', (sign_count, datetime.now(), credential_id))
+
+            # If no rows updated, try with padding for backward compatibility
+            if cursor.rowcount == 0:
+                padding_needed = (4 - len(credential_id) % 4) % 4
+                if padding_needed:
+                    padded_id = credential_id + ('=' * padding_needed)
+                    cursor.execute('''
+                        UPDATE passkey_credentials
+                        SET sign_count = ?, last_used_at = ?
+                        WHERE credential_id = ?
+                    ''', (sign_count, datetime.now(), padded_id))
+
             conn.commit()
 
     def delete_passkey(self, passkey_id: str, user_id: str) -> bool:
