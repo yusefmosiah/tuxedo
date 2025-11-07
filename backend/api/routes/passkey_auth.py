@@ -593,10 +593,10 @@ async def login_verify(req: Request, request: LoginVerifyRequest):
         # Get dynamic RP_ID and origin based on request
         rp_id, origin = get_rp_id_and_origin(req)
 
-        # Get credential from request
-        credential_id = base64.urlsafe_b64encode(
-            base64.urlsafe_b64decode(request.credential.get('id', '') + '==')
-        ).decode('utf-8').rstrip('=')
+        # Get credential ID from request (already base64url-encoded by WebAuthn client)
+        credential_id = request.credential.get('id', '')
+
+        logger.info(f"🔍 Looking up credential: {credential_id[:20]}...")
 
         # Get stored credential
         stored_credential = db.get_passkey_credential(credential_id)

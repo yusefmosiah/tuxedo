@@ -341,10 +341,9 @@ class PasskeyService:
             logger.error(f"❌ Challenge not associated with a user: {challenge_id}")
             raise ValueError("Challenge not associated with a user")
 
-        # Get credential ID
-        credential_id = base64.urlsafe_b64encode(
-            base64.urlsafe_b64decode(credential.get('id', '') + '==')
-        ).decode('utf-8').rstrip('=')
+        # Get credential ID from request (already base64url-encoded by WebAuthn client)
+        credential_id = credential.get('id', '')
+        logger.debug(f"   Looking up credential: {credential_id[:20]}...")
 
         # Get stored credential
         stored_credential = self.db.get_passkey_credential(credential_id)
