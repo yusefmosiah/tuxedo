@@ -118,23 +118,40 @@ export const AccountSecurity: React.FC = () => {
         </Text>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           <div
-            style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
           >
-            <Text as="span" style={{ color: "var(--color-text-secondary)" }}>
+            <Text
+              as="span"
+              size="sm"
+              style={{ color: "var(--color-text-secondary)" }}
+            >
               Email
             </Text>
-            <Text as="span" style={{ fontWeight: "500" }}>
+            <Text as="span" size="sm" style={{ fontWeight: "500" }}>
               {user.email}
             </Text>
           </div>
           <div
-            style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
           >
-            <Text as="span" style={{ color: "var(--color-text-secondary)" }}>
+            <Text
+              as="span"
+              size="sm"
+              style={{ color: "var(--color-text-secondary)" }}
+            >
               User ID
             </Text>
             <Text
               as="span"
+              size="xs"
               style={{
                 fontFamily: "var(--font-tertiary-mono)",
                 fontSize: "12px",
@@ -189,7 +206,11 @@ export const AccountSecurity: React.FC = () => {
 
         {isLoading ? (
           <div style={{ textAlign: "center", padding: "32px" }}>
-            <Text as="p" style={{ color: "var(--color-text-secondary)" }}>
+            <Text
+              as="p"
+              size="sm"
+              style={{ color: "var(--color-text-secondary)" }}
+            >
               Loading passkeys...
             </Text>
           </div>
@@ -202,7 +223,11 @@ export const AccountSecurity: React.FC = () => {
               border: "1px solid var(--color-border)",
             }}
           >
-            <Text as="p" style={{ color: "var(--color-stellar-error)" }}>
+            <Text
+              as="p"
+              size="sm"
+              style={{ color: "var(--color-stellar-error)" }}
+            >
               {error}
             </Text>
             <Button
@@ -223,12 +248,18 @@ export const AccountSecurity: React.FC = () => {
               border: "1px solid var(--color-border)",
             }}
           >
-            <Text as="p" style={{ color: "var(--color-text-secondary)" }}>
+            <Text
+              as="p"
+              size="sm"
+              style={{ color: "var(--color-text-secondary)" }}
+            >
               No passkeys found
             </Text>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+          >
             {passkeys.map((passkey) => (
               <div
                 key={passkey.id}
@@ -254,6 +285,7 @@ export const AccountSecurity: React.FC = () => {
                     <span style={{ fontSize: "20px" }}>🔑</span>
                     <Text
                       as="h3"
+                      size="sm"
                       style={{
                         fontSize: "14px",
                         fontWeight: "600",
@@ -272,25 +304,32 @@ export const AccountSecurity: React.FC = () => {
                   >
                     <Text
                       as="span"
+                      size="xs"
                       style={{ color: "var(--color-text-secondary)" }}
                     >
                       Created:
                     </Text>
-                    <Text as="span">{formatDate(passkey.created_at)}</Text>
+                    <Text as="span" size="xs">
+                      {formatDate(passkey.created_at)}
+                    </Text>
                     <Text
                       as="span"
+                      size="xs"
                       style={{ color: "var(--color-text-secondary)" }}
                     >
                       Last used:
                     </Text>
-                    <Text as="span">{formatDate(passkey.last_used_at)}</Text>
+                    <Text as="span" size="xs">
+                      {formatDate(passkey.last_used_at)}
+                    </Text>
                     <Text
                       as="span"
+                      size="xs"
                       style={{ color: "var(--color-text-secondary)" }}
                     >
                       Backup:
                     </Text>
-                    <Text as="span">
+                    <Text as="span" size="xs">
                       {passkey.backup_eligible ? "Eligible" : "Not eligible"}
                     </Text>
                   </div>
@@ -353,7 +392,11 @@ export const AccountSecurity: React.FC = () => {
             border: "1px solid var(--color-border)",
           }}
         >
-          <Text as="p" size="sm" style={{ color: "var(--color-text-secondary)" }}>
+          <Text
+            as="p"
+            size="sm"
+            style={{ color: "var(--color-text-secondary)" }}
+          >
             ⚠️ Make sure to keep your recovery codes in a safe place. Each code
             can only be used once.
           </Text>
