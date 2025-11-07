@@ -1,5 +1,4 @@
 # Agent Account Security Implementation Plan
-
 **Production-Ready User-to-Agent Account Linking**
 
 ---
@@ -285,7 +284,6 @@ class EncryptionManager:
 ```
 
 **Add to `.env`:**
-
 ```bash
 # Generate with: python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'
 ENCRYPTION_MASTER_KEY=your_generated_key_here
@@ -720,7 +718,6 @@ def some_stellar_operation(
 ```
 
 **Files to update:**
-
 - `backend/stellar_tools.py` - All account operations
 - `backend/defindex_tools.py` - All DeFi operations
 - `backend/agent/stellar_tools_wrappers.py` - Tool wrappers
@@ -983,13 +980,13 @@ ENCRYPTION_SALT=tuxedo-agent-accounts-v1
 
 ## Timeline & Effort Estimate
 
-| Phase       | Tasks                                            | Time          | Priority |
-| ----------- | ------------------------------------------------ | ------------- | -------- |
-| **Phase 1** | Database schema, encryption, AgentAccountManager | 2-3 hours     | CRITICAL |
-| **Phase 2** | API integration, auth dependencies               | 1-2 hours     | CRITICAL |
-| **Phase 3** | Update agent tools with user_id                  | 1-2 hours     | CRITICAL |
-| **Phase 4** | Testing, migration, deployment                   | 2-3 hours     | CRITICAL |
-| **TOTAL**   |                                                  | **6-9 hours** |          |
+| Phase | Tasks | Time | Priority |
+|-------|-------|------|----------|
+| **Phase 1** | Database schema, encryption, AgentAccountManager | 2-3 hours | CRITICAL |
+| **Phase 2** | API integration, auth dependencies | 1-2 hours | CRITICAL |
+| **Phase 3** | Update agent tools with user_id | 1-2 hours | CRITICAL |
+| **Phase 4** | Testing, migration, deployment | 2-3 hours | CRITICAL |
+| **TOTAL** | | **6-9 hours** | |
 
 ---
 
