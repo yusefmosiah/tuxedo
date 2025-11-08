@@ -5,7 +5,7 @@ Chain-agnostic implementation
 """
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import base64
 import os
 import logging
@@ -32,7 +32,7 @@ class EncryptionManager:
 
     def _derive_key(self, user_id: str) -> bytes:
         """Derive encryption key from master key + user_id"""
-        kdf = PBKDF2(
+        kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
             salt=self.salt + user_id.encode(),
