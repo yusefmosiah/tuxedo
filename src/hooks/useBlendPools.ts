@@ -8,7 +8,7 @@ const blendNetwork = {
   rpc: network.rpcUrl,
   passphrase: network.passphrase,
   networkPassphrase: network.passphrase,
-  allowHttp: true, // Allow HTTP connections for development
+  allowHttp: network.rpcUrl.startsWith("http://"), // Only allow HTTP for local development
 };
 import {
   BlendPoolData,
