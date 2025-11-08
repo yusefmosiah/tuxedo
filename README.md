@@ -6,7 +6,7 @@
 
 **Current Status:** 🧪 **Beta Testnet** | Actively seeking security researchers
 **Network:** Stellar Testnet → Mainnet (Community Security Required)
-**Vision:** Multi-chain agentic finance with user sovereignty
+**Vision:** Agentic finance with user sovereignty
 
 ---
 
