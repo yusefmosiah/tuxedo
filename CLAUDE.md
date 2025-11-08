@@ -8,9 +8,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Current State**: Production-ready for educational use on testnet (6.3/10 production readiness score)
 
-**⚠️ Important**: 
+**⚠️ Important**:
 - ALWAYS use web-search-prime to search the web. NEVER use built in web search
 - This system contains extensive hardcoded testnet configuration and is not suitable for mainnet deployment without significant refactoring.
+- **Python Development**: ALWAYS run `source .venv/bin/activate && uv sync` before starting backend work to ensure dependencies are up to date
 
 ## Development Commands
 
@@ -37,6 +38,10 @@ cd backend
 python3 -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 uv sync  # Or: pip install -r requirements.txt
+
+# IMPORTANT: Always activate venv and sync dependencies first
+# Run this whenever starting work on backend:
+source .venv/bin/activate && uv sync
 
 # Start backend server
 python main.py

@@ -164,40 +164,65 @@ Agent → Filesystem Access → Organizes accounts freely → Constructs portfol
 
 ## Target Architecture (Secure & Chain-Agnostic)
 
+**CRITICAL: No Portfolio Table! Portfolio = Pattern, Not Schema**
+
 ```
 ┌─────────────────────────────────────┐
 │  Passkey Auth                       │
 │  users.id = "user_abc123"           │
 └────────────┬────────────────────────┘
-             │ ✅ Links to agent workspace
+             │ ✅ Links directly to accounts
+             ↓
+┌─────────────────────────────────────┐
+│  wallet_accounts table              │
+│   - user_id → users.id ✅           │
+│   - chain ("stellar", "solana")     │
+│   - public_key                      │
+│   - encrypted_private_key ✅        │
+│   - name, source, metadata          │
+│   - ON DELETE CASCADE ✅            │
+│                                     │
+│   ❌ NO portfolio_id column!        │
+│   ❌ NO portfolios table!           │
+└────────────┬────────────────────────┘
+             │
              ↓
 ┌─────────────────────────────────────┐
 │  Agent Filesystem Workspace         │
+│  (Optional - for file-based org)    │
+│                                     │
 │  /data/tuxedo/user_abc123/          │
 │   ├── accounts/                     │
 │   │   ├── stellar/                  │
-│   │   │   ├── trading.json          │
-│   │   │   └── yield.json            │
+│   │   │   ├── trading_notes.json    │
+│   │   │   └── yield_config.json     │
 │   │   ├── solana/                   │
 │   │   └── ethereum/                 │
-│   ├── portfolios/                   │
-│   │   └── main.json (agent creates) │
+│   ├── strategies/                   │
+│   │   └── defi_yields.json          │
 │   └── tools/                        │
 │                                     │
-│  wallet_accounts table (optional):  │
-│   - user_id → users.id              │
-│   - chain ("stellar", "solana")     │
-│   - encrypted_private_key ✅        │
-│   - metadata (filesystem path)      │
-│   ON DELETE CASCADE ✅              │
+│  Agent uses metadata field to       │
+│  link accounts to filesystem paths  │
 └────────────┬────────────────────────┘
              │
              ↓
 ┌─────────────────────────────────────┐
 │  Agent Constructs Abstractions      │
-│  - Portfolio views (dynamic)        │
-│  - Account groupings (flexible)     │
-│  - Strategy organization (custom)   │
+│  (Dynamically, on-demand)           │
+│                                     │
+│  User: "Show me my portfolio"       │
+│  Agent:                             │
+│    1. Reads user's accounts         │
+│    2. Fetches on-chain balances     │
+│    3. Constructs portfolio view     │
+│    4. Presents to user              │
+│                                     │
+│  User: "Group by strategy"          │
+│  Agent:                             │
+│    1. Reads same accounts           │
+│    2. Constructs strategy view      │
+│    3. Presents different view       │
 │                                     │
 │  Portfolio = Pattern, not Schema    │
 └────────────┬────────────────────────┘
@@ -232,6 +257,10 @@ Agent → Filesystem Access → Organizes accounts freely → Constructs portfol
 
 #### 1.1 Update Database Schema
 
+**CRITICAL: NO PORTFOLIO TABLE!**
+
+Portfolios are NOT a database abstraction - they are dynamic patterns that agents construct from filesystem primitives. The database only stores the raw account data.
+
 **File:** `backend/database_passkeys.py`
 
 Add to `PasskeyDatabaseManager.init_database()`:
@@ -240,22 +269,15 @@ Add to `PasskeyDatabaseManager.init_database()`:
 def init_database(self):
     # ... existing tables ...
 
-    # Agent portfolios table (NEW)
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS portfolios (
-            id TEXT PRIMARY KEY,
-            user_id TEXT NOT NULL,
-            name TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-        )
-    ''')
+    # ❌ NO PORTFOLIOS TABLE - Portfolio is a pattern, not a schema!
+    # Agents construct portfolio views dynamically from wallet_accounts
 
     # Wallet accounts table (NEW - CHAIN AGNOSTIC)
+    # Accounts belong directly to users, not to portfolios
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS wallet_accounts (
             id TEXT PRIMARY KEY,
-            portfolio_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
             chain TEXT NOT NULL,
             public_key TEXT NOT NULL,
             encrypted_private_key TEXT NOT NULL,
@@ -264,31 +286,34 @@ def init_database(self):
             metadata JSON,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_used_at TIMESTAMP,
-            FOREIGN KEY (portfolio_id) REFERENCES portfolios (id) ON DELETE CASCADE,
+            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
             UNIQUE(chain, public_key)
         )
     ''')
 
     # Indexes
     cursor.execute('''
-        CREATE INDEX IF NOT EXISTS idx_portfolios_user_id
-        ON portfolios(user_id)
-    ''')
-    cursor.execute('''
-        CREATE INDEX IF NOT EXISTS idx_wallet_accounts_portfolio_id
-        ON wallet_accounts(portfolio_id)
+        CREATE INDEX IF NOT EXISTS idx_wallet_accounts_user_id
+        ON wallet_accounts(user_id)
     ''')
     cursor.execute('''
         CREATE INDEX IF NOT EXISTS idx_wallet_accounts_chain
         ON wallet_accounts(chain)
     ''')
     cursor.execute('''
-        CREATE INDEX IF NOT EXISTS idx_wallet_accounts_chain_public_key
-        ON wallet_accounts(chain, public_key)
+        CREATE INDEX IF NOT EXISTS idx_wallet_accounts_user_chain
+        ON wallet_accounts(user_id, chain)
     ''')
 
     conn.commit()
 ```
+
+**Key Changes:**
+- ❌ Removed `portfolios` table entirely
+- ✅ `wallet_accounts.user_id` links directly to `users.id`
+- ✅ Agent reads user's accounts from filesystem/database
+- ✅ Agent constructs portfolio views dynamically when needed
+- ✅ No rigid schema constraining how agents organize accounts
 
 #### 1.2 Chain Abstraction Layer
 
@@ -511,16 +536,21 @@ ENCRYPTION_SALT=tuxedo-agent-portfolios-v1
 
 ---
 
-### Phase 2: Portfolio Manager (2-3 hours)
+### Phase 2: Account Manager (2-3 hours)
 
-#### 2.1 Create Portfolio Manager
+**IMPORTANT: This is now AccountManager, not PortfolioManager**
 
-**New File:** `backend/portfolio_manager.py`
+Portfolio is a pattern agents construct, not a rigid manager class. This manager provides low-level primitives for account operations.
+
+#### 2.1 Create Account Manager
+
+**New File:** `backend/account_manager.py`
 
 ```python
 """
-Portfolio Manager - Chain-agnostic wallet portfolio management
-Replaces KeyManager with secure, multi-chain portfolio system
+Account Manager - Chain-agnostic wallet account management
+Provides filesystem primitives for agents to organize accounts
+Agents construct "portfolio" patterns dynamically from these primitives
 """
 from typing import Dict, Optional, List
 from database_passkeys import PasskeyDatabaseManager
@@ -529,8 +559,17 @@ from chains.base import ChainAdapter
 from chains.stellar import StellarAdapter
 import secrets
 
-class PortfolioManager:
-    """Manages user portfolios with multi-chain wallet accounts"""
+class AccountManager:
+    """
+    Manages user wallet accounts with multi-chain support
+
+    This is NOT a portfolio manager. Agents use these primitives to:
+    - Generate/import/export accounts
+    - Organize accounts in user's filesystem workspace
+    - Construct portfolio views dynamically when needed
+
+    Portfolio = Pattern agents construct, not a database abstraction
+    """
 
     def __init__(self, db_path: str = "tuxedo_passkeys.db"):
         self.db = PasskeyDatabaseManager(db_path)
@@ -544,54 +583,22 @@ class PortfolioManager:
             # Future: "sui": SuiAdapter(),
         }
 
-    def create_portfolio(
-        self,
-        user_id: str,
-        name: str = "Main Portfolio"
-    ) -> Dict:
-        """Create new portfolio for user"""
-        try:
-            portfolio_id = f"portfolio_{secrets.token_urlsafe(16)}"
-
-            with self.db.get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute('''
-                    INSERT INTO portfolios (id, user_id, name, created_at)
-                    VALUES (?, ?, ?, datetime('now'))
-                ''', (portfolio_id, user_id, name))
-                conn.commit()
-
-            return {
-                "portfolio_id": portfolio_id,
-                "name": name,
-                "success": True
-            }
-        except Exception as e:
-            return {
-                "error": str(e),
-                "success": False
-            }
-
     def generate_account(
         self,
         user_id: str,
-        portfolio_id: str,
         chain: str,
-        name: Optional[str] = None
+        name: Optional[str] = None,
+        metadata: Optional[Dict] = None
     ) -> Dict:
-        """Generate new account in portfolio for specified chain"""
+        """
+        Generate new account for user on specified chain
+        Agent can organize this account however it wants in filesystem
+        """
         try:
             # Validate chain
             if chain not in self.chains:
                 return {
                     "error": f"Unsupported chain: {chain}",
-                    "success": False
-                }
-
-            # Verify user owns portfolio
-            if not self._verify_portfolio_ownership(user_id, portfolio_id):
-                return {
-                    "error": "Portfolio not found or not owned by user",
                     "success": False
                 }
 
@@ -612,18 +619,18 @@ class PortfolioManager:
                 cursor = conn.cursor()
                 cursor.execute('''
                     INSERT INTO wallet_accounts
-                    (id, portfolio_id, chain, public_key, encrypted_private_key,
+                    (id, user_id, chain, public_key, encrypted_private_key,
                      name, source, metadata, created_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
                 ''', (
                     account_id,
-                    portfolio_id,
+                    user_id,
                     chain,
                     keypair.public_key,
                     encrypted_private_key,
                     name or f"{chain.capitalize()} Account",
                     "generated",
-                    None  # metadata
+                    None  # metadata (agent can store filesystem path here)
                 ))
                 conn.commit()
 
@@ -645,13 +652,13 @@ class PortfolioManager:
     def import_account(
         self,
         user_id: str,
-        portfolio_id: str,
         chain: str,
         private_key: str,
-        name: Optional[str] = None
+        name: Optional[str] = None,
+        metadata: Optional[Dict] = None
     ) -> Dict:
         """
-        Import existing wallet into portfolio
+        Import existing wallet for user
         KILLER FEATURE: Bridges existing DeFi users into Tuxedo
         """
         try:
@@ -659,13 +666,6 @@ class PortfolioManager:
             if chain not in self.chains:
                 return {
                     "error": f"Unsupported chain: {chain}",
-                    "success": False
-                }
-
-            # Verify user owns portfolio
-            if not self._verify_portfolio_ownership(user_id, portfolio_id):
-                return {
-                    "error": "Portfolio not found or not owned by user",
                     "success": False
                 }
 
@@ -692,12 +692,12 @@ class PortfolioManager:
                 cursor = conn.cursor()
                 cursor.execute('''
                     INSERT INTO wallet_accounts
-                    (id, portfolio_id, chain, public_key, encrypted_private_key,
+                    (id, user_id, chain, public_key, encrypted_private_key,
                      name, source, metadata, created_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
                 ''', (
                     account_id,
-                    portfolio_id,
+                    user_id,
                     chain,
                     keypair.public_key,
                     encrypted_private_key,
@@ -740,9 +740,8 @@ class PortfolioManager:
                     "success": False
                 }
 
-            # Verify ownership through portfolio
-            portfolio_id = account['portfolio_id']
-            if not self._verify_portfolio_ownership(user_id, portfolio_id):
+            # Verify ownership
+            if account['user_id'] != user_id:
                 return {
                     "error": "Permission denied: account not owned by user",
                     "success": False
@@ -773,18 +772,16 @@ class PortfolioManager:
                 "success": False
             }
 
-    def get_portfolio_accounts(
+    def get_user_accounts(
         self,
         user_id: str,
-        portfolio_id: str,
         chain: Optional[str] = None
     ) -> List[Dict]:
-        """Get all accounts in portfolio, optionally filtered by chain"""
+        """
+        Get all accounts for user, optionally filtered by chain
+        Agent constructs portfolio views from this data
+        """
         try:
-            # Verify ownership
-            if not self._verify_portfolio_ownership(user_id, portfolio_id):
-                return []
-
             with self.db.get_connection() as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
@@ -793,16 +790,16 @@ class PortfolioManager:
                     cursor.execute('''
                         SELECT id, chain, public_key, name, source, created_at, last_used_at
                         FROM wallet_accounts
-                        WHERE portfolio_id = ? AND chain = ?
+                        WHERE user_id = ? AND chain = ?
                         ORDER BY created_at DESC
-                    ''', (portfolio_id, chain))
+                    ''', (user_id, chain))
                 else:
                     cursor.execute('''
                         SELECT id, chain, public_key, name, source, created_at, last_used_at
                         FROM wallet_accounts
-                        WHERE portfolio_id = ?
+                        WHERE user_id = ?
                         ORDER BY chain, created_at DESC
-                    ''', (portfolio_id,))
+                    ''', (user_id,))
 
                 accounts = [dict(row) for row in cursor.fetchall()]
 
@@ -823,17 +820,6 @@ class PortfolioManager:
         except Exception as e:
             return [{"error": str(e)}]
 
-    def _verify_portfolio_ownership(self, user_id: str, portfolio_id: str) -> bool:
-        """Verify user owns portfolio"""
-        with self.db.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute('''
-                SELECT COUNT(*) FROM portfolios
-                WHERE id = ? AND user_id = ?
-            ''', (portfolio_id, user_id))
-            count = cursor.fetchone()[0]
-        return count > 0
-
     def _get_account_by_id(self, account_id: str) -> Optional[Dict]:
         """Get account by ID"""
         with self.db.get_connection() as conn:
@@ -846,17 +832,28 @@ class PortfolioManager:
         return dict(row) if row else None
 ```
 
+**Key Architectural Changes:**
+- ✅ Renamed `PortfolioManager` → `AccountManager`
+- ✅ Removed `create_portfolio()` - no portfolio table!
+- ✅ Removed `portfolio_id` parameter from all methods
+- ✅ `get_user_accounts()` returns raw account list for agent to organize
+- ✅ Agent constructs portfolio patterns from account data dynamically
+- ✅ `metadata` field allows agent to store filesystem organization info
+
 ---
 
 ### Phase 3: API Integration (1-2 hours)
 
-#### 3.1 Portfolio API Routes
+#### 3.1 Account API Routes
 
-**New File:** `backend/api/routes/portfolio.py`
+**IMPORTANT: No portfolio endpoints!** Agents construct portfolio views dynamically.
+
+**New File:** `backend/api/routes/accounts.py`
 
 ```python
 """
-Portfolio API Routes - Chain-agnostic wallet management
+Account API Routes - Chain-agnostic wallet management
+Provides primitives for agents to manage user accounts
 """
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
@@ -864,21 +861,16 @@ from typing import Optional, List
 import logging
 
 from api.dependencies import get_current_user
-from portfolio_manager import PortfolioManager
+from account_manager import AccountManager
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-class CreatePortfolioRequest(BaseModel):
-    name: str = "Main Portfolio"
-
 class GenerateAccountRequest(BaseModel):
-    portfolio_id: str
     chain: str
     name: Optional[str] = None
 
 class ImportAccountRequest(BaseModel):
-    portfolio_id: str
     chain: str
     private_key: str
     name: Optional[str] = None
@@ -886,42 +878,16 @@ class ImportAccountRequest(BaseModel):
 class ExportAccountRequest(BaseModel):
     account_id: str
 
-@router.post("/portfolios")
-async def create_portfolio(
-    request: CreatePortfolioRequest,
-    current_user: dict = Depends(get_current_user)
-):
-    """Create new portfolio for authenticated user"""
-    try:
-        manager = PortfolioManager()
-        result = manager.create_portfolio(
-            user_id=current_user['id'],
-            name=request.name
-        )
-
-        if not result.get("success"):
-            raise HTTPException(
-                status_code=400,
-                detail=result.get("error", "Failed to create portfolio")
-            )
-
-        return result
-
-    except Exception as e:
-        logger.error(f"Error creating portfolio: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 @router.post("/accounts/generate")
 async def generate_account(
     request: GenerateAccountRequest,
     current_user: dict = Depends(get_current_user)
 ):
-    """Generate new blockchain account in portfolio"""
+    """Generate new blockchain account for user"""
     try:
-        manager = PortfolioManager()
+        manager = AccountManager()
         result = manager.generate_account(
             user_id=current_user['id'],
-            portfolio_id=request.portfolio_id,
             chain=request.chain,
             name=request.name
         )
@@ -944,14 +910,13 @@ async def import_account(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Import existing wallet into portfolio
+    Import existing wallet for user
     KILLER FEATURE: Bridges existing DeFi users into Tuxedo
     """
     try:
-        manager = PortfolioManager()
+        manager = AccountManager()
         result = manager.import_account(
             user_id=current_user['id'],
-            portfolio_id=request.portfolio_id,
             chain=request.chain,
             private_key=request.private_key,
             name=request.name
@@ -979,7 +944,7 @@ async def export_account(
     KILLER FEATURE: Users maintain full custodial control
     """
     try:
-        manager = PortfolioManager()
+        manager = AccountManager()
         result = manager.export_account(
             user_id=current_user['id'],
             account_id=request.account_id
@@ -1002,23 +967,24 @@ async def export_account(
         logger.error(f"Error exporting account: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/portfolios/{portfolio_id}/accounts")
-async def list_portfolio_accounts(
-    portfolio_id: str,
+@router.get("/accounts")
+async def list_user_accounts(
     chain: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """List all accounts in portfolio, optionally filtered by chain"""
+    """
+    List all accounts for user, optionally filtered by chain
+    Agent constructs portfolio views from this data
+    """
     try:
-        manager = PortfolioManager()
-        accounts = manager.get_portfolio_accounts(
+        manager = AccountManager()
+        accounts = manager.get_user_accounts(
             user_id=current_user['id'],
-            portfolio_id=portfolio_id,
             chain=chain
         )
 
         return {
-            "portfolio_id": portfolio_id,
+            "user_id": current_user['id'],
             "accounts": accounts,
             "count": len(accounts)
         }
@@ -1027,6 +993,12 @@ async def list_portfolio_accounts(
         logger.error(f"Error listing accounts: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 ```
+
+**Key Changes:**
+- ❌ Removed `/portfolios` endpoint - no portfolio table!
+- ❌ Removed `portfolio_id` from all requests
+- ✅ `/accounts` endpoint returns user's accounts for agent to organize
+- ✅ Agent constructs portfolio views dynamically from account data
 
 ---
 
@@ -1149,18 +1121,21 @@ self.chains = {
 
 ## Migration Strategy
 
-### From Current KeyManager to PortfolioManager
+### From Current KeyManager to AccountManager
 
-**Migration Script:** `backend/migrate_keymanager_to_portfolio.py`
+**IMPORTANT: No portfolio creation - accounts link directly to users**
+
+**Migration Script:** `backend/migrate_keymanager_to_accounts.py`
 
 ```python
 """
-Migrate existing KeyManager accounts to PortfolioManager
-Creates default portfolio and imports all existing Stellar accounts
+Migrate existing KeyManager accounts to AccountManager
+Imports all existing Stellar accounts directly to user
+NO portfolio table or portfolio_id - accounts belong to users
 """
 import json
 from pathlib import Path
-from portfolio_manager import PortfolioManager
+from account_manager import AccountManager
 from database_passkeys import PasskeyDatabaseManager
 
 def migrate():
@@ -1189,20 +1164,12 @@ def migrate():
         print("Creating migration user...")
         user = db.create_user("migration@tuxedo.local")
 
-    # Create default portfolio
-    manager = PortfolioManager()
-    portfolio_result = manager.create_portfolio(
-        user_id=user['id'],
-        name="Migrated Portfolio"
-    )
-    portfolio_id = portfolio_result['portfolio_id']
-
-    # Import each account
+    # Import each account directly to user (NO portfolio!)
+    manager = AccountManager()
     for public_key, secret_key in accounts.items():
         try:
             result = manager.import_account(
                 user_id=user['id'],
-                portfolio_id=portfolio_id,
                 chain="stellar",
                 private_key=secret_key,
                 name=f"Migrated {public_key[:8]}..."
@@ -1217,12 +1184,17 @@ def migrate():
             print(f"❌ Failed to migrate {public_key}: {e}")
 
     print("\n✅ Migration complete!")
-    print(f"   Portfolio ID: {portfolio_id}")
     print(f"   User: {user['email']}")
+    print(f"   Agent can now construct portfolio views from these accounts")
 
 if __name__ == "__main__":
     migrate()
 ```
+
+**Key Changes:**
+- ❌ Removed portfolio creation - no `create_portfolio()` call
+- ❌ No `portfolio_id` - accounts belong directly to users
+- ✅ Agent can query user's accounts and construct portfolio views dynamically
 
 ---
 
@@ -1245,11 +1217,13 @@ if __name__ == "__main__":
 ✅ **Dynamic Organization:** Agent constructs portfolio abstractions as needed
 ✅ **Wallet Import:** Users can import existing wallets from Freighter, Phantom, etc.
 ✅ **Wallet Export:** Users can export wallets to external applications
-✅ **User Isolation:** Users can only access their own filesystem workspace
-✅ **Encryption:** Private keys encrypted at rest (database or secure files)
+✅ **User Isolation:** Users can only access their own accounts
+✅ **Encryption:** Private keys encrypted at rest in database
 ✅ **Access Control:** Permission checks on every operation
 ✅ **Audit Trail:** All operations logged
-✅ **Flexible Patterns:** Portfolio is a pattern, not a rigid schema
+✅ **NO Portfolio Table:** Portfolio is a pattern agents construct, NOT a database schema
+✅ **Direct User Link:** Accounts link directly to users, not through portfolios
+✅ **Flexible Patterns:** Agent reads accounts and constructs any organizational pattern
 ✅ **"Not Your Keys":** Full custodial control maintained
 
 ---
