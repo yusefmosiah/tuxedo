@@ -269,10 +269,19 @@ def create_user_tools(user_id: str) -> List:
         import asyncio
         from defindex_account_tools import _defindex_discover_vaults
 
-        # Run async function in sync context using asyncio.run() which creates its own event loop
-        return asyncio.run(
-            _defindex_discover_vaults(min_apy=min_apy, user_id=user_id)
-        )
+        # Handle async function call properly - check if we're already in an event loop
+        try:
+            loop = asyncio.get_running_loop()
+            # We're already in an event loop, use create_task
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, _defindex_discover_vaults(min_apy=min_apy, user_id=user_id))
+                return future.result()
+        except RuntimeError:
+            # No running event loop, safe to use asyncio.run()
+            return asyncio.run(
+                _defindex_discover_vaults(min_apy=min_apy, user_id=user_id)
+            )
 
     @tool
     def defindex_get_vault_details(vault_address: str):
@@ -290,10 +299,19 @@ def create_user_tools(user_id: str) -> List:
         import asyncio
         from defindex_account_tools import _defindex_get_vault_details
 
-        # Run async function in sync context using asyncio.run() which creates its own event loop
-        return asyncio.run(
-            _defindex_get_vault_details(vault_address=vault_address, user_id=user_id)
-        )
+        # Handle async function call properly - check if we're already in an event loop
+        try:
+            loop = asyncio.get_running_loop()
+            # We're already in an event loop, use create_task
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, _defindex_get_vault_details(vault_address=vault_address, user_id=user_id))
+                return future.result()
+        except RuntimeError:
+            # No running event loop, safe to use asyncio.run()
+            return asyncio.run(
+                _defindex_get_vault_details(vault_address=vault_address, user_id=user_id)
+            )
 
     @tool
     def defindex_deposit(
@@ -321,16 +339,31 @@ def create_user_tools(user_id: str) -> List:
         import asyncio
         from defindex_account_tools import _defindex_deposit
 
-        # Run async function in sync context using asyncio.run() which creates its own event loop
-        return asyncio.run(
-            _defindex_deposit(
-                vault_address=vault_address,
-                amount_xlm=amount_xlm,
-                user_id=user_id,  # INJECTED from auth context
-                account_id=account_id,
-                account_manager=account_mgr
+        # Handle async function call properly - check if we're already in an event loop
+        try:
+            loop = asyncio.get_running_loop()
+            # We're already in an event loop, use create_task
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, _defindex_deposit(
+                    vault_address=vault_address,
+                    amount_xlm=amount_xlm,
+                    user_id=user_id,  # INJECTED from auth context
+                    account_id=account_id,
+                    account_manager=account_mgr
+                ))
+                return future.result()
+        except RuntimeError:
+            # No running event loop, safe to use asyncio.run()
+            return asyncio.run(
+                _defindex_deposit(
+                    vault_address=vault_address,
+                    amount_xlm=amount_xlm,
+                    user_id=user_id,  # INJECTED from auth context
+                    account_id=account_id,
+                    account_manager=account_mgr
+                )
             )
-        )
 
     # Return list of tools with user_id injected
     tools = [
