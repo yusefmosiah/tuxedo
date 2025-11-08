@@ -17,6 +17,10 @@ class PasskeyDatabaseManager:
         self.db_path = db_path
         self.init_database()
 
+    def get_connection(self):
+        """Get a database connection (for use with context managers)"""
+        return sqlite3.connect(self.db_path)
+
     def init_database(self):
         """Initialize the database with passkey authentication tables"""
         with sqlite3.connect(self.db_path) as conn:
@@ -139,6 +143,35 @@ class PasskeyDatabaseManager:
                 )
             ''')
 
+            # Agent portfolios table (NEW - Phase 1 of Agent Security Plan)
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS portfolios (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+                )
+            ''')
+
+            # Wallet accounts table (NEW - CHAIN AGNOSTIC)
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS wallet_accounts (
+                    id TEXT PRIMARY KEY,
+                    portfolio_id TEXT NOT NULL,
+                    chain TEXT NOT NULL,
+                    public_key TEXT NOT NULL,
+                    encrypted_private_key TEXT NOT NULL,
+                    name TEXT,
+                    source TEXT DEFAULT 'generated',
+                    metadata TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    last_used_at TIMESTAMP,
+                    FOREIGN KEY (portfolio_id) REFERENCES portfolios (id) ON DELETE CASCADE,
+                    UNIQUE(chain, public_key)
+                )
+            ''')
+
             # Create indexes
             self._create_indexes(cursor)
 
@@ -158,7 +191,12 @@ class PasskeyDatabaseManager:
             'CREATE INDEX IF NOT EXISTS idx_recovery_attempts_attempted_at ON recovery_attempts(attempted_at)',
             'CREATE INDEX IF NOT EXISTS idx_threads_user_id ON threads(user_id)',
             'CREATE INDEX IF NOT EXISTS idx_threads_updated_at ON threads(updated_at DESC)',
-            'CREATE INDEX IF NOT EXISTS idx_messages_thread_id ON messages(thread_id)'
+            'CREATE INDEX IF NOT EXISTS idx_messages_thread_id ON messages(thread_id)',
+            # Portfolio and wallet account indexes
+            'CREATE INDEX IF NOT EXISTS idx_portfolios_user_id ON portfolios(user_id)',
+            'CREATE INDEX IF NOT EXISTS idx_wallet_accounts_portfolio_id ON wallet_accounts(portfolio_id)',
+            'CREATE INDEX IF NOT EXISTS idx_wallet_accounts_chain ON wallet_accounts(chain)',
+            'CREATE INDEX IF NOT EXISTS idx_wallet_accounts_chain_public_key ON wallet_accounts(chain, public_key)'
         ]
 
         for index_sql in indexes:
