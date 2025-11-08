@@ -93,34 +93,10 @@ async def load_agent_tools():
     except ImportError as e:
         logger.warning(f"Agent account management tools not available: {e}")
 
-    # Import DeFindex tools
-    try:
-        from defindex_tools import (
-            discover_high_yield_vaults,
-            get_defindex_vault_details,
-            prepare_defindex_deposit,
-            execute_defindex_deposit,
-            execute_defindex_withdrawal
-        )
-        logger.info(f"Before adding DeFindex tools: {len(agent_tools)} tools loaded")
-        logger.info(f"DeFindex tools to add: {discover_high_yield_vaults}, {get_defindex_vault_details}, {prepare_defindex_deposit}, {execute_defindex_deposit}, {execute_defindex_withdrawal}")
-
-        agent_tools.extend([
-            discover_high_yield_vaults,
-            get_defindex_vault_details,
-            prepare_defindex_deposit,
-            execute_defindex_deposit,  # NEW: Autonomous deposit execution
-            execute_defindex_withdrawal  # NEW: Autonomous withdrawal execution
-        ])
-
-        logger.info(f"After adding DeFindex tools: {len(agent_tools)} tools loaded")
-        logger.info("DeFindex tools loaded successfully including autonomous transaction execution")
-    except ImportError as e:
-        logger.warning(f"DeFindex tools not available: {e}")
-    except Exception as e:
-        logger.error(f"Unexpected error loading DeFindex tools: {e}")
-        import traceback
-        traceback.print_exc()
+    # REMOVED: DeFindex tools are now loaded via tool_factory pattern
+    # This ensures proper user_id injection and AccountManager integration
+    # See agent/tool_factory.py for the new implementation
+    logger.info("DeFindex tools moved to tool_factory pattern with user_id injection")
 
 async def get_agent_status() -> Dict[str, Any]:
     """Get current agent system status"""
