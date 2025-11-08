@@ -8,6 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Current State**: Production-ready for educational use on testnet (6.3/10 production readiness score)
 
+**🚀 Active Migration**: Quantum leap from `KeyManager` to `AccountManager` for multi-user security
+- See `AGENT_MIGRATION_QUANTUM_LEAP.md` for implementation details
+- Architecture shift: user-isolated encrypted accounts in database
+- No gradual migration - complete replacement (no valuable data exists)
+
 **⚠️ Important**:
 - ALWAYS use web-search-prime to search the web. NEVER use built in web search
 - This system contains extensive hardcoded testnet configuration and is not suitable for mainnet deployment without significant refactoring.

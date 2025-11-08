@@ -1119,82 +1119,77 @@ self.chains = {
 
 ---
 
-## Migration Strategy
+## Migration Strategy: Quantum Leap
 
-### From Current KeyManager to AccountManager
+### Complete Replacement (Not Gradual Migration)
 
-**IMPORTANT: No portfolio creation - accounts link directly to users**
+**Approach:** Delete `KeyManager`, replace with `AccountManager` in one atomic change.
 
-**Migration Script:** `backend/migrate_keymanager_to_accounts.py`
+**Rationale:**
+- No valuable data exists (testnet accounts only, recreatable from faucet)
+- Gradual migration adds complexity without benefit
+- Clean break enables simpler, more secure architecture
+- Future-proof from day one
 
-```python
-"""
-Migrate existing KeyManager accounts to AccountManager
-Imports all existing Stellar accounts directly to user
-NO portfolio table or portfolio_id - accounts belong to users
-"""
-import json
-from pathlib import Path
-from account_manager import AccountManager
-from database_passkeys import PasskeyDatabaseManager
+**Migration Steps:**
 
-def migrate():
-    keystore_path = Path(".stellar_keystore.json")
+1. **Delete Old System** (no data migration needed)
+   ```bash
+   # Backup if paranoid
+   cp backend/key_manager.py backend/key_manager.py.backup
+   cp .stellar_keystore.json .stellar_keystore.json.backup 2>/dev/null || true
 
-    if not keystore_path.exists():
-        print("No existing keystore found. Nothing to migrate.")
-        return
+   # Delete
+   git rm backend/key_manager.py
+   rm -f .stellar_keystore.json
 
-    # Backup
-    backup_path = keystore_path.with_suffix('.json.backup')
-    import shutil
-    shutil.copy(keystore_path, backup_path)
-    print(f"✅ Backed up keystore to {backup_path}")
+   git commit -m "Remove KeyManager: quantum leap to AccountManager"
+   ```
 
-    # Load existing accounts
-    with open(keystore_path) as f:
-        accounts = json.load(f)
+2. **Update Tool Signatures** - Add `user_id` as mandatory second parameter
+   ```python
+   # OLD (insecure):
+   def account_manager(action: str, key_manager, horizon: Server, ...):
+       keypair = key_manager.get_keypair(account_id)  # No permission check!
 
-    print(f"Found {len(accounts)} Stellar accounts to migrate")
+   # NEW (secure):
+   def account_manager(action: str, user_id: str, account_manager, horizon: Server, ...):
+       # Permission check built into AccountManager
+       keypair = account_manager.get_keypair_for_signing(user_id, account_id)
+   ```
 
-    # Get or create default migration user
-    db = PasskeyDatabaseManager()
-    user = db.get_user_by_email("migration@tuxedo.local")
-    if not user:
-        print("Creating migration user...")
-        user = db.create_user("migration@tuxedo.local")
+3. **Update Agent Tool Registration** - Inject `user_id` via lambda
+   ```python
+   # backend/main.py
+   @app.post("/chat")
+   async def chat(request: ChatRequest, current_user: dict = Depends(get_current_user)):
+       user_id = current_user['id']  # From auth middleware (trusted)
+       account_mgr = AccountManager()
 
-    # Import each account directly to user (NO portfolio!)
-    manager = AccountManager()
-    for public_key, secret_key in accounts.items():
-        try:
-            result = manager.import_account(
-                user_id=user['id'],
-                chain="stellar",
-                private_key=secret_key,
-                name=f"Migrated {public_key[:8]}..."
-            )
+       tools = [
+           Tool(
+               name="account_manager",
+               func=lambda action, **kwargs: stellar_tools.account_manager(
+                   action=action,
+                   user_id=user_id,        # INJECTED from auth, not from LLM
+                   account_manager=account_mgr,
+                   **kwargs
+               ),
+               description="Manage Stellar accounts"
+           ),
+           # ... other tools with user_id injection
+       ]
+   ```
 
-            if result.get("success"):
-                print(f"✅ Migrated {public_key}")
-            else:
-                print(f"❌ Failed to migrate {public_key}: {result.get('error')}")
+4. **Test User Isolation**
+   ```bash
+   cd backend
+   python test_user_isolation.py  # Verify cross-user access blocked
+   ```
 
-        except Exception as e:
-            print(f"❌ Failed to migrate {public_key}: {e}")
+**Timeline:** 4-6 hours
 
-    print("\n✅ Migration complete!")
-    print(f"   User: {user['email']}")
-    print(f"   Agent can now construct portfolio views from these accounts")
-
-if __name__ == "__main__":
-    migrate()
-```
-
-**Key Changes:**
-- ❌ Removed portfolio creation - no `create_portfolio()` call
-- ❌ No `portfolio_id` - accounts belong directly to users
-- ✅ Agent can query user's accounts and construct portfolio views dynamically
+**See Also:** `AGENT_MIGRATION_QUANTUM_LEAP.md` for detailed implementation guide
 
 ---
 
