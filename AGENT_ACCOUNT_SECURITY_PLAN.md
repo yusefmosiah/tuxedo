@@ -1,19 +1,19 @@
-# Agent Portfolio Security Implementation Plan
-**Chain-Agnostic User-to-Portfolio Linking with Wallet Import/Export**
+# Agent Account Security Implementation Plan
+**Chain-Agnostic Filesystem-Based Account Management with Wallet Import/Export**
 
 ---
 
 ## Executive Summary
 
-**Vision:** Tuxedo is a chain-agnostic conversational AI agent for discovering and interacting with DeFi protocols. Agents manage **portfolios of accounts** across multiple blockchain networks, not single accounts.
+**Vision:** Tuxedo is a chain-agnostic conversational AI agent for discovering and interacting with DeFi protocols. Agents have **filesystem access** to organize and manage blockchain accounts across multiple networks.
 
-**Current Critical Issue:** No secure user isolation for agent-managed portfolios. Any authenticated user can access any agent's blockchain accounts across all chains.
+**Current Critical Issue:** No secure user isolation for agent-managed accounts. Any authenticated user can access any agent's blockchain accounts across all chains.
 
 **Goal:** Implement production-ready security architecture that:
-- Links users to their agent-managed portfolios
+- Provides agents with user-isolated filesystem access
 - Supports multiple blockchain networks (Stellar, Solana, EVM, Sui, etc.)
 - Enables wallet import/export as a **killer feature**
-- Provides filesystem-based portfolio management
+- Lets agents construct portfolio abstractions dynamically from filesystem
 - Respects "not-your-keys-not-your-crypto" principles
 
 **Timeline:** 8-12 hours of focused development
@@ -34,14 +34,15 @@ Tuxedo's future is **multi-chain**. The agent backend will support:
 
 Wallets and blockchain tools are just **data and code** at the agent's fingertips. The architecture must abstract blockchain specifics behind a common interface.
 
-### Portfolio-Based Account Management
+### Filesystem-Based Account Management
 
-Agents don't have **one account**. Agents manage **portfolios**:
-- Multiple accounts per chain
-- Multiple chains per portfolio
-- Accounts stored in **filesystem** under user ownership
+Agents don't have **one account**. Agents have **filesystem access** to organize accounts:
+- User-isolated directory structure
+- Multiple accounts per chain stored as files/database entries
+- Agent constructs "portfolio" abstractions dynamically as needed for users
 - Flexible organization: trading accounts, yield accounts, experiment accounts, etc.
-- Easy to add/remove accounts from portfolio
+- Agent can create any organizational pattern the user needs
+- Portfolio is a **pattern the agent constructs**, not a rigid database schema
 
 ### Wallet Import/Export: The Killer Feature
 
@@ -66,6 +67,42 @@ Eventually mobile app support will enable:
 - Native Phantom integration on mobile
 - Native Freighter integration on mobile
 - Platform-specific wallet standards (iOS Keychain, Android Keystore)
+
+---
+
+## Key Architectural Principle: Filesystem Over Abstraction
+
+**Important Nuance:** This plan does NOT create a "portfolio abstraction" that agents must work with. Instead:
+
+### ❌ Wrong Approach (Rigid Schema)
+```
+Agent → Portfolio Object (database table) → Must organize accounts this way
+```
+- Portfolio is a first-class database table
+- Agent must work within portfolio structure
+- Inflexible, prescriptive organization
+
+### ✅ Correct Approach (Filesystem Primitives)
+```
+Agent → Filesystem Access → Organizes accounts freely → Constructs portfolio views for users
+```
+- Agent has user-isolated filesystem workspace
+- Agent can organize accounts however it wants (files, directories, database entries)
+- Agent **constructs** "portfolio" abstractions dynamically when users need them
+- Portfolio is a **pattern**, not a **schema**
+
+**Why This Matters:**
+- Gives agent flexibility to create organizational patterns that match user needs
+- Agent can evolve organization strategies without database migrations
+- Portfolio is just one possible way to group accounts - agent might create others
+- Lower-level primitives enable higher-level intelligence
+
+**Example:**
+- User: "Show me my DeFi portfolio"
+- Agent: Reads accounts from filesystem, constructs portfolio view, presents it
+- User: "Organize my accounts by strategy instead"
+- Agent: Re-reads same accounts, constructs strategy-based view, presents it
+- Same data, different abstractions - agent has the flexibility to construct what's needed
 
 ---
 
@@ -132,32 +169,37 @@ Eventually mobile app support will enable:
 │  Passkey Auth                       │
 │  users.id = "user_abc123"           │
 └────────────┬────────────────────────┘
-             │ ✅ FOREIGN KEY
+             │ ✅ Links to agent workspace
              ↓
 ┌─────────────────────────────────────┐
-│  Agent Portfolios                   │
-│  portfolios table:                  │
-│   - id (primary key)                │
+│  Agent Filesystem Workspace         │
+│  /data/tuxedo/user_abc123/          │
+│   ├── accounts/                     │
+│   │   ├── stellar/                  │
+│   │   │   ├── trading.json          │
+│   │   │   └── yield.json            │
+│   │   ├── solana/                   │
+│   │   └── ethereum/                 │
+│   ├── portfolios/                   │
+│   │   └── main.json (agent creates) │
+│   └── tools/                        │
+│                                     │
+│  wallet_accounts table (optional):  │
 │   - user_id → users.id              │
-│   - name ("Main Portfolio")         │
-│   - created_at                      │
+│   - chain ("stellar", "solana")     │
+│   - encrypted_private_key ✅        │
+│   - metadata (filesystem path)      │
 │   ON DELETE CASCADE ✅              │
 └────────────┬────────────────────────┘
              │
              ↓
 ┌─────────────────────────────────────┐
-│  Wallet Accounts (Multi-Chain)      │
-│  wallet_accounts table:             │
-│   - id (primary key)                │
-│   - portfolio_id → portfolios.id    │
-│   - chain ("stellar", "solana")     │
-│   - public_key (unique per chain)   │
-│   - encrypted_private_key ✅        │
-│   - name ("Trading", "Yield")       │
-│   - source ("generated", "imported")│
-│   - metadata (JSON: derivation path)│
-│   - created_at                      │
-│   ON DELETE CASCADE ✅              │
+│  Agent Constructs Abstractions      │
+│  - Portfolio views (dynamic)        │
+│  - Account groupings (flexible)     │
+│  - Strategy organization (custom)   │
+│                                     │
+│  Portfolio = Pattern, not Schema    │
 └────────────┬────────────────────────┘
              │
              ↓
@@ -172,15 +214,15 @@ Eventually mobile app support will enable:
 
 ### Security Improvements
 
-✅ **User Isolation:** Database-enforced foreign key constraints
+✅ **User Isolation:** Filesystem permissions + database constraints
 ✅ **Chain Agnostic:** Supports any blockchain via `chain` field
-✅ **Portfolio Management:** Multiple accounts per chain, organized by portfolio
+✅ **Flexible Organization:** Agent constructs portfolio abstractions dynamically
 ✅ **Wallet Import/Export:** Users own their keys and can migrate freely
 ✅ **Encryption at Rest:** Private keys encrypted with user-specific keys
 ✅ **Access Control:** Permission checks on every operation
 ✅ **Audit Trail:** All operations logged to database
-✅ **Recovery Support:** User passkey recovery → portfolio recovery
-✅ **Filesystem Storage:** Accounts stored in user-specific directories
+✅ **Recovery Support:** User passkey recovery → workspace recovery
+✅ **Filesystem Primitives:** Agent has low-level access, builds high-level patterns
 
 ---
 
@@ -1199,14 +1241,15 @@ if __name__ == "__main__":
 ## Success Criteria
 
 ✅ **Chain Agnostic:** Architecture supports multiple blockchains
-✅ **Portfolio Management:** Users can organize multiple accounts per chain
+✅ **Filesystem Primitives:** Agent has user-isolated filesystem access
+✅ **Dynamic Organization:** Agent constructs portfolio abstractions as needed
 ✅ **Wallet Import:** Users can import existing wallets from Freighter, Phantom, etc.
 ✅ **Wallet Export:** Users can export wallets to external applications
-✅ **User Isolation:** Users can only access their own portfolios
-✅ **Encryption:** Private keys encrypted at rest
+✅ **User Isolation:** Users can only access their own filesystem workspace
+✅ **Encryption:** Private keys encrypted at rest (database or secure files)
 ✅ **Access Control:** Permission checks on every operation
 ✅ **Audit Trail:** All operations logged
-✅ **Filesystem Storage:** Accounts organized in user directories
+✅ **Flexible Patterns:** Portfolio is a pattern, not a rigid schema
 ✅ **"Not Your Keys":** Full custodial control maintained
 
 ---
@@ -1215,12 +1258,13 @@ if __name__ == "__main__":
 
 This architecture aligns with the Choir whitepaper vision:
 
-1. **Multi-Chain Future:** Tuxedo agents will manage portfolios across Stellar, Solana, EVM, Sui, etc.
-2. **Agent Intelligence:** Agents use filesystem to control diverse accounts, not single accounts
-3. **User Sovereignty:** Import/export respects "not-your-keys-not-your-crypto"
-4. **Network Effects:** Bridges existing DeFi users into agentic world
-5. **Mobile Ready:** Architecture supports future mobile wallet integration
-6. **Professional:** Engages seriously with blockchain enthusiast community
+1. **Multi-Chain Future:** Tuxedo agents have filesystem access to manage accounts across Stellar, Solana, EVM, Sui, etc.
+2. **Agent Intelligence:** Agents have filesystem primitives and construct organizational patterns (like portfolios) dynamically for users
+3. **Flexible Abstraction:** Portfolio is a pattern the agent creates, not a constraint the agent must work within
+4. **User Sovereignty:** Import/export respects "not-your-keys-not-your-crypto"
+5. **Network Effects:** Bridges existing DeFi users into agentic world
+6. **Mobile Ready:** Architecture supports future mobile wallet integration
+7. **Professional:** Engages seriously with blockchain enthusiast community
 
 ---
 
