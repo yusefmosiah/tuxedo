@@ -3,7 +3,7 @@ Chat API Routes
 Endpoints for AI agent chat functionality.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Dict, Optional, Any
@@ -12,6 +12,8 @@ import json
 import asyncio
 from live_summary_service import get_live_summary_service, is_live_summary_enabled
 from agent.core import process_agent_message_streaming
+from api.dependencies import get_optional_user
+from agent.tool_factory import create_user_tools, create_anonymous_tools
 
 logger = logging.getLogger(__name__)
 
@@ -50,20 +52,40 @@ except ImportError as e:
     AGENT_SYSTEM_AVAILABLE = False
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat_endpoint(request: ChatRequest):
-    """Process a chat message through the AI agent"""
+async def chat_endpoint(
+    request: ChatRequest,
+    current_user: Optional[Dict[str, Any]] = Depends(get_optional_user)
+):
+    """
+    Process a chat message through the AI agent with user isolation.
+
+    Security:
+        - Authenticated users: Tools scoped to their user_id (from auth)
+        - Anonymous users: Read-only tools (market data, utilities)
+        - user_id injected via tool factory, LLM cannot spoof it
+    """
     if not AGENT_SYSTEM_AVAILABLE:
         raise HTTPException(status_code=503, detail="Agent system not available")
 
     try:
+        # Create per-request tools with user_id injection
+        if current_user:
+            user_id = current_user['id']
+            logger.info(f"Creating authenticated tools for user_id: {user_id}")
+            tools = create_user_tools(user_id)
+        else:
+            logger.info("Creating anonymous (read-only) tools")
+            tools = create_anonymous_tools()
+
         # Convert request history to dict format
         history = [{"role": msg.role, "content": msg.content} for msg in request.history]
 
-        # Process message through agent
+        # Process message through agent with user-scoped tools
         response = await process_agent_message(
             message=request.message,
             history=history,
-            agent_account=request.agent_account
+            agent_account=request.agent_account,
+            tools=tools  # INJECTED: user_id is embedded in these tools
         )
 
         return ChatResponse(**response)
@@ -75,8 +97,18 @@ async def chat_endpoint(request: ChatRequest):
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @router.post("/chat/stream")
-async def chat_stream_endpoint(request: StreamChatRequest):
-    """Stream chat response through the AI agent"""
+async def chat_stream_endpoint(
+    request: StreamChatRequest,
+    current_user: Optional[Dict[str, Any]] = Depends(get_optional_user)
+):
+    """
+    Stream chat response through the AI agent with user isolation.
+
+    Security:
+        - Authenticated users: Tools scoped to their user_id (from auth)
+        - Anonymous users: Read-only tools (market data, utilities)
+        - user_id injected via tool factory, LLM cannot spoof it
+    """
     async def generate_chat_stream():
         if not AGENT_SYSTEM_AVAILABLE:
             # Return error as SSE
@@ -88,6 +120,15 @@ async def chat_stream_endpoint(request: StreamChatRequest):
             return
 
         try:
+            # Create per-request tools with user_id injection
+            if current_user:
+                user_id = current_user['id']
+                logger.info(f"Creating authenticated tools for user_id: {user_id}")
+                tools = create_user_tools(user_id)
+            else:
+                logger.info("Creating anonymous (read-only) tools")
+                tools = create_anonymous_tools()
+
             # Convert request history to dict format
             history = [{"role": msg.role, "content": msg.content} for msg in request.history]
 
@@ -95,7 +136,8 @@ async def chat_stream_endpoint(request: StreamChatRequest):
             response = await process_agent_message(
                 message=request.message,
                 history=history,
-                agent_account=request.agent_account
+                agent_account=request.agent_account,
+                tools=tools  # INJECTED: user_id is embedded in these tools
             )
 
             # Stream the response as data chunks
@@ -154,13 +196,26 @@ async def chat_status():
 
 # Add endpoints to match frontend expectations
 @router.post("/chat-stream")
-async def chat_stream_endpoint_alias(request: StreamChatRequest):
+async def chat_stream_endpoint_alias(
+    request: StreamChatRequest,
+    current_user: Optional[Dict[str, Any]] = Depends(get_optional_user)
+):
     """Alias for /chat/stream to match frontend expectations"""
-    return await chat_stream_endpoint(request)
+    return await chat_stream_endpoint(request, current_user)
 
 @router.post("/chat-live-summary")
-async def chat_live_summary_endpoint(request: StreamChatRequest):
-    """Chat with live summary and streaming agent execution"""
+async def chat_live_summary_endpoint(
+    request: StreamChatRequest,
+    current_user: Optional[Dict[str, Any]] = Depends(get_optional_user)
+):
+    """
+    Chat with live summary and streaming agent execution with user isolation.
+
+    Security:
+        - Authenticated users: Tools scoped to their user_id (from auth)
+        - Anonymous users: Read-only tools (market data, utilities)
+        - user_id injected via tool factory, LLM cannot spoof it
+    """
     async def generate_stream():
         if not AGENT_SYSTEM_AVAILABLE:
             # Return error as SSE
@@ -172,6 +227,15 @@ async def chat_live_summary_endpoint(request: StreamChatRequest):
             return
 
         try:
+            # Create per-request tools with user_id injection
+            if current_user:
+                user_id = current_user['id']
+                logger.info(f"Creating authenticated tools for user_id: {user_id}")
+                tools = create_user_tools(user_id)
+            else:
+                logger.info("Creating anonymous (read-only) tools")
+                tools = create_anonymous_tools()
+
             # Convert request history to dict format
             history = [{"role": msg.role, "content": msg.content} for msg in request.history]
 
@@ -182,11 +246,12 @@ async def chat_live_summary_endpoint(request: StreamChatRequest):
             all_messages = []
             agent_response_content = ""
 
-            # Stream the agent execution
+            # Stream the agent execution with user-scoped tools
             async for event in process_agent_message_streaming(
                 message=request.message,
                 history=history,
-                agent_account=request.agent_account
+                agent_account=request.agent_account,
+                tools=tools  # INJECTED: user_id is embedded in these tools
             ):
                 # Convert event to SSE format
                 yield f"data: {json.dumps(event)}\n\n"

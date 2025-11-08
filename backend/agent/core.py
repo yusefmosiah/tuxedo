@@ -60,32 +60,25 @@ async def cleanup_agent():
     logger.info("Agent system cleaned up")
 
 async def load_agent_tools():
-    """Load all available agent tools"""
+    """
+    Load global agent tools (for backward compatibility).
+
+    NOTE: New code should use per-request tools via tool_factory.create_user_tools()
+    for proper user isolation. Global tools are only loaded as fallback for
+    routes that don't yet use the new pattern.
+    """
     global agent_tools
 
     agent_tools = []
 
-    # Import stellar tools via LangChain-compatible wrappers
+    # Load anonymous (read-only) tools as global fallback
+    # These tools don't require authentication but also can't modify state
     try:
-        from agent.stellar_tools_wrappers import (
-            stellar_account_manager,
-            stellar_trading,
-            stellar_trustline_manager,
-            stellar_market_data,
-            stellar_utilities,
-            stellar_soroban_operations
-        )
-        agent_tools.extend([
-            stellar_account_manager,
-            stellar_trading,
-            stellar_trustline_manager,
-            stellar_market_data,
-            stellar_utilities,
-            stellar_soroban_operations
-        ])
-        logger.info("Stellar tools loaded successfully (via LangChain wrappers)")
+        from agent.tool_factory import create_anonymous_tools
+        agent_tools.extend(create_anonymous_tools())
+        logger.info("Global anonymous tools loaded (read-only fallback)")
     except ImportError as e:
-        logger.error(f"Failed to load Stellar tools wrappers: {e}")
+        logger.error(f"Failed to load anonymous tools: {e}")
         logger.info("Stellar functionality will be unavailable")
 
     # Import agent account management tools
@@ -160,10 +153,17 @@ async def get_agent_status() -> Dict[str, Any]:
 async def process_agent_message_streaming(
     message: str,
     history: List[Dict[str, str]],
-    agent_account: Optional[str] = None
+    agent_account: Optional[str] = None,
+    tools: Optional[List] = None
 ):
     """
     Process a user message through the AI agent with multi-step reasoning and streaming output.
+
+    Args:
+        message: User message
+        history: Conversation history
+        agent_account: Active agent account address
+        tools: List of LangChain tools (if None, uses global agent_tools)
 
     Yields dictionaries representing different stages of the agent execution.
     """
@@ -174,6 +174,9 @@ async def process_agent_message_streaming(
             "iteration": 0
         }
         return
+
+    # Use provided tools or fall back to global agent_tools
+    active_tools = tools if tools is not None else agent_tools
 
     try:
         # Build system prompt
@@ -198,11 +201,11 @@ async def process_agent_message_streaming(
 
         # Convert tools to OpenAI format
         from langchain_core.utils.function_calling import convert_to_openai_function
-        tool_schemas = [convert_to_openai_function(t) for t in agent_tools]
-        tools = [{"type": "function", "function": schema} for schema in tool_schemas]
+        tool_schemas = [convert_to_openai_function(t) for t in active_tools]
+        tools_formatted = [{"type": "function", "function": schema} for schema in tool_schemas]
 
         # Create LLM with tools
-        llm_with_tools = llm.bind(tools=tools)
+        llm_with_tools = llm.bind(tools=tools_formatted)
 
         # Agent loop with multi-step reasoning and streaming
         max_iterations = 25
@@ -210,9 +213,9 @@ async def process_agent_message_streaming(
 
         yield {
             "type": "agent_start",
-            "content": f"🚀 Starting AI agent with {len(agent_tools)} tools available...",
+            "content": f"🚀 Starting AI agent with {len(active_tools)} tools available...",
             "iteration": 0,
-            "tools_available": len(agent_tools),
+            "tools_available": len(active_tools),
             "max_iterations": max_iterations
         }
 
@@ -272,8 +275,8 @@ async def process_agent_message_streaming(
 
                     # Find and execute the tool
                     tool_func = None
-                    logger.info(f"Looking for tool '{tool_name}' among {len(agent_tools)} tools")
-                    for i, t in enumerate(agent_tools):
+                    logger.info(f"Looking for tool '{tool_name}' among {len(active_tools)} tools")
+                    for i, t in enumerate(active_tools):
                         tool_name_attr = getattr(t, 'name', 'NO_NAME')
                         logger.info(f"  Tool {i}: '{tool_name_attr}' == '{tool_name}'? {tool_name_attr == tool_name}")
                         if tool_name_attr == tool_name:
@@ -282,7 +285,7 @@ async def process_agent_message_streaming(
                             break
 
                     if tool_func is None:
-                        logger.error(f"❌ Tool '{tool_name}' not found! Available tools: {[getattr(t, 'name', 'NO_NAME') for t in agent_tools]}")
+                        logger.error(f"❌ Tool '{tool_name}' not found! Available tools: {[getattr(t, 'name', 'NO_NAME') for t in active_tools]}")
 
                     yield {
                         "type": "tool_call_start",
@@ -431,7 +434,8 @@ async def process_agent_message_streaming(
 async def process_agent_message(
     message: str,
     history: List[Dict[str, str]],
-    agent_account: Optional[str] = None
+    agent_account: Optional[str] = None,
+    tools: Optional[List] = None
 ) -> Dict[str, Any]:
     """
     Process a user message through the AI agent with multi-step reasoning.
@@ -440,12 +444,16 @@ async def process_agent_message(
         message: User message
         history: Conversation history
         agent_account: Active agent account address
+        tools: List of LangChain tools (if None, uses global agent_tools)
 
     Returns:
         Agent response with metadata
     """
     if not llm:
         raise Exception("Agent not initialized")
+
+    # Use provided tools or fall back to global agent_tools
+    active_tools = tools if tools is not None else agent_tools
 
     try:
         # Auto-select agent account if not provided
@@ -474,11 +482,11 @@ async def process_agent_message(
 
         # Convert tools to OpenAI format
         from langchain_core.utils.function_calling import convert_to_openai_function
-        tool_schemas = [convert_to_openai_function(t) for t in agent_tools]
-        tools = [{"type": "function", "function": schema} for schema in tool_schemas]
+        tool_schemas = [convert_to_openai_function(t) for t in active_tools]
+        tools_formatted = [{"type": "function", "function": schema} for schema in tool_schemas]
 
         # Create LLM with tools
-        llm_with_tools = llm.bind(tools=tools)
+        llm_with_tools = llm.bind(tools=tools_formatted)
 
         # Agent loop with multi-step reasoning
         max_iterations = 25
@@ -523,8 +531,8 @@ async def process_agent_message(
 
                     # Find and execute the tool
                     tool_func = None
-                    logger.info(f"[NON-STREAMING] Looking for tool '{tool_name}' among {len(agent_tools)} tools")
-                    for i, t in enumerate(agent_tools):
+                    logger.info(f"[NON-STREAMING] Looking for tool '{tool_name}' among {len(active_tools)} tools")
+                    for i, t in enumerate(active_tools):
                         tool_name_attr = getattr(t, 'name', 'NO_NAME')
                         logger.info(f"  [NON-STREAMING] Tool {i}: '{tool_name_attr}' == '{tool_name}'? {tool_name_attr == tool_name}")
                         if tool_name_attr == tool_name:
@@ -533,7 +541,7 @@ async def process_agent_message(
                             break
 
                     if tool_func is None:
-                        logger.error(f"❌ [NON-STREAMING] Tool '{tool_name}' not found! Available tools: {[getattr(t, 'name', 'NO_NAME') for t in agent_tools]}")
+                        logger.error(f"❌ [NON-STREAMING] Tool '{tool_name}' not found! Available tools: {[getattr(t, 'name', 'NO_NAME') for t in active_tools]}")
 
                     if tool_func:
                         try:
@@ -605,7 +613,7 @@ async def process_agent_message(
         return {
             "response": final_response,
             "success": True,
-            "tools_available": len(agent_tools),
+            "tools_available": len(active_tools),
             "iterations_used": iteration,
             "agent_account": agent_account
         }

@@ -13,7 +13,7 @@ from stellar_sdk import (
     TransactionEnvelope,
 )
 import requests
-from key_manager import KeyManager
+from account_manager import AccountManager
 from typing import Optional, Dict, Any
 from decimal import Decimal
 
@@ -175,19 +175,21 @@ def _calculate_market_fill(
 
 
 def _build_sign_submit(
+    user_id: str,
     account_id: str,
     operations: list,
-    key_manager,
+    account_manager: AccountManager,
     horizon: Server,
     auto_sign: bool = True
 ) -> Dict[str, Any]:
     """
     Unified transaction flow: build → sign → submit
-    
+
     Args:
-        account_id: Stellar public key
+        user_id: User identifier (MANDATORY - enforces user isolation)
+        account_id: Account ID (internal ID, not public key)
         operations: List of operation callbacks
-        key_manager: KeyManager instance
+        account_manager: AccountManager instance
         horizon: Horizon server instance
         auto_sign: If True, automatically sign and submit
 
@@ -195,37 +197,54 @@ def _build_sign_submit(
         Transaction result or unsigned XDR if auto_sign=False
     """
     try:
-        account = horizon.load_account(account_id)
+        # Permission check: verify user owns this account
+        if not account_manager.user_owns_account(user_id, account_id):
+            return {
+                "error": "Permission denied: account not owned by user",
+                "success": False
+            }
+
+        # Get account details
+        account_data = account_manager._get_account_by_id(account_id)
+        if not account_data:
+            return {"error": "Account not found", "success": False}
+
+        public_key = account_data['public_key']
+
+        # Load account from blockchain
+        account = horizon.load_account(public_key)
         tx_builder = TransactionBuilder(
             source_account=account,
             network_passphrase=TESTNET_NETWORK_PASSPHRASE,
             base_fee=100
         )
-        
+
         # Add all operations
         for op in operations:
             op(tx_builder)
-        
+
         tx = tx_builder.build()
-        
+
         if not auto_sign:
             return {
                 "xdr": tx.to_xdr(),
                 "tx_hash": tx.hash().hex(),
                 "message": "Transaction built (unsigned). Call with auto_sign=True to submit."
             }
-        
+
         # Sign and submit
-        keypair = key_manager.get_keypair(account_id)
-        tx.sign(keypair)
+        keypair = account_manager.get_keypair_for_signing(user_id, account_id)
+        tx.sign(keypair.keypair)  # StellarAdapter returns object with .keypair attribute
         response = horizon.submit_transaction(tx)
-        
+
         return {
             "success": response.get("successful", False),
             "hash": response.get("hash"),
             "ledger": response.get("ledger"),
             "message": "Transaction submitted successfully"
         }
+    except PermissionError as e:
+        return {"success": False, "error": str(e)}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -236,14 +255,15 @@ def _build_sign_submit(
 
 def account_manager(
     action: str,
-    key_manager,
+    user_id: str,
+    account_manager: AccountManager,
     horizon: Server,
     account_id: Optional[str] = None,
     secret_key: Optional[str] = None,
     limit: int = 10
 ) -> Dict[str, Any]:
     """
-    Unified account management tool consolidating 7 operations.
+    Unified account management tool with mandatory user isolation.
 
     Actions:
         - "create": Generate new testnet account
@@ -256,9 +276,10 @@ def account_manager(
 
     Args:
         action: Operation to perform
-        key_manager: KeyManager instance for key storage
+        user_id: User identifier (MANDATORY - injected by auth layer)
+        account_manager: AccountManager instance
         horizon: Horizon server instance
-        account_id: Stellar public key (required for most actions)
+        account_id: Account ID (internal ID, required for most actions)
         secret_key: Secret key (required only for "import")
         limit: Transaction limit (for "transactions" action)
 
@@ -266,60 +287,93 @@ def account_manager(
         Action-specific response dict
     """
     try:
+        # Validate user_id present
+        if not user_id:
+            return {"error": "user_id required", "success": False}
+
         if action == "create":
-            keypair = Keypair.random()
-            account_id = keypair.public_key
-            key_manager.store(account_id, keypair.secret)
-            return {
-                "account_id": account_id,
-                "message": "Account created (unfunded). Use action='fund' to activate."
-            }
-        
+            # Generate new account for THIS user
+            result = account_manager.generate_account(
+                user_id=user_id,
+                chain="stellar",
+                name="Stellar Account"
+            )
+            return result
+
         elif action == "fund":
+            # PERMISSION CHECK: verify user owns this account
             if not account_id:
-                return {"error": "account_id required for 'fund' action"}
-            
-            response = requests.get(f"{FRIENDBOT_URL}?addr={account_id}", timeout=10)
+                return {"error": "account_id required", "success": False}
+
+            account = account_manager._get_account_by_id(account_id)
+            if not account or account['user_id'] != user_id:
+                return {
+                    "error": "Permission denied: account not owned by user",
+                    "success": False
+                }
+
+            # Fund account using public key
+            public_key = account['public_key']
+            response = requests.get(f"{FRIENDBOT_URL}?addr={public_key}", timeout=10)
             response.raise_for_status()
-            
-            account = horizon.accounts().account_id(account_id).call()
+
+            # Get updated balance
+            chain_account = horizon.accounts().account_id(public_key).call()
             xlm_balance = next(
-                (b["balance"] for b in account["balances"] if b["asset_type"] == "native"),
+                (b["balance"] for b in chain_account["balances"] if b["asset_type"] == "native"),
                 "0"
             )
-            
+
             return {
                 "success": True,
+                "account_id": account_id,
+                "public_key": public_key,
                 "balance": xlm_balance,
                 "message": "Account funded successfully with testnet XLM"
             }
-        
+
         elif action == "get":
+            # PERMISSION CHECK
             if not account_id:
-                return {"error": "account_id required for 'get' action"}
-            
-            account = horizon.accounts().account_id(account_id).call()
+                return {"error": "account_id required", "success": False}
+
+            account = account_manager._get_account_by_id(account_id)
+            if not account or account['user_id'] != user_id:
+                return {"error": "Permission denied", "success": False}
+
+            # Fetch on-chain data
+            public_key = account['public_key']
+            chain_account = horizon.accounts().account_id(public_key).call()
+
             return {
                 "account_id": account_id,
-                "sequence": account["sequence"],
-                "balances": account["balances"],
-                "signers": account["signers"],
-                "thresholds": account["thresholds"],
-                "flags": account.get("flags", {})
+                "public_key": public_key,
+                "sequence": chain_account["sequence"],
+                "balances": chain_account["balances"],
+                "signers": chain_account["signers"],
+                "thresholds": chain_account["thresholds"],
+                "flags": chain_account.get("flags", {}),
+                "success": True
             }
-        
+
         elif action == "transactions":
+            # PERMISSION CHECK
             if not account_id:
-                return {"error": "account_id required for 'transactions' action"}
-            
+                return {"error": "account_id required", "success": False}
+
+            account = account_manager._get_account_by_id(account_id)
+            if not account or account['user_id'] != user_id:
+                return {"error": "Permission denied", "success": False}
+
+            public_key = account['public_key']
             transactions = (
                 horizon.transactions()
-                .for_account(account_id)
+                .for_account(public_key)
                 .limit(limit)
                 .order(desc=True)
                 .call()
             )
-            
+
             return {
                 "transactions": [
                     {
@@ -332,45 +386,49 @@ def account_manager(
                         "successful": tx["successful"]
                     }
                     for tx in transactions["_embedded"]["records"]
-                ]
+                ],
+                "success": True
             }
-        
+
         elif action == "list":
-            accounts = key_manager.list_accounts()
+            # List THIS user's accounts only
+            accounts = account_manager.get_user_accounts(user_id, chain="stellar")
             return {
                 "accounts": accounts,
-                "count": len(accounts)
+                "count": len(accounts),
+                "success": True
             }
-        
+
         elif action == "export":
+            # PERMISSION CHECK built into export_account
             if not account_id:
-                return {"error": "account_id required for 'export' action"}
-            
-            secret_key = key_manager.export_secret(account_id)
-            return {
-                "account_id": account_id,
-                "secret_key": secret_key,
-                "warning": "Keep this secret key secure! Anyone with this key can control your account."
-            }
-        
+                return {"error": "account_id required", "success": False}
+
+            result = account_manager.export_account(user_id, account_id)
+            return result
+
         elif action == "import":
+            # Import to THIS user's account list
             if not secret_key:
-                return {"error": "secret_key required for 'import' action"}
-            
-            account_id = key_manager.import_keypair(secret_key)
-            return {
-                "account_id": account_id,
-                "message": "Keypair imported successfully"
-            }
-        
+                return {"error": "secret_key required", "success": False}
+
+            result = account_manager.import_account(
+                user_id=user_id,
+                chain="stellar",
+                private_key=secret_key,
+                name="Imported Account"
+            )
+            return result
+
         else:
             return {
                 "error": f"Unknown action: {action}",
-                "valid_actions": ["create", "fund", "get", "transactions", "list", "export", "import"]
+                "valid_actions": ["create", "fund", "get", "transactions", "list", "export", "import"],
+                "success": False
             }
-    
+
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": str(e), "success": False}
 
 
 # ============================================================================
@@ -379,8 +437,9 @@ def account_manager(
 
 def trading(
     action: str,
+    user_id: str,
     account_id: str,
-    key_manager,
+    account_manager: AccountManager,
     horizon: Server,
     buying_asset: Optional[str] = None,
     selling_asset: Optional[str] = None,
@@ -394,7 +453,7 @@ def trading(
     auto_sign: bool = True
 ) -> Dict[str, Any]:
     """
-    Unified SDEX trading tool with intuitive buying/selling semantics.
+    Unified SDEX trading tool with mandatory user isolation.
 
     Actions:
         - "buy": Acquire buying_asset by spending selling_asset
@@ -404,8 +463,9 @@ def trading(
 
     Args:
         action: Trading operation ("buy", "sell", "cancel_order", "get_orders")
-        account_id: Stellar public key
-        key_manager: KeyManager instance for signing transactions
+        user_id: User identifier (MANDATORY - injected by auth layer)
+        account_id: Account ID (internal ID)
+        account_manager: AccountManager instance
         horizon: Horizon server instance
         buying_asset: Asset you want to acquire (e.g., "USDC")
         selling_asset: Asset you're spending (e.g., "XLM")
@@ -422,9 +482,23 @@ def trading(
         {"success": bool, "hash": "...", "ledger": 123, "market_execution": {...}}
     """
     try:
+        # PERMISSION CHECK: verify user owns this account
+        if not account_manager.user_owns_account(user_id, account_id):
+            return {
+                "error": "Permission denied: account not owned by user",
+                "success": False
+            }
+
+        # Get account details
+        account = account_manager._get_account_by_id(account_id)
+        if not account:
+            return {"error": "Account not found", "success": False}
+
+        public_key = account['public_key']
+
         if action == "get_orders":
             # Get open orders
-            offers = horizon.offers().for_account(account_id).call()
+            offers = horizon.offers().for_account(public_key).call()
             return {
                 "offers": [
                     {
@@ -461,7 +535,7 @@ def trading(
                     offer_id=int(offer_id)
                 )
 
-            result = _build_sign_submit(account_id, [cancel_op], key_manager, horizon, auto_sign)
+            result = _build_sign_submit(user_id, account_id, [cancel_op], account_manager, horizon, auto_sign)
             if result.get("success"):
                 result["message"] = f"Order {offer_id} cancelled successfully"
             return result
@@ -560,7 +634,7 @@ def trading(
                         price=price_value
                     )
 
-            result = _build_sign_submit(account_id, [trade_op], key_manager, horizon, auto_sign)
+            result = _build_sign_submit(user_id, account_id, [trade_op], account_manager, horizon, auto_sign)
 
             # Add market execution details for market orders
             if result.get("success") and order_type == "market":
@@ -592,15 +666,16 @@ def trading(
 
 def trustline_manager(
     action: str,
+    user_id: str,
     account_id: str,
     asset_code: str,
     asset_issuer: str,
-    key_manager,
+    account_manager: AccountManager,
     horizon: Server,
     limit: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Manage trustlines for issued assets.
+    Manage trustlines for issued assets with mandatory user isolation.
 
     Actions:
         - "establish": Create trustline (required before receiving assets)
@@ -608,19 +683,27 @@ def trustline_manager(
 
     Args:
         action: Trustline operation
-        account_id: Stellar public key
+        user_id: User identifier (MANDATORY - injected by auth layer)
+        account_id: Account ID (internal ID)
         asset_code: Asset code (e.g., "USDC")
         asset_issuer: Asset issuer public key
-        key_manager: KeyManager instance for signing transactions
+        account_manager: AccountManager instance
         horizon: Horizon server instance
         limit: Optional trust limit (default: maximum)
-    
+
     Returns:
         {"success": bool, "hash": "...", "message": "..."}
     """
     try:
+        # PERMISSION CHECK
+        if not account_manager.user_owns_account(user_id, account_id):
+            return {
+                "error": "Permission denied: account not owned by user",
+                "success": False
+            }
+
         asset = Asset(asset_code, asset_issuer)
-        
+
         def trustline_op(builder):
             if action == "establish":
                 builder.append_change_trust_op(asset=asset, limit=limit)
@@ -628,16 +711,18 @@ def trustline_manager(
                 builder.append_change_trust_op(asset=asset, limit="0")
             else:
                 raise ValueError(f"Unknown action: {action}")
-        
-        result = _build_sign_submit(account_id, [trustline_op], key_manager, horizon, auto_sign=True)
-        
+
+        result = _build_sign_submit(user_id, account_id, [trustline_op], account_manager, horizon, auto_sign=True)
+
         if result.get("success"):
             result["message"] = f"Trustline {'established' if action == 'establish' else 'removed'} for {asset_code}"
-        
+
         return result
-    
+
+    except PermissionError as e:
+        return {"error": str(e), "success": False}
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": str(e), "success": False}
 
 
 # ============================================================================
@@ -646,6 +731,7 @@ def trustline_manager(
 
 def market_data(
     action: str,
+    user_id: str,
     horizon: Server,
     base_asset: str = "XLM",
     quote_asset: Optional[str] = None,
@@ -653,19 +739,20 @@ def market_data(
     limit: int = 20
 ) -> Dict[str, Any]:
     """
-    Query SDEX market data.
-    
+    Query SDEX market data (read-only with user tracking).
+
     Actions:
         - "orderbook": Get orderbook for asset pair
-    
+
     Args:
         action: Market data query type
+        user_id: User identifier (MANDATORY - for logging)
         horizon: Horizon server instance
         base_asset: Base asset code (default: "XLM")
         quote_asset: Quote asset code
         quote_issuer: Quote asset issuer (if not XLM)
         limit: Number of results (default: 20)
-    
+
     Returns:
         Action-specific market data
     """
@@ -699,18 +786,19 @@ def market_data(
 # COMPOSITE TOOL 5: UTILITIES
 # ============================================================================
 
-def utilities(action: str, horizon: Server) -> Dict[str, Any]:
+def utilities(action: str, user_id: str, horizon: Server) -> Dict[str, Any]:
     """
-    Network utilities and server information.
-    
+    Network utilities and server information (read-only with user tracking).
+
     Actions:
         - "status": Get Horizon server status
         - "fee": Estimate current transaction fee
-    
+
     Args:
         action: Utility operation
+        user_id: User identifier (MANDATORY - for logging)
         horizon: Horizon server instance
-    
+
     Returns:
         Action-specific utility data
     """
