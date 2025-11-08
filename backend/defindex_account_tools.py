@@ -144,10 +144,10 @@ The vault address `{vault_address[:8]}...{vault_address[-8:]}` is not recognized
 
 Please use one of these verified vault addresses."""
 
-        # 2. Get user's account from AccountManager
+        # 2. Get user's keypair from AccountManager
         try:
-            user_account = account_manager.get_account(user_id, account_id)
-            logger.info(f"Retrieved user account: {user_account['public_key']}")
+            keypair = account_manager.get_keypair_for_signing(user_id, account_id)
+            logger.info(f"Retrieved user keypair: {keypair.public_key}")
         except Exception as e:
             return f"""❌ **Account Access Error**
 
@@ -167,7 +167,7 @@ Error details: {str(e)}"""
             from stellar_sdk.server import Server
             server = Server("https://horizon-testnet.stellar.org")
 
-            account = server.load_account(user_account['public_key'])
+            account = server.load_account(keypair.public_key)
             xlm_balance = 0.0
 
             for balance in account.balances:
@@ -207,7 +207,7 @@ Note: 2 XLM is reserved for account minimum balance and fees."""
             tx_data = client.build_deposit_transaction(
                 vault_address=vault_address,
                 amount_stroops=amount_stroops,
-                caller=user_account['public_key'],
+                caller=keypair.public_key,
                 invest=True
             )
 
@@ -231,18 +231,21 @@ This is a development environment issue, not a user account issue."""
         except Exception as e:
             return f"❌ **Transaction Build Failed**: {str(e)}"
 
-        # 5. Sign with user's private key via AccountManager
+        # 5. Sign with user's private key using keypair
         try:
-            logger.info("Signing transaction with AccountManager")
+            logger.info("Signing transaction with user's keypair")
 
-            signed_tx = account_manager.sign_transaction(
-                user_id=user_id,
-                account_id=account_id,
-                transaction_xdr=unsigned_xdr
-            )
+            from stellar_sdk.transaction_envelope import TransactionEnvelope
+            from stellar_sdk.network import Network
+
+            # Parse the unsigned XDR and sign it
+            envelope = TransactionEnvelope.from_xdr(unsigned_xdr, Network.TESTNET_NETWORK_PASSPHRASE)
+            envelope.sign(keypair)
+
+            signed_tx = envelope.to_xdr()
 
             if not signed_tx:
-                return "❌ **Transaction Signing Failed**: AccountManager returned empty signed transaction"
+                return "❌ **Transaction Signing Failed**: Empty signed transaction"
 
             logger.info("Transaction signed successfully")
 
