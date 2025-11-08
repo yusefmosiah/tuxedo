@@ -285,21 +285,24 @@ class FileSystemManager:
 
 ## Implementation Roadmap
 
-### Phase 1: Testnet/MVP (Current)
+### Phase 1: Quantum Leap Migration (Immediate)
 
-**Priority:** Get security basics right without over-engineering
+**Priority:** Complete user isolation in one atomic change
 
-✅ **Database storage for keys** (not filesystem)
-✅ **User context enforcement** in all tools
-✅ **Permission checks** at API layer
-⚠️ **Database-backed agent state** (instead of filesystem)
+**Status:**
+✅ **Layer 1: Database storage for keys** - COMPLETE (AccountManager implemented)
+🚀 **Layer 2: User context enforcement** - IN PROGRESS (quantum leap migration)
+📋 **Layer 3: Database-backed agent state** - OPTIONAL for MVP
+⏳ **Layer 4: Filesystem isolation** - DEFERRED (only if filesystem storage needed)
 
-**Implementation:**
-1. All private keys in database (encrypted)
-2. Every tool call includes `user_id` parameter
-3. Permission checks before any account operation
-4. Agent state/memory in database tables
-5. File uploads (if needed) go through API with validation
+**Quantum Leap Implementation:**
+1. Delete `KeyManager` and `.stellar_keystore.json` (no valuable data)
+2. Update all tool signatures: `user_id` as mandatory second parameter
+3. Agent tool registration: inject `user_id` via lambda wrapper
+4. Permission checks built into `AccountManager` methods
+5. Test cross-user isolation
+
+**Timeline:** 4-6 hours (see `AGENT_MIGRATION_QUANTUM_LEAP.md`)
 
 ### Phase 2: Pre-Mainnet (Before Real Capital)
 
@@ -499,17 +502,23 @@ Region EU-West
 
 **Short Answer:** We keep user X's agent isolated from user Y's data through:
 
-1. **No keys on filesystem** - All in encrypted database
-2. **User context enforcement** - Every tool call verified
-3. **Database-backed state** - Isolation via SQL foreign keys
-4. **Filesystem isolation** (if needed) - User-specific directories with permission validation
-5. **TEE deployment** (production) - Hardware-level isolation
+1. **No keys on filesystem** - All in encrypted database ✅ COMPLETE
+2. **User context enforcement** - Every tool call verified 🚀 QUANTUM LEAP IN PROGRESS
+3. **Database-backed state** - Isolation via SQL foreign keys (optional for MVP)
+4. **Filesystem isolation** (if needed) - User-specific directories with permission validation (deferred)
+5. **TEE deployment** (production) - Hardware-level isolation (future)
 
-**Current Phase:** Focus on database storage + user context enforcement (Layers 1-3)
+**Current Phase:** Quantum leap migration (Layers 1-2 implemented atomically)
 
-**Next Phase:** Add user-specific directories for non-sensitive files (Layer 4)
+**Approach:** Complete replacement of `KeyManager` with `AccountManager`, no gradual migration
+
+**Rationale:** No valuable data exists (testnet only), clean break enables simpler architecture
+
+**Next Phase:** Add agent execution tracking (Layer 3) and filesystem isolation (Layer 4) only if needed
 
 **Production Phase:** Deploy TEE for complete isolation (Layer 5)
+
+**See Also:** `AGENT_MIGRATION_QUANTUM_LEAP.md` for detailed implementation guide
 
 This layered approach provides security appropriate for each deployment phase while maintaining a clear upgrade path to production-grade isolation.
 
