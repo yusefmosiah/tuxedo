@@ -71,7 +71,7 @@ MANIFEST
 
 backend/chat_threads.db
 backend/tuxedo.db
-# backend/tuxedo_passkeys.db  # Temporarily committed for Render deployment
+backend/tuxedo_passkeys.db
 backend/.venv/
 .venv/
 # Stellar account keystores - contain private keys!
