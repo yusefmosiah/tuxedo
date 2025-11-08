@@ -269,9 +269,8 @@ def create_user_tools(user_id: str) -> List:
         import asyncio
         from defindex_account_tools import _defindex_discover_vaults
 
-        # Run async function in sync context
-        loop = asyncio.get_event_loop()
-        return loop.run_until_complete(
+        # Run async function in sync context using asyncio.run() which creates its own event loop
+        return asyncio.run(
             _defindex_discover_vaults(min_apy=min_apy, user_id=user_id)
         )
 
@@ -291,9 +290,8 @@ def create_user_tools(user_id: str) -> List:
         import asyncio
         from defindex_account_tools import _defindex_get_vault_details
 
-        # Run async function in sync context
-        loop = asyncio.get_event_loop()
-        return loop.run_until_complete(
+        # Run async function in sync context using asyncio.run() which creates its own event loop
+        return asyncio.run(
             _defindex_get_vault_details(vault_address=vault_address, user_id=user_id)
         )
 
@@ -323,9 +321,8 @@ def create_user_tools(user_id: str) -> List:
         import asyncio
         from defindex_account_tools import _defindex_deposit
 
-        # Run async function in sync context
-        loop = asyncio.get_event_loop()
-        return loop.run_until_complete(
+        # Run async function in sync context using asyncio.run() which creates its own event loop
+        return asyncio.run(
             _defindex_deposit(
                 vault_address=vault_address,
                 amount_xlm=amount_xlm,
