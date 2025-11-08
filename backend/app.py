@@ -18,6 +18,8 @@ from api.routes.agent import router as agent_router
 from api.routes.threads import router as threads_router
 # Use refactored passkey auth routes (reduced from 1148 to ~450 lines)
 from api.routes.passkey_auth_refactored import router as passkey_auth_router
+# Portfolio management routes (Phase 1: Agent Security)
+from api.routes.portfolio import router as portfolio_router
 
 # Import agent system
 from agent.core import initialize_agent, cleanup_agent
@@ -73,6 +75,7 @@ def create_app() -> FastAPI:
     app.include_router(chat_router, tags=["chat"])
     app.include_router(agent_router, prefix="/api/agent", tags=["agent"])
     app.include_router(threads_router, tags=["threads"])
+    app.include_router(portfolio_router, tags=["portfolio"])
 
     # Health check endpoint
     @app.get("/")
