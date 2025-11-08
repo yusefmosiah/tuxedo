@@ -21,4 +21,5 @@ dependencies = [
     "sendgrid>=6.12.5",
     "email-validator>=2.3.0",
     "webauthn>=2.0.0",
+    "cryptography>=42.0.0",
 ]

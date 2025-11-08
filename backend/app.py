@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 from api.routes.chat import router as chat_router
 from api.routes.agent import router as agent_router
 from api.routes.threads import router as threads_router
+from api.routes.accounts import router as accounts_router
 # Use refactored passkey auth routes (reduced from 1148 to ~450 lines)
 from api.routes.passkey_auth_refactored import router as passkey_auth_router
 
@@ -70,6 +71,7 @@ def create_app() -> FastAPI:
 
     # Include routers
     app.include_router(passkey_auth_router, tags=["passkey-auth"])
+    app.include_router(accounts_router, prefix="/api", tags=["accounts"])
     app.include_router(chat_router, tags=["chat"])
     app.include_router(agent_router, prefix="/api/agent", tags=["agent"])
     app.include_router(threads_router, tags=["threads"])
