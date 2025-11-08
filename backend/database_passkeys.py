@@ -139,6 +139,25 @@ class PasskeyDatabaseManager:
                 )
             ''')
 
+            # Wallet accounts table (chain-agnostic account storage)
+            # Accounts belong directly to users (no portfolio abstraction)
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS wallet_accounts (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    chain TEXT NOT NULL,
+                    public_key TEXT NOT NULL,
+                    encrypted_private_key TEXT NOT NULL,
+                    name TEXT,
+                    source TEXT DEFAULT 'generated',
+                    metadata TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    last_used_at TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+                    UNIQUE(chain, public_key)
+                )
+            ''')
+
             # Create indexes
             self._create_indexes(cursor)
 
@@ -158,11 +177,18 @@ class PasskeyDatabaseManager:
             'CREATE INDEX IF NOT EXISTS idx_recovery_attempts_attempted_at ON recovery_attempts(attempted_at)',
             'CREATE INDEX IF NOT EXISTS idx_threads_user_id ON threads(user_id)',
             'CREATE INDEX IF NOT EXISTS idx_threads_updated_at ON threads(updated_at DESC)',
-            'CREATE INDEX IF NOT EXISTS idx_messages_thread_id ON messages(thread_id)'
+            'CREATE INDEX IF NOT EXISTS idx_messages_thread_id ON messages(thread_id)',
+            'CREATE INDEX IF NOT EXISTS idx_wallet_accounts_user_id ON wallet_accounts(user_id)',
+            'CREATE INDEX IF NOT EXISTS idx_wallet_accounts_chain ON wallet_accounts(chain)',
+            'CREATE INDEX IF NOT EXISTS idx_wallet_accounts_user_chain ON wallet_accounts(user_id, chain)'
         ]
 
         for index_sql in indexes:
             cursor.execute(index_sql)
+
+    def get_connection(self):
+        """Get a database connection (for use with context manager)"""
+        return sqlite3.connect(self.db_path)
 
     # User management
     def create_user(self, email: str) -> Dict[str, Any]:
