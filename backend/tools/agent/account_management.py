@@ -1,12 +1,27 @@
 """
 Agent Account Management Tools
 Functions for AI agents to manage their own Stellar accounts
+
+⚠️ SECURITY WARNING - NOT USER-ISOLATED ⚠️
+
+This file uses KeyManager which does NOT enforce user isolation.
+All users share the same agent accounts, which is a security risk.
+
+STATUS: Pending migration to AccountManager with per-user agent accounts
+
+QUANTUM LEAP TODO:
+- Add user_id parameter to all functions
+- Use AccountManager instead of KeyManager
+- Create per-user agent accounts (each user has their own agent accounts)
+- Add permission checks before operations
+
+For now: These tools are loaded but should be used with caution in multi-user environments.
 """
 
 from typing import Dict, Optional, List
 from stellar_sdk import Keypair
 from stellar_sdk.server import Server
-from key_manager import KeyManager
+from key_manager import KeyManager  # ⚠️ NOT USER-ISOLATED
 import json
 import os
 import requests

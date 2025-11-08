@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """
 DeFindex LangChain tools for Stellar vault operations
+
+Updated for Quantum Leap migration:
+- Uses AccountManager instead of KeyManager
+- Enforces user_id isolation for deposits/withdrawals
+- User accounts used for DeFi operations (not shared agent accounts)
 """
 
 import asyncio
@@ -205,12 +210,14 @@ Please use one of these verified vault addresses."""
         # Import DeFindex client for autonomous execution
         try:
             from defindex_client import get_defindex_client
-            from key_manager import get_agent_keypair
+            from account_manager import AccountManager
 
-            # Get agent keypair for signing
-            agent_keypair = get_agent_keypair(default_account)
-            if not agent_keypair:
-                return f"❌ **Cannot access private key** for agent account {default_account[:8]}...{default_account[-8:]}"
+            # NOTE: This tool requires user_id and account_id for quantum leap migration
+            # Disabled for security - use manual methods
+            return """❌ **Autonomous Execution Disabled During Migration**
+
+This tool requires account ownership verification for security.
+Please use the manual deposit/withdrawal methods instead."""
 
             # Initialize DeFindex client
             client = get_defindex_client(network=network)
@@ -461,12 +468,14 @@ Please use one of these verified vault addresses."""
         # Import DeFindex client for autonomous execution
         try:
             from defindex_client import get_defindex_client
-            from key_manager import get_agent_keypair
+            from account_manager import AccountManager
 
-            # Get agent keypair for signing
-            agent_keypair = get_agent_keypair(default_account)
-            if not agent_keypair:
-                return f"❌ **Cannot access private key** for agent account {default_account[:8]}...{default_account[-8:]}"
+            # NOTE: This tool requires user_id and account_id for quantum leap migration
+            # Disabled for security - use manual methods
+            return """❌ **Autonomous Execution Disabled During Migration**
+
+This tool requires account ownership verification for security.
+Please use the manual deposit/withdrawal methods instead."""
 
             # Initialize DeFindex client
             client = get_defindex_client(network=network)

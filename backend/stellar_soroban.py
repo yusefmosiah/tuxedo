@@ -1,13 +1,18 @@
 """
 Stellar Soroban (Smart Contract) Operations
 Async-first implementation using SorobanServerAsync
+
+Updated for Quantum Leap migration:
+- Uses AccountManager instead of KeyManager
+- Enforces user_id isolation
+- Permission checks before signing
 """
 
 import asyncio
 from stellar_sdk import TransactionBuilder, scval
 from stellar_sdk.soroban_server_async import SorobanServerAsync
 from stellar_sdk.soroban_rpc import EventFilter, EventFilterType, GetEventsRequest
-from key_manager import KeyManager
+from account_manager import AccountManager
 from typing import Optional, Dict, Any
 import json
 
@@ -74,13 +79,14 @@ def _parse_single_param(param: dict):
 
 async def soroban_operations(
     action: str,
+    user_id: str,
     soroban_server: SorobanServerAsync,
-    key_manager,
+    account_manager: AccountManager,
     contract_id: Optional[str] = None,
     key: Optional[str] = None,
     function_name: Optional[str] = None,
     parameters: Optional[str] = None,
-    source_account: Optional[str] = None,
+    account_id: Optional[str] = None,
     durability: str = "persistent",
     start_ledger: Optional[int] = None,
     event_types: Optional[list] = None,
@@ -89,14 +95,35 @@ async def soroban_operations(
     network_passphrase: str = None
 ) -> Dict[str, Any]:
     """
-    Unified Soroban operations handler with async support.
+    Unified Soroban operations handler with async support and user isolation.
 
     Actions:
-        - "get_data": Query contract storage
+        - "get_data": Query contract storage (read-only)
         - "simulate": Simulate contract call (read-only)
-        - "invoke": Execute contract function (write)
-        - "get_events": Query contract events
-        - "get_ledger_entries": Low-level ledger access
+        - "invoke": Execute contract function (write, requires account_id)
+        - "get_events": Query contract events (read-only)
+
+    Args:
+        action: Operation type
+        user_id: User identifier (MANDATORY - injected by auth layer)
+        soroban_server: SorobanServerAsync instance
+        account_manager: AccountManager instance
+        contract_id: Contract ID
+        key: Storage key (for get_data)
+        function_name: Contract function name
+        parameters: JSON-encoded parameters
+        account_id: Account ID (internal ID, required for invoke with auto_sign)
+        durability: Storage durability ("persistent" or "temporary")
+        start_ledger: Starting ledger for event queries
+        event_types: Event type filters
+        limit: Result limit
+        auto_sign: Auto-sign transactions (requires account_id)
+        network_passphrase: Network passphrase
+
+    Security:
+        - user_id enforced for all write operations
+        - Permission check before signing transactions
+        - Read-only operations (get_data, simulate, get_events) don't require ownership
     """
     try:
         if action == "get_data":
@@ -124,11 +151,18 @@ async def soroban_operations(
 
         elif action == "simulate":
             # Simulate contract call (read-only, no fees)
-            if not contract_id or not function_name or not source_account:
-                return {"error": "contract_id, function_name, and source_account required"}
+            if not contract_id or not function_name or not account_id:
+                return {"error": "contract_id, function_name, and account_id required"}
 
-            # Load account
-            source = await soroban_server.load_account(source_account)
+            # Get account details (no permission check needed for simulation)
+            account_data = account_manager._get_account_by_id(account_id)
+            if not account_data:
+                return {"error": "Account not found", "success": False}
+
+            public_key = account_data['public_key']
+
+            # Load account from blockchain
+            source = await soroban_server.load_account(public_key)
 
             # Parse parameters
             scval_params = _parse_parameters(parameters) if parameters else []
@@ -170,15 +204,31 @@ async def soroban_operations(
 
         elif action == "invoke":
             # Execute contract function (writes to blockchain)
-            if not contract_id or not function_name or not source_account:
-                return {"error": "contract_id, function_name, and source_account required"}
+            if not contract_id or not function_name or not account_id:
+                return {"error": "contract_id, function_name, and account_id required"}
+
+            # PERMISSION CHECK: verify user owns this account
+            if not account_manager.user_owns_account(user_id, account_id):
+                return {
+                    "error": "Permission denied: account not owned by user",
+                    "success": False
+                }
+
+            # Get account details
+            account_data = account_manager._get_account_by_id(account_id)
+            if not account_data:
+                return {"error": "Account not found", "success": False}
+
+            public_key = account_data['public_key']
 
             # Get keypair for signing
+            keypair = None
             if auto_sign:
-                keypair = key_manager.get_keypair(source_account)
+                keypair_result = account_manager.get_keypair_for_signing(user_id, account_id)
+                keypair = keypair_result.keypair  # StellarAdapter returns object with .keypair attribute
 
-            # Load account
-            source = await soroban_server.load_account(source_account)
+            # Load account from blockchain
+            source = await soroban_server.load_account(public_key)
 
             # Parse parameters
             scval_params = _parse_parameters(parameters) if parameters else []

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
-Test script to verify that Stellar tool wrappers generate proper JSON schemas.
+Test script to verify that Stellar tool factory generates proper JSON schemas.
+
+Updated for Quantum Leap migration: Uses tool_factory instead of deprecated wrappers.
 """
 
 import json
@@ -11,28 +13,22 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 def test_schema_generation():
-    """Test that all tool wrappers generate JSON-serializable schemas"""
+    """Test that all tool factory tools generate JSON-serializable schemas"""
 
     try:
-        from agent.stellar_tools_wrappers import (
-            stellar_account_manager,
-            stellar_trading,
-            stellar_trustline_manager,
-            stellar_market_data,
-            stellar_utilities,
-            stellar_soroban_operations
-        )
+        # Use new tool_factory instead of deprecated wrappers
+        from agent.tool_factory import create_user_tools
 
-        tools = [
-            ("stellar_account_manager", stellar_account_manager),
-            ("stellar_trading", stellar_trading),
-            ("stellar_trustline_manager", stellar_trustline_manager),
-            ("stellar_market_data", stellar_market_data),
-            ("stellar_utilities", stellar_utilities),
-            ("stellar_soroban_operations", stellar_soroban_operations)
-        ]
+        # Create tools for a test user
+        test_user_id = "test_user_schema_validation"
+        tools_list = create_user_tools(test_user_id)
 
-        print("Testing schema generation for Stellar tool wrappers...")
+        # Extract tool names from tool objects
+        tools = [(getattr(t, 'name', f'Tool {i}'), t) for i, t in enumerate(tools_list)]
+
+        print(f"Testing schema generation for {len(tools)} Stellar tools from tool_factory...")
+        print("=" * 60)
+        print(f"Using test user_id: {test_user_id}")
         print("=" * 60)
 
         all_passed = True

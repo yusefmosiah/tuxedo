@@ -2,21 +2,59 @@
 """
 Clean up empty Stellar accounts from the keystore.
 Removes all accounts with 0 XLM balance to reduce clutter.
+
+⚠️ DEPRECATED - OBSOLETE AFTER QUANTUM LEAP ⚠️
+
+This script is NO LONGER NEEDED after migration to AccountManager.
+
+Old System (KeyManager):
+- Used .stellar_keystore.json file
+- All accounts in single JSON file
+- This script cleaned up empty accounts
+
+New System (AccountManager):
+- Uses database with user_id isolation
+- Accounts stored per-user in wallet_accounts table
+- No need for cleanup script (use SQL queries instead)
+
+If you need to clean up accounts in the new system:
+  python -c "from account_manager import AccountManager; am = AccountManager(); am.delete_account(user_id, account_id)"
+
+Or use SQL directly:
+  DELETE FROM wallet_accounts WHERE user_id='...' AND id='...'
 """
 
 import json
 import os
 from stellar_sdk.server import Server
-from key_manager import KeyManager
+# from key_manager import KeyManager  # DEPRECATED - DO NOT USE
 
 def clean_empty_accounts():
-    """Remove all accounts with 0 XLM balance from the keystore"""
+    """
+    DEPRECATED: This function is obsolete after quantum leap migration.
 
+    Use AccountManager methods instead for cleaning up accounts.
+    """
+    print("⚠️  This script is DEPRECATED and no longer works.")
+    print("The KeyManager and .stellar_keystore.json have been replaced with AccountManager.")
+    print("")
+    print("To manage accounts in the new system:")
+    print("1. Use AccountManager methods:")
+    print("   from account_manager import AccountManager")
+    print("   am = AccountManager()")
+    print("   am.delete_account(user_id, account_id)")
+    print("")
+    print("2. Or use SQL queries on wallet_accounts table")
+    return
+
+    # OLD CODE (kept for reference, but not executed):
+    """
     # Initialize Stellar server
     HORIZON_URL = os.getenv("HORIZON_URL", "https://horizon-testnet.stellar.org")
     server = Server(HORIZON_URL)
 
     # Initialize key manager
+    from key_manager import KeyManager
     key_manager = KeyManager()
     accounts = key_manager.list_accounts()
 

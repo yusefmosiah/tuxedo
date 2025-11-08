@@ -1,6 +1,13 @@
 """
 Agent Tools
 LangChain tool wrappers for agent account management functions.
+
+⚠️ SECURITY WARNING ⚠️
+These tools use KeyManager (not user-isolated). All users share the same agent accounts.
+
+STATUS: Pending quantum leap migration to per-user agent accounts.
+
+TODO: Migrate to use AccountManager with user_id isolation.
 """
 
 import asyncio
