@@ -4,7 +4,7 @@ import { Contract, rpc } from "@stellar/stellar-sdk";
 //   BackstopContract,
 //   PoolFactoryContract,
 // } from "@blend-capital/blend-sdk";
-import { rpcUrl, stellarNetwork } from "./util";
+import { rpcUrl } from "./util";
 
 /**
  * Blend Protocol Contract Addresses (MAINNET ONLY)
