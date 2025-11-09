@@ -93,7 +93,8 @@ async def _get_asset_symbol(
     asset_address: str,
     soroban_server: SorobanServerAsync,
     account_manager: AccountManager,
-    user_id: str
+    user_id: str,
+    account_id: Optional[str] = None
 ) -> str:
     """
     Get the symbol for an asset token contract.
@@ -103,6 +104,7 @@ async def _get_asset_symbol(
         soroban_server: SorobanServerAsync instance
         account_manager: AccountManager instance
         user_id: User identifier
+        account_id: Optional account ID for simulation
 
     Returns:
         Asset symbol (e.g., "USDC", "XLM") or shortened address if not found
@@ -112,6 +114,15 @@ async def _get_asset_symbol(
         for symbol, addr in BLEND_TESTNET_CONTRACTS.items():
             if addr == asset_address:
                 return symbol.upper()
+
+        # If no account_id provided, try to get one
+        if not account_id:
+            accounts = account_manager.list_accounts(user_id)
+            if accounts:
+                account_id = accounts[0]['id']
+            else:
+                # Can't simulate without an account, return fallback
+                return f"{asset_address[:4]}...{asset_address[-4:]}"
 
         # Try to call the token's symbol() function
         # Most Stellar tokens implement this
@@ -123,6 +134,7 @@ async def _get_asset_symbol(
             contract_id=asset_address,
             function_name="symbol",
             parameters="[]",
+            account_id=account_id,
             network_passphrase=NETWORK_CONFIG['testnet']['passphrase']
         )
 
@@ -422,6 +434,22 @@ async def blend_get_reserve_apy(
 
         logger.info(f"Fetching reserve data for {asset_address[:8]}... from pool {pool_address[:8]}...")
 
+        # Get or create a system account for read-only operations
+        # List existing accounts first
+        accounts = account_manager.list_accounts(user_id)
+
+        # Use first available account, or create one if none exist
+        account_id = None
+        if accounts:
+            account_id = accounts[0]['id']
+        else:
+            # Create a temporary system account for read-only operations
+            create_result = account_manager.create_account(user_id, alias="blend_readonly")
+            if create_result.get('success'):
+                account_id = create_result['id']
+            else:
+                raise ValueError("Failed to create read-only account for simulation")
+
         # Use simulate (read-only, no fees)
         result = await soroban_operations(
             action="simulate",
@@ -431,6 +459,7 @@ async def blend_get_reserve_apy(
             contract_id=pool_address,
             function_name="get_reserve",
             parameters=parameters,
+            account_id=account_id,
             network_passphrase=NETWORK_CONFIG[network]['passphrase']
         )
 
@@ -463,7 +492,7 @@ async def blend_get_reserve_apy(
         utilization = total_borrowed / total_supplied if total_supplied > 0 else 0
 
         # Get asset symbol
-        asset_symbol = await _get_asset_symbol(asset_address, soroban_server, account_manager, user_id)
+        asset_symbol = await _get_asset_symbol(asset_address, soroban_server, account_manager, user_id, account_id)
 
         logger.info(f"Reserve {asset_symbol}: Supply APY = {supply_apy:.2f}%, Utilization = {utilization:.1%}")
 
@@ -768,6 +797,7 @@ async def blend_get_my_positions(
             contract_id=pool_address,
             function_name="get_positions",
             parameters=parameters,
+            account_id=account_id,
             network_passphrase=NETWORK_CONFIG[network]['passphrase']
         )
 
