@@ -365,6 +365,272 @@ def create_user_tools(user_id: str) -> List:
                 )
             )
 
+    # ========================================================================
+    # BLEND CAPITAL TOOLS - Active yield farming solution
+    # ========================================================================
+
+    @tool
+    def blend_find_best_yield(asset_symbol: str, min_apy: Optional[float] = 0.0):
+        """
+        Find the best yield opportunities for an asset across all Blend Capital pools.
+
+        Use this when users ask about:
+        - Best APY for their assets
+        - Where to earn yield on USDC, XLM, etc.
+        - Comparing yield opportunities
+        - Finding the highest returns
+
+        Args:
+            asset_symbol: Asset to search for (e.g., "USDC", "XLM", "WETH", "WBTC")
+            min_apy: Minimum APY threshold (default: 0.0)
+
+        Returns:
+            Sorted list of yield opportunities with APY, liquidity, and pool info
+        """
+        import asyncio
+        from blend_account_tools import _blend_find_best_yield
+
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, _blend_find_best_yield(
+                    asset_symbol=asset_symbol,
+                    min_apy=min_apy,
+                    user_id=user_id,
+                    account_manager=account_mgr
+                ))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(
+                _blend_find_best_yield(
+                    asset_symbol=asset_symbol,
+                    min_apy=min_apy,
+                    user_id=user_id,
+                    account_manager=account_mgr
+                )
+            )
+
+    @tool
+    def blend_discover_pools():
+        """
+        Discover all active Blend Capital pools on testnet.
+
+        Use this when users ask about:
+        - What pools are available
+        - Blend protocol pools
+        - Active lending pools
+
+        Returns:
+            List of active pools with addresses and status
+        """
+        import asyncio
+        from blend_account_tools import _blend_discover_pools
+
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, _blend_discover_pools(
+                    user_id=user_id,
+                    account_manager=account_mgr
+                ))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(
+                _blend_discover_pools(
+                    user_id=user_id,
+                    account_manager=account_mgr
+                )
+            )
+
+    @tool
+    def blend_supply_to_pool(
+        pool_address: str,
+        asset_address: str,
+        amount: float,
+        account_id: str
+    ):
+        """
+        Supply assets to a Blend pool to start earning yield.
+
+        This is the main function for depositing funds and earning interest.
+        Use after finding the best yield with blend_find_best_yield.
+
+        Args:
+            pool_address: Pool contract address (from blend_find_best_yield)
+            asset_address: Asset contract address (from blend_find_best_yield)
+            amount: Amount to supply in decimal units (e.g., 100.5)
+            account_id: Account ID from stellar_account_manager
+
+        Returns:
+            Transaction result with hash and confirmation
+
+        Example:
+            "Supply 100 USDC to the Comet pool using my main account"
+        """
+        import asyncio
+        from blend_account_tools import _blend_supply_to_pool
+
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, _blend_supply_to_pool(
+                    pool_address=pool_address,
+                    asset_address=asset_address,
+                    amount=amount,
+                    account_id=account_id,
+                    user_id=user_id,
+                    account_manager=account_mgr
+                ))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(
+                _blend_supply_to_pool(
+                    pool_address=pool_address,
+                    asset_address=asset_address,
+                    amount=amount,
+                    account_id=account_id,
+                    user_id=user_id,
+                    account_manager=account_mgr
+                )
+            )
+
+    @tool
+    def blend_withdraw_from_pool(
+        pool_address: str,
+        asset_address: str,
+        amount: float,
+        account_id: str
+    ):
+        """
+        Withdraw assets from a Blend pool.
+
+        Use this to remove funds and stop earning yield.
+
+        Args:
+            pool_address: Pool contract address
+            asset_address: Asset contract address
+            amount: Amount to withdraw in decimal units (e.g., 50.0)
+            account_id: Account ID from stellar_account_manager
+
+        Returns:
+            Transaction result with hash and confirmation
+
+        Example:
+            "Withdraw 50 USDC from the Comet pool to my main account"
+        """
+        import asyncio
+        from blend_account_tools import _blend_withdraw_from_pool
+
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, _blend_withdraw_from_pool(
+                    pool_address=pool_address,
+                    asset_address=asset_address,
+                    amount=amount,
+                    account_id=account_id,
+                    user_id=user_id,
+                    account_manager=account_mgr
+                ))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(
+                _blend_withdraw_from_pool(
+                    pool_address=pool_address,
+                    asset_address=asset_address,
+                    amount=amount,
+                    account_id=account_id,
+                    user_id=user_id,
+                    account_manager=account_mgr
+                )
+            )
+
+    @tool
+    def blend_check_my_positions(pool_address: str, account_id: str):
+        """
+        Check your positions in a Blend pool.
+
+        Shows what assets you've supplied, borrowed, and collateral status.
+
+        Args:
+            pool_address: Pool contract address
+            account_id: Account ID from stellar_account_manager
+
+        Returns:
+            Detailed position information for all assets in the pool
+
+        Example:
+            "Check my positions in the Comet pool"
+        """
+        import asyncio
+        from blend_account_tools import _blend_check_my_positions
+
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, _blend_check_my_positions(
+                    pool_address=pool_address,
+                    account_id=account_id,
+                    user_id=user_id,
+                    account_manager=account_mgr
+                ))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(
+                _blend_check_my_positions(
+                    pool_address=pool_address,
+                    account_id=account_id,
+                    user_id=user_id,
+                    account_manager=account_mgr
+                )
+            )
+
+    @tool
+    def blend_get_pool_apy(pool_address: str, asset_address: str):
+        """
+        Get current APY for a specific asset in a pool.
+
+        Shows supply APY (what you earn), borrow APY, and pool metrics.
+
+        Args:
+            pool_address: Pool contract address
+            asset_address: Asset contract address
+
+        Returns:
+            APY information and pool metrics
+
+        Example:
+            "What's the current APY for USDC in the Comet pool?"
+        """
+        import asyncio
+        from blend_account_tools import _blend_get_pool_apy
+
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, _blend_get_pool_apy(
+                    pool_address=pool_address,
+                    asset_address=asset_address,
+                    user_id=user_id,
+                    account_manager=account_mgr
+                ))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(
+                _blend_get_pool_apy(
+                    pool_address=pool_address,
+                    asset_address=asset_address,
+                    user_id=user_id,
+                    account_manager=account_mgr
+                )
+            )
+
     # Return list of tools with user_id injected
     tools = [
         stellar_account_manager,
@@ -372,13 +638,20 @@ def create_user_tools(user_id: str) -> List:
         stellar_trustline_manager,
         stellar_market_data,
         stellar_utilities,
-        # NEW - DeFindex tools with user_id injection
+        # DeFindex tools (deprecated - API down)
         defindex_discover_vaults,
         defindex_get_vault_details,
-        defindex_deposit
+        defindex_deposit,
+        # Blend Capital tools (ACTIVE - primary yield farming solution)
+        blend_find_best_yield,
+        blend_discover_pools,
+        blend_supply_to_pool,
+        blend_withdraw_from_pool,
+        blend_check_my_positions,
+        blend_get_pool_apy
     ]
 
-    logger.info(f"Created {len(tools)} tools ({len(tools)-5} DeFindex + 5 Stellar) for user_id: {user_id}")
+    logger.info(f"Created {len(tools)} tools (5 Stellar + 3 DeFindex + 6 Blend Capital) for user_id: {user_id}")
     return tools
 
 

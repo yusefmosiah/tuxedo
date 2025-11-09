@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 """
-DeFindex API client for Stellar vault operations
+DeFindex API Client
+
+⚠️ CURRENTLY DISABLED: DeFindex API is down (as of 2025-11-09)
+This code is preserved in case the API comes back online.
+For yield farming, use blend_pool_tools.py instead.
+
+Status: The DeFindex API (https://api.defindex.io) is currently unavailable.
+All functions in this file will raise errors if called.
+Use direct Blend Capital pool interactions via blend_pool_tools.py for
+autonomous yield farming operations.
 """
 
 import os
@@ -12,6 +21,10 @@ from urllib3.util.retry import Retry
 import json
 
 logger = logging.getLogger(__name__)
+
+# Global flag to control DeFindex availability
+# Set to True if API comes back online
+DEFINDEX_ENABLED = False
 
 class DeFindexClient:
     """Client for DeFindex REST API - server-side only"""
