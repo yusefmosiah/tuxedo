@@ -95,32 +95,38 @@ class DeFindexSoroban:
                             real_vault_data[address]['apy'] = vault_info.get('apy', 0)
 
             except Exception as e:
-                logger.error(f"Failed to get vault data from API: {e}")
-                raise ValueError(f"Unable to fetch vault data from DeFindex API: {str(e)}. Please check DEFINDEX_API_KEY and network connectivity.")
+                logger.warning(f"Failed to get vault data from API: {e}")
+                logger.info("Falling back to hardcoded vault data")
+                real_vault_data = {}  # Clear API data, will use fallback
 
-        # Require API client - no fallback data
-        if not self.api_client:
-            raise ValueError("DeFindex API client not available - cannot fetch vault data. Please set DEFINDEX_API_KEY environment variable.")
+        # Use API data if available, otherwise fall back to hardcoded data
+        use_fallback = not self.api_client or not real_vault_data
 
-        # Process vaults with real API data only
+        if use_fallback:
+            logger.info(f"Using hardcoded vault data for {self.network} (API unavailable)")
+
+        # Process vaults with API data or fallback data
         for name, address in vaults_to_use.items():
             vault_info = real_vault_data.get(address)
 
-            if not vault_info:
-                # Skip vaults without API data
-                logger.warning(f"Skipping vault {name} ({address}) - no API data available")
-                continue
+            if vault_info:
+                # Use real data from API
+                apy = vault_info.get('apy', 0)
+                tvl = vault_info.get('tvl', 0)
+                symbol = vault_info.get('symbol', name.split('_')[0])
+                strategy = vault_info.get('strategy', name.split('_')[1] if '_' in name else 'HODL')
+                data_source = 'api'
+            else:
+                # Use hardcoded fallback data
+                logger.debug(f"Using fallback data for vault {name}")
+                symbol = name.split('_')[0]
+                strategy = name.split('_')[1] if '_' in name else 'HODL'
+                apy = 0.0  # Testnet vaults have 0% APY
+                tvl = 0  # No TVL data without API
+                data_source = 'hardcoded'
 
-            # Use real data from API only
-            apy = vault_info.get('apy', 0)
-            tvl = vault_info.get('tvl', 0)
-
-            # Extract real symbol and strategy
-            symbol = vault_info.get('symbol', name.split('_')[0])
-            strategy = vault_info.get('strategy', name.split('_')[1] if '_' in name else 'HODL')
-            asset_type = vault_info.get('asset_type',
-                'stablecoin' if symbol in ['USDC', 'EURC', 'USDglo'] else
-                'volatile' if symbol == 'XLM' else 'tokenized')
+            # Determine asset type
+            asset_type = 'stablecoin' if symbol in ['USDC', 'EURC', 'USDglo'] else 'volatile' if symbol == 'XLM' else 'tokenized'
 
             # Filter by minimum APY
             if apy >= min_apy:
@@ -133,16 +139,18 @@ class DeFindexSoroban:
                     'network': self.network,
                     'strategy': strategy,
                     'asset_type': asset_type,
-                    'data_source': 'api'
+                    'data_source': data_source
                 })
 
         # Sort by APY descending, then by TVL descending
         vaults_data.sort(key=lambda v: (v['apy'], v['tvl']), reverse=True)
 
         if not vaults_data:
-            raise ValueError(f"No vault data available from API. Please check DEFINDEX_API_KEY and network connectivity.")
+            # For testnet with min_apy=0, should never be empty due to hardcoded vaults
+            logger.warning(f"No vaults found with APY >= {min_apy}% on {self.network}")
 
-        logger.info(f"Returning {len(vaults_data)} vaults from API only (no fallback data)")
+        data_source_summary = 'API' if not use_fallback else 'hardcoded fallback'
+        logger.info(f"Returning {len(vaults_data)} vaults from {data_source_summary}")
         return vaults_data
 
     async def get_vault_details(self, vault_address: str) -> Dict:
@@ -158,27 +166,31 @@ class DeFindexSoroban:
         if not vault_name:
             raise ValueError(f"Vault not found: {vault_address}")
 
-        # Require API client - no fallback data
-        if not self.api_client:
-            raise ValueError("DeFindex API client not available - cannot fetch vault details. Please set DEFINDEX_API_KEY environment variable.")
-
-        # Get real data from API
+        # Try to get real data from API, fall back to hardcoded if unavailable
         vault_info = {}
-        try:
-            vault_info = self.api_client.get_vault_info(vault_address)
+        use_fallback = False
 
-            # Try to get APY data separately for more accurate info
+        if self.api_client:
             try:
-                apy_data = self.api_client.get_vault_apy(vault_address)
-                vault_info['apy'] = apy_data.get('apy', 0)
-            except Exception as e:
-                logger.debug(f"Could not get APY for {vault_address}: {e}")
-                vault_info['apy'] = vault_info.get('apy', 0)
+                vault_info = self.api_client.get_vault_info(vault_address)
 
-            logger.info(f"Retrieved real vault data for {vault_name}")
-        except Exception as e:
-            logger.error(f"Failed to get vault details from API for {vault_name}: {e}")
-            raise ValueError(f"Unable to fetch vault details from DeFindex API: {str(e)}. Please check DEFINDEX_API_KEY and network connectivity.")
+                # Try to get APY data separately for more accurate info
+                try:
+                    apy_data = self.api_client.get_vault_apy(vault_address)
+                    vault_info['apy'] = apy_data.get('apy', 0)
+                except Exception as e:
+                    logger.debug(f"Could not get APY for {vault_address}: {e}")
+                    vault_info['apy'] = vault_info.get('apy', 0)
+
+                logger.info(f"Retrieved real vault data for {vault_name}")
+            except Exception as e:
+                logger.warning(f"Failed to get vault details from API for {vault_name}: {e}")
+                logger.info("Falling back to hardcoded vault details")
+                vault_info = {}
+                use_fallback = True
+        else:
+            logger.info(f"API client unavailable for {vault_name}, using hardcoded data")
+            use_fallback = True
 
         if vault_info:
             # Use real data from API
@@ -188,22 +200,27 @@ class DeFindexSoroban:
             strategy = vault_info.get('strategy', vault_name.split('_')[1] if '_' in vault_name else 'HODL')
             strategies = vault_info.get('strategies', [])
             historical_apy = vault_info.get('historical_apy', {})
-            asset_type = vault_info.get('asset_type',
-                'stablecoin' if symbol in ['USDC', 'EURC', 'USDglo'] else
-                'volatile' if symbol == 'XLM' else 'tokenized')
-            risk_level = vault_info.get('risk_level',
-                'Low' if symbol in ['USDC', 'EURC'] else
-                'Medium' if symbol == 'XLM' else 'High')
-            min_deposit = vault_info.get('min_deposit', 100 if symbol in ['USDC', 'EURC'] else 1)
-            fees = vault_info.get('fees', {
-                'deposit': '0.1%',
-                'withdrawal': '0.1%',
-                'performance': '10% of profits'
-            })
-
+            data_source = 'api'
         else:
-            # No API data available - fail with clear error
-            raise ValueError(f"API data not available for vault {vault_name}. Please set DEFINDEX_API_KEY environment variable and check network connectivity.")
+            # Use hardcoded fallback data
+            logger.debug(f"Using hardcoded fallback data for vault {vault_name}")
+            symbol = vault_name.split('_')[0]
+            strategy = vault_name.split('_')[1] if '_' in vault_name else 'HODL'
+            apy = 0.0  # Testnet vaults have 0% APY
+            tvl = 0  # No TVL data without API
+            strategies = []
+            historical_apy = {}
+            data_source = 'hardcoded'
+
+        # Common metadata (works for both API and fallback)
+        asset_type = 'stablecoin' if symbol in ['USDC', 'EURC', 'USDglo'] else 'volatile' if symbol == 'XLM' else 'tokenized'
+        risk_level = 'Low' if symbol in ['USDC', 'EURC'] else 'Medium' if symbol == 'XLM' else 'High'
+        min_deposit = 100 if symbol in ['USDC', 'EURC'] else 1
+        fees = {
+            'deposit': '0.1%',
+            'withdrawal': '0.1%',
+            'performance': '10% of profits'
+        }
 
         return {
             'name': vault_name.replace('_', ' '),
@@ -217,7 +234,7 @@ class DeFindexSoroban:
             'risk_level': risk_level,
             'min_deposit': min_deposit,
             'fees': fees,
-            'data_source': 'api'
+            'data_source': data_source
         }
 
     def build_deposit_transaction(
