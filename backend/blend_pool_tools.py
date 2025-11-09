@@ -24,6 +24,7 @@ Status: Active - Primary yield farming solution
 
 import json
 import logging
+import os
 from typing import Dict, List, Any, Optional
 from stellar_sdk.soroban_server_async import SorobanServerAsync
 from account_manager import AccountManager
@@ -54,22 +55,43 @@ BLEND_TESTNET_CONTRACTS = {
     'oracleMock': 'CBKKSSMTHJJTQWSIOBJQAIGR42NSY43ZBKKXWF445PE4OLOTOGPOWWF4',
 }
 
+# Blend Capital Mainnet Contract Addresses
+# Source: https://docs-v1.blend.capital/mainnet-deployments
+BLEND_MAINNET_CONTRACTS = {
+    # Core V2 Infrastructure
+    'backstop': 'CAQQR5SWBXKIGZKPBZDH3KM5GQ5GUTPKB7JAFCINLZBC5WXPJKRG3IM7',
+    'poolFactory': 'CDSYOAVXFY7SM5S64IZPPPYB4GVGGLMQVFREPSQQEZVIWXX5R23G4QSU',
+    'emitter': 'CCOQM6S7ICIUWA225O5PSJWUBEMXGFSSW2PQFO6FP4DQEKMS5DASRGRR',
+
+    # Tokens
+    'blnd': 'CD25MNVTZDL4Y3XBCPCJXGXATV5WUHHOWMYFF4YBEGU5FCPGMYTVG5JY',
+    'usdc': 'CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75',
+    'xlm': 'CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA',
+
+    # Pools
+    'comet': 'CAS3FL6TLZKDGGSISDBWGGPXT3NRR4DYTZD7YOD3HMYO6LTJUVGRVEAM',
+    'fixed': 'CAJJZSGMMM3PD7N33TAPHGBUGTB43OC73HVIK2L2G6BNGGGYOSSYBXBD',
+    'yieldBlox': 'CCCCIQSDILITHMM7PBSLVDT5MISSY7R26MNZXCX4H7J5JQ5FPIYOGYFS',
+}
+
 # Network configuration
 NETWORK_CONFIG = {
     'testnet': {
-        'rpc_url': 'https://soroban-testnet.stellar.org',
+        'rpc_url': os.getenv('TESTNET_SOROBAN_RPC_URL', 'https://soroban-testnet.stellar.org'),
         'passphrase': 'Test SDF Network ; September 2015',
         'contracts': BLEND_TESTNET_CONTRACTS,
         'backstop': 'CBHWKF4RHIKOKSURAKXSJRIIA7RJAMJH4VHRVPYGUF4AJ5L544LYZ35X',
     },
-    # Mainnet support can be added later
     'mainnet': {
-        'rpc_url': 'https://mainnet.stellar.expert/explorer/rpc',
+        'rpc_url': os.getenv('ANKR_STELLER_RPC', os.getenv('MAINNET_SOROBAN_RPC_URL', 'https://rpc.ankr.com/stellar_soroban')),
         'passphrase': 'Public Global Stellar Network ; September 2015',
-        'contracts': {},  # TODO: Add mainnet contracts
+        'contracts': BLEND_MAINNET_CONTRACTS,
         'backstop': 'CAQQR5SWBXKIGZKPBZDH3KM5GQ5GUTPKB7JAFCINLZBC5WXPJKRG3IM7',
     }
 }
+
+# Default network (can be overridden via STELLAR_NETWORK env var)
+DEFAULT_NETWORK = os.getenv('STELLAR_NETWORK', 'mainnet')
 
 # Request type enum values from Blend contracts
 class RequestType:
@@ -94,7 +116,8 @@ async def _get_asset_symbol(
     soroban_server: SorobanServerAsync,
     account_manager: AccountManager,
     user_id: str,
-    account_id: Optional[str] = None
+    account_id: Optional[str] = None,
+    network: str = "testnet"
 ) -> str:
     """
     Get the symbol for an asset token contract.
@@ -105,19 +128,21 @@ async def _get_asset_symbol(
         account_manager: AccountManager instance
         user_id: User identifier
         account_id: Optional account ID for simulation
+        network: "testnet" or "mainnet"
 
     Returns:
         Asset symbol (e.g., "USDC", "XLM") or shortened address if not found
     """
     try:
         # Try to get symbol from known contracts first
-        for symbol, addr in BLEND_TESTNET_CONTRACTS.items():
+        contracts = NETWORK_CONFIG[network]['contracts']
+        for symbol, addr in contracts.items():
             if addr == asset_address:
                 return symbol.upper()
 
         # If no account_id provided, try to get one
         if not account_id:
-            accounts = account_manager.list_accounts(user_id)
+            accounts = account_manager.get_user_accounts(user_id)
             if accounts:
                 account_id = accounts[0]['id']
             else:
@@ -135,7 +160,7 @@ async def _get_asset_symbol(
             function_name="symbol",
             parameters="[]",
             account_id=account_id,
-            network_passphrase=NETWORK_CONFIG['testnet']['passphrase']
+            network_passphrase=NETWORK_CONFIG[network]['passphrase']
         )
 
         if result.get('success') and result.get('result'):
@@ -152,7 +177,8 @@ async def _get_pool_name(
     pool_address: str,
     soroban_server: SorobanServerAsync,
     account_manager: AccountManager,
-    user_id: str
+    user_id: str,
+    network: str = "testnet"
 ) -> str:
     """
     Get a friendly name for a pool.
@@ -162,14 +188,20 @@ async def _get_pool_name(
         soroban_server: SorobanServerAsync instance
         account_manager: AccountManager instance
         user_id: User identifier
+        network: "testnet" or "mainnet"
 
     Returns:
         Pool name or "Unknown Pool"
     """
     try:
-        # Check if it's the Comet pool (known pool)
-        if pool_address == BLEND_TESTNET_CONTRACTS.get('comet'):
+        # Check if it's a known pool
+        contracts = NETWORK_CONFIG[network]['contracts']
+        if pool_address == contracts.get('comet'):
             return "Comet Pool"
+        elif pool_address == contracts.get('fixed'):
+            return "Fixed Pool"
+        elif pool_address == contracts.get('yieldBlox'):
+            return "YieldBlox Pool"
 
         # Try to get name from pool contract
         result = await soroban_operations(
@@ -180,7 +212,7 @@ async def _get_pool_name(
             contract_id=pool_address,
             function_name="name",
             parameters="[]",
-            network_passphrase=NETWORK_CONFIG['testnet']['passphrase']
+            network_passphrase=NETWORK_CONFIG[network]['passphrase']
         )
 
         if result.get('success') and result.get('result'):
@@ -196,7 +228,8 @@ async def _get_pool_basic_info(
     pool_address: str,
     soroban_server: SorobanServerAsync,
     account_manager: AccountManager,
-    user_id: str
+    user_id: str,
+    network: str = "testnet"
 ) -> Optional[Dict[str, Any]]:
     """
     Load basic information about a pool.
@@ -206,12 +239,13 @@ async def _get_pool_basic_info(
         soroban_server: SorobanServerAsync instance
         account_manager: AccountManager instance
         user_id: User identifier
+        network: "testnet" or "mainnet"
 
     Returns:
         Dictionary with pool info or None if failed
     """
     try:
-        pool_name = await _get_pool_name(pool_address, soroban_server, account_manager, user_id)
+        pool_name = await _get_pool_name(pool_address, soroban_server, account_manager, user_id, network)
 
         return {
             'pool_address': pool_address,
@@ -227,7 +261,8 @@ async def _get_pool_reserves(
     pool_address: str,
     soroban_server: SorobanServerAsync,
     account_manager: AccountManager,
-    user_id: str
+    user_id: str,
+    network: str = "testnet"
 ) -> List[Dict[str, Any]]:
     """
     Get list of reserves (assets) in a pool.
@@ -240,6 +275,7 @@ async def _get_pool_reserves(
         soroban_server: SorobanServerAsync instance
         account_manager: AccountManager instance
         user_id: User identifier
+        network: "testnet" or "mainnet"
 
     Returns:
         List of reserve info dictionaries
@@ -259,18 +295,17 @@ async def _get_pool_reserves(
             contract_id=pool_address,
             function_name="get_reserves",
             parameters="[]",
-            network_passphrase=NETWORK_CONFIG['testnet']['passphrase']
+            network_passphrase=NETWORK_CONFIG[network]['passphrase']
         )
 
         if not result.get('success'):
             logger.warning(f"Could not get reserves for pool {pool_address}")
-            # Return default known reserves for Comet pool
-            if pool_address == BLEND_TESTNET_CONTRACTS.get('comet'):
+            # Return default known reserves for Comet pool (network-specific)
+            contracts = NETWORK_CONFIG[network]['contracts']
+            if pool_address == contracts.get('comet'):
                 return [
-                    {'address': BLEND_TESTNET_CONTRACTS['usdc'], 'symbol': 'USDC'},
-                    {'address': BLEND_TESTNET_CONTRACTS['xlm'], 'symbol': 'XLM'},
-                    {'address': BLEND_TESTNET_CONTRACTS['weth'], 'symbol': 'WETH'},
-                    {'address': BLEND_TESTNET_CONTRACTS['wbtc'], 'symbol': 'WBTC'},
+                    {'address': contracts['usdc'], 'symbol': 'USDC'},
+                    {'address': contracts['xlm'], 'symbol': 'XLM'},
                 ]
             return []
 
@@ -279,7 +314,7 @@ async def _get_pool_reserves(
         reserves = []
 
         for reserve_addr in reserves_data:
-            symbol = await _get_asset_symbol(reserve_addr, soroban_server, account_manager, user_id)
+            symbol = await _get_asset_symbol(reserve_addr, soroban_server, account_manager, user_id, network=network)
             reserves.append({
                 'address': reserve_addr,
                 'symbol': symbol
@@ -353,9 +388,10 @@ async def blend_discover_pools(
 
         if not result.get('success'):
             logger.error(f"Failed to query Backstop config: {result.get('error')}")
-            # Fallback: return known Comet pool
+            # Fallback: return known Comet pool for the network
+            contracts = NETWORK_CONFIG[network]['contracts']
             return [{
-                'pool_address': BLEND_TESTNET_CONTRACTS['comet'],
+                'pool_address': contracts['comet'],
                 'name': 'Comet Pool',
                 'status': 'active'
             }]
@@ -366,15 +402,16 @@ async def blend_discover_pools(
 
         if not pool_addresses:
             logger.warning("No pools found in Backstop reward zone, using known pools")
-            # Fallback: return known pools
-            pool_addresses = [BLEND_TESTNET_CONTRACTS['comet']]
+            # Fallback: return known pools for the network
+            contracts = NETWORK_CONFIG[network]['contracts']
+            pool_addresses = [contracts['comet']]
 
         logger.info(f"Found {len(pool_addresses)} pools in reward zone")
 
         # Load basic info for each pool
         pools = []
         for pool_addr in pool_addresses:
-            pool_info = await _get_pool_basic_info(pool_addr, soroban_server, account_manager, user_id)
+            pool_info = await _get_pool_basic_info(pool_addr, soroban_server, account_manager, user_id, network)
             if pool_info:
                 pools.append(pool_info)
 
@@ -382,9 +419,10 @@ async def blend_discover_pools(
 
     except Exception as e:
         logger.error(f"Error in blend_discover_pools: {e}")
-        # Return known pools as fallback
+        # Return known pools as fallback for the network
+        contracts = NETWORK_CONFIG[network]['contracts']
         return [{
-            'pool_address': BLEND_TESTNET_CONTRACTS['comet'],
+            'pool_address': contracts['comet'],
             'name': 'Comet Pool',
             'status': 'active'
         }]
@@ -436,7 +474,7 @@ async def blend_get_reserve_apy(
 
         # Get or create a system account for read-only operations
         # List existing accounts first
-        accounts = account_manager.list_accounts(user_id)
+        accounts = account_manager.get_user_accounts(user_id)
 
         # Use first available account, or create one if none exist
         account_id = None
@@ -444,9 +482,9 @@ async def blend_get_reserve_apy(
             account_id = accounts[0]['id']
         else:
             # Create a temporary system account for read-only operations
-            create_result = account_manager.create_account(user_id, alias="blend_readonly")
+            create_result = account_manager.generate_account(user_id, chain="stellar", name="blend_readonly")
             if create_result.get('success'):
-                account_id = create_result['id']
+                account_id = create_result['account']['id']
             else:
                 raise ValueError("Failed to create read-only account for simulation")
 
@@ -603,8 +641,8 @@ async def blend_supply_collateral(
             }
 
         # Get asset symbol for user-friendly message
-        asset_symbol = await _get_asset_symbol(asset_address, soroban_server, account_manager, user_id)
-        pool_name = await _get_pool_name(pool_address, soroban_server, account_manager, user_id)
+        asset_symbol = await _get_asset_symbol(asset_address, soroban_server, account_manager, user_id, network=network)
+        pool_name = await _get_pool_name(pool_address, soroban_server, account_manager, user_id, network)
 
         tx_hash = result.get('hash', 'unknown')
 
@@ -710,8 +748,8 @@ async def blend_withdraw_collateral(
             }
 
         # Get asset symbol for user-friendly message
-        asset_symbol = await _get_asset_symbol(asset_address, soroban_server, account_manager, user_id)
-        pool_name = await _get_pool_name(pool_address, soroban_server, account_manager, user_id)
+        asset_symbol = await _get_asset_symbol(asset_address, soroban_server, account_manager, user_id, network=network)
+        pool_name = await _get_pool_name(pool_address, soroban_server, account_manager, user_id, network)
 
         tx_hash = result.get('hash', 'unknown')
 
@@ -824,7 +862,7 @@ async def blend_get_my_positions(
         all_assets.update(supply.keys())
 
         for asset_address in all_assets:
-            symbol = await _get_asset_symbol(asset_address, soroban_server, account_manager, user_id)
+            symbol = await _get_asset_symbol(asset_address, soroban_server, account_manager, user_id, network=network)
 
             # Convert from scaled units (7 decimals)
             supplied_amount = collateral.get(asset_address, 0) / 1e7
@@ -837,7 +875,7 @@ async def blend_get_my_positions(
                 'collateral': has_collateral
             }
 
-        pool_name = await _get_pool_name(pool_address, soroban_server, account_manager, user_id)
+        pool_name = await _get_pool_name(pool_address, soroban_server, account_manager, user_id, network)
 
         return {
             'pool': pool_name,
@@ -914,7 +952,7 @@ async def blend_find_best_yield(
 
             try:
                 # Get reserve list from pool
-                reserves = await _get_pool_reserves(pool_address, soroban_server, account_manager, user_id)
+                reserves = await _get_pool_reserves(pool_address, soroban_server, account_manager, user_id, network)
 
                 # Find the asset in reserves
                 for reserve in reserves:
