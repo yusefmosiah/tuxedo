@@ -4,13 +4,34 @@ import { Contract, rpc } from "@stellar/stellar-sdk";
 //   BackstopContract,
 //   PoolFactoryContract,
 // } from "@blend-capital/blend-sdk";
-import { rpcUrl } from "./util";
+import { rpcUrl, stellarNetwork } from "./util";
+
+/**
+ * Blend Protocol Contract Addresses (Mainnet)
+ * Source: https://github.com/blend-capital/blend-utils/blob/main/mainnet.contracts.json
+ */
+export const BLEND_MAINNET_CONTRACTS = {
+  // Core Blend V2 Infrastructure
+  backstop: "CAQQR5SWBXKIGZKPBZDH3KM5GQ5GUTPKB7JAFCINLZBC5WXPJKRG3IM7",
+  poolFactory: "CDSYOAVXFY7SM5S64IZPPPYB4GVGGLMQVFREPSQQEZVIWXX5R23G4QSU",
+  emitter: "CCOQM6S7ICIUWA225O5PSJWUBEMXGFSSW2PQFO6FP4DQEKMS5DASRGRR",
+
+  // Tokens
+  blndToken: "CD25MNVTZDL4Y3XBCPCJXGXATV5WUHHOWMYFF4YBEGU5FCPGMYTVG5JY",
+  usdcToken: "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75",
+  xlmToken: "CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA",
+
+  // Pools
+  cometPool: "CAS3FL6TLZKDGGSISDBWGGPXT3NRR4DYTZD7YOD3HMYO6LTJUVGRVEAM",
+  fixedPool: "CAJJZSGMMM3PD7N33TAPHGBUGTB43OC73HVIK2L2G6BNGGGYOSSYBXBD",
+  yieldBloxPool: "CCCCIQSDILITHMM7PBSLVDT5MISSY7R26MNZXCX4H7J5JQ5FPIYOGYFS",
+} as const;
 
 /**
  * Blend Protocol Contract Addresses (Testnet)
  * Source: https://github.com/blend-capital/blend-utils/blob/main/testnet.contracts.json
  */
-export const BLEND_CONTRACTS = {
+export const BLEND_TESTNET_CONTRACTS = {
   // Core Blend V2 Contracts
   poolFactory: "CDSMKKCWEAYQW4DAUSH3XGRMIVIJB44TZ3UA5YCRHT6MP4LWEWR4GYV6",
   backstop: "CBHWKF4RHIKOKSURAKXSJRIIA7RJAMJH4VHRVPYGUF4AJ5L544LYZ35X",
@@ -24,6 +45,15 @@ export const BLEND_CONTRACTS = {
   // Pools
   cometPool: "CCQ74HNBMLYICEFUGNLM23QQJU7BKZS7CXC7OAOX4IHRT3LDINZ4V3AF",
 } as const;
+
+/**
+ * Active contract addresses based on network configuration
+ * Defaults to mainnet for production use
+ */
+export const BLEND_CONTRACTS =
+  stellarNetwork === "TESTNET"
+    ? BLEND_TESTNET_CONTRACTS
+    : BLEND_MAINNET_CONTRACTS;
 
 /**
  * Initialize a Soroban RPC Server instance

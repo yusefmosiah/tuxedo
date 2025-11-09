@@ -41,11 +41,25 @@ class AccountManager:
         user_id: str,
         chain: str,
         name: Optional[str] = None,
+        network: str = "testnet",
         metadata: Optional[Dict] = None
     ) -> Dict:
         """
-        Generate new account for user on specified chain
-        Agent can organize this account however it wants in filesystem
+        Generate new account for user on specified chain and network
+
+        Args:
+            user_id: User identifier
+            chain: Blockchain (e.g., "stellar")
+            name: Optional account name
+            network: Network to use ("mainnet" or "testnet"). Defaults to "testnet" for safety.
+            metadata: Optional metadata dict
+
+        Returns:
+            Dict with account details or error
+
+        Note:
+            - Testnet accounts are auto-funded via Friendbot
+            - Mainnet accounts require manual funding by user
         """
         try:
             # Validate chain
@@ -73,8 +87,8 @@ class AccountManager:
                 cursor.execute('''
                     INSERT INTO wallet_accounts
                     (id, user_id, chain, public_key, encrypted_private_key,
-                     name, source, metadata, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                     name, source, network, metadata, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
                 ''', (
                     account_id,
                     user_id,
@@ -83,6 +97,7 @@ class AccountManager:
                     encrypted_private_key,
                     name or f"{chain.capitalize()} Account",
                     "generated",
+                    network,
                     json.dumps(metadata) if metadata else None
                 ))
                 conn.commit()
@@ -90,6 +105,7 @@ class AccountManager:
             return {
                 "account_id": account_id,
                 "chain": chain,
+                "network": network,
                 "address": keypair.public_key,
                 "name": name or f"{chain.capitalize()} Account",
                 "source": "generated",
@@ -108,11 +124,20 @@ class AccountManager:
         chain: str,
         private_key: str,
         name: Optional[str] = None,
+        network: str = "testnet",
         metadata: Optional[Dict] = None
     ) -> Dict:
         """
         Import existing wallet for user
         KILLER FEATURE: Bridges existing DeFi users into Tuxedo
+
+        Args:
+            user_id: User identifier
+            chain: Blockchain (e.g., "stellar")
+            private_key: Private key to import
+            name: Optional account name
+            network: Network this account is on ("mainnet" or "testnet")
+            metadata: Optional metadata dict
         """
         try:
             # Validate chain
@@ -146,8 +171,8 @@ class AccountManager:
                 cursor.execute('''
                     INSERT INTO wallet_accounts
                     (id, user_id, chain, public_key, encrypted_private_key,
-                     name, source, metadata, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                     name, source, network, metadata, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
                 ''', (
                     account_id,
                     user_id,
@@ -156,6 +181,7 @@ class AccountManager:
                     encrypted_private_key,
                     name or f"Imported {chain.capitalize()} Account",
                     "imported",
+                    network,
                     json.dumps(metadata) if metadata else None
                 ))
                 conn.commit()
@@ -163,6 +189,7 @@ class AccountManager:
             return {
                 "account_id": account_id,
                 "chain": chain,
+                "network": network,
                 "address": keypair.public_key,
                 "name": name or f"Imported {chain.capitalize()} Account",
                 "source": "imported",

@@ -150,6 +150,7 @@ class PasskeyDatabaseManager:
                     encrypted_private_key TEXT NOT NULL,
                     name TEXT,
                     source TEXT DEFAULT 'generated',
+                    network TEXT DEFAULT 'testnet',
                     metadata TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     last_used_at TIMESTAMP,
@@ -157,6 +158,17 @@ class PasskeyDatabaseManager:
                     UNIQUE(chain, public_key)
                 )
             ''')
+
+            # Add network column to existing tables (migration)
+            # This is idempotent - will fail silently if column already exists
+            try:
+                cursor.execute('''
+                    ALTER TABLE wallet_accounts
+                    ADD COLUMN network TEXT DEFAULT 'testnet'
+                ''')
+            except sqlite3.OperationalError:
+                # Column already exists, skip migration
+                pass
 
             # Create indexes
             self._create_indexes(cursor)
