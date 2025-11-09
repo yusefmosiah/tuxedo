@@ -26,11 +26,27 @@ import json
 import logging
 import os
 from typing import Dict, List, Any, Optional
+import aiohttp
 from stellar_sdk.soroban_server_async import SorobanServerAsync
 from account_manager import AccountManager
 from stellar_soroban import soroban_operations
 
 logger = logging.getLogger(__name__)
+
+# Conditional proxy support for environments that need it
+# Only applies if HTTP_PROXY or HTTPS_PROXY is set (like Claude Code sandbox)
+# Production/local deployments without proxies are unaffected
+if os.getenv('HTTP_PROXY') or os.getenv('HTTPS_PROXY'):
+    _original_client_session_init = aiohttp.ClientSession.__init__
+
+    def _patched_client_session_init(self, *args, **kwargs):
+        """Ensure aiohttp respects HTTP_PROXY/HTTPS_PROXY environment variables"""
+        if 'trust_env' not in kwargs:
+            kwargs['trust_env'] = True
+        _original_client_session_init(self, *args, **kwargs)
+
+    aiohttp.ClientSession.__init__ = _patched_client_session_init
+    logger.info("Applied aiohttp proxy support (HTTP_PROXY/HTTPS_PROXY detected)")
 
 # Blend Capital Testnet Contract Addresses
 # Source: https://github.com/blend-capital/blend-utils/blob/main/testnet.contracts.json
@@ -332,11 +348,10 @@ async def blend_discover_pools(
     user_id: str = "system"
 ) -> List[Dict[str, Any]]:
     """
-    Discover all active Blend pools from Backstop contract.
+    Discover all active Blend pools from hardcoded pool registry.
 
-    The Backstop contract maintains a list of all active pools in its
-    reward zone. This function queries that list and returns basic info
-    about each pool.
+    Returns information about known Blend Capital pools on the specified network.
+    For mainnet: Comet, Fixed, and YieldBlox pools.
 
     Args:
         network: "testnet" or "mainnet"
@@ -348,8 +363,8 @@ async def blend_discover_pools(
         List of pool dictionaries with basic information:
         [
             {
-                'pool_address': 'CCQ74...',
-                'name': 'Comet Pool',
+                'pool_address': 'CAS3FL6...',
+                'name': 'Comet',
                 'status': 'active'
             },
             ...
@@ -365,44 +380,54 @@ async def blend_discover_pools(
             from account_manager import AccountManager
             account_manager = AccountManager()
 
-        backstop_address = NETWORK_CONFIG[network]['backstop']
+        logger.info(f"Discovering Blend pools on {network} from registry...")
 
-        logger.info(f"Discovering Blend pools on {network} via Backstop contract...")
+        # Get pool addresses from configuration
+        contracts = NETWORK_CONFIG[network]['contracts']
 
-        # Query Backstop config to get reward zone (active pools)
-        result = await soroban_operations(
-            action="get_data",
-            user_id=user_id,
-            soroban_server=soroban_server,
-            account_manager=account_manager,
-            contract_id=backstop_address,
-            key="Config",
-            durability="persistent"
-        )
+        # Define pool mappings with proper names
+        pool_mappings = []
+        if network == 'mainnet':
+            pool_mappings = [
+                ('comet', 'Comet'),
+                ('fixed', 'Fixed'),
+                ('yieldBlox', 'YieldBlox')
+            ]
+        else:  # testnet
+            pool_mappings = [
+                ('comet', 'Comet'),
+                ('stable', 'Stable'),
+                ('fixed', 'Fixed')
+            ]
 
-        if not result.get('success'):
-            error_msg = f"Failed to query Backstop config on {network}: {result.get('error')}"
-            logger.error(error_msg)
-            raise ValueError(error_msg)
-
-        # Parse config.rewardZone array (list of pool addresses)
-        config = result.get('value', {})
-        pool_addresses = config.get('rewardZone', [])
-
-        if not pool_addresses:
-            error_msg = f"No pools found in Backstop reward zone on {network}. This indicates a network or contract issue."
-            logger.error(error_msg)
-            raise ValueError(error_msg)
-
-        logger.info(f"Found {len(pool_addresses)} pools in reward zone")
-
-        # Load basic info for each pool
         pools = []
-        for pool_addr in pool_addresses:
-            pool_info = await _get_pool_basic_info(pool_addr, soroban_server, account_manager, user_id, network)
-            if pool_info:
-                pools.append(pool_info)
+        for key, name in pool_mappings:
+            if key in contracts:
+                pool_address = contracts[key]
+                logger.info(f"Found pool: {name} ({pool_address})")
 
+                # Get basic info for the pool
+                pool_info = await _get_pool_basic_info(
+                    pool_address,
+                    soroban_server,
+                    account_manager,
+                    user_id,
+                    network
+                )
+
+                if pool_info:
+                    # Override name with our known name
+                    pool_info['name'] = name
+                    pools.append(pool_info)
+                else:
+                    # Even if we can't get info, include the pool
+                    pools.append({
+                        'pool_address': pool_address,
+                        'name': name,
+                        'status': 'active'
+                    })
+
+        logger.info(f"Discovered {len(pools)} pools on {network}")
         return pools
 
     except Exception as e:

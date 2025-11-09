@@ -144,7 +144,7 @@ async def soroban_operations(
             # Decode result
             return {
                 "success": True,
-                "value": scval.from_scval(result.val),
+                "value": scval.to_native(result.val),
                 "last_modified_ledger": result.last_modified_ledger_seq,
                 "live_until_ledger": result.live_until_ledger_seq
             }
@@ -193,7 +193,7 @@ async def soroban_operations(
 
             return {
                 "success": True,
-                "result": scval.from_scval(result_scval) if result_scval else None,
+                "result": scval.to_native(result_scval) if result_scval else None,
                 "cost": {
                     "cpu_instructions": sim_result.cost.cpu_insns if sim_result.cost else None,
                     "memory_bytes": sim_result.cost.mem_bytes if sim_result.cost else None
@@ -305,8 +305,8 @@ async def soroban_operations(
                 "events": [
                     {
                         "ledger": e.ledger,
-                        "topics": [scval.from_scval(t) for t in e.topic],
-                        "data": scval.from_scval(e.value) if e.value else None,
+                        "topics": [scval.to_native(t) for t in e.topic],
+                        "data": scval.to_native(e.value) if e.value else None,
                         "contract_id": e.contract_id
                     }
                     for e in events_response.events
