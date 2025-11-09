@@ -103,6 +103,7 @@ class DeFindexClient:
             # ✅ CONFIRMED: Correct endpoint format from API spec
             response = self.session.get(
                 f"{self.base_url}/vault/{vault_address}",
+                params={'network': self.network},
                 timeout=15
             )
             response.raise_for_status()
@@ -173,6 +174,7 @@ class DeFindexClient:
             # ✅ CONFIRMED: Correct endpoint format from API spec
             response = self.session.post(
                 f"{self.base_url}/vault/{vault_address}/deposit",
+                params={'network': self.network},
                 json=data,
                 timeout=30
             )
@@ -218,6 +220,7 @@ class DeFindexClient:
             # ✅ CONFIRMED: Dedicated APY endpoint from API spec
             response = self.session.get(
                 f"{self.base_url}/vault/{vault_address}/apy",
+                params={'network': self.network},
                 timeout=10
             )
             response.raise_for_status()
@@ -250,7 +253,8 @@ class DeFindexClient:
         try:
             data = {
                 'xdr': signed_xdr,
-                'launchtube': use_launchtube
+                'launchtube': use_launchtube,
+                'network': self.network
             }
 
             response = self.session.post(
