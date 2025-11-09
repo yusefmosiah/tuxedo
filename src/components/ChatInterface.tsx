@@ -462,10 +462,10 @@ export const ChatInterface: React.FC = () => {
             >
               <p style={{ fontWeight: '600', marginBottom: '4px' }}>Try asking:</p>
               <p>"What's the current Stellar network status?"</p>
-              <p>"Create a new testnet account and fund it"</p>
+              <p>"What are the best yield opportunities for USDC on mainnet?"</p>
               <p>"Check the XLM/USDC orderbook on Stellar DEX"</p>
-              <p>"What's in my agent account?"</p>
-              <p>"Show me recent network transactions"</p>
+              <p>"Show me all active Blend Capital pools"</p>
+              <p>"What's the current APY for USDC in the Comet pool?"</p>
               <p>"Explain Stellar transaction fees"</p>
             </div>
           </div>

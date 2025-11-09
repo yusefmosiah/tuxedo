@@ -28,9 +28,9 @@ class AccountManager:
         self.db = PasskeyDatabaseManager(db_path)
         self.encryption = EncryptionManager()
 
-        # Registry of chain adapters
+        # Registry of chain adapters - MAINNET ONLY
         self.chains: Dict[str, ChainAdapter] = {
-            "stellar": StellarAdapter(network="testnet"),
+            "stellar": StellarAdapter(network="mainnet"),
             # Future: "solana": SolanaAdapter(),
             # Future: "ethereum": EthereumAdapter(),
             # Future: "sui": SuiAdapter(),
@@ -41,25 +41,25 @@ class AccountManager:
         user_id: str,
         chain: str,
         name: Optional[str] = None,
-        network: str = "testnet",
+        network: str = "mainnet",
         metadata: Optional[Dict] = None
     ) -> Dict:
         """
-        Generate new account for user on specified chain and network
+        Generate new account for user on specified chain and network (MAINNET ONLY)
 
         Args:
             user_id: User identifier
             chain: Blockchain (e.g., "stellar")
             name: Optional account name
-            network: Network to use ("mainnet" or "testnet"). Defaults to "testnet" for safety.
+            network: Network to use (always "mainnet" in this version)
             metadata: Optional metadata dict
 
         Returns:
             Dict with account details or error
 
         Note:
-            - Testnet accounts are auto-funded via Friendbot
-            - Mainnet accounts require manual funding by user
+            - Mainnet-only system - all accounts created on mainnet
+            - Accounts must be funded manually by user with real XLM
         """
         try:
             # Validate chain
@@ -124,11 +124,11 @@ class AccountManager:
         chain: str,
         private_key: str,
         name: Optional[str] = None,
-        network: str = "testnet",
+        network: str = "mainnet",
         metadata: Optional[Dict] = None
     ) -> Dict:
         """
-        Import existing wallet for user
+        Import existing wallet for user (MAINNET ONLY)
         KILLER FEATURE: Bridges existing DeFi users into Tuxedo
 
         Args:
@@ -136,7 +136,7 @@ class AccountManager:
             chain: Blockchain (e.g., "stellar")
             private_key: Private key to import
             name: Optional account name
-            network: Network this account is on ("mainnet" or "testnet")
+            network: Network this account is on (always "mainnet" in this version)
             metadata: Optional metadata dict
         """
         try:

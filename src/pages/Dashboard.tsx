@@ -44,7 +44,7 @@ const Dashboard: React.FC = () => {
           </Heading>
           <p style={{ fontSize: '16px', lineHeight: '1.6', margin: '0 0 16px 0', color: 'var(--color-text-primary)' }}>
             Get instant help with Stellar DeFi operations, account management, trading strategies, and smart contract interactions.
-            Our AI agent manages its own testnet accounts and provides real-time, actionable guidance.
+            Our AI agent operates on mainnet and provides real-time, actionable guidance with real funds and real yields.
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
             <Link
