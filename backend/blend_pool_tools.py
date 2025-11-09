@@ -299,14 +299,8 @@ async def _get_pool_reserves(
         )
 
         if not result.get('success'):
-            logger.warning(f"Could not get reserves for pool {pool_address}")
-            # Return default known reserves for Comet pool (network-specific)
-            contracts = NETWORK_CONFIG[network]['contracts']
-            if pool_address == contracts.get('comet'):
-                return [
-                    {'address': contracts['usdc'], 'symbol': 'USDC'},
-                    {'address': contracts['xlm'], 'symbol': 'XLM'},
-                ]
+            logger.warning(f"Could not get reserves for pool {pool_address}: {result.get('error')}")
+            # No fallback - return empty list to indicate failure
             return []
 
         # Parse the reserves list
@@ -387,34 +381,18 @@ async def blend_discover_pools(
         )
 
         if not result.get('success'):
-            logger.error(f"Failed to query Backstop config: {result.get('error')}")
-            # Fallback: return all known pools for the network
-            contracts = NETWORK_CONFIG[network]['contracts']
-            known_pools = []
-            if network == 'mainnet':
-                known_pools = [
-                    {'pool_address': contracts['comet'], 'name': 'Comet Pool', 'status': 'active'},
-                    {'pool_address': contracts['fixed'], 'name': 'Fixed Pool', 'status': 'active'},
-                    {'pool_address': contracts['yieldBlox'], 'name': 'YieldBlox Pool', 'status': 'active'}
-                ]
-            else:
-                known_pools = [
-                    {'pool_address': contracts['comet'], 'name': 'Comet Pool', 'status': 'active'}
-                ]
-            return known_pools
+            error_msg = f"Failed to query Backstop config on {network}: {result.get('error')}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
 
         # Parse config.rewardZone array (list of pool addresses)
         config = result.get('value', {})
         pool_addresses = config.get('rewardZone', [])
 
         if not pool_addresses:
-            logger.warning("No pools found in Backstop reward zone, using known pools")
-            # Fallback: return all known pools for the network
-            contracts = NETWORK_CONFIG[network]['contracts']
-            if network == 'mainnet':
-                pool_addresses = [contracts['comet'], contracts['fixed'], contracts['yieldBlox']]
-            else:
-                pool_addresses = [contracts['comet']]
+            error_msg = f"No pools found in Backstop reward zone on {network}. This indicates a network or contract issue."
+            logger.error(error_msg)
+            raise ValueError(error_msg)
 
         logger.info(f"Found {len(pool_addresses)} pools in reward zone")
 
@@ -428,19 +406,9 @@ async def blend_discover_pools(
         return pools
 
     except Exception as e:
-        logger.error(f"Error in blend_discover_pools: {e}")
-        # Return all known pools as fallback for the network
-        contracts = NETWORK_CONFIG[network]['contracts']
-        if network == 'mainnet':
-            return [
-                {'pool_address': contracts['comet'], 'name': 'Comet Pool', 'status': 'active'},
-                {'pool_address': contracts['fixed'], 'name': 'Fixed Pool', 'status': 'active'},
-                {'pool_address': contracts['yieldBlox'], 'name': 'YieldBlox Pool', 'status': 'active'}
-            ]
-        else:
-            return [
-                {'pool_address': contracts['comet'], 'name': 'Comet Pool', 'status': 'active'}
-            ]
+        error_msg = f"Fatal error in blend_discover_pools on {network}: {e}"
+        logger.error(error_msg)
+        raise RuntimeError(error_msg) from e
 
 
 async def blend_get_reserve_apy(
