@@ -11,21 +11,24 @@ from stellar_sdk.keypair import Keypair
 
 logger = logging.getLogger(__name__)
 
-def sign_transaction_with_agent_key(unsigned_xdr: str, agent_keypair: Keypair, network: str = "testnet") -> str:
+def sign_transaction_with_agent_key(unsigned_xdr: str, agent_keypair: Keypair, network: str = "mainnet") -> str:
     """
-    Sign a transaction XDR with agent keypair for autonomous execution.
+    Sign a transaction XDR with agent keypair for autonomous execution (MAINNET ONLY).
 
     Args:
         unsigned_xdr: Unsigned transaction XDR from DeFindex API
         agent_keypair: Agent's Keypair object for signing
-        network: Network to use ('testnet' or 'mainnet')
+        network: Network to use (always 'mainnet' in this version)
 
     Returns:
         Signed transaction XDR ready for submission
     """
     try:
+        # Get network passphrase
+        network_passphrase = create_transaction_builder_for_network(network)
+
         # Parse the unsigned XDR
-        envelope = TransactionEnvelope.from_xdr(unsigned_xdr, network_passphrase=Network.TESTNET_NETWORK_PASSPHRASE)
+        envelope = TransactionEnvelope.from_xdr(unsigned_xdr, network_passphrase=network_passphrase)
 
         # Sign with agent keypair
         envelope.sign(agent_keypair)
@@ -37,22 +40,18 @@ def sign_transaction_with_agent_key(unsigned_xdr: str, agent_keypair: Keypair, n
         logger.error(f"Failed to sign transaction: {e}")
         raise ValueError(f"Transaction signing failed: {str(e)}")
 
-def create_transaction_builder_for_network(network: str = "testnet"):
+def create_transaction_builder_for_network(network: str = "mainnet"):
     """
-    Create a transaction builder configured for the specified network.
+    Create a transaction builder configured for the specified network (MAINNET ONLY).
 
     Args:
-        network: Network to use ('testnet' or 'mainnet')
+        network: Network to use (always 'mainnet' in this version)
 
     Returns:
         Network object for transaction building
     """
-    if network.lower() == "testnet":
-        return Network.TESTNET_NETWORK_PASSPHRASE
-    elif network.lower() == "mainnet":
-        return Network.PUBLIC_NETWORK_PASSPHRASE
-    else:
-        raise ValueError(f"Unsupported network: {network}")
+    # Mainnet-only configuration
+    return Network.PUBLIC_NETWORK_PASSPHRASE
 
 def validate_transaction_amount(amount_xlm: float, min_balance: float = 1.0) -> bool:
     """

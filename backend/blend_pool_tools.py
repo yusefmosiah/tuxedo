@@ -48,30 +48,7 @@ if os.getenv('HTTP_PROXY') or os.getenv('HTTPS_PROXY'):
     aiohttp.ClientSession.__init__ = _patched_client_session_init
     logger.info("Applied aiohttp proxy support (HTTP_PROXY/HTTPS_PROXY detected)")
 
-# Blend Capital Testnet Contract Addresses
-# Source: https://github.com/blend-capital/blend-utils/blob/main/testnet.contracts.json
-BLEND_TESTNET_CONTRACTS = {
-    # Core V2 Infrastructure
-    'poolFactory': 'CDSMKKCWEAYQW4DAUSH3XGRMIVIJB44TZ3UA5YCRHT6MP4LWEWR4GYV6',
-    'backstop': 'CBHWKF4RHIKOKSURAKXSJRIIA7RJAMJH4VHRVPYGUF4AJ5L544LYZ35X',
-    'emitter': 'CCS5ACKIDOIVW2QMWBF7H3ZM4ZIH2Q2NP7I3P3GH7YXXGN7I3WND3D6G',
-
-    # Tokens
-    'xlm': 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC',
-    'blnd': 'CB22KRA3YZVCNCQI64JQ5WE7UY2VAV7WFLK5A2JN3HEX56T2EDAFO7QF',
-    'usdc': 'CAQCFVLOBK5GIULPNZRGATJJMIZL5BSP7X5YJVMCPTUEPFM4AVSRCJU',
-    'weth': 'CAZAQB3D7KSLSNOSQKYD2V4JP5V2Y3B4RDJZRLBFCCIXDCTE3WHSY3UE',
-    'wbtc': 'CAP5AMC2OHNVREO66DFIN6DHJMPOBAJ2KCDDIMFBR7WWJH5RZBFM3UEI',
-
-    # Pools
-    'comet': 'CCQ74HNBMLYICEFUGNLM23QQJU7BKZS7CXC7OAOX4IHRT3LDINZ4V3AF',
-    'cometFactory': 'CCVR5U7CVFQNXVT74PGFSIK23HJMGEWSAAR5NZXSVTNGMFSRUIEHIXHN',
-
-    # Utilities
-    'oracleMock': 'CBKKSSMTHJJTQWSIOBJQAIGR42NSY43ZBKKXWF445PE4OLOTOGPOWWF4',
-}
-
-# Blend Capital Mainnet Contract Addresses
+# Blend Capital Mainnet Contract Addresses (MAINNET ONLY)
 # Source: https://docs-v1.blend.capital/mainnet-deployments
 BLEND_MAINNET_CONTRACTS = {
     # Core V2 Infrastructure
@@ -90,24 +67,13 @@ BLEND_MAINNET_CONTRACTS = {
     'yieldBlox': 'CCCCIQSDILITHMM7PBSLVDT5MISSY7R26MNZXCX4H7J5JQ5FPIYOGYFS',
 }
 
-# Network configuration
+# Network configuration - MAINNET ONLY
 NETWORK_CONFIG = {
-    'testnet': {
-        'rpc_url': os.getenv('TESTNET_SOROBAN_RPC_URL', 'https://soroban-testnet.stellar.org'),
-        'passphrase': 'Test SDF Network ; September 2015',
-        'contracts': BLEND_TESTNET_CONTRACTS,
-        'backstop': 'CBHWKF4RHIKOKSURAKXSJRIIA7RJAMJH4VHRVPYGUF4AJ5L544LYZ35X',
-    },
-    'mainnet': {
-        'rpc_url': os.getenv('ANKR_STELLER_RPC', os.getenv('MAINNET_SOROBAN_RPC_URL', 'https://rpc.ankr.com/stellar_soroban')),
-        'passphrase': 'Public Global Stellar Network ; September 2015',
-        'contracts': BLEND_MAINNET_CONTRACTS,
-        'backstop': 'CAQQR5SWBXKIGZKPBZDH3KM5GQ5GUTPKB7JAFCINLZBC5WXPJKRG3IM7',
-    }
+    'rpc_url': os.getenv('ANKR_STELLER_RPC', os.getenv('MAINNET_SOROBAN_RPC_URL', 'https://rpc.ankr.com/stellar_soroban')),
+    'passphrase': 'Public Global Stellar Network ; September 2015',
+    'contracts': BLEND_MAINNET_CONTRACTS,
+    'backstop': 'CAQQR5SWBXKIGZKPBZDH3KM5GQ5GUTPKB7JAFCINLZBC5WXPJKRG3IM7',
 }
-
-# Default network (can be overridden via STELLAR_NETWORK env var)
-DEFAULT_NETWORK = os.getenv('STELLAR_NETWORK', 'mainnet')
 
 # Request type enum values from Blend contracts
 class RequestType:
@@ -151,7 +117,7 @@ async def _get_asset_symbol(
     """
     try:
         # Try to get symbol from known contracts first
-        contracts = NETWORK_CONFIG[network]['contracts']
+        contracts = NETWORK_CONFIG['contracts']
         for symbol, addr in contracts.items():
             if addr == asset_address:
                 return symbol.upper()
@@ -176,7 +142,7 @@ async def _get_asset_symbol(
             function_name="symbol",
             parameters="[]",
             account_id=account_id,
-            network_passphrase=NETWORK_CONFIG[network]['passphrase']
+            network_passphrase=NETWORK_CONFIG['passphrase']
         )
 
         if result.get('success') and result.get('result'):
@@ -211,7 +177,7 @@ async def _get_pool_name(
     """
     try:
         # Check if it's a known pool
-        contracts = NETWORK_CONFIG[network]['contracts']
+        contracts = NETWORK_CONFIG['contracts']
         if pool_address == contracts.get('comet'):
             return "Comet Pool"
         elif pool_address == contracts.get('fixed'):
@@ -228,7 +194,7 @@ async def _get_pool_name(
             contract_id=pool_address,
             function_name="name",
             parameters="[]",
-            network_passphrase=NETWORK_CONFIG[network]['passphrase']
+            network_passphrase=NETWORK_CONFIG['passphrase']
         )
 
         if result.get('success') and result.get('result'):
@@ -311,7 +277,7 @@ async def _get_pool_reserves(
             contract_id=pool_address,
             function_name="get_reserves",
             parameters="[]",
-            network_passphrase=NETWORK_CONFIG[network]['passphrase']
+            network_passphrase=NETWORK_CONFIG['passphrase']
         )
 
         if not result.get('success'):
@@ -373,7 +339,7 @@ async def blend_discover_pools(
     try:
         # Create server if not provided
         if soroban_server is None:
-            soroban_server = SorobanServerAsync(NETWORK_CONFIG[network]['rpc_url'])
+            soroban_server = SorobanServerAsync(NETWORK_CONFIG['rpc_url'])
 
         # Create account manager if not provided
         if account_manager is None:
@@ -383,7 +349,7 @@ async def blend_discover_pools(
         logger.info(f"Discovering Blend pools on {network} from registry...")
 
         # Get pool addresses from configuration
-        contracts = NETWORK_CONFIG[network]['contracts']
+        contracts = NETWORK_CONFIG['contracts']
 
         # Define pool mappings with proper names
         pool_mappings = []
@@ -506,7 +472,7 @@ async def blend_get_reserve_apy(
             function_name="get_reserve",
             parameters=parameters,
             account_id=account_id,
-            network_passphrase=NETWORK_CONFIG[network]['passphrase']
+            network_passphrase=NETWORK_CONFIG['passphrase']
         )
 
         if not result.get('success'):
@@ -638,7 +604,7 @@ async def blend_supply_collateral(
             parameters=parameters,
             account_id=account_id,
             auto_sign=True,
-            network_passphrase=NETWORK_CONFIG[network]['passphrase']
+            network_passphrase=NETWORK_CONFIG['passphrase']
         )
 
         if not result.get('success'):
@@ -745,7 +711,7 @@ async def blend_withdraw_collateral(
             parameters=parameters,
             account_id=account_id,
             auto_sign=True,
-            network_passphrase=NETWORK_CONFIG[network]['passphrase']
+            network_passphrase=NETWORK_CONFIG['passphrase']
         )
 
         if not result.get('success'):
@@ -844,7 +810,7 @@ async def blend_get_my_positions(
             function_name="get_positions",
             parameters=parameters,
             account_id=account_id,
-            network_passphrase=NETWORK_CONFIG[network]['passphrase']
+            network_passphrase=NETWORK_CONFIG['passphrase']
         )
 
         if not result.get('success'):
@@ -938,7 +904,7 @@ async def blend_find_best_yield(
     try:
         # Create server if not provided
         if soroban_server is None:
-            soroban_server = SorobanServerAsync(NETWORK_CONFIG[network]['rpc_url'])
+            soroban_server = SorobanServerAsync(NETWORK_CONFIG['rpc_url'])
 
         # Create account manager if not provided
         if account_manager is None:

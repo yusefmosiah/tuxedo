@@ -357,9 +357,9 @@ class StellarAccountTool(BaseTool):
             schema = StellarAddressSchema(address=address)
             address = schema.address
 
-            # Use Stellar SDK to get balance
+            # Use Stellar SDK to get balance (MAINNET ONLY)
             from stellar_sdk.server import Server
-            server = Server("https://horizon-testnet.stellar.org")
+            server = Server("https://horizon.stellar.org")
 
             account = server.load_account(address)
             balances = []
@@ -531,8 +531,8 @@ class StellarTradingTool(BaseTool):
             else:
                 buying_asset = Asset.native()
 
-            # Query orderbook
-            server_url = "https://horizon-testnet.stellar.org"
+            # Query orderbook (MAINNET ONLY)
+            server_url = "https://horizon.stellar.org"
             response = requests.get(
                 f"{server_url}/order_book",
                 params={
@@ -562,7 +562,7 @@ class StellarTradingTool(BaseTool):
 
         try:
             import requests
-            server_url = "https://horizon-testnet.stellar.org"
+            server_url = "https://horizon.stellar.org"  # MAINNET ONLY
             response = requests.get(f"{server_url}/accounts/{account_address}/offers")
 
             if response.status_code == 200:

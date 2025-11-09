@@ -17,9 +17,8 @@ from account_manager import AccountManager
 from typing import Optional, Dict, Any
 from decimal import Decimal
 
-# Constants
-TESTNET_NETWORK_PASSPHRASE = Network.TESTNET_NETWORK_PASSPHRASE
-FRIENDBOT_URL = "https://friendbot.stellar.org"
+# Constants - MAINNET ONLY
+MAINNET_NETWORK_PASSPHRASE = Network.PUBLIC_NETWORK_PASSPHRASE
 
 
 def _dict_to_asset(asset_code: str, asset_issuer: Optional[str] = None) -> Asset:
@@ -215,7 +214,7 @@ def _build_sign_submit(
         account = horizon.load_account(public_key)
         tx_builder = TransactionBuilder(
             source_account=account,
-            network_passphrase=TESTNET_NETWORK_PASSPHRASE,
+            network_passphrase=MAINNET_NETWORK_PASSPHRASE,
             base_fee=100
         )
 
@@ -263,11 +262,10 @@ def account_manager(
     limit: int = 10
 ) -> Dict[str, Any]:
     """
-    Unified account management tool with mandatory user isolation.
+    Unified account management tool with mandatory user isolation (MAINNET ONLY).
 
     Actions:
-        - "create": Generate new testnet account
-        - "fund": Fund account via Friendbot (testnet only)
+        - "create": Generate new mainnet account (requires manual funding)
         - "get": Get account details (balances, sequence, trustlines)
         - "transactions": Get transaction history
         - "list": List all managed accounts
@@ -285,6 +283,10 @@ def account_manager(
 
     Returns:
         Action-specific response dict
+
+    Note:
+        - Mainnet-only system - no Friendbot funding available
+        - New accounts must be funded manually with real XLM
     """
     try:
         # Validate user_id present
@@ -301,35 +303,11 @@ def account_manager(
             return result
 
         elif action == "fund":
-            # PERMISSION CHECK: verify user owns this account
-            if not account_id:
-                return {"error": "account_id required", "success": False}
-
-            account = account_manager._get_account_by_id(account_id)
-            if not account or account['user_id'] != user_id:
-                return {
-                    "error": "Permission denied: account not owned by user",
-                    "success": False
-                }
-
-            # Fund account using public key
-            public_key = account['public_key']
-            response = requests.get(f"{FRIENDBOT_URL}?addr={public_key}", timeout=10)
-            response.raise_for_status()
-
-            # Get updated balance
-            chain_account = horizon.accounts().account_id(public_key).call()
-            xlm_balance = next(
-                (b["balance"] for b in chain_account["balances"] if b["asset_type"] == "native"),
-                "0"
-            )
-
+            # Friendbot not available on mainnet - accounts must be funded manually
             return {
-                "success": True,
-                "account_id": account_id,
-                "public_key": public_key,
-                "balance": xlm_balance,
-                "message": "Account funded successfully with testnet XLM"
+                "error": "Friendbot funding not available on mainnet. Accounts must be funded manually with real XLM.",
+                "success": False,
+                "message": "To fund a mainnet account, send XLM from an existing funded account or exchange."
             }
 
         elif action == "get":

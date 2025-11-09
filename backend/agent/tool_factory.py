@@ -28,8 +28,8 @@ from stellar_tools import (
 
 logger = logging.getLogger(__name__)
 
-# Constants
-HORIZON_URL = os.getenv("HORIZON_URL", "https://horizon-testnet.stellar.org")
+# Constants - MAINNET ONLY
+HORIZON_URL = os.getenv("HORIZON_URL", "https://horizon.stellar.org")
 
 
 def create_user_tools(user_id: str) -> List:
@@ -65,11 +65,10 @@ def create_user_tools(user_id: str) -> List:
         limit: int = 10
     ):
         """
-        Stellar account management operations.
+        Stellar account management operations (MAINNET ONLY).
 
         Actions:
-            - "create": Generate new testnet account
-            - "fund": Fund account via Friendbot (testnet only)
+            - "create": Generate new mainnet account (requires manual funding)
             - "get": Get account details (balances, sequence, trustlines)
             - "transactions": Get transaction history
             - "list": List all managed accounts
@@ -84,6 +83,9 @@ def create_user_tools(user_id: str) -> List:
 
         Returns:
             Action-specific response dict
+
+        Note:
+            Mainnet-only system - new accounts must be funded manually with real XLM
         """
         # user_id is injected here, LLM cannot see or modify it
         return _account_manager(
@@ -295,7 +297,7 @@ def create_user_tools(user_id: str) -> List:
     @tool
     def blend_discover_pools():
         """
-        Discover all active Blend Capital pools on testnet.
+        Discover all active Blend Capital pools on mainnet.
 
         Use this when users ask about:
         - What pools are available
@@ -303,7 +305,7 @@ def create_user_tools(user_id: str) -> List:
         - Active lending pools
 
         Returns:
-            List of active pools with addresses and status
+            List of active pools with addresses and status (mainnet only)
         """
         import asyncio
         from blend_account_tools import _blend_discover_pools

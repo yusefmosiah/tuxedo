@@ -7,14 +7,12 @@ from typing import Dict, Any, Optional
 from .base import ChainAdapter, ChainKeypair, ChainAccount
 
 class StellarAdapter(ChainAdapter):
-    """Stellar blockchain implementation"""
+    """Stellar blockchain implementation (MAINNET ONLY)"""
 
-    def __init__(self, network: str = "testnet"):
+    def __init__(self, network: str = "mainnet"):
         self.network = network
-        if network == "testnet":
-            self.horizon_url = "https://horizon-testnet.stellar.org"
-        else:
-            self.horizon_url = "https://horizon.stellar.org"
+        # Mainnet-only configuration
+        self.horizon_url = "https://horizon.stellar.org"
         self.server = Server(self.horizon_url)
 
     @property
