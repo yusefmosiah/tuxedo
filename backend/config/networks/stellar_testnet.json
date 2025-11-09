@@ -1,0 +1,37 @@
+{
+  "network_id": "stellar-testnet",
+  "chain": "stellar",
+  "name": "Stellar Testnet",
+  "description": "Stellar test network for development",
+  "enabled": true,
+  "rpc_url_env_key": null,
+  "horizon_url": "https://horizon-testnet.stellar.org",
+  "rpc_url_public": "https://soroban-testnet.stellar.org",
+  "passphrase": "Test SDF Network ; September 2015",
+  "explorer_url": "https://stellar.expert/explorer/testnet",
+  "friendbot_url": "https://friendbot.stellar.org",
+  "contracts": {
+    "blend": {
+      "poolFactory": "CDSMKKCWEAYQW4DAUSH3XGRMIVIJB44TZ3UA5YCRHT6MP4LWEWR4GYV6",
+      "backstop": "CBHWKF4RHIKOKSURAKXSJRIIA7RJAMJH4VHRVPYGUF4AJ5L544LYZ35X",
+      "emitter": "CCS5ACKIDOIVW2QMWBF7H3ZM4ZIH2Q2NP7I3P3GH7YXXGN7I3WND3D6G",
+      "blndToken": "CB22KRA3YZVCNCQI64JQ5WE7UY2VAV7WFLK6A2JN3HEX56T2EDAFO7QF",
+      "usdcToken": "CAQCFVLOBK5GIULPNZRGATJJMIZL5BSP7X5YJVMCPTUEPFM4AVSRCJU",
+      "xlmToken": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+      "cometPool": "CCQ74HNBMLYICEFUGNLM23QQJU7BKZS7CXC7OAOX4IHRT3LDINZ4V3AF"
+    }
+  },
+  "tokens": {
+    "native": {
+      "symbol": "XLM",
+      "name": "Stellar Lumens (Testnet)",
+      "decimals": 7
+    }
+  },
+  "features": {
+    "account_creation": true,
+    "friendbot": true,
+    "blend_pools": true,
+    "trading": true
+  }
+}

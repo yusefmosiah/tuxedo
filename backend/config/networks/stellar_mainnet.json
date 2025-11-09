@@ -1,0 +1,39 @@
+{
+  "network_id": "stellar-mainnet",
+  "chain": "stellar",
+  "name": "Stellar Mainnet",
+  "description": "Stellar public mainnet",
+  "enabled": true,
+  "rpc_url_env_key": "ANKR_STELLER_RPC",
+  "horizon_url": "https://horizon.stellar.org",
+  "rpc_url_public": null,
+  "passphrase": "Public Global Stellar Network ; September 2015",
+  "explorer_url": "https://stellar.expert/explorer/public",
+  "friendbot_url": null,
+  "contracts": {
+    "blend": {
+      "backstop": "CAQQR5SWBXKIGZKPBZDH3KM5GQ5GUTPKB7JAFCINLZBC5WXPJKRG3IM7",
+      "poolFactory": "CDSYOAVXFY7SM5S64IZPPPYB4GVGGLMQVFREPSQQEZVIWXX5R23G4QSU",
+      "emitter": "CCOQM6S7ICIUWA225O5PSJWUBEMXGFSSW2PQFO6FP4DQEKMS5DASRGRR",
+      "blndToken": "CD25MNVTZDL4Y3XBCPCJXGXATV5WUHHOWMYFF4YBEGU5FCPGMYTVG5JY",
+      "usdcToken": "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75",
+      "xlmToken": "CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA",
+      "cometPool": "CAS3FL6TLZKDGGSISDBWGGPXT3NRR4DYTZD7YOD3HMYO6LTJUVGRVEAM",
+      "fixedPool": "CAJJZSGMMM3PD7N33TAPHGBUGTB43OC73HVIK2L2G6BNGGGYOSSYBXBD",
+      "yieldBloxPool": "CCCCIQSDILITHMM7PBSLVDT5MISSY7R26MNZXCX4H7J5JQ5FPIYOGYFS"
+    }
+  },
+  "tokens": {
+    "native": {
+      "symbol": "XLM",
+      "name": "Stellar Lumens",
+      "decimals": 7
+    }
+  },
+  "features": {
+    "account_creation": false,
+    "friendbot": false,
+    "blend_pools": true,
+    "trading": true
+  }
+}
