@@ -31,19 +31,22 @@ from stellar_sdk.soroban_server_async import SorobanServerAsync
 from account_manager import AccountManager
 from stellar_soroban import soroban_operations
 
-# Monkey-patch aiohttp to respect proxy environment variables
-# Required for Claude Code's network proxy (HTTPS_PROXY, HTTP_PROXY)
-_original_client_session_init = aiohttp.ClientSession.__init__
-
-def _patched_client_session_init(self, *args, **kwargs):
-    """Ensure aiohttp respects HTTP_PROXY/HTTPS_PROXY environment variables"""
-    if 'trust_env' not in kwargs:
-        kwargs['trust_env'] = True
-    _original_client_session_init(self, *args, **kwargs)
-
-aiohttp.ClientSession.__init__ = _patched_client_session_init
-
 logger = logging.getLogger(__name__)
+
+# Conditional proxy support for environments that need it
+# Only applies if HTTP_PROXY or HTTPS_PROXY is set (like Claude Code sandbox)
+# Production/local deployments without proxies are unaffected
+if os.getenv('HTTP_PROXY') or os.getenv('HTTPS_PROXY'):
+    _original_client_session_init = aiohttp.ClientSession.__init__
+
+    def _patched_client_session_init(self, *args, **kwargs):
+        """Ensure aiohttp respects HTTP_PROXY/HTTPS_PROXY environment variables"""
+        if 'trust_env' not in kwargs:
+            kwargs['trust_env'] = True
+        _original_client_session_init(self, *args, **kwargs)
+
+    aiohttp.ClientSession.__init__ = _patched_client_session_init
+    logger.info("Applied aiohttp proxy support (HTTP_PROXY/HTTPS_PROXY detected)")
 
 # Blend Capital Testnet Contract Addresses
 # Source: https://github.com/blend-capital/blend-utils/blob/main/testnet.contracts.json
