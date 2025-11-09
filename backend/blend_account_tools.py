@@ -28,7 +28,9 @@ from blend_pool_tools import (
     blend_withdraw_collateral,
     blend_get_my_positions,
     NETWORK_CONFIG,
-    BLEND_TESTNET_CONTRACTS
+    BLEND_TESTNET_CONTRACTS,
+    BLEND_MAINNET_CONTRACTS,
+    DEFAULT_NETWORK
 )
 
 
@@ -36,7 +38,8 @@ async def _blend_find_best_yield(
     asset_symbol: str,
     min_apy: float,
     user_id: str,
-    account_manager: AccountManager
+    account_manager: AccountManager,
+    network: str = "mainnet"  # Default to mainnet for read operations (real yields!)
 ) -> str:
     """
     Find best yield opportunities for an asset across all Blend pools.
@@ -46,15 +49,16 @@ async def _blend_find_best_yield(
         min_apy: Minimum APY threshold
         user_id: User identifier (injected by tool factory)
         account_manager: AccountManager instance (injected by tool factory)
+        network: "mainnet" (real yields) or "testnet" (usually 0%)
 
     Returns:
         Formatted string with yield opportunities
     """
     try:
-        # Create Soroban server
-        soroban_server = SorobanServerAsync(NETWORK_CONFIG['testnet']['rpc_url'])
+        # Create Soroban server for the specified network
+        soroban_server = SorobanServerAsync(NETWORK_CONFIG[network]['rpc_url'])
 
-        logger.info(f"User {user_id[:8]}... searching for {asset_symbol} yield opportunities...")
+        logger.info(f"User {user_id[:8]}... searching for {asset_symbol} yield opportunities on {network}...")
 
         # Find best yield
         opportunities = await blend_find_best_yield(
@@ -63,14 +67,15 @@ async def _blend_find_best_yield(
             user_id=user_id,
             soroban_server=soroban_server,
             account_manager=account_manager,
-            network='testnet'
+            network=network
         )
 
         if not opportunities:
-            return f"No yield opportunities found for {asset_symbol} with APY above {min_apy}% on testnet."
+            return f"No yield opportunities found for {asset_symbol} with APY above {min_apy}% on {network}."
 
         # Format response
-        result = f"🌟 Found {len(opportunities)} yield opportunities for {asset_symbol} on Blend Capital (testnet):\n\n"
+        network_label = "🔴 MAINNET (Real $)" if network == "mainnet" else "🟢 TESTNET (Practice)"
+        result = f"🌟 Found {len(opportunities)} yield opportunities for {asset_symbol} on Blend Capital ({network_label}):\n\n"
 
         for i, opp in enumerate(opportunities, 1):
             result += f"{i}. {opp['pool']}\n"
@@ -83,7 +88,9 @@ async def _blend_find_best_yield(
         result += "\n💡 **Next Steps:**\n"
         result += f"- Use blend_supply_to_pool to deposit {asset_symbol} and start earning\n"
         result += "- Check blend_check_my_positions to see current holdings\n"
-        result += f"- All data is live from Blend protocol on testnet\n"
+        result += f"- All data is live from Blend protocol on {network}\n"
+        if network == "mainnet":
+            result += f"\n⚠️  **MAINNET**: Real funds required. Ensure you have funded your account.\n"
         result += f"\n👤 Available for user {user_id[:8]}..."
 
         return result
@@ -95,7 +102,8 @@ async def _blend_find_best_yield(
 
 async def _blend_discover_pools(
     user_id: str,
-    account_manager: AccountManager
+    account_manager: AccountManager,
+    network: str = "mainnet"  # Default to mainnet for read operations
 ) -> str:
     """
     Discover all active Blend pools.
@@ -103,29 +111,31 @@ async def _blend_discover_pools(
     Args:
         user_id: User identifier (injected by tool factory)
         account_manager: AccountManager instance (injected by tool factory)
+        network: "mainnet" (real pools) or "testnet"
 
     Returns:
         Formatted string with pool information
     """
     try:
-        # Create Soroban server
-        soroban_server = SorobanServerAsync(NETWORK_CONFIG['testnet']['rpc_url'])
+        # Create Soroban server for the specified network
+        soroban_server = SorobanServerAsync(NETWORK_CONFIG[network]['rpc_url'])
 
-        logger.info(f"User {user_id[:8]}... discovering Blend pools...")
+        logger.info(f"User {user_id[:8]}... discovering Blend pools on {network}...")
 
         # Discover pools
         pools = await blend_discover_pools(
-            network='testnet',
+            network=network,
             soroban_server=soroban_server,
             account_manager=account_manager,
             user_id=user_id
         )
 
         if not pools:
-            return "No active Blend pools found on testnet."
+            return f"No active Blend pools found on {network}."
 
         # Format response
-        result = f"🏦 Found {len(pools)} active Blend Capital pools on testnet:\n\n"
+        network_label = "🔴 MAINNET (Real $)" if network == "mainnet" else "🟢 TESTNET (Practice)"
+        result = f"🏦 Found {len(pools)} active Blend Capital pools on {network_label}:\n\n"
 
         for i, pool in enumerate(pools, 1):
             result += f"{i}. {pool['name']}\n"
@@ -150,7 +160,8 @@ async def _blend_supply_to_pool(
     amount: float,
     account_id: str,
     user_id: str,
-    account_manager: AccountManager
+    account_manager: AccountManager,
+    network: str = "testnet"  # Default to testnet for safety (write operation)
 ) -> str:
     """
     Supply assets to a Blend pool to earn yield.
@@ -162,15 +173,17 @@ async def _blend_supply_to_pool(
         account_id: Account ID from AccountManager
         user_id: User identifier (injected by tool factory)
         account_manager: AccountManager instance (injected by tool factory)
+        network: "mainnet" (real funds) or "testnet" (practice)
 
     Returns:
         Formatted string with transaction result
     """
     try:
-        # Create Soroban server
-        soroban_server = SorobanServerAsync(NETWORK_CONFIG['testnet']['rpc_url'])
+        # Create Soroban server for the specified network
+        soroban_server = SorobanServerAsync(NETWORK_CONFIG[network]['rpc_url'])
 
-        logger.info(f"User {user_id[:8]}... supplying {amount} to pool {pool_address[:8]}...")
+        network_label = "🔴 MAINNET (Real $)" if network == "mainnet" else "🟢 TESTNET (Practice)"
+        logger.info(f"User {user_id[:8]}... supplying {amount} to pool {pool_address[:8]}... on {network_label}")
 
         # Execute supply
         result = await blend_supply_collateral(
@@ -181,16 +194,18 @@ async def _blend_supply_to_pool(
             account_id=account_id,
             account_manager=account_manager,
             soroban_server=soroban_server,
-            network='testnet'
+            network=network
         )
 
         if not result.get('success'):
             return f"❌ **Supply Failed**\n\n{result.get('message', 'Unknown error')}"
 
         # Format success response
-        response = f"🚀 **Supply Successful!**\n\n"
+        network_label = "🔴 MAINNET (Real $)" if network == "mainnet" else "🟢 TESTNET (Practice)"
+        response = f"🚀 **Supply Successful on {network_label}!**\n\n"
         response += f"✅ Supplied {result['amount_supplied']} {result['asset_symbol']} to {result['pool']}\n\n"
         response += f"📋 **Transaction Details:**\n"
+        response += f"   • Network: {network_label}\n"
         response += f"   • Hash: {result['hash'][:16]}...\n"
         response += f"   • Ledger: {result.get('ledger', 'N/A')}\n"
         response += f"   • Pool: {pool_address[:16]}...\n"
@@ -199,7 +214,8 @@ async def _blend_supply_to_pool(
         response += f"   • Yield generation starts immediately\n"
         response += f"   • Use blend_check_my_positions to see your holdings\n"
         response += f"   • Check back later to see earned yield\n\n"
-        response += f"🔗 **Stellar Explorer**: https://stellar.expert/explorer/testnet/tx/{result['hash']}\n"
+        explorer_network = "public" if network == "mainnet" else "testnet"
+        response += f"🔗 **Stellar Explorer**: https://stellar.expert/explorer/{explorer_network}/tx/{result['hash']}\n"
         response += f"👤 User: {user_id[:8]}..."
 
         return response
@@ -215,7 +231,8 @@ async def _blend_withdraw_from_pool(
     amount: float,
     account_id: str,
     user_id: str,
-    account_manager: AccountManager
+    account_manager: AccountManager,
+    network: str = "testnet"  # Default to testnet for safety (write operation)
 ) -> str:
     """
     Withdraw assets from a Blend pool.
@@ -227,15 +244,17 @@ async def _blend_withdraw_from_pool(
         account_id: Account ID from AccountManager
         user_id: User identifier (injected by tool factory)
         account_manager: AccountManager instance (injected by tool factory)
+        network: "mainnet" (real funds) or "testnet" (practice)
 
     Returns:
         Formatted string with transaction result
     """
     try:
-        # Create Soroban server
-        soroban_server = SorobanServerAsync(NETWORK_CONFIG['testnet']['rpc_url'])
+        # Create Soroban server for the specified network
+        soroban_server = SorobanServerAsync(NETWORK_CONFIG[network]['rpc_url'])
 
-        logger.info(f"User {user_id[:8]}... withdrawing {amount} from pool {pool_address[:8]}...")
+        network_label = "🔴 MAINNET (Real $)" if network == "mainnet" else "🟢 TESTNET (Practice)"
+        logger.info(f"User {user_id[:8]}... withdrawing {amount} from pool {pool_address[:8]}... on {network_label}")
 
         # Execute withdrawal
         result = await blend_withdraw_collateral(
@@ -246,16 +265,18 @@ async def _blend_withdraw_from_pool(
             account_id=account_id,
             account_manager=account_manager,
             soroban_server=soroban_server,
-            network='testnet'
+            network=network
         )
 
         if not result.get('success'):
             return f"❌ **Withdrawal Failed**\n\n{result.get('message', 'Unknown error')}"
 
         # Format success response
-        response = f"🏧 **Withdrawal Successful!**\n\n"
+        network_label = "🔴 MAINNET (Real $)" if network == "mainnet" else "🟢 TESTNET (Practice)"
+        response = f"🏧 **Withdrawal Successful on {network_label}!**\n\n"
         response += f"✅ Withdrew {result['amount_withdrawn']} {result['asset_symbol']} from {result['pool']}\n\n"
         response += f"📋 **Transaction Details:**\n"
+        response += f"   • Network: {network_label}\n"
         response += f"   • Hash: {result['hash'][:16]}...\n"
         response += f"   • Ledger: {result.get('ledger', 'N/A')}\n"
         response += f"   • Pool: {pool_address[:16]}...\n"
@@ -263,7 +284,8 @@ async def _blend_withdraw_from_pool(
         response += f"💡 **Next Steps:**\n"
         response += f"   • Funds are now available in your account\n"
         response += f"   • Consider reinvesting in other pools\n\n"
-        response += f"🔗 **Stellar Explorer**: https://stellar.expert/explorer/testnet/tx/{result['hash']}\n"
+        explorer_network = "public" if network == "mainnet" else "testnet"
+        response += f"🔗 **Stellar Explorer**: https://stellar.expert/explorer/{explorer_network}/tx/{result['hash']}\n"
         response += f"👤 User: {user_id[:8]}..."
 
         return response
@@ -277,7 +299,8 @@ async def _blend_check_my_positions(
     pool_address: str,
     account_id: str,
     user_id: str,
-    account_manager: AccountManager
+    account_manager: AccountManager,
+    network: str = "mainnet"  # Default to mainnet (read operation)
 ) -> str:
     """
     Check user's positions in a Blend pool.
@@ -287,15 +310,17 @@ async def _blend_check_my_positions(
         account_id: Account ID from AccountManager
         user_id: User identifier (injected by tool factory)
         account_manager: AccountManager instance (injected by tool factory)
+        network: "mainnet" or "testnet"
 
     Returns:
         Formatted string with position information
     """
     try:
-        # Create Soroban server
-        soroban_server = SorobanServerAsync(NETWORK_CONFIG['testnet']['rpc_url'])
+        # Create Soroban server for the specified network
+        soroban_server = SorobanServerAsync(NETWORK_CONFIG[network]['rpc_url'])
 
-        logger.info(f"User {user_id[:8]}... checking positions in pool {pool_address[:8]}...")
+        network_label = "🔴 MAINNET (Real $)" if network == "mainnet" else "🟢 TESTNET (Practice)"
+        logger.info(f"User {user_id[:8]}... checking positions in pool {pool_address[:8]}... on {network_label}")
 
         # Get positions
         result = await blend_get_my_positions(
@@ -304,14 +329,15 @@ async def _blend_check_my_positions(
             account_id=account_id,
             account_manager=account_manager,
             soroban_server=soroban_server,
-            network='testnet'
+            network=network
         )
 
         if 'error' in result:
             return f"❌ Error checking positions: {result.get('message', 'Unknown error')}"
 
         # Format response
-        response = f"📊 **Your Positions in {result['pool']}**\n\n"
+        network_label = "🔴 MAINNET (Real $)" if network == "mainnet" else "🟢 TESTNET (Practice)"
+        response = f"📊 **Your Positions in {result['pool']} ({network_label})**\n\n"
 
         positions = result.get('positions', {})
 
@@ -348,7 +374,8 @@ async def _blend_get_pool_apy(
     pool_address: str,
     asset_address: str,
     user_id: str,
-    account_manager: AccountManager
+    account_manager: AccountManager,
+    network: str = "mainnet"  # Default to mainnet (read operation for real yields!)
 ) -> str:
     """
     Get APY information for a specific asset in a pool.
@@ -358,15 +385,17 @@ async def _blend_get_pool_apy(
         asset_address: Asset contract ID
         user_id: User identifier (injected by tool factory)
         account_manager: AccountManager instance (injected by tool factory)
+        network: "mainnet" (real yields) or "testnet" (usually 0%)
 
     Returns:
         Formatted string with APY information
     """
     try:
-        # Create Soroban server
-        soroban_server = SorobanServerAsync(NETWORK_CONFIG['testnet']['rpc_url'])
+        # Create Soroban server for the specified network
+        soroban_server = SorobanServerAsync(NETWORK_CONFIG[network]['rpc_url'])
 
-        logger.info(f"User {user_id[:8]}... fetching APY for asset in pool...")
+        network_label = "🔴 MAINNET (Real $)" if network == "mainnet" else "🟢 TESTNET (Practice)"
+        logger.info(f"User {user_id[:8]}... fetching APY for asset in pool on {network_label}...")
 
         # Get APY data
         apy_data = await blend_get_reserve_apy(
@@ -375,11 +404,12 @@ async def _blend_get_pool_apy(
             user_id=user_id,
             soroban_server=soroban_server,
             account_manager=account_manager,
-            network='testnet'
+            network=network
         )
 
         # Format response
-        response = f"📈 **APY Information for {apy_data['asset_symbol']}**\n\n"
+        network_label = "🔴 MAINNET (Real $)" if network == "mainnet" else "🟢 TESTNET (Practice)"
+        response = f"📈 **APY Information for {apy_data['asset_symbol']} ({network_label})**\n\n"
         response += f"💰 **Supply APY**: {apy_data['supply_apy']:.2f}% (earn by supplying)\n"
         response += f"💸 **Borrow APY**: {apy_data['borrow_apy']:.2f}% (cost to borrow)\n\n"
         response += f"📊 **Pool Metrics**:\n"
@@ -387,7 +417,7 @@ async def _blend_get_pool_apy(
         response += f"   • Total Borrowed: {apy_data['total_borrowed'] / 1e7:,.2f} {apy_data['asset_symbol']}\n"
         response += f"   • Available Liquidity: {apy_data['available_liquidity'] / 1e7:,.2f} {apy_data['asset_symbol']}\n"
         response += f"   • Utilization: {apy_data['utilization']:.1%}\n\n"
-        response += f"🔗 **Data Source**: {apy_data['data_source']} (live from Blend protocol)\n"
+        response += f"🔗 **Data Source**: {apy_data['data_source']} (live from Blend protocol on {network})\n"
         response += f"📍 **Pool**: {pool_address[:16]}...\n"
         response += f"🪙 **Asset**: {asset_address[:16]}...\n"
         response += f"👤 **User**: {user_id[:8]}...\n"
