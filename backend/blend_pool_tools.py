@@ -117,7 +117,7 @@ async def _get_asset_symbol(
     account_manager: AccountManager,
     user_id: str,
     account_id: Optional[str] = None,
-    network: str = "testnet"
+    network: str = "mainnet"
 ) -> str:
     """
     Get the symbol for an asset token contract.
@@ -178,7 +178,7 @@ async def _get_pool_name(
     soroban_server: SorobanServerAsync,
     account_manager: AccountManager,
     user_id: str,
-    network: str = "testnet"
+    network: str = "mainnet"
 ) -> str:
     """
     Get a friendly name for a pool.
@@ -229,7 +229,7 @@ async def _get_pool_basic_info(
     soroban_server: SorobanServerAsync,
     account_manager: AccountManager,
     user_id: str,
-    network: str = "testnet"
+    network: str = "mainnet"
 ) -> Optional[Dict[str, Any]]:
     """
     Load basic information about a pool.
@@ -262,7 +262,7 @@ async def _get_pool_reserves(
     soroban_server: SorobanServerAsync,
     account_manager: AccountManager,
     user_id: str,
-    network: str = "testnet"
+    network: str = "mainnet"
 ) -> List[Dict[str, Any]]:
     """
     Get list of reserves (assets) in a pool.
@@ -332,7 +332,7 @@ async def _get_pool_reserves(
 # ============================================================================
 
 async def blend_discover_pools(
-    network: str = "testnet",
+    network: str = "mainnet",
     soroban_server: Optional[SorobanServerAsync] = None,
     account_manager: Optional[AccountManager] = None,
     user_id: str = "system"
@@ -388,13 +388,20 @@ async def blend_discover_pools(
 
         if not result.get('success'):
             logger.error(f"Failed to query Backstop config: {result.get('error')}")
-            # Fallback: return known Comet pool for the network
+            # Fallback: return all known pools for the network
             contracts = NETWORK_CONFIG[network]['contracts']
-            return [{
-                'pool_address': contracts['comet'],
-                'name': 'Comet Pool',
-                'status': 'active'
-            }]
+            known_pools = []
+            if network == 'mainnet':
+                known_pools = [
+                    {'pool_address': contracts['comet'], 'name': 'Comet Pool', 'status': 'active'},
+                    {'pool_address': contracts['fixed'], 'name': 'Fixed Pool', 'status': 'active'},
+                    {'pool_address': contracts['yieldBlox'], 'name': 'YieldBlox Pool', 'status': 'active'}
+                ]
+            else:
+                known_pools = [
+                    {'pool_address': contracts['comet'], 'name': 'Comet Pool', 'status': 'active'}
+                ]
+            return known_pools
 
         # Parse config.rewardZone array (list of pool addresses)
         config = result.get('value', {})
@@ -402,9 +409,12 @@ async def blend_discover_pools(
 
         if not pool_addresses:
             logger.warning("No pools found in Backstop reward zone, using known pools")
-            # Fallback: return known pools for the network
+            # Fallback: return all known pools for the network
             contracts = NETWORK_CONFIG[network]['contracts']
-            pool_addresses = [contracts['comet']]
+            if network == 'mainnet':
+                pool_addresses = [contracts['comet'], contracts['fixed'], contracts['yieldBlox']]
+            else:
+                pool_addresses = [contracts['comet']]
 
         logger.info(f"Found {len(pool_addresses)} pools in reward zone")
 
@@ -419,13 +429,18 @@ async def blend_discover_pools(
 
     except Exception as e:
         logger.error(f"Error in blend_discover_pools: {e}")
-        # Return known pools as fallback for the network
+        # Return all known pools as fallback for the network
         contracts = NETWORK_CONFIG[network]['contracts']
-        return [{
-            'pool_address': contracts['comet'],
-            'name': 'Comet Pool',
-            'status': 'active'
-        }]
+        if network == 'mainnet':
+            return [
+                {'pool_address': contracts['comet'], 'name': 'Comet Pool', 'status': 'active'},
+                {'pool_address': contracts['fixed'], 'name': 'Fixed Pool', 'status': 'active'},
+                {'pool_address': contracts['yieldBlox'], 'name': 'YieldBlox Pool', 'status': 'active'}
+            ]
+        else:
+            return [
+                {'pool_address': contracts['comet'], 'name': 'Comet Pool', 'status': 'active'}
+            ]
 
 
 async def blend_get_reserve_apy(
@@ -434,7 +449,7 @@ async def blend_get_reserve_apy(
     user_id: str,
     soroban_server: SorobanServerAsync,
     account_manager: AccountManager,
-    network: str = "testnet"
+    network: str = "mainnet"
 ) -> Dict[str, Any]:
     """
     Get real APY data for a reserve in a pool by querying on-chain data.
@@ -559,7 +574,7 @@ async def blend_supply_collateral(
     account_id: str,
     account_manager: AccountManager,
     soroban_server: SorobanServerAsync,
-    network: str = "testnet"
+    network: str = "mainnet"
 ) -> Dict[str, Any]:
     """
     Supply assets to a Blend pool to earn yield (autonomous operation).
@@ -675,7 +690,7 @@ async def blend_withdraw_collateral(
     account_id: str,
     account_manager: AccountManager,
     soroban_server: SorobanServerAsync,
-    network: str = "testnet"
+    network: str = "mainnet"
 ) -> Dict[str, Any]:
     """
     Withdraw supplied assets from a Blend pool (autonomous operation).
@@ -780,7 +795,7 @@ async def blend_get_my_positions(
     account_id: str,
     account_manager: AccountManager,
     soroban_server: SorobanServerAsync,
-    network: str = "testnet"
+    network: str = "mainnet"
 ) -> Dict[str, Any]:
     """
     Check user's current positions in a Blend pool.
@@ -897,7 +912,7 @@ async def blend_find_best_yield(
     user_id: str = "system",
     soroban_server: Optional[SorobanServerAsync] = None,
     account_manager: Optional[AccountManager] = None,
-    network: str = "testnet"
+    network: str = "mainnet"
 ) -> List[Dict[str, Any]]:
     """
     Find best yield opportunities across all Blend pools for a given asset.

@@ -161,7 +161,7 @@ async def _blend_supply_to_pool(
     account_id: str,
     user_id: str,
     account_manager: AccountManager,
-    network: str = "testnet"  # Default to testnet for safety (write operation)
+    network: str = "mainnet"  # Default to testnet for safety (write operation)
 ) -> str:
     """
     Supply assets to a Blend pool to earn yield.
@@ -232,7 +232,7 @@ async def _blend_withdraw_from_pool(
     account_id: str,
     user_id: str,
     account_manager: AccountManager,
-    network: str = "testnet"  # Default to testnet for safety (write operation)
+    network: str = "mainnet"  # Default to testnet for safety (write operation)
 ) -> str:
     """
     Withdraw assets from a Blend pool.

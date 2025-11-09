@@ -93,10 +93,10 @@ async def load_agent_tools():
     except ImportError as e:
         logger.warning(f"Agent account management tools not available: {e}")
 
-    # REMOVED: DeFindex tools are now loaded via tool_factory pattern
+    # NOTE: Blend Capital and other protocol tools are loaded via tool_factory pattern
     # This ensures proper user_id injection and AccountManager integration
-    # See agent/tool_factory.py for the new implementation
-    logger.info("DeFindex tools moved to tool_factory pattern with user_id injection")
+    # See agent/tool_factory.py for the implementation
+    logger.info("Protocol tools (Blend Capital) loaded via tool_factory pattern with user_id injection")
 
 async def get_agent_status() -> Dict[str, Any]:
     """Get current agent system status"""
@@ -119,7 +119,7 @@ async def get_agent_status() -> Dict[str, Any]:
         "openai_configured": bool(settings.openai_api_key),
         "live_summary_ready": True,  # TODO: Make this configurable based on actual availability
         "database_ready": True,  # TODO: Check actual database connectivity
-        "defindex_tools_ready": len([t for t in agent_tools if 'defindex' in getattr(t, 'name', getattr(t, '__name__', str(t))).lower()]) > 0,
+        "blend_tools_ready": len([t for t in agent_tools if 'blend' in getattr(t, 'name', getattr(t, '__name__', str(t))).lower()]) > 0,
         # Debug fields (remove these in production)
         "debug_api_key_prefix": api_key_debug,
         "debug_base_url": settings.openai_base_url,
