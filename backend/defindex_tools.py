@@ -2,6 +2,17 @@
 """
 DeFindex LangChain tools for Stellar vault operations
 
+⚠️ DEPRECATED: DeFindex API is down (as of 2025-11-09)
+Use blend_pool_tools.py for yield farming instead.
+
+These tools are kept for reference but will fail if the DeFindex API is unavailable.
+For autonomous yield farming operations, use the new Blend Capital tools:
+- blend_discover_pools()
+- blend_find_best_yield()
+- blend_supply_collateral()
+- blend_withdraw_collateral()
+- blend_get_my_positions()
+
 Updated for Quantum Leap migration:
 - Uses AccountManager instead of KeyManager
 - Enforces user_id isolation for deposits/withdrawals

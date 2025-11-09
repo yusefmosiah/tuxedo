@@ -153,7 +153,9 @@ This system contains **13+ categories of hardcoded values** limiting it to testn
 - **Context management**: Conversation history + wallet address injection
 - **Error handling**: Graceful failures with user feedback
 
-### 6 Integrated Stellar Tools
+### Integrated AI Agent Tools
+
+**Core Stellar Tools (6 tools):**
 
 1. **Account Manager**: `create`, `fund`, `get`, `transactions`, `list`, `export`, `import`
 2. **Market Data**: `orderbook`, `trades`, `ticker`, `pairs`
@@ -161,6 +163,19 @@ This system contains **13+ categories of hardcoded values** limiting it to testn
 4. **Trustline Manager**: `create`, `delete`, `allow_trust`, `trustlines`
 5. **Utilities**: `status`, `fees`, `ledgers`, `network`
 6. **Soroban**: `get_data`, `simulate`, `invoke`, `get_events`, `get_ledger_entries`
+
+**Blend Capital Yield Farming Tools (6 tools) - ACTIVE:**
+
+1. **blend_find_best_yield**: Find highest APY opportunities across all pools for an asset
+2. **blend_discover_pools**: Discover all active Blend pools on testnet
+3. **blend_supply_to_pool**: Supply assets to earn yield (autonomous execution)
+4. **blend_withdraw_from_pool**: Withdraw assets from pools
+5. **blend_check_my_positions**: Check current positions in a pool
+6. **blend_get_pool_apy**: Get real-time APY data for specific assets
+
+**DeFindex Tools (3 tools) - DEPRECATED (API Down):**
+- Tools preserved for future use but currently non-functional
+- Use Blend Capital tools for yield farming instead
 
 ## Frontend Architecture
 
@@ -184,10 +199,23 @@ This system contains **13+ categories of hardcoded values** limiting it to testn
 
 ### Key Files
 
+**Core Infrastructure:**
 - `main.py` - FastAPI app with AI agent loop
 - `stellar_tools.py` - All 6 Stellar tools implementation
-- `stellar_soroban.py` - Smart contract support
-- `key_manager.py` - Stellar key management
+- `stellar_soroban.py` - Smart contract support with async operations
+- `account_manager.py` - Multi-user account management (Quantum Leap)
+- `agent/tool_factory.py` - Per-request tool creation with user isolation
+
+**Blend Capital Integration (ACTIVE):**
+- `blend_pool_tools.py` - Core Blend pool operations (discovery, APY, supply, withdraw, positions)
+- `blend_account_tools.py` - LangChain tool wrappers for AI agent
+- `test_blend_integration.py` - Integration test suite
+
+**DeFindex Integration (DEPRECATED):**
+- `defindex_client.py` - API client (API currently down)
+- `defindex_soroban.py` - Soroban operations (requires API)
+- `defindex_tools.py` - LangChain tools (deprecated)
+- `defindex_account_tools.py` - Account-scoped tools (deprecated)
 
 ### Tech Stack
 
@@ -220,9 +248,32 @@ python3 test_agent_with_tools.py         # Comprehensive tool testing
 - `test_agent.py` - Basic AI agent functionality tests
 - `test_agent_with_tools.py` - Comprehensive Stellar tools validation
 - `test_wallet_fix.py` - Wallet integration testing
+- `test_blend_integration.py` - **NEW**: Blend Capital integration tests
+
+### Blend Capital Integration Testing
+
+```bash
+# From backend directory
+cd backend
+source .venv/bin/activate
+
+# Run Blend integration tests (read-only, no accounts needed)
+python3 test_blend_integration.py
+```
+
+**Tests included:**
+1. Pool discovery from Backstop contract
+2. Real-time APY query for USDC in Comet pool
+3. Best yield finder across all pools
+
+**Expected results:** All 3 tests should pass, demonstrating:
+- Connection to Blend protocol contracts
+- On-chain data retrieval via Soroban RPC
+- APY calculation from reserve data
 
 ### Common Test Scenarios
 
+**Stellar Operations:**
 - Network status queries: "What is the current Stellar network status?"
 - Account creation: "Create a new testnet account and fund it"
 - Balance queries: "Check the balance for account [ADDRESS]"
@@ -230,6 +281,14 @@ python3 test_agent_with_tools.py         # Comprehensive tool testing
 - Trading operations: "Create an offer to buy 100 XLM for USDC"
 - Trustline management: "Create a USDC trustline"
 - Soroban contracts: "Get contract data for [CONTRACT_ID]"
+
+**Blend Capital Yield Farming:**
+- Find yield: "What's the best APY for USDC?"
+- Pool discovery: "Show me all Blend pools"
+- Supply assets: "Supply 100 USDC to the Comet pool" (requires account)
+- Check positions: "What are my positions in the Comet pool?"
+- Withdraw: "Withdraw 50 USDC from the Comet pool"
+- APY queries: "What's the current APY for USDC in Comet pool?"
 
 ## Important Patterns
 

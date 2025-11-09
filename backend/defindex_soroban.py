@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 """
 DeFindex integration using Soroban smart contracts
+
+⚠️ CURRENTLY DISABLED: DeFindex API is down (as of 2025-11-09)
+This code is preserved but requires API access to function.
+For yield farming, use blend_pool_tools.py instead.
+
+This module provides API-only access to DeFindex vaults.
+All methods will fail if DEFINDEX_API_KEY is not set or if the API is unavailable.
+NO FALLBACK DATA - Only real API responses are returned.
 """
 
 import logging
