@@ -4,20 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Tuxedo** is a conversational AI agent for discovering and interacting with Blend Protocol on Stellar testnet. It's a full-stack application with React + TypeScript frontend and FastAPI Python backend, featuring a fully operational AI agent with 6 integrated Stellar tools.
+**Tuxedo** is a conversational AI agent for discovering and interacting with Blend Protocol on Stellar **mainnet**. It's a full-stack application with React + TypeScript frontend and FastAPI Python backend, featuring a fully operational AI agent with 6 Stellar tools + 6 Blend Capital yield farming tools.
 
-**Current State**: Production-ready for educational use on testnet (6.3/10 production readiness score)
+**Current State**: Production-ready for mainnet DeFi operations
 
-**🚀 Active Migration**: Quantum leap from `KeyManager` to `AccountManager` for multi-user security
-
-- See `AGENT_MIGRATION_QUANTUM_LEAP.md` for implementation details
-- Architecture shift: user-isolated encrypted accounts in database
-- No gradual migration - complete replacement (no valuable data exists)
+**🚀 Mainnet-Only Architecture**:
+- All operations run on Stellar mainnet (real funds, real yields)
+- Blend Capital pools: Comet, Fixed, and YieldBlox
+- Real APY data from on-chain sources
+- User-isolated encrypted accounts via `AccountManager`
 
 **⚠️ Important**:
 
 - ALWAYS use web-search-prime to search the web. NEVER use built in web search
-- This system contains extensive hardcoded testnet configuration and is not suitable for mainnet deployment without significant refactoring.
+- **Mainnet Only**: This system operates exclusively on Stellar mainnet with real funds
 - **Python Development**: Use UV for virtual environment management (NOT python3 -m venv). See backend commands below.
 
 ## Development Commands
@@ -122,27 +122,27 @@ User Chat → Frontend → API → AI Agent → LLM → Tool Selection → Stell
 
 **Frontend (.env.local)**:
 
-- `VITE_STELLAR_NETWORK=testnet`
-- `VITE_HORIZON_URL=https://horizon-testnet.stellar.org`
-- `VITE_RPC_URL=https://soroban-testnet.stellar.org`
-- `VITE_API_URL=http://localhost:8000` (or `PUBLIC_API_URL`)
+- `PUBLIC_STELLAR_NETWORK=PUBLIC` (mainnet)
+- `PUBLIC_STELLAR_HORIZON_URL=https://horizon.stellar.org`
+- `PUBLIC_STELLAR_RPC_URL=https://rpc.ankr.com/stellar_soroban` (or your RPC provider)
+- `PUBLIC_API_URL=http://localhost:8000`
 
 **Backend (.env)**:
 
 - `OPENAI_API_KEY=your_api_key` (required)
 - `OPENAI_BASE_URL=https://api.redpill.ai/v1` (or https://api.openai.com/v1)
-- `STELLAR_NETWORK=testnet`
-- `HORIZON_URL=https://horizon-testnet.stellar.org`
-- `SOROBAN_RPC_URL=https://soroban-testnet.stellar.org`
+- `STELLAR_NETWORK=mainnet`
+- `ANKR_STELLER_RPC=https://rpc.ankr.com/stellar_soroban` (mainnet RPC)
+- `MAINNET_HORIZON_URL=https://horizon.stellar.org`
 
 ### Critical Architecture Note
 
-This system contains **13+ categories of hardcoded values** limiting it to testnet:
+This system operates **exclusively on mainnet**:
 
-- Contract addresses in `src/contracts/blend.ts`
-- Network URLs in backend files
-- Token metadata in `src/utils/tokenMetadata.ts`
-- Port numbers and timeouts
+- Mainnet contract addresses in `backend/blend_pool_tools.py` and `src/contracts/blend.ts`
+- Network configuration centralized in `backend/config/settings.py`
+- Mainnet RPC: Ankr (configurable via `ANKR_STELLER_RPC` env var)
+- All default network parameters set to "mainnet"
 
 ## AI Agent System
 
@@ -164,18 +164,14 @@ This system contains **13+ categories of hardcoded values** limiting it to testn
 5. **Utilities**: `status`, `fees`, `ledgers`, `network`
 6. **Soroban**: `get_data`, `simulate`, `invoke`, `get_events`, `get_ledger_entries`
 
-**Blend Capital Yield Farming Tools (6 tools) - ACTIVE:**
+**Blend Capital Yield Farming Tools (6 tools) - MAINNET:**
 
-1. **blend_find_best_yield**: Find highest APY opportunities across all pools for an asset
-2. **blend_discover_pools**: Discover all active Blend pools on testnet
-3. **blend_supply_to_pool**: Supply assets to earn yield (autonomous execution)
-4. **blend_withdraw_from_pool**: Withdraw assets from pools
+1. **blend_find_best_yield**: Find highest APY opportunities across all mainnet pools for an asset
+2. **blend_discover_pools**: Discover all active Blend pools on mainnet (Comet, Fixed, YieldBlox)
+3. **blend_supply_to_pool**: Supply assets to earn yield (autonomous execution, real funds)
+4. **blend_withdraw_from_pool**: Withdraw assets from pools (real funds)
 5. **blend_check_my_positions**: Check current positions in a pool
-6. **blend_get_pool_apy**: Get real-time APY data for specific assets
-
-**DeFindex Tools (3 tools) - DEPRECATED (API Down):**
-- Tools preserved for future use but currently non-functional
-- Use Blend Capital tools for yield farming instead
+6. **blend_get_pool_apy**: Get real-time APY data for specific assets from on-chain sources
 
 ## Frontend Architecture
 
@@ -206,16 +202,11 @@ This system contains **13+ categories of hardcoded values** limiting it to testn
 - `account_manager.py` - Multi-user account management (Quantum Leap)
 - `agent/tool_factory.py` - Per-request tool creation with user isolation
 
-**Blend Capital Integration (ACTIVE):**
+**Blend Capital Integration (MAINNET-ONLY):**
 - `blend_pool_tools.py` - Core Blend pool operations (discovery, APY, supply, withdraw, positions)
-- `blend_account_tools.py` - LangChain tool wrappers for AI agent
-- `test_blend_integration.py` - Integration test suite
-
-**DeFindex Integration (DEPRECATED):**
-- `defindex_client.py` - API client (API currently down)
-- `defindex_soroban.py` - Soroban operations (requires API)
-- `defindex_tools.py` - LangChain tools (deprecated)
-- `defindex_account_tools.py` - Account-scoped tools (deprecated)
+- `blend_account_tools.py` - LangChain tool wrappers for AI agent (mainnet defaults)
+- Supports 3 mainnet pools: Comet, Fixed, YieldBlox
+- Real-time on-chain APY calculation
 
 ### Tech Stack
 
@@ -273,22 +264,22 @@ python3 test_blend_integration.py
 
 ### Common Test Scenarios
 
-**Stellar Operations:**
+**Stellar Operations (Mainnet):**
 - Network status queries: "What is the current Stellar network status?"
-- Account creation: "Create a new testnet account and fund it"
+- Account creation: "Create a new account" (user must fund with real XLM)
 - Balance queries: "Check the balance for account [ADDRESS]"
 - Market data: "Show me the XLM/USDC orderbook"
-- Trading operations: "Create an offer to buy 100 XLM for USDC"
-- Trustline management: "Create a USDC trustline"
+- Trading operations: "Create an offer to buy 100 XLM for USDC" ⚠️ REAL FUNDS
+- Trustline management: "Create a USDC trustline" ⚠️ REAL FUNDS
 - Soroban contracts: "Get contract data for [CONTRACT_ID]"
 
-**Blend Capital Yield Farming:**
-- Find yield: "What's the best APY for USDC?"
-- Pool discovery: "Show me all Blend pools"
-- Supply assets: "Supply 100 USDC to the Comet pool" (requires account)
+**Blend Capital Yield Farming (Mainnet - Real Funds):**
+- Find yield: "What's the best APY for USDC on mainnet?"
+- Pool discovery: "Show me all Blend pools" (returns Comet, Fixed, YieldBlox)
+- Supply assets: "Supply 100 USDC to the Comet pool" ⚠️ REAL FUNDS
 - Check positions: "What are my positions in the Comet pool?"
-- Withdraw: "Withdraw 50 USDC from the Comet pool"
-- APY queries: "What's the current APY for USDC in Comet pool?"
+- Withdraw: "Withdraw 50 USDC from the Comet pool" ⚠️ REAL FUNDS
+- APY queries: "What's the current APY for USDC in Comet pool?" (live on-chain data)
 
 ## Important Patterns
 
@@ -366,30 +357,28 @@ source .venv/bin/activate
 - Response format: `{ response, success, error? }`
 - Health checks: GET `/health` endpoint every 30 seconds
 
-## Production Limitations
+## Production Status
 
-**Critical Issues to Address**:
+**Mainnet-Ready Features**:
 
-1. **Hardcoded testnet configuration**: Contract addresses, network URLs, friendbot
-2. **Scattered configuration**: Settings across multiple files
-3. **Limited error context**: Generic error messages to users
-4. **No dynamic token discovery**: Cannot support new tokens
-5. **Testnet-only deployment**: Cannot work on mainnet or other networks
+1. ✅ **Mainnet-only configuration**: All operations default to mainnet
+2. ✅ **Centralized configuration**: `backend/config/settings.py` + environment variables
+3. ✅ **Real yield data**: On-chain APY from Blend Capital mainnet pools
+4. ✅ **Multi-pool support**: Comet, Fixed, and YieldBlox pools
+5. ✅ **User isolation**: AccountManager with encrypted secrets
 
-**Immediate Actions Needed**:
+**Known Limitations**:
 
-- Create centralized configuration management system
-- Add mainnet and multi-network support
-- Implement dynamic token/contract discovery
-- Enhance error handling and user feedback
-- Remove hardcoded values from source code
+- Blend Capital only (no other DeFi protocols)
+- Limited to configured pools (Comet, Fixed, YieldBlox)
+- Requires Ankr RPC or compatible mainnet RPC provider
+- No testnet fallback (mainnet-only by design)
 
-**Known Hardcoded Locations**:
+**Contract Addresses (Mainnet)**:
 
-- `src/contracts/blend.ts`: Testnet contract addresses
-- `backend/stellar_tools.py`: Network URLs and friendbot
-- `backend/main.py`: OpenAI endpoints and CORS settings
-- `src/utils/tokenMetadata.ts`: Token information and UI thresholds
+- `backend/blend_pool_tools.py`: BLEND_MAINNET_CONTRACTS
+- `src/contracts/blend.ts`: Mainnet contract addresses
+- `backend/config/settings.py`: Network configuration
 
 ## File Locations for Common Tasks
 

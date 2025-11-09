@@ -125,16 +125,19 @@ def create_app() -> FastAPI:
             except ImportError:
                 logger.warning("Agent account tools not available")
 
-            # Check DeFindex tools
+            # Check Blend Capital tools
             try:
-                import defindex_tools
+                import blend_pool_tools
                 tools.extend([
-                    "discover_high_yield_vaults",
-                    "get_defindex_vault_details",
-                    "prepare_defindex_deposit"
+                    "blend_find_best_yield",
+                    "blend_discover_pools",
+                    "blend_supply_to_pool",
+                    "blend_withdraw_from_pool",
+                    "blend_check_my_positions",
+                    "blend_get_pool_apy"
                 ])
             except ImportError:
-                logger.warning("DeFindex tools not available")
+                logger.warning("Blend Capital tools not available")
 
             return {
                 "available": stellar_tools_ready,

@@ -246,127 +246,8 @@ def create_user_tools(user_id: str) -> List:
             horizon=horizon
         )
 
-    # Add DeFindex tools with user_id injection
-    @tool
-    def defindex_discover_vaults(min_apy: Optional[float] = 0.0):
-        """
-        Discover DeFindex vaults sorted by APY (highest to lowest).
-
-        Use this when users ask about:
-        - Available vaults for investment
-        - Current APY rates on Stellar
-        - DeFi yield opportunities
-        - Where to deposit funds
-
-        This tool shows ALL vaults including 0% APY vaults, sorted by yield.
-
-        Args:
-            min_apy: Minimum APY threshold as percentage (default 0.0% to show ALL)
-
-        Returns:
-            Complete list of available vaults sorted by APY with full details
-        """
-        import asyncio
-        from defindex_account_tools import _defindex_discover_vaults
-
-        # Handle async function call properly - check if we're already in an event loop
-        try:
-            loop = asyncio.get_running_loop()
-            # We're already in an event loop, use create_task
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(asyncio.run, _defindex_discover_vaults(min_apy=min_apy, user_id=user_id))
-                return future.result()
-        except RuntimeError:
-            # No running event loop, safe to use asyncio.run()
-            return asyncio.run(
-                _defindex_discover_vaults(min_apy=min_apy, user_id=user_id)
-            )
-
-    @tool
-    def defindex_get_vault_details(vault_address: str):
-        """
-        Get detailed information about a specific DeFindex vault.
-
-        Use this when users want more details about a vault they're interested in.
-
-        Args:
-            vault_address: The contract address of the vault (56 characters starting with 'C')
-
-        Returns:
-            Detailed vault information including strategies and performance
-        """
-        import asyncio
-        from defindex_account_tools import _defindex_get_vault_details
-
-        # Handle async function call properly - check if we're already in an event loop
-        try:
-            loop = asyncio.get_running_loop()
-            # We're already in an event loop, use create_task
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(asyncio.run, _defindex_get_vault_details(vault_address=vault_address, user_id=user_id))
-                return future.result()
-        except RuntimeError:
-            # No running event loop, safe to use asyncio.run()
-            return asyncio.run(
-                _defindex_get_vault_details(vault_address=vault_address, user_id=user_id)
-            )
-
-    @tool
-    def defindex_deposit(
-        vault_address: str,
-        amount_xlm: float,
-        account_id: str
-    ):
-        """
-        Execute an autonomous deposit transaction to a DeFindex vault using your account.
-
-        This tool builds and submits a real transaction to the Stellar network,
-        enabling true autonomous operation without manual wallet intervention.
-
-        Args:
-            vault_address: The vault contract address (verified testnet vault)
-            amount_xlm: Amount to deposit in XLM (e.g., 10.5)
-            account_id: Your account ID from AccountManager (use stellar_account_manager to list accounts)
-
-        Returns:
-            Transaction execution details including hash and status
-
-        Example:
-            "Deposit 50 XLM to vault CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA using account_id 'my_main_account'"
-        """
-        import asyncio
-        from defindex_account_tools import _defindex_deposit
-
-        # Handle async function call properly - check if we're already in an event loop
-        try:
-            loop = asyncio.get_running_loop()
-            # We're already in an event loop, use create_task
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(asyncio.run, _defindex_deposit(
-                    vault_address=vault_address,
-                    amount_xlm=amount_xlm,
-                    user_id=user_id,  # INJECTED from auth context
-                    account_id=account_id,
-                    account_manager=account_mgr
-                ))
-                return future.result()
-        except RuntimeError:
-            # No running event loop, safe to use asyncio.run()
-            return asyncio.run(
-                _defindex_deposit(
-                    vault_address=vault_address,
-                    amount_xlm=amount_xlm,
-                    user_id=user_id,  # INJECTED from auth context
-                    account_id=account_id,
-                    account_manager=account_mgr
-                )
-            )
-
     # ========================================================================
-    # BLEND CAPITAL TOOLS - Active yield farming solution
+    # BLEND CAPITAL TOOLS - Primary yield farming solution (mainnet)
     # ========================================================================
 
     @tool
@@ -638,11 +519,7 @@ def create_user_tools(user_id: str) -> List:
         stellar_trustline_manager,
         stellar_market_data,
         stellar_utilities,
-        # DeFindex tools (deprecated - API down)
-        defindex_discover_vaults,
-        defindex_get_vault_details,
-        defindex_deposit,
-        # Blend Capital tools (ACTIVE - primary yield farming solution)
+        # Blend Capital tools (mainnet-only yield farming)
         blend_find_best_yield,
         blend_discover_pools,
         blend_supply_to_pool,
@@ -651,7 +528,7 @@ def create_user_tools(user_id: str) -> List:
         blend_get_pool_apy
     ]
 
-    logger.info(f"Created {len(tools)} tools (5 Stellar + 3 DeFindex + 6 Blend Capital) for user_id: {user_id}")
+    logger.info(f"Created {len(tools)} tools (5 Stellar + 6 Blend Capital) for user_id: {user_id}")
     return tools
 
 

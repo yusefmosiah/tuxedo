@@ -60,7 +60,7 @@ async def _blend_find_best_yield(
 
         logger.info(f"User {user_id[:8]}... searching for {asset_symbol} yield opportunities on {network}...")
 
-        # Find best yield
+        # Find best yield - this will raise an error if pool discovery fails
         opportunities = await blend_find_best_yield(
             asset_symbol=asset_symbol,
             min_apy=min_apy,
@@ -71,7 +71,7 @@ async def _blend_find_best_yield(
         )
 
         if not opportunities:
-            return f"No yield opportunities found for {asset_symbol} with APY above {min_apy}% on {network}."
+            return f"⚠️ No yield opportunities found for {asset_symbol} with APY above {min_apy}% on {network}.\n\nThis could mean:\n- The asset is not supported in any active pools\n- All pools have APY below your threshold\n- Network connectivity issues\n\nTry lowering min_apy or checking a different asset."
 
         # Format response
         network_label = "🔴 MAINNET (Real $)" if network == "mainnet" else "🟢 TESTNET (Practice)"
@@ -95,9 +95,18 @@ async def _blend_find_best_yield(
 
         return result
 
+    except ValueError as e:
+        # ValueError indicates a known issue like Backstop query failure
+        logger.error(f"Pool discovery failed in _blend_find_best_yield: {e}")
+        return f"❌ **Pool Discovery Failed on {network}**\n\n{str(e)}\n\n**This is a fatal error** - the system cannot discover Blend pools from the Backstop contract.\n\nPossible causes:\n- RPC endpoint issues (check ANKR_STELLER_RPC)\n- Backstop contract address incorrect\n- Network connectivity problems\n- Contract state corruption\n\nPlease check logs and RPC configuration."
+    except RuntimeError as e:
+        # RuntimeError indicates a fatal system error
+        logger.error(f"Fatal error in _blend_find_best_yield: {e}")
+        return f"❌ **Fatal Error**: {str(e)}\n\nPlease check system logs and RPC configuration."
     except Exception as e:
-        logger.error(f"Error in _blend_find_best_yield: {e}")
-        return f"Error finding yield opportunities: {str(e)}"
+        # Unexpected errors
+        logger.error(f"Unexpected error in _blend_find_best_yield: {e}", exc_info=True)
+        return f"❌ **Unexpected Error**: {str(e)}\n\nPlease report this issue with logs."
 
 
 async def _blend_discover_pools(
@@ -122,7 +131,7 @@ async def _blend_discover_pools(
 
         logger.info(f"User {user_id[:8]}... discovering Blend pools on {network}...")
 
-        # Discover pools
+        # Discover pools - this will raise an error if discovery fails
         pools = await blend_discover_pools(
             network=network,
             soroban_server=soroban_server,
@@ -131,7 +140,7 @@ async def _blend_discover_pools(
         )
 
         if not pools:
-            return f"No active Blend pools found on {network}."
+            return f"⚠️ No active Blend pools found on {network}.\n\nThis should not happen on mainnet. Please check RPC configuration."
 
         # Format response
         network_label = "🔴 MAINNET (Real $)" if network == "mainnet" else "🟢 TESTNET (Practice)"
@@ -149,9 +158,18 @@ async def _blend_discover_pools(
 
         return result
 
+    except ValueError as e:
+        # ValueError indicates a known issue like Backstop query failure
+        logger.error(f"Pool discovery failed in _blend_discover_pools: {e}")
+        return f"❌ **Pool Discovery Failed on {network}**\n\n{str(e)}\n\n**This is a fatal error** - the system cannot discover Blend pools from the Backstop contract.\n\nPossible causes:\n- RPC endpoint issues (check ANKR_STELLER_RPC env var)\n- Backstop contract address incorrect for {network}\n- Network connectivity problems\n- Contract state issues\n\nPlease check:\n1. RPC URL: {NETWORK_CONFIG[network]['rpc_url']}\n2. Backstop: {NETWORK_CONFIG[network]['backstop']}\n3. Network connectivity"
+    except RuntimeError as e:
+        # RuntimeError indicates a fatal system error
+        logger.error(f"Fatal error in _blend_discover_pools: {e}")
+        return f"❌ **Fatal Error**: {str(e)}\n\nPlease check system logs and RPC configuration."
     except Exception as e:
-        logger.error(f"Error in _blend_discover_pools: {e}")
-        return f"Error discovering pools: {str(e)}"
+        # Unexpected errors
+        logger.error(f"Unexpected error in _blend_discover_pools: {e}", exc_info=True)
+        return f"❌ **Unexpected Error**: {str(e)}\n\nPlease report this issue with logs."
 
 
 async def _blend_supply_to_pool(
@@ -161,7 +179,7 @@ async def _blend_supply_to_pool(
     account_id: str,
     user_id: str,
     account_manager: AccountManager,
-    network: str = "testnet"  # Default to testnet for safety (write operation)
+    network: str = "mainnet"  # Default to testnet for safety (write operation)
 ) -> str:
     """
     Supply assets to a Blend pool to earn yield.
@@ -232,7 +250,7 @@ async def _blend_withdraw_from_pool(
     account_id: str,
     user_id: str,
     account_manager: AccountManager,
-    network: str = "testnet"  # Default to testnet for safety (write operation)
+    network: str = "mainnet"  # Default to testnet for safety (write operation)
 ) -> str:
     """
     Withdraw assets from a Blend pool.
