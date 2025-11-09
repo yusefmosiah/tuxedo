@@ -28,9 +28,7 @@ from blend_pool_tools import (
     blend_withdraw_collateral,
     blend_get_my_positions,
     NETWORK_CONFIG,
-    BLEND_TESTNET_CONTRACTS,
-    BLEND_MAINNET_CONTRACTS,
-    DEFAULT_NETWORK
+    BLEND_MAINNET_CONTRACTS
 )
 
 
@@ -55,8 +53,8 @@ async def _blend_find_best_yield(
         Formatted string with yield opportunities
     """
     try:
-        # Create Soroban server for the specified network
-        soroban_server = SorobanServerAsync(NETWORK_CONFIG[network]['rpc_url'])
+        # Create Soroban server (mainnet-only)
+        soroban_server = SorobanServerAsync(NETWORK_CONFIG['rpc_url'])
 
         logger.info(f"User {user_id[:8]}... searching for {asset_symbol} yield opportunities on {network}...")
 
@@ -126,8 +124,8 @@ async def _blend_discover_pools(
         Formatted string with pool information
     """
     try:
-        # Create Soroban server for the specified network
-        soroban_server = SorobanServerAsync(NETWORK_CONFIG[network]['rpc_url'])
+        # Create Soroban server (mainnet-only)
+        soroban_server = SorobanServerAsync(NETWORK_CONFIG['rpc_url'])
 
         logger.info(f"User {user_id[:8]}... discovering Blend pools on {network}...")
 
@@ -161,7 +159,7 @@ async def _blend_discover_pools(
     except ValueError as e:
         # ValueError indicates a known issue like Backstop query failure
         logger.error(f"Pool discovery failed in _blend_discover_pools: {e}")
-        return f"❌ **Pool Discovery Failed on {network}**\n\n{str(e)}\n\n**This is a fatal error** - the system cannot discover Blend pools from the Backstop contract.\n\nPossible causes:\n- RPC endpoint issues (check ANKR_STELLER_RPC env var)\n- Backstop contract address incorrect for {network}\n- Network connectivity problems\n- Contract state issues\n\nPlease check:\n1. RPC URL: {NETWORK_CONFIG[network]['rpc_url']}\n2. Backstop: {NETWORK_CONFIG[network]['backstop']}\n3. Network connectivity"
+        return f"❌ **Pool Discovery Failed on {network}**\n\n{str(e)}\n\n**This is a fatal error** - the system cannot discover Blend pools from the Backstop contract.\n\nPossible causes:\n- RPC endpoint issues (check ANKR_STELLER_RPC env var)\n- Backstop contract address incorrect for {network}\n- Network connectivity problems\n- Contract state issues\n\nPlease check:\n1. RPC URL: {NETWORK_CONFIG['rpc_url']}\n2. Backstop: {NETWORK_CONFIG['backstop']}\n3. Network connectivity"
     except RuntimeError as e:
         # RuntimeError indicates a fatal system error
         logger.error(f"Fatal error in _blend_discover_pools: {e}")
@@ -197,8 +195,8 @@ async def _blend_supply_to_pool(
         Formatted string with transaction result
     """
     try:
-        # Create Soroban server for the specified network
-        soroban_server = SorobanServerAsync(NETWORK_CONFIG[network]['rpc_url'])
+        # Create Soroban server (mainnet-only)
+        soroban_server = SorobanServerAsync(NETWORK_CONFIG['rpc_url'])
 
         network_label = "🔴 MAINNET (Real $)" if network == "mainnet" else "🟢 TESTNET (Practice)"
         logger.info(f"User {user_id[:8]}... supplying {amount} to pool {pool_address[:8]}... on {network_label}")
@@ -268,8 +266,8 @@ async def _blend_withdraw_from_pool(
         Formatted string with transaction result
     """
     try:
-        # Create Soroban server for the specified network
-        soroban_server = SorobanServerAsync(NETWORK_CONFIG[network]['rpc_url'])
+        # Create Soroban server (mainnet-only)
+        soroban_server = SorobanServerAsync(NETWORK_CONFIG['rpc_url'])
 
         network_label = "🔴 MAINNET (Real $)" if network == "mainnet" else "🟢 TESTNET (Practice)"
         logger.info(f"User {user_id[:8]}... withdrawing {amount} from pool {pool_address[:8]}... on {network_label}")
@@ -334,8 +332,8 @@ async def _blend_check_my_positions(
         Formatted string with position information
     """
     try:
-        # Create Soroban server for the specified network
-        soroban_server = SorobanServerAsync(NETWORK_CONFIG[network]['rpc_url'])
+        # Create Soroban server (mainnet-only)
+        soroban_server = SorobanServerAsync(NETWORK_CONFIG['rpc_url'])
 
         network_label = "🔴 MAINNET (Real $)" if network == "mainnet" else "🟢 TESTNET (Practice)"
         logger.info(f"User {user_id[:8]}... checking positions in pool {pool_address[:8]}... on {network_label}")
@@ -409,8 +407,8 @@ async def _blend_get_pool_apy(
         Formatted string with APY information
     """
     try:
-        # Create Soroban server for the specified network
-        soroban_server = SorobanServerAsync(NETWORK_CONFIG[network]['rpc_url'])
+        # Create Soroban server (mainnet-only)
+        soroban_server = SorobanServerAsync(NETWORK_CONFIG['rpc_url'])
 
         network_label = "🔴 MAINNET (Real $)" if network == "mainnet" else "🟢 TESTNET (Practice)"
         logger.info(f"User {user_id[:8]}... fetching APY for asset in pool on {network_label}...")
