@@ -10,6 +10,7 @@ Updated for Quantum Leap migration:
 """
 
 import asyncio
+import os
 from stellar_sdk import TransactionBuilder, scval, xdr, Address
 from stellar_sdk.soroban_server_async import SorobanServerAsync
 from stellar_sdk.soroban_rpc import EventFilter, EventFilterType, GetEventsRequest
@@ -18,6 +19,19 @@ from agent.context import AgentContext
 from agent.transaction_handler import TransactionHandler
 from typing import Optional, Dict, Any, List, Union
 import json
+
+
+def create_soroban_server() -> SorobanServerAsync:
+    """
+    Create a SorobanServerAsync instance with mainnet RPC configuration.
+
+    Returns:
+        SorobanServerAsync instance configured for mainnet
+    """
+    rpc_url = os.getenv('ANKR_STELLER_RPC',
+                       os.getenv('MAINNET_SOROBAN_RPC_URL',
+                                'https://rpc.ankr.com/stellar_soroban'))
+    return SorobanServerAsync(rpc_url)
 
 
 def _parse_parameters(parameters_json: str) -> list:
