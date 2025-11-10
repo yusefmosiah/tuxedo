@@ -66,12 +66,22 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
 
           // Fetch agent accounts (agent-first approach)
           try {
-            const response = await fetch(`${API_BASE_URL}/api/agent/accounts`);
-            if (response.ok) {
-              const accounts = await response.json();
-              if (accounts.length > 0) {
-                // Use the first agent account for display purposes
-                setAgentAddress(accounts[0].address);
+            const sessionToken = localStorage.getItem("session_token");
+            if (sessionToken) {
+              const response = await fetch(
+                `${API_BASE_URL}/api/agent/accounts`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${sessionToken}`,
+                  },
+                },
+              );
+              if (response.ok) {
+                const accounts = await response.json();
+                if (accounts.length > 0) {
+                  // Use the first agent account for display purposes
+                  setAgentAddress(accounts[0].address);
+                }
               }
             }
           } catch (accountError) {

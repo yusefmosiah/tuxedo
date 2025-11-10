@@ -428,7 +428,7 @@ def create_user_tools(agent_context: AgentContext) -> List:
         pool_address: str,
         asset_address: str,
         amount: float,
-        account_id: str
+        account_id: str = None
     ):
         """
         Supply assets to a Blend pool to start earning yield.
@@ -440,16 +440,26 @@ def create_user_tools(agent_context: AgentContext) -> List:
             pool_address: Pool contract address (from blend_find_best_yield)
             asset_address: Asset contract address (from blend_find_best_yield)
             amount: Amount to supply in decimal units (e.g., 100.5)
-            account_id: Account ID from stellar_account_manager
+            account_id: Optional account ID. Defaults to connected wallet ("external_wallet") if not provided.
 
         Returns:
             Transaction result with hash and confirmation
 
         Example:
-            "Supply 100 USDC to the Comet pool using my main account"
+            "Supply 100 USDC to the Comet pool"
         """
         import asyncio
         from blend_account_tools import _blend_supply_to_pool
+
+        # Auto-detect account: prefer external wallet if connected, otherwise use provided account_id
+        if account_id is None:
+            if agent_context.wallet_mode == "external" and agent_context.wallet_address:
+                account_id = "external_wallet"
+            else:
+                return {
+                    "success": False,
+                    "error": "No account specified and no external wallet connected. Please connect a wallet or specify an account_id."
+                }
 
         try:
             loop = asyncio.get_running_loop()
@@ -481,7 +491,7 @@ def create_user_tools(agent_context: AgentContext) -> List:
         pool_address: str,
         asset_address: str,
         amount: float,
-        account_id: str
+        account_id: str = None
     ):
         """
         Withdraw assets from a Blend pool.
@@ -492,16 +502,26 @@ def create_user_tools(agent_context: AgentContext) -> List:
             pool_address: Pool contract address
             asset_address: Asset contract address
             amount: Amount to withdraw in decimal units (e.g., 50.0)
-            account_id: Account ID from stellar_account_manager
+            account_id: Optional account ID. Defaults to connected wallet ("external_wallet") if not provided.
 
         Returns:
             Transaction result with hash and confirmation
 
         Example:
-            "Withdraw 50 USDC from the Comet pool to my main account"
+            "Withdraw 50 USDC from the Comet pool"
         """
         import asyncio
         from blend_account_tools import _blend_withdraw_from_pool
+
+        # Auto-detect account: prefer external wallet if connected, otherwise use provided account_id
+        if account_id is None:
+            if agent_context.wallet_mode == "external" and agent_context.wallet_address:
+                account_id = "external_wallet"
+            else:
+                return {
+                    "success": False,
+                    "error": "No account specified and no external wallet connected. Please connect a wallet or specify an account_id."
+                }
 
         try:
             loop = asyncio.get_running_loop()
@@ -529,7 +549,7 @@ def create_user_tools(agent_context: AgentContext) -> List:
             )
 
     @tool
-    def blend_check_my_positions(pool_address: str, account_id: str):
+    def blend_check_my_positions(pool_address: str, account_id: str = None):
         """
         Check your positions in a Blend pool.
 
@@ -537,7 +557,7 @@ def create_user_tools(agent_context: AgentContext) -> List:
 
         Args:
             pool_address: Pool contract address
-            account_id: Account ID from stellar_account_manager
+            account_id: Optional account ID. Defaults to connected wallet ("external_wallet") if not provided.
 
         Returns:
             Detailed position information for all assets in the pool
@@ -547,6 +567,16 @@ def create_user_tools(agent_context: AgentContext) -> List:
         """
         import asyncio
         from blend_account_tools import _blend_check_my_positions
+
+        # Auto-detect account: prefer external wallet if connected, otherwise use provided account_id
+        if account_id is None:
+            if agent_context.wallet_mode == "external" and agent_context.wallet_address:
+                account_id = "external_wallet"
+            else:
+                return {
+                    "success": False,
+                    "error": "No account specified and no external wallet connected. Please connect a wallet or specify an account_id."
+                }
 
         try:
             loop = asyncio.get_running_loop()

@@ -15,7 +15,16 @@ export const WalletButton: React.FC = () => {
   React.useEffect(() => {
     const fetchAgentAccounts = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/agent/accounts`);
+        const sessionToken = localStorage.getItem("session_token");
+        if (!sessionToken) {
+          return;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/agent/accounts`, {
+          headers: {
+            Authorization: `Bearer ${sessionToken}`,
+          },
+        });
         if (response.ok) {
           const accounts = await response.json();
           setAgentAccountCount(accounts.length);
