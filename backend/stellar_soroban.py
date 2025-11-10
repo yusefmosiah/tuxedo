@@ -114,12 +114,24 @@ def _parse_single_param(param: dict):
             if isinstance(key, str):
                 # Convert string key to symbol
                 key_scval = scval.to_symbol(key)
-                val_scval = _parse_single_param(val) if isinstance(val, dict) else scval.to_native(val)
+                # Handle nested parameter specifications (e.g., {"type": "int128", "value": "30000000"})
+                if isinstance(val, dict) and "type" in val and "value" in val:
+                    val_scval = _parse_single_param(val)
+                elif isinstance(val, dict):
+                    # Handle nested map without type specification (recursive)
+                    val_scval = scval.to_map({scval.to_symbol(k): _parse_single_param(v) if isinstance(v, dict) else scval.to_native(v) for k, v in val.items()})
+                else:
+                    val_scval = scval.to_native(val)
                 map_items.append((key_scval, val_scval))
             else:
                 # Handle non-string keys
                 key_scval = _parse_single_param(key) if isinstance(key, dict) else scval.to_native(key)
-                val_scval = _parse_single_param(val) if isinstance(val, dict) else scval.to_native(val)
+                if isinstance(val, dict) and "type" in val and "value" in val:
+                    val_scval = _parse_single_param(val)
+                elif isinstance(val, dict):
+                    val_scval = scval.to_map({scval.to_symbol(k): _parse_single_param(v) if isinstance(v, dict) else scval.to_native(v) for k, v in val.items()})
+                else:
+                    val_scval = scval.to_native(val)
                 map_items.append((key_scval, val_scval))
 
         # Sort map items by key (required by Stellar Soroban)
@@ -361,8 +373,11 @@ async def soroban_operations(
                 prepared_tx.sign(keypair)
                 send_response = await soroban_server.send_transaction(prepared_tx)
 
-                if send_response.error:
+                # SendTransactionResponse has different attributes than expected
+                if hasattr(send_response, 'error') and send_response.error:
                     return {"success": False, "error": send_response.error}
+                # PENDING is a normal status - proceed to polling
+                # Only fail if we get an explicit error status
 
                 # Poll for result (automatic retry with backoff!)
                 result = await soroban_server.poll_transaction(send_response.hash)
