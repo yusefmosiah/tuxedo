@@ -7,16 +7,19 @@ This guide explains how to configure environment variables for Tuxedo AI deploym
 ## Required Environment Variables
 
 ### AI Configuration
+
 - `OPENAI_API_KEY`: Your OpenRouter API key
 - `OPENAI_BASE_URL`: API base URL (default: https://openrouter.ai/api/v1)
-- `PRIMARY_MODEL`: AI model to use (default: openai/gpt-oss-120b:exacto)
+- `PRIMARY_MODEL`: AI model to use (default: z-ai/glm-4.6:exacto)
 
 ### Stellar Network
+
 - `STELLAR_NETWORK`: Network name (testnet/mainnet)
 - `HORIZON_URL`: Stellar Horizon API URL
 - `SOROBAN_RPC_URL`: Soroban RPC URL
 
 ### Optional
+
 - `DEFINDEX_API_KEY`: DeFindex API key
 - `RENDER_API_KEY`: Render API key (if using Render services)
 - `PYTHONUNBUFFERED`: Set to 1 for better logging
@@ -32,7 +35,7 @@ This guide explains how to configure environment variables for Tuxedo AI deploym
      ```
      OPENAI_API_KEY=your_actual_key_here
      OPENAI_BASE_URL=https://openrouter.ai/api/v1
-     PRIMARY_MODEL=openai/gpt-oss-120b:exacto
+     PRIMARY_MODEL=z-ai/glm-4.6:exacto
      STELLAR_NETWORK=testnet
      HORIZON_URL=https://horizon-testnet.stellar.org
      SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
@@ -54,11 +57,12 @@ This guide explains how to configure environment variables for Tuxedo AI deploym
 ### Phala Cloud
 
 1. **CLI Environment Variables:**
+
    ```bash
    phala cvms update -n tuxedo-ai \
      -e OPENAI_API_KEY=your_actual_key_here \
      -e OPENAI_BASE_URL=https://openrouter.ai/api/v1 \
-     -e PRIMARY_MODEL=openai/gpt-oss-120b:exacto \
+     -e PRIMARY_MODEL=z-ai/glm-4.6:exacto \
      -e STELLAR_NETWORK=testnet \
      -e HORIZON_URL=https://horizon-testnet.stellar.org \
      -e SOROBAN_RPC_URL=https://soroban-testnet.stellar.org \
@@ -73,6 +77,7 @@ This guide explains how to configure environment variables for Tuxedo AI deploym
 ### Local Development
 
 1. **Backend:**
+
    ```bash
    cp backend/.env.production.template backend/.env
    # Fill in the values in backend/.env
@@ -87,6 +92,7 @@ This guide explains how to configure environment variables for Tuxedo AI deploym
 ## Security Best Practices
 
 ### ✅ Do:
+
 - Use platform-specific secret management
 - Set environment variables at runtime
 - Use different keys for development and production
@@ -94,6 +100,7 @@ This guide explains how to configure environment variables for Tuxedo AI deploym
 - Monitor API key usage
 
 ### ❌ Don't:
+
 - Commit API keys to git
 - Include `.env` files in Docker images
 - Share API keys in plain text
@@ -102,12 +109,14 @@ This guide explains how to configure environment variables for Tuxedo AI deploym
 ## Verification
 
 ### Check Environment Variables
+
 ```bash
 # In running container
 phala cvms exec tuxedo-ai -- env | grep OPENAI
 ```
 
 ### Test API Connection
+
 ```bash
 # Health check should show openai_configured: true
 curl https://your-app-url/health
@@ -116,15 +125,19 @@ curl https://your-app-url/health
 ## Troubleshooting
 
 ### WARNING: OpenAI API key not configured
+
 This means the environment variable isn't set correctly:
+
 1. Check platform environment variables
 2. Restart the service
 3. Verify health endpoint shows `openai_configured: true`
 
 ### Stellar Tools Not Available
+
 Check that Stellar environment variables are set correctly.
 
 ### Frontend Can't Connect to Backend
+
 Verify `VITE_API_URL` is set to the correct backend URL.
 
 ## Migration from Old Setup
