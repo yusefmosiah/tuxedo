@@ -641,13 +641,19 @@ stellar contract invoke \
 
 ---
 
-## 📝 Open Questions (Resolve During Sprint)
+## ✅ MVP Decisions (Locked In)
 
 1. ✅ **Share token symbol:** TUX0 (clean, memeable, represents MVP/ground floor)
-2. **Initial share value:** 1.0 USDC or 0.01 USDC?
-3. **Minimum deposit:** 1 USDC or 10 USDC or none?
-4. **Agent strategy scope:** Just Blend or include Stellar DEX?
-5. **Yield distribution timing:** Daily, weekly, or on-demand?
+2. ✅ **Initial share value:** 1.0 USDC = 1 TUX0 (clean 1:1 ratio, easy math)
+3. ✅ **Minimum deposit:** 10 USDC (accessible, prevents spam)
+4. ✅ **Agent strategy scope:** Blend only (supply/withdraw across Comet/Fixed/YieldBlox)
+5. ✅ **Yield distribution:** On-demand manual trigger (anyone can call `distribute_yield()`)
+6. ✅ **Performance fee:** 2% to platform, 98% to users (ultra-competitive)
+
+**Post-MVP additions:**
+- Swap tool (after playful path complete)
+- DEX trading strategies
+- Multi-asset support beyond USDC
 
 ---
 
@@ -675,6 +681,47 @@ The playful path awaits. Let's make agentic DeFi feel right.
 
 **Timeline:** 1.6 hours (or until the vibe is right)
 **Outcome:** Working MVP vault on testnet, ready for mainnet YOLO
-**Next Steps:** Start with `contracts/vault/src/lib.rs`
+
+## 🎯 Implementation Checklist
+
+**Phase 1: Smart Contract (Hour 0.0-0.3)**
+- [ ] Create `contracts/vault/src/lib.rs`
+- [ ] Implement deposit/withdraw/share_value functions
+- [ ] Add agent authorization logic
+- [ ] Add 2% fee distribution logic
+- [ ] Build contract: `stellar contract build`
+
+**Phase 2: Deploy & Test (Hour 0.3-0.5)**
+- [ ] Deploy to testnet: `stellar contract deploy`
+- [ ] Initialize vault with agent/platform addresses
+- [ ] Test deposit: User deposits 10 USDC → receives 10 TUX0
+- [ ] Test withdraw: User burns 10 TUX0 → receives 10 USDC
+- [ ] Test agent operations: Agent supplies USDC to Blend
+
+**Phase 3: Backend (Hour 0.5-0.8)**
+- [ ] Create `backend/vault_manager.py` with VaultManager class
+- [ ] Create `backend/vault_tools.py` with LangChain tool wrappers
+- [ ] Test Python → Soroban contract interaction
+- [ ] Generate agent keypair, store securely
+
+**Phase 4: Frontend (Hour 0.8-1.2)**
+- [ ] Create `src/components/vault/VaultDashboard.tsx`
+- [ ] Create `src/hooks/useVaultStats.ts`
+- [ ] Add deposit modal (amount input → transaction)
+- [ ] Add withdraw modal (shares input → transaction)
+- [ ] Display vault stats: TVL, share value, user position
+
+**Phase 5: Integration (Hour 1.2-1.6)**
+- [ ] End-to-end testing: UI → Backend → Contract → Blend
+- [ ] Test multi-user isolation (two users depositing)
+- [ ] Test yield distribution (earn yield, call distribute)
+- [ ] Bug fixes and refinements
+- [ ] Document contract ID and addresses
+
+**Next Steps:**
+1. Merge this PR (mainnet status + vault docs)
+2. Start new branch for vault implementation
+3. Follow the 1.6-hour playful path
+4. Ship TUX0 to testnet, then mainnet
 
 🎩 **Tuxedo** | From wallet custody to vault sovereignty, one sprint at a time

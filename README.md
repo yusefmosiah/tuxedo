@@ -567,8 +567,9 @@ Real-time event subscriptions for platform agent:
 ### For Developers
 
 - [CLAUDE.md](./CLAUDE.md) - Complete development guide
-- [docs/VAULT_COLLATERAL_ARCHITECTURE.md](./docs/VAULT_COLLATERAL_ARCHITECTURE.md) - Future vault system design
-- [docs/VAULT_IMPLEMENTATION_PLAN.md](./docs/VAULT_IMPLEMENTATION_PLAN.md) - 16-week implementation roadmap
+- [docs/playful_path_to_vaults.md](./docs/playful_path_to_vaults.md) - 🚀 **1.6-hour vault sprint guide** (START HERE)
+- [docs/VAULT_COLLATERAL_ARCHITECTURE.md](./docs/VAULT_COLLATERAL_ARCHITECTURE.md) - Full vault system design
+- [docs/VAULT_IMPLEMENTATION_PLAN.md](./docs/VAULT_IMPLEMENTATION_PLAN.md) - Detailed 16-week roadmap
 - [AGENT_ACCOUNT_SECURITY_PLAN.md](./AGENT_ACCOUNT_SECURITY_PLAN.md) - Current security architecture
 
 ### For Users
