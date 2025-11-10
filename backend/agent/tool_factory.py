@@ -75,6 +75,7 @@ def create_user_tools(agent_context: AgentContext) -> List:
         With dual authority, this tool can access:
         - Agent's own funded mainnet account
         - Current user's accounts (if authenticated)
+        - Connected external wallet (automatically used when available)
 
         Actions:
             - "create": Generate new mainnet account (requires manual funding)
@@ -86,16 +87,17 @@ def create_user_tools(agent_context: AgentContext) -> List:
 
         Args:
             action: Operation to perform
-            account_id: Account ID (internal ID, required for most actions)
+            account_id: Account ID (internal ID, optional - if not provided and external wallet is connected, will use that)
             secret_key: Secret key (required only for "import")
             limit: Transaction limit (for "transactions" action)
 
         Returns:
             Action-specific response dict. For "list", returns accounts
-            tagged with owner_context: "agent" or "user"
+            tagged with owner_context: "agent", "user", or "external"
 
         Note:
             Mainnet-only system - new accounts must be funded manually with real XLM
+            External wallet is automatically used when connected and no account_id is specified
         """
         # agent_context is injected here, LLM cannot see or modify it
         return _account_manager(

@@ -332,9 +332,9 @@ def account_manager(
             }
 
         elif action == "get":
-            # EXTERNAL WALLET SUPPORT: Allow querying external wallet without account_id
+            # EXTERNAL WALLET SUPPORT: Automatically use external wallet when connected
             if not account_id:
-                # If no account_id but external wallet is connected, query that
+                # If no account_id but external wallet is connected, automatically use that
                 if agent_context.wallet_mode == "external" and agent_context.wallet_address:
                     public_key = agent_context.wallet_address
                     chain_account = horizon.accounts().account_id(public_key).call()
@@ -383,9 +383,9 @@ def account_manager(
             }
 
         elif action == "transactions":
-            # EXTERNAL WALLET SUPPORT
+            # EXTERNAL WALLET SUPPORT: Automatically use external wallet when connected
             if not account_id:
-                # If no account_id but external wallet is connected, query that
+                # If no account_id but external wallet is connected, automatically use that
                 if agent_context.wallet_mode == "external" and agent_context.wallet_address:
                     public_key = agent_context.wallet_address
                 else:
