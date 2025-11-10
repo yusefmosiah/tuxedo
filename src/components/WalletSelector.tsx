@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { useWallet } from "../hooks/useWallet";
 import { Button } from "@stellar/design-system";
+import { ImportWalletModal } from "./modals/ImportWalletModal";
+import { ExportAccountModal } from "./modals/ExportAccountModal";
 
 /**
  * WalletSelector Component
@@ -8,6 +11,13 @@ import { Button } from "@stellar/design-system";
  * and manage their connected accounts.
  */
 export function WalletSelector() {
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportingAccount, setExportingAccount] = useState<{
+    id: string;
+    address: string;
+    name?: string;
+  } | null>(null);
   const {
     address,
     isConnected,
@@ -113,7 +123,9 @@ export function WalletSelector() {
           </div>
 
           {agentAccounts && agentAccounts.length > 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+            >
               <label
                 htmlFor="agent-account-select"
                 style={{
@@ -129,7 +141,7 @@ export function WalletSelector() {
                 value={selectedAgentAccount?.id || ""}
                 onChange={(e) => {
                   const account = agentAccounts.find(
-                    (acc) => acc.id === e.target.value
+                    (acc) => acc.id === e.target.value,
                   );
                   if (account && setSelectedAgentAccount) {
                     setSelectedAgentAccount(account);
@@ -189,6 +201,35 @@ export function WalletSelector() {
               No agent accounts found. Ask the agent to create one!
             </div>
           )}
+
+          {/* Agent Mode Actions */}
+          <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+            <Button
+              onClick={() => setShowImportModal(true)}
+              size="sm"
+              variant="secondary"
+              style={{ flex: 1 }}
+            >
+              ⬇️ Import Wallet
+            </Button>
+            {selectedAgentAccount && (
+              <Button
+                onClick={() => {
+                  setExportingAccount({
+                    id: selectedAgentAccount.id,
+                    address: selectedAgentAccount.address,
+                    name: selectedAgentAccount.name,
+                  });
+                  setShowExportModal(true);
+                }}
+                size="sm"
+                variant="secondary"
+                style={{ flex: 1 }}
+              >
+                ⬆️ Export Account
+              </Button>
+            )}
+          </div>
         </div>
       )}
 
@@ -216,7 +257,9 @@ export function WalletSelector() {
                 borderRadius: "var(--border-radius-sm)",
               }}
             >
-              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "4px" }}
+              >
                 <span
                   style={{
                     fontSize: "11px",
@@ -255,6 +298,30 @@ export function WalletSelector() {
               {isPending ? "Connecting..." : "Connect Wallet"}
             </Button>
           )}
+
+          {/* External Wallet Mode Actions */}
+          {isConnected && address && (
+            <div style={{ marginTop: "8px" }}>
+              <Button
+                onClick={() => setShowImportModal(true)}
+                size="sm"
+                variant="secondary"
+                style={{ width: "100%" }}
+              >
+                ⬇️ Import to Agent
+              </Button>
+              <p
+                style={{
+                  fontSize: "11px",
+                  color: "var(--color-text-secondary)",
+                  marginTop: "8px",
+                  textAlign: "center",
+                }}
+              >
+                Import this wallet for autonomous agent signing
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -274,6 +341,29 @@ export function WalletSelector() {
         {mode === "external" && "🔐 Manual approval required"}
         {mode === "imported" && "🔄 Imported wallet - agent signing"}
       </div>
+
+      {/* Import Wallet Modal */}
+      <ImportWalletModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onSuccess={() => {
+          console.log("Wallet imported successfully!");
+        }}
+      />
+
+      {/* Export Account Modal */}
+      {exportingAccount && (
+        <ExportAccountModal
+          isOpen={showExportModal}
+          onClose={() => {
+            setShowExportModal(false);
+            setExportingAccount(null);
+          }}
+          accountId={exportingAccount.id}
+          accountAddress={exportingAccount.address}
+          accountName={exportingAccount.name}
+        />
+      )}
     </div>
   );
 }
