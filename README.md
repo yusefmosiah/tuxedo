@@ -741,14 +741,6 @@ We welcome contributions, especially in security:
 
 **All contributors are eligible for TUX token rewards.**
 
----
-
-## 🌐 Community
-
-**Discord:** [Coming Soon]
-**Twitter:** [@ChoirTech](https://twitter.com/ChoirTech)
-**GitHub:** [Issues](https://github.com/yusefmosiah/tuxedo/issues) | [Discussions](https://github.com/yusefmosiah/tuxedo/discussions)
-**Email:** hello@choir.chat
 
 ---
 
@@ -769,10 +761,6 @@ MIT License - See [LICENSE](./LICENSE) for details
 - [Phala Network](https://phala.network) - TEE infrastructure
 - [LangChain](https://langchain.com) - Agent framework
 
-**Hackathon Wins:**
-
-- 🎃 Harvard Hack-o-Ween 2024
-- 🏆 [Add your hackathon wins here]
 
 ---
 
