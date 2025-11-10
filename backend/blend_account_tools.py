@@ -15,6 +15,7 @@ import json
 import logging
 from typing import Optional, Dict, Any
 from account_manager import AccountManager
+from agent.context import AgentContext
 from stellar_sdk.soroban_server_async import SorobanServerAsync
 
 logger = logging.getLogger(__name__)
@@ -175,19 +176,19 @@ async def _blend_supply_to_pool(
     asset_address: str,
     amount: float,
     account_id: str,
-    user_id: str,
+    agent_context: AgentContext,
     account_manager: AccountManager,
     network: str = "mainnet"  # Mainnet-only system
 ) -> str:
     """
-    Supply assets to a Blend pool to earn yield.
+    Supply assets to a Blend pool to earn yield with delegated authority.
 
     Args:
         pool_address: Pool contract ID
         asset_address: Asset contract ID
         amount: Amount to supply (decimal)
         account_id: Account ID from AccountManager
-        user_id: User identifier (injected by tool factory)
+        agent_context: Agent execution context with dual authority
         account_manager: AccountManager instance (injected by tool factory)
         network: "mainnet" (real funds)
 
@@ -199,14 +200,14 @@ async def _blend_supply_to_pool(
         soroban_server = SorobanServerAsync(NETWORK_CONFIG['rpc_url'])
 
         network_label = "🔴 MAINNET (Real $)" if network == "mainnet" else "🟢 TESTNET (Practice)"
-        logger.info(f"User {user_id[:8]}... supplying {amount} to pool {pool_address[:8]}... on {network_label}")
+        logger.info(f"Agent context {agent_context} supplying {amount} to pool {pool_address[:8]}... on {network_label}")
 
         # Execute supply
         result = await blend_supply_collateral(
             pool_address=pool_address,
             asset_address=asset_address,
             amount=amount,
-            user_id=user_id,
+            user_id=agent_context.user_id,  # Use current user from context
             account_id=account_id,
             account_manager=account_manager,
             soroban_server=soroban_server,
@@ -232,7 +233,7 @@ async def _blend_supply_to_pool(
         response += f"   • Check back later to see earned yield\n\n"
         explorer_network = "public"  # Mainnet-only
         response += f"🔗 **Stellar Explorer**: https://stellar.expert/explorer/{explorer_network}/tx/{result['hash']}\n"
-        response += f"👤 User: {user_id[:8]}..."
+        response += f"👤 Context: {agent_context}"
 
         return response
 
@@ -246,19 +247,19 @@ async def _blend_withdraw_from_pool(
     asset_address: str,
     amount: float,
     account_id: str,
-    user_id: str,
+    agent_context: AgentContext,
     account_manager: AccountManager,
     network: str = "mainnet"  # Mainnet-only system
 ) -> str:
     """
-    Withdraw assets from a Blend pool.
+    Withdraw assets from a Blend pool with delegated authority.
 
     Args:
         pool_address: Pool contract ID
         asset_address: Asset contract ID
         amount: Amount to withdraw (decimal)
         account_id: Account ID from AccountManager
-        user_id: User identifier (injected by tool factory)
+        agent_context: Agent execution context with dual authority
         account_manager: AccountManager instance (injected by tool factory)
         network: "mainnet" (real funds)
 
@@ -270,14 +271,14 @@ async def _blend_withdraw_from_pool(
         soroban_server = SorobanServerAsync(NETWORK_CONFIG['rpc_url'])
 
         network_label = "🔴 MAINNET (Real $)" if network == "mainnet" else "🟢 TESTNET (Practice)"
-        logger.info(f"User {user_id[:8]}... withdrawing {amount} from pool {pool_address[:8]}... on {network_label}")
+        logger.info(f"Agent context {agent_context} withdrawing {amount} from pool {pool_address[:8]}... on {network_label}")
 
         # Execute withdrawal
         result = await blend_withdraw_collateral(
             pool_address=pool_address,
             asset_address=asset_address,
             amount=amount,
-            user_id=user_id,
+            user_id=agent_context.user_id,  # Use current user from context
             account_id=account_id,
             account_manager=account_manager,
             soroban_server=soroban_server,
@@ -302,7 +303,7 @@ async def _blend_withdraw_from_pool(
         response += f"   • Consider reinvesting in other pools\n\n"
         explorer_network = "public"  # Mainnet-only
         response += f"🔗 **Stellar Explorer**: https://stellar.expert/explorer/{explorer_network}/tx/{result['hash']}\n"
-        response += f"👤 User: {user_id[:8]}..."
+        response += f"👤 Context: {agent_context}"
 
         return response
 
@@ -314,17 +315,17 @@ async def _blend_withdraw_from_pool(
 async def _blend_check_my_positions(
     pool_address: str,
     account_id: str,
-    user_id: str,
+    agent_context: AgentContext,
     account_manager: AccountManager,
     network: str = "mainnet"  # Default to mainnet (read operation)
 ) -> str:
     """
-    Check user's positions in a Blend pool.
+    Check user's positions in a Blend pool with delegated authority.
 
     Args:
         pool_address: Pool contract ID
         account_id: Account ID from AccountManager
-        user_id: User identifier (injected by tool factory)
+        agent_context: Agent execution context with dual authority
         account_manager: AccountManager instance (injected by tool factory)
         network: "mainnet" (mainnet-only)
 
@@ -336,12 +337,12 @@ async def _blend_check_my_positions(
         soroban_server = SorobanServerAsync(NETWORK_CONFIG['rpc_url'])
 
         network_label = "🔴 MAINNET (Real $)" if network == "mainnet" else "🟢 TESTNET (Practice)"
-        logger.info(f"User {user_id[:8]}... checking positions in pool {pool_address[:8]}... on {network_label}")
+        logger.info(f"Agent context {agent_context} checking positions in pool {pool_address[:8]}... on {network_label}")
 
         # Get positions
         result = await blend_get_my_positions(
             pool_address=pool_address,
-            user_id=user_id,
+            user_id=agent_context.user_id,  # Use current user from context
             account_id=account_id,
             account_manager=account_manager,
             soroban_server=soroban_server,
@@ -374,7 +375,7 @@ async def _blend_check_my_positions(
 
         response += f"📍 **Pool**: {pool_address[:16]}...\n"
         response += f"🔗 **Data Source**: {result['data_source']}\n"
-        response += f"👤 **User**: {user_id[:8]}...\n\n"
+        response += f"👤 **Context**: {agent_context}\n\n"
         response += "💡 **Actions**:\n"
         response += "   • Use blend_withdraw_from_pool to withdraw funds\n"
         response += "   • Use blend_supply_to_pool to add more\n"

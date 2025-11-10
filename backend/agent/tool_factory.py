@@ -1,12 +1,12 @@
 """
-Tool Factory for Per-Request Tool Creation with User Isolation
-Creates LangChain tools with user_id injected from auth context.
+Tool Factory for Per-Request Tool Creation with Delegated Authority
+Creates LangChain tools with AgentContext injected from auth context.
 
-This implements the Quantum Leap migration pattern where:
-- user_id comes from auth middleware (trusted source)
-- LLM cannot spoof or modify user_id
+This implements the Dual Authority pattern where:
+- AgentContext comes from auth middleware (trusted source)
+- LLM cannot spoof or modify authorization context
 - Tools are created per-request, not globally
-- Each request gets isolated tools scoped to that user
+- Each request gets isolated tools with dual authority (agent + user)
 """
 
 import os
@@ -16,6 +16,7 @@ from functools import partial
 from langchain.tools import tool
 from stellar_sdk import Server
 from account_manager import AccountManager
+from agent.context import AgentContext
 
 # Import original Stellar tools
 from stellar_tools import (
@@ -32,30 +33,34 @@ logger = logging.getLogger(__name__)
 HORIZON_URL = os.getenv("HORIZON_URL", "https://horizon.stellar.org")
 
 
-def create_user_tools(user_id: str) -> List:
+def create_user_tools(agent_context: AgentContext) -> List:
     """
-    Create tools for a specific user with user_id injected.
+    Create tools for agent with delegated authority context.
+
+    The agent can operate on:
+    - Its own system accounts (system_agent)
+    - Current user's accounts (user_id)
 
     Args:
-        user_id: User identifier from auth context (TRUSTED SOURCE)
+        agent_context: Agent execution context with dual authority
 
     Returns:
-        List of LangChain tools with user_id pre-injected
+        List of LangChain tools with agent context injected
 
     Security:
-        - user_id comes from auth middleware, NOT from LLM
-        - LLM cannot access or modify user_id parameter
-        - Each tool enforces permission checks using user_id
-        - Tools fail closed: no user_id = operation rejected
+        - agent_context encapsulates all authorization logic
+        - LLM cannot access or modify authorization context
+        - Each tool enforces permission checks via agent_context.has_permission()
+        - Tools fail closed: no permission = operation rejected
     """
-    logger.info(f"Creating tools for user_id: {user_id}")
+    logger.info(f"Creating tools for {agent_context}")
 
     # Initialize shared dependencies
     horizon = Server(HORIZON_URL)
     account_mgr = AccountManager()
 
-    # Create tools with user_id pre-injected via partial application
-    # LLM only sees the remaining parameters, user_id is hidden
+    # Create tools with agent_context injected via closure
+    # LLM only sees tool parameters, agent_context is hidden
 
     @tool
     def stellar_account_manager(
@@ -67,11 +72,15 @@ def create_user_tools(user_id: str) -> List:
         """
         Stellar account management operations (MAINNET ONLY).
 
+        With dual authority, this tool can access:
+        - Agent's own funded mainnet account
+        - Current user's accounts (if authenticated)
+
         Actions:
             - "create": Generate new mainnet account (requires manual funding)
             - "get": Get account details (balances, sequence, trustlines)
             - "transactions": Get transaction history
-            - "list": List all managed accounts
+            - "list": List all accessible accounts (agent + user)
             - "export": Export secret key (⚠️ dangerous!)
             - "import": Import existing keypair
 
@@ -82,15 +91,16 @@ def create_user_tools(user_id: str) -> List:
             limit: Transaction limit (for "transactions" action)
 
         Returns:
-            Action-specific response dict
+            Action-specific response dict. For "list", returns accounts
+            tagged with owner_context: "agent" or "user"
 
         Note:
             Mainnet-only system - new accounts must be funded manually with real XLM
         """
-        # user_id is injected here, LLM cannot see or modify it
+        # agent_context is injected here, LLM cannot see or modify it
         return _account_manager(
             action=action,
-            user_id=user_id,  # INJECTED from auth context
+            agent_context=agent_context,  # INJECTED - dual authority
             account_manager=account_mgr,
             horizon=horizon,
             account_id=account_id,
@@ -114,7 +124,11 @@ def create_user_tools(user_id: str) -> List:
         auto_sign: bool = True
     ):
         """
-        Unified SDEX trading tool.
+        Unified SDEX trading tool with dual authority.
+
+        Can execute trades from:
+        - Agent's funded account
+        - User's accounts
 
         Actions:
             - "buy": Acquire buying_asset by spending selling_asset
@@ -141,7 +155,7 @@ def create_user_tools(user_id: str) -> List:
         """
         return _trading(
             action=action,
-            user_id=user_id,  # INJECTED from auth context
+            agent_context=agent_context,  # INJECTED - dual authority
             account_id=account_id,
             account_manager=account_mgr,
             horizon=horizon,
@@ -166,7 +180,7 @@ def create_user_tools(user_id: str) -> List:
         limit: Optional[str] = None
     ):
         """
-        Manage trustlines for issued assets.
+        Manage trustlines for issued assets with dual authority.
 
         Actions:
             - "establish": Create trustline (required before receiving assets)
@@ -184,7 +198,7 @@ def create_user_tools(user_id: str) -> List:
         """
         return _trustline_manager(
             action=action,
-            user_id=user_id,  # INJECTED from auth context
+            agent_context=agent_context,  # INJECTED - dual authority
             account_id=account_id,
             asset_code=asset_code,
             asset_issuer=asset_issuer,
@@ -202,7 +216,7 @@ def create_user_tools(user_id: str) -> List:
         limit: int = 20
     ):
         """
-        Query SDEX market data (read-only).
+        Query SDEX market data (read-only, no authentication required).
 
         Actions:
             - "orderbook": Get orderbook for asset pair
@@ -219,7 +233,7 @@ def create_user_tools(user_id: str) -> List:
         """
         return _market_data(
             action=action,
-            user_id=user_id,  # INJECTED from auth context (for logging)
+            agent_context=agent_context,  # INJECTED for consistency
             horizon=horizon,
             base_asset=base_asset,
             quote_asset=quote_asset,
@@ -230,7 +244,7 @@ def create_user_tools(user_id: str) -> List:
     @tool
     def stellar_utilities(action: str):
         """
-        Network utilities and server information (read-only).
+        Network utilities and server information (read-only, no authentication required).
 
         Actions:
             - "status": Get Horizon server status
@@ -244,7 +258,7 @@ def create_user_tools(user_id: str) -> List:
         """
         return _utilities(
             action=action,
-            user_id=user_id,  # INJECTED from auth context (for logging)
+            agent_context=agent_context,  # INJECTED for consistency
             horizon=horizon
         )
 
@@ -280,7 +294,7 @@ def create_user_tools(user_id: str) -> List:
                 future = executor.submit(asyncio.run, _blend_find_best_yield(
                     asset_symbol=asset_symbol,
                     min_apy=min_apy,
-                    user_id=user_id,
+                    user_id=agent_context.user_id,  # Use current user from context
                     account_manager=account_mgr
                 ))
                 return future.result()
@@ -289,7 +303,7 @@ def create_user_tools(user_id: str) -> List:
                 _blend_find_best_yield(
                     asset_symbol=asset_symbol,
                     min_apy=min_apy,
-                    user_id=user_id,
+                    user_id=agent_context.user_id,  # Use current user from context
                     account_manager=account_mgr
                 )
             )
@@ -315,14 +329,14 @@ def create_user_tools(user_id: str) -> List:
             import concurrent.futures
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 future = executor.submit(asyncio.run, _blend_discover_pools(
-                    user_id=user_id,
+                    user_id=agent_context.user_id,  # Use current user from context
                     account_manager=account_mgr
                 ))
                 return future.result()
         except RuntimeError:
             return asyncio.run(
                 _blend_discover_pools(
-                    user_id=user_id,
+                    user_id=agent_context.user_id,  # Use current user from context
                     account_manager=account_mgr
                 )
             )
@@ -364,7 +378,7 @@ def create_user_tools(user_id: str) -> List:
                     asset_address=asset_address,
                     amount=amount,
                     account_id=account_id,
-                    user_id=user_id,
+                    agent_context=agent_context,  # Pass context instead of user_id
                     account_manager=account_mgr
                 ))
                 return future.result()
@@ -375,7 +389,7 @@ def create_user_tools(user_id: str) -> List:
                     asset_address=asset_address,
                     amount=amount,
                     account_id=account_id,
-                    user_id=user_id,
+                    agent_context=agent_context,  # Pass context instead of user_id
                     account_manager=account_mgr
                 )
             )
@@ -416,7 +430,7 @@ def create_user_tools(user_id: str) -> List:
                     asset_address=asset_address,
                     amount=amount,
                     account_id=account_id,
-                    user_id=user_id,
+                    agent_context=agent_context,  # Pass context instead of user_id
                     account_manager=account_mgr
                 ))
                 return future.result()
@@ -427,7 +441,7 @@ def create_user_tools(user_id: str) -> List:
                     asset_address=asset_address,
                     amount=amount,
                     account_id=account_id,
-                    user_id=user_id,
+                    agent_context=agent_context,  # Pass context instead of user_id
                     account_manager=account_mgr
                 )
             )
@@ -459,7 +473,7 @@ def create_user_tools(user_id: str) -> List:
                 future = executor.submit(asyncio.run, _blend_check_my_positions(
                     pool_address=pool_address,
                     account_id=account_id,
-                    user_id=user_id,
+                    agent_context=agent_context,  # Pass context instead of user_id
                     account_manager=account_mgr
                 ))
                 return future.result()
@@ -468,7 +482,7 @@ def create_user_tools(user_id: str) -> List:
                 _blend_check_my_positions(
                     pool_address=pool_address,
                     account_id=account_id,
-                    user_id=user_id,
+                    agent_context=agent_context,  # Pass context instead of user_id
                     account_manager=account_mgr
                 )
             )
@@ -500,7 +514,7 @@ def create_user_tools(user_id: str) -> List:
                 future = executor.submit(asyncio.run, _blend_get_pool_apy(
                     pool_address=pool_address,
                     asset_address=asset_address,
-                    user_id=user_id,
+                    user_id=agent_context.user_id,  # Use current user from context
                     account_manager=account_mgr
                 ))
                 return future.result()
@@ -509,12 +523,12 @@ def create_user_tools(user_id: str) -> List:
                 _blend_get_pool_apy(
                     pool_address=pool_address,
                     asset_address=asset_address,
-                    user_id=user_id,
+                    user_id=agent_context.user_id,  # Use current user from context
                     account_manager=account_mgr
                 )
             )
 
-    # Return list of tools with user_id injected
+    # Return list of tools with agent_context injected
     tools = [
         stellar_account_manager,
         stellar_trading,
@@ -530,11 +544,11 @@ def create_user_tools(user_id: str) -> List:
         blend_get_pool_apy
     ]
 
-    logger.info(f"Created {len(tools)} tools (5 Stellar + 6 Blend Capital) for user_id: {user_id}")
+    logger.info(f"Created {len(tools)} tools (5 Stellar + 6 Blend Capital) for {agent_context}")
     return tools
 
 
-def create_anonymous_tools() -> List:
+def create_anonymous_tools(agent_context: AgentContext) -> List:
     """
     Create read-only tools for anonymous (unauthenticated) users.
 
@@ -548,11 +562,10 @@ def create_anonymous_tools() -> List:
         - Market data: read-only ✓
         - Utilities: read-only ✓
     """
-    logger.info("Creating anonymous (read-only) tools")
+    logger.info(f"Creating anonymous (read-only) tools for {agent_context}")
 
     # Initialize shared dependencies
     horizon = Server(HORIZON_URL)
-    anonymous_user_id = "anonymous"
 
     @tool
     def stellar_market_data(
@@ -580,7 +593,7 @@ def create_anonymous_tools() -> List:
         """
         return _market_data(
             action=action,
-            user_id=anonymous_user_id,
+            agent_context=agent_context,
             horizon=horizon,
             base_asset=base_asset,
             quote_asset=quote_asset,
@@ -605,7 +618,7 @@ def create_anonymous_tools() -> List:
         """
         return _utilities(
             action=action,
-            user_id=anonymous_user_id,
+            agent_context=agent_context,
             horizon=horizon
         )
 
