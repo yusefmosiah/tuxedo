@@ -621,6 +621,78 @@ export const threadsApi = {
   }
 };
 
+// Agent Account Management API
+export interface ImportWalletRequest {
+  private_key: string;
+  name?: string;
+  chain?: string;
+}
+
+export interface ImportWalletResponse {
+  success: boolean;
+  account_id: string;
+  address: string;
+  name: string;
+  chain: string;
+  network: string;
+  message: string;
+}
+
+export interface ExportAccountRequest {
+  account_id: string;
+}
+
+export interface ExportAccountResponse {
+  chain: string;
+  address: string;
+  private_key: string;
+  export_format: string;
+  warning: string;
+  success: boolean;
+}
+
+export const agentApi = {
+  /**
+   * Import external wallet into agent management
+   */
+  async importWallet(request: ImportWalletRequest): Promise<ImportWalletResponse> {
+    try {
+      const response = await api.post('/api/agent/import-wallet', {
+        private_key: request.private_key,
+        name: request.name,
+        chain: request.chain || 'stellar'
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Import Wallet Error:', error);
+      const errorMessage = error.response?.data?.detail ||
+                         error.response?.data?.error ||
+                         error.message ||
+                         'Failed to import wallet';
+      throw new Error(errorMessage);
+    }
+  },
+
+  /**
+   * Export agent account private key
+   */
+  async exportAccount(request: ExportAccountRequest): Promise<ExportAccountResponse> {
+    try {
+      const response = await api.post('/api/agent/export-account', {
+        account_id: request.account_id
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Export Account Error:', error);
+      const errorMessage = error.response?.data?.detail ||
+                         error.response?.data?.error ||
+                         error.message ||
+                         'Failed to export account';
+      throw new Error(errorMessage);
+    }
+  }
+};
+
 // Utility functions
 export const apiUtils = {
   /**
