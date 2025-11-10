@@ -4,150 +4,210 @@
 
 > "DeFi agents are inevitable. By 2027, everyone will have one. The only question is: will they be secure enough to trust with your capital?"
 
-**Current Status:** 🧪 **Beta Testnet** | Actively seeking security researchers
-**Network:** Stellar Testnet → Mainnet (Community Security Required)
-**Vision:** Agentic finance with user sovereignty
+**Current Status:** 🚀 **Live on Mainnet** | Transitioning to Vault Architecture
+**Network:** Stellar Mainnet (Real Yields, Real Capital)
+**Vision:** Non-custodial AI agents with transparent vault management
 
 ---
 
 ## 🎯 What is Tuxedo?
 
-Tuxedo is a **conversational AI agent** that manages DeFi strategies on your behalf. It's named Tuxedo because yield farming requires dressing up—making complex DeFi operations accessible through natural conversation.
+Tuxedo is a **conversational AI agent** that manages DeFi yield strategies on Stellar mainnet. It's named Tuxedo because yield farming requires dressing up—making complex DeFi operations accessible through natural conversation while maintaining the security and sophistication the ecosystem demands.
+
+### The Evolution: Wallet Import → Vault Collateral
+
+**Phase 1 (Current):** Wallet Import Model ⚠️
+- Users import private keys for agent management
+- Agent executes yield strategies autonomously
+- Works, but feels wrong (and it is!)
+- Violates DeFi best practice: "not your keys, not your crypto"
+
+**Phase 2 (In Development):** Vault-Based Collateral ✨
+- Users **deposit** assets into transparent vaults
+- Receive **tradeable vault shares** representing position
+- Agents manage vault assets without holding user keys
+- Multiple vault types: Conservative, Aggressive, Research-backed
+- Performance tracked via vault token prices on DEX
+- Users maintain custody, agents demonstrate performance
+
+**Why this matters:** We're transitioning from custodial agent control to non-custodial agent coordination. The vault model enables true DeFi composability: your agent's performance becomes a tradeable asset.
 
 ### The Core Thesis
 
-**Everyone will have a DeFi agent by 2030.** The technology is inevitable. But today, the critical blocker is **security**. Why would you trust AI with your capital when:
-
-- Smart contracts have vulnerabilities
-- AI agents are built with coding assistants (yes, this very codebase)
-- Key management is notoriously difficult
-- Multi-user isolation is complex
+**Everyone will have a DeFi agent by 2030.** The technology is inevitable. The critical question isn't *if*, but **how do we make it secure enough to trust?**
 
 **Our Approach:**
 
-1. **Build in the open** - Transparent architecture, documented security model
-2. **Testnet first** - Experiment safely before mainnet deployment
-3. **Token incentives** - Reward security researchers who make us better
-4. **Community effort** - Mainnet launch requires collective security validation
+1. **Radical transparency** - Open source, documented architecture, live on mainnet
+2. **Iterative security** - Start with working system, improve continuously
+3. **Vault evolution** - Move from key custody to deposit-based collateral
+4. **Token incentives** - Reward researchers who make us better
+5. **User sovereignty** - Always maintain exit options
 
-**We're not just building an agent. We're building the security foundation for an entire category.**
+**We're not just building an agent. We're building the architectural patterns for an entire category of secure AI-managed DeFi.**
 
 ---
 
-## 🏗️ Architecture: Two Agent Types
+## 🏗️ Architecture: Current + Future State
 
-### 👤 User Agents (Privacy-First Execution)
-
-**What:** Personal AI agents that execute DeFi operations on behalf of individual users
-**Runtime:** Phala TEE (Trusted Execution Environment) GPU cloud
-**API:** OpenAI-compatible models via OpenRouter/LangChain
-**Security:** Private keys isolated in hardware TEE, encrypted at rest
-**Purpose:**
-
-- Execute yield strategies (Blend Protocol, DeFindex)
-- Manage portfolio across multiple chains
-- Respond to user instructions in natural language
-- Sign and submit blockchain transactions
-
-**Status:** ✅ Core functionality working on testnet
-
-### 🔬 Platform Agent (Always-On Research)
-
-**What:** Continuously running research agent analyzing DeFi markets
-**Runtime:** Tuxedo backend infrastructure (future: distributed)
-**API:** Anthropic Claude API with extended thinking
-**Tools:** Code execution mode with live data feeds
-**Purpose:**
-
-- Monitor real-time market conditions (Somnia Data Streams)
-- Write research reports on yield opportunities
-- Populate vector database with analysis
-- Generate citations for user agent decisions
-
-**Status:** 🚧 Design phase (post-hackathon)
-
-### How They Work Together
+### Current Architecture: Wallet Import Model (Mainnet Live)
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  Platform Agent (Always Running)                    │
-│  - Monitors live DeFi data streams                  │
-│  - Analyzes yield opportunities                     │
-│  - Writes research reports                          │
-│  - Populates vector database                        │
+│  USER                                                │
+│  - Imports wallet via private key                   │
+│  - Converses with AI agent                          │
+│  - Agent manages assets autonomously                │
 └──────────────────┬──────────────────────────────────┘
-                   │ Research Reports
-                   │ (Cited in decisions)
+                   │
                    ↓
 ┌─────────────────────────────────────────────────────┐
-│  User Agent (On-Demand, Private)                    │
-│  - Reads platform research                          │
-│  - Executes user-specific strategies                │
-│  - Signs transactions in TEE                        │
-│  - Manages private keys securely                    │
+│  AI AGENT (Mainnet Operations)                      │
+│  - Holds encrypted user keys                        │
+│  - Executes yield strategies                        │
+│  - Blend Capital: Lending/borrowing                 │
+│  - Soroban: Smart contract operations               │
+│  - Stellar DEX: Trading operations                  │
+└──────────────────┬──────────────────────────────────┘
+                   │
+                   ↓
+┌─────────────────────────────────────────────────────┐
+│  STELLAR MAINNET                                     │
+│  Real assets, real yields, real transactions        │
+└─────────────────────────────────────────────────────┘
+```
+
+**Current Tools (12 mainnet operations):**
+- 6 Stellar tools: Account, market data, trading, trustlines, utilities, Soroban
+- 6 Blend Capital tools: Pool discovery, APY tracking, supply, withdraw, positions
+
+**Security:** Encrypted keys, user isolation, per-request tool instantiation
+
+### Future Architecture: Vault-Based Collateral (In Development)
+
+```
+┌─────────────────────────────────────────────────────┐
+│  USER                                                │
+│  - Keeps private keys (non-custodial)              │
+│  - Deposits assets to vault                         │
+│  - Receives tradeable vault share tokens            │
+│  - Trades vault tokens on DEX                       │
+└──────────────────┬──────────────────────────────────┘
+                   │ Deposits USDC
+                   ↓
+┌─────────────────────────────────────────────────────┐
+│  VAULT SMART CONTRACT (TUX-CORE, TUX-AGGRESSIVE...)│
+│  - Holds deposited assets                           │
+│  - Mints share tokens to users                      │
+│  - Enforces risk limits                             │
+│  - Enables agent operations                         │
+└──────────────────┬──────────────────────────────────┘
+                   │ Agent manages
+                   ↓
+┌─────────────────────────────────────────────────────┐
+│  AI AGENT (Vault Manager)                           │
+│  - Executes yield strategies WITHIN vault           │
+│  - NO custody of user keys                          │
+│  - Transparent operations (on-chain audit trail)    │
+│  - Generates research reports for decisions         │
+└──────────────────┬──────────────────────────────────┘
+                   │
+                   ↓
+┌─────────────────────────────────────────────────────┐
+│  STELLAR MAINNET DEFI                                │
+│  Blend, DeFindex, Soroswap, Aquarius                │
 └─────────────────────────────────────────────────────┘
                    │
                    ↓
 ┌─────────────────────────────────────────────────────┐
-│  Multi-Chain DeFi Protocols                         │
-│  Stellar | Solana | EVM | Sui                       │
+│  SECONDARY MARKETS                                   │
+│  Vault tokens (TUX-CORE, etc.) trade on DEX         │
+│  Price reflects agent performance                   │
+│  Users can exit without withdrawing from vault      │
 └─────────────────────────────────────────────────────┘
 ```
 
+**Vault Types (Planned):**
+- **TUX-CORE**: Conservative diversified (8-12% APY)
+- **TUX-AGGRESSIVE**: High-yield seeking (15-30% APY)
+- **TUX-RESEARCH**: Citation-backed strategies (10-20% APY + CHOIR rewards)
+- **TUX-STABLE**: Stablecoin only (5-8% APY)
+- **TUX-{USER}**: Personal custom agents
+
+**See:** `docs/VAULT_COLLATERAL_ARCHITECTURE.md` and `docs/VAULT_IMPLEMENTATION_PLAN.md`
+
 ---
 
-## 🔐 Security Status: Transparent & Evolving
+## 🔐 Security Status: Mainnet Live with Vault Upgrade Path
 
-### ✅ What's Implemented
+### ✅ Current Security (Wallet Import Model)
 
 **User Isolation:**
-
 - Database-level account isolation per user
 - Encrypted private keys at rest (Fernet symmetric encryption)
 - User-specific key derivation (PBKDF2 + user_id salt)
 - Permission checks on every operation
+- Per-request tool instantiation
 
 **Key Management:**
-
-- `AccountManager` architecture (replaces legacy `KeyManager`)
+- `AccountManager` architecture for multi-user support
 - Wallet import/export for user sovereignty
-- Multi-chain abstraction layer (Stellar, future: Solana/EVM/Sui)
-- TEE deployment for private key custody
+- Encrypted storage with master key derivation
+- Multi-chain abstraction (Stellar mainnet, others planned)
 
 **Authentication:**
-
 - Passkey-based authentication (WebAuthn)
 - Session-based authorization
 - No passwords, no phishing vectors
 
-### ⚠️ What's In Progress
+**Mainnet Operations:**
+- All operations on Stellar mainnet (real funds)
+- Blend Capital integration (Comet, Fixed, YieldBlox pools)
+- Real-time on-chain APY data
+- Soroban smart contract support
 
-**Current Migration:** "Quantum Leap" from KeyManager to AccountManager
+### ⚠️ Current Limitations (Why Vault Upgrade Matters)
 
-- See: `AGENT_MIGRATION_QUANTUM_LEAP.md`
-- Target: Complete user isolation with encrypted accounts
-- Status: Partially implemented, needs final migration steps
+**The Fundamental Issue:**
+- Users must trust agent with private keys
+- Violates DeFi best practice: "not your keys, not your crypto"
+- No transparent performance tracking across users
+- Difficult to compare agent strategies
 
-**Known Limitations:**
+**Known Risks:**
+- Agent has full custody (encrypted, but still custodial)
+- No independent verification of agent operations
+- Limited audit trail visibility
+- Recovery requires key backup
 
-- Testnet only (hardcoded contract addresses)
-- Limited audit trail logging
-- No rate limiting on sensitive operations
-- TEE deployment not yet configured
+### 🚀 Vault Architecture Security Improvements (In Development)
 
-### ❌ NOT Production-Ready For Mainnet
+**What Changes:**
+- ✅ Users keep private keys (non-custodial)
+- ✅ Agents manage vault assets (no key custody)
+- ✅ On-chain audit trail (transparent operations)
+- ✅ Tradeable performance tracking (vault token prices)
+- ✅ Risk limits enforced by smart contract
+- ✅ Emergency withdrawal mechanisms
+- ✅ Multiple agent strategies to choose from
 
-**Do NOT deploy mainnet capital until:**
+**Smart Contract Security:**
+- Risk limit enforcement (asset concentration, liquidity reserves)
+- Emergency pause functionality
+- Time-locked parameter changes
+- Governance-controlled upgrades
 
-- [ ] Third-party security audit completed
-- [ ] Community security testing campaign finished
-- [ ] TEE infrastructure validated in production
-- [ ] Comprehensive audit logging implemented
-- [ ] Rate limiting and abuse prevention deployed
-- [ ] Recovery mechanisms tested thoroughly
-- [ ] Multi-signature support for high-value operations
+**Timeline:** See `docs/VAULT_IMPLEMENTATION_PLAN.md` (16-week phased approach)
 
-**We are explicit about this because user trust requires honesty.**
+### 💡 Security Philosophy
+
+**We believe:**
+1. **Transparency over obscurity** - Open source, documented risks
+2. **Iteration over perfection** - Ship, learn, improve
+3. **User sovereignty over convenience** - Vault model prioritizes custody
+4. **Community validation** - Security researchers earn TUX tokens
+
+**Current Status:** Mainnet live with wallet import. Actively developing vault architecture to eliminate key custody requirement.
 
 ---
 
@@ -218,12 +278,9 @@ Tuxedo is a **conversational AI agent** that manages DeFi strategies on your beh
 ```bash
 cd backend
 
-# Create virtual environment
-python3 -m venv .venv
+# Create virtual environment with UV (recommended)
+uv sync  # Creates .venv and installs all dependencies
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
-
-# Install dependencies
-uv sync  # Or: pip install -r requirements.txt
 
 # Configure environment
 cp .env.example .env
@@ -239,17 +296,23 @@ python main.py
 ```bash
 # OpenAI-compatible API
 OPENAI_API_KEY=your_key_here
-OPENAI_BASE_URL=https://api.redpill.ai/v1  # or https://openrouter.ai/api/v1
+OPENAI_BASE_URL=https://api.redpill.ai/v1  # or https://api.openai.com/v1
 
-# Stellar Network
-STELLAR_NETWORK=testnet
-HORIZON_URL=https://horizon-testnet.stellar.org
-SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
+# Stellar Network (MAINNET)
+STELLAR_NETWORK=mainnet
+MAINNET_HORIZON_URL=https://horizon.stellar.org
+ANKR_STELLER_RPC=https://rpc.ankr.com/stellar_soroban
 
 # Encryption (generate with: python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')
 ENCRYPTION_MASTER_KEY=your_generated_key
 ENCRYPTION_SALT=tuxedo-agent-accounts-v1
 ```
+
+**⚠️ Mainnet Configuration:**
+- All operations use real Stellar mainnet
+- Real funds, real yields, real risks
+- Contract addresses in `backend/blend_pool_tools.py`
+- RPC provider: Ankr (or your preferred mainnet RPC)
 
 ### 2. Frontend Setup
 
@@ -266,9 +329,12 @@ npm run dev
 
 1. Open http://localhost:5173
 2. Create account with passkey (no password needed)
-3. Chat with agent: "Create a testnet account and fund it"
-4. Explore Blend Protocol pools
-5. Test DeFindex yield strategies
+3. Connect existing Stellar wallet or import private key
+4. Chat with agent: "What's my wallet balance?" or "Find best USDC yield"
+5. Explore Blend Protocol pools (mainnet: Comet, Fixed, YieldBlox)
+6. Try yield strategies: "Supply 100 USDC to Comet pool"
+
+**⚠️ Mainnet Warning:** You're operating with real funds. Start small, test carefully.
 
 ---
 
@@ -281,26 +347,43 @@ npm run dev
 - Context-aware conversation history
 - Tool execution with real-time feedback
 
-### 🔑 User Sovereignty
+### 🔑 User Sovereignty (Current → Future)
 
-- **Import existing wallets** (Freighter, Phantom, MetaMask)
-- **Export private keys** anytime (you own your funds)
-- Non-custodial architecture
-- "Not your keys, not your crypto" respected
+**Current (Wallet Import):**
+- Import existing wallets via private key
+- Export private keys anytime
+- Agent holds encrypted keys for operations
+- ⚠️ Custodial during active management
 
-### 🏦 DeFi Integration
+**Future (Vault Model):**
+- Users deposit to vault, keep keys
+- Receive tradeable vault share tokens
+- Agent manages vault, never touches keys
+- ✅ True non-custodial architecture
 
-- **Blend Protocol**: Lending/borrowing on Stellar
-- **DeFindex**: Multi-protocol yield optimization
-- **Soroban**: Smart contract interaction
-- **Multi-chain** (future): Solana, EVM, Sui
+### 🏦 DeFi Integration (Mainnet Live)
+
+- **Blend Protocol**: Lending/borrowing on Stellar mainnet
+  - Comet Pool: Diversified stablecoin lending
+  - Fixed Pool: Fixed-rate lending strategies
+  - YieldBlox Pool: Historical yield farming
+- **Soroban**: Smart contract operations
+- **Stellar DEX**: Trading and liquidity
+- **Future**: DeFindex, multi-chain (Solana, EVM, Sui)
 
 ### 📊 Yield Strategies
 
-- Automated rebalancing across protocols
-- AI-driven strategy selection
-- Research-backed decision making
-- Transparent execution reports
+**Current (Mainnet):**
+- Blend Capital pool discovery and APY tracking
+- Automated supply to highest-yield opportunities
+- Multi-pool position management
+- Real-time on-chain data
+
+**Future (Vault Model):**
+- Multiple vault strategies (Conservative, Aggressive, Research)
+- AI-driven rebalancing across protocols
+- Citation-backed decision making with research reports
+- Tradeable performance via vault token prices
 
 ### 🛡️ Security Features
 
@@ -328,10 +411,16 @@ python test_agent.py                    # Basic agent functionality
 python test_agent_with_tools.py         # Comprehensive tool testing
 ```
 
-### Test User Isolation
+### Test Mainnet Integration
 
 ```bash
 cd backend
+source .venv/bin/activate
+
+# Test Blend integration (mainnet, read-only)
+python test_blend_integration.py       # Pool discovery, APY queries
+
+# Test user isolation
 python test_user_isolation.py          # Verify cross-user access blocked
 ```
 
@@ -398,10 +487,13 @@ tuxedo/
 │   └── contracts/
 │       └── blend.ts               # Contract addresses (testnet)
 │
-├── CHOIR_WHITEPAPER.md            # Vision & tokenomics
-├── AGENT_ACCOUNT_SECURITY_PLAN.md # Security architecture
-├── AGENT_MIGRATION_QUANTUM_LEAP.md # Current migration status
-└── CLAUDE.md                      # Development guide
+├── docs/
+│   ├── VAULT_COLLATERAL_ARCHITECTURE.md  # Future vault system design
+│   ├── VAULT_IMPLEMENTATION_PLAN.md      # 16-week roadmap to vaults
+│   └── DEFINDEX_RESTORATION_GUIDE.md     # DeFindex integration guide
+├── CHOIR_WHITEPAPER.md                   # Vision & tokenomics
+├── AGENT_ACCOUNT_SECURITY_PLAN.md        # Security architecture
+└── CLAUDE.md                             # Development guide
 ```
 
 ### Key Implementation Files
@@ -475,12 +567,14 @@ Real-time event subscriptions for platform agent:
 ### For Developers
 
 - [CLAUDE.md](./CLAUDE.md) - Complete development guide
-- [AGENT_MIGRATION_QUANTUM_LEAP.md](./AGENT_MIGRATION_QUANTUM_LEAP.md) - Current migration status
-- [AGENT_ACCOUNT_SECURITY_PLAN.md](./AGENT_ACCOUNT_SECURITY_PLAN.md) - Security architecture
+- [docs/VAULT_COLLATERAL_ARCHITECTURE.md](./docs/VAULT_COLLATERAL_ARCHITECTURE.md) - Future vault system design
+- [docs/VAULT_IMPLEMENTATION_PLAN.md](./docs/VAULT_IMPLEMENTATION_PLAN.md) - 16-week implementation roadmap
+- [AGENT_ACCOUNT_SECURITY_PLAN.md](./AGENT_ACCOUNT_SECURITY_PLAN.md) - Current security architecture
 
 ### For Users
 
 - [CHOIR_WHITEPAPER.md](./CHOIR_WHITEPAPER.md) - Vision, tokenomics, roadmap
+- **Vault FAQ** (coming soon) - Understanding vault-based collateral
 
 ### API Documentation
 
@@ -491,42 +585,78 @@ Real-time event subscriptions for platform agent:
 
 ## 🛣️ Roadmap
 
-### Q4 2025: Testnet Beta
+### Q4 2024: Mainnet Launch ✅
 
-- [x] Core agent functionality
+- [x] Core agent functionality on mainnet
 - [x] Passkey authentication
-- [x] Blend Protocol integration
-- [ ] Complete AccountManager migration (quantum leap)
-- [ ] TEE deployment on Phala
-- [ ] Security bounty program launch
-- [ ] Community testing campaign
+- [x] Blend Protocol integration (Comet, Fixed, YieldBlox)
+- [x] Wallet import/export
+- [x] Multi-user isolation with AccountManager
+- [x] Real-time APY data from mainnet
 
-### Q1 2026: Mainnet Preparation
+### Q1 2025: Vault Architecture Transition
 
-- [ ] Third-party security audit
-- [ ] Audit logging & monitoring
-- [ ] Rate limiting & abuse prevention
-- [ ] Multi-chain support (Solana, EVM)
-- [ ] Platform agent (research capabilities)
-- [ ] Live data stream integration
+**Phase 1: Smart Contracts (Weeks 1-3)**
+- [ ] TuxedoVault smart contract development
+- [ ] Deposit/withdraw functions
+- [ ] Share token minting/burning
+- [ ] Risk limit enforcement
+- [ ] Testnet deployment and testing
 
-### Q2 2026: Mainnet Launch
+**Phase 2: Backend Integration (Weeks 4-5)**
+- [ ] Vault state management
+- [ ] Agent vault manager
+- [ ] Database schema for vault tracking
+- [ ] API endpoints for vault operations
 
-- [ ] Security validation complete
-- [ ] Mainnet deployment (community approved)
-- [ ] TUX token distribution
-- [ ] Mobile apps (iOS, Android)
-- [ ] Governance transition
+**Phase 3: Frontend (Weeks 6-7)**
+- [ ] Vault dashboard UI
+- [ ] Deposit/withdraw modals
+- [ ] Performance charts
+- [ ] Activity feed for agent operations
 
-### Q3-Q4 2026: Ecosystem Growth
+**Phase 4: Multi-Vault Launch (Week 8)**
+- [ ] Deploy TUX-CORE (conservative)
+- [ ] Deploy TUX-AGGRESSIVE (high-yield)
+- [ ] Deploy TUX-STABLE (stablecoin only)
+- [ ] Deploy TUX-RESEARCH (citation-backed)
 
-- [ ] Code mode implementation
-- [ ] Advanced tax optimization
-- [ ] Multi-signature support
-- [ ] Institutional features
-- [ ] Academic partnerships
+### Q2 2025: Migration & Growth
 
-**Timeline depends on security validation. We will not rush mainnet.**
+**Phase 5: User Migration (Weeks 9-10)**
+- [ ] Migration tool from wallet import to vaults
+- [ ] Incentive program (TUX token bonuses)
+- [ ] User education campaign
+- [ ] Graceful deprecation of wallet import
+
+**Phase 6: DEX Integration (Week 11)**
+- [ ] Vault token liquidity pools
+- [ ] Market making bots
+- [ ] Price discovery mechanisms
+- [ ] Trading interface for vault tokens
+
+**Phase 7: Governance (Weeks 12-13)**
+- [ ] TUX governance token launch
+- [ ] Staking and tier system
+- [ ] Vault parameter voting
+- [ ] Revenue sharing for stakers
+
+### Q3 2025: Mainnet Vault Launch
+
+**Phase 8: Security & Launch (Weeks 14-16)**
+- [ ] Professional smart contract audit
+- [ ] Bug bounty program
+- [ ] Mainnet vault deployment
+- [ ] Marketing and community growth
+
+### Q4 2025: Ecosystem Expansion
+
+- [ ] Cross-chain vaults (Solana, EVM)
+- [ ] Personal agent vault creation
+- [ ] Research vault with CHOIR integration
+- [ ] Advanced analytics and reporting
+
+**See:** `docs/VAULT_IMPLEMENTATION_PLAN.md` for detailed 16-week roadmap
 
 ---
 
@@ -601,25 +731,42 @@ MIT License - See [LICENSE](./LICENSE) for details
 
 ## ⚠️ Disclaimer
 
-**Testnet Software - Use at Your Own Risk**
+**Mainnet Software - Use at Your Own Risk**
 
-Tuxedo is experimental software in active development. This is a testnet deployment for security research and community testing.
+Tuxedo is experimental software operating on Stellar mainnet with real funds. While functional, it is in active development and security improvements are ongoing.
 
-**Do not:**
+**Current Architecture (Wallet Import):**
+- Agent holds encrypted user keys during operations
+- Custodial model during active management
+- User can export keys and exit anytime
+- Transitioning to non-custodial vault architecture
 
-- Deploy mainnet capital
-- Use for production purposes
-- Rely on this software for critical operations
-- Expect stability or backwards compatibility
+**Understand the Risks:**
+
+- **Smart contracts can have bugs** - DeFi protocols may fail
+- **Agent operations can fail** - AI is not infallible
+- **Key custody matters** - Current model requires trust in agent
+- **Mainnet means real money** - Start small, test carefully
+- **No guarantees** - Software provided "as is"
+
+**Before Using:**
+
+1. Review the code (open source)
+2. Understand wallet import implications
+3. Start with small amounts
+4. Know that vault architecture (non-custodial) is coming
+5. Accept full responsibility for your funds
 
 **Legal:**
 
 - No warranties of any kind
 - You are responsible for your own funds
-- Software provided "as is"
-- Review code before trusting with value
+- Not financial advice
+- Review security documentation thoroughly
 
-**DeFi is risky. Agents are new. Security is hard. Proceed carefully.**
+**The vault architecture transition will eliminate key custody concerns. Until then, use with appropriate caution.**
+
+**DeFi is risky. AI agents are experimental. Mainnet operations are irreversible. Proceed carefully.**
 
 ---
 
