@@ -29,6 +29,8 @@ class ChatRequest(BaseModel):
     message: str
     history: List[ChatMessage] = []
     agent_account: Optional[str] = None
+    wallet_mode: Optional[str] = "agent"  # "agent" | "external" | "imported"
+    wallet_address: Optional[str] = None  # Address for external wallet mode
 
 class ChatResponse(BaseModel):
     response: str
@@ -42,6 +44,8 @@ class StreamChatRequest(BaseModel):
     history: List[ChatMessage] = []
     agent_account: Optional[str] = None
     enable_summary: bool = False
+    wallet_mode: Optional[str] = "agent"  # "agent" | "external" | "imported"
+    wallet_address: Optional[str] = None  # Address for external wallet mode
 
 # Import agent system
 try:
@@ -69,14 +73,22 @@ async def chat_endpoint(
         raise HTTPException(status_code=503, detail="Agent system not available")
 
     try:
-        # Create per-request tools with AgentContext
+        # Create per-request tools with AgentContext (including wallet mode)
         if current_user:
             user_id = current_user['id']
-            agent_context = AgentContext(user_id=user_id)
+            agent_context = AgentContext(
+                user_id=user_id,
+                wallet_mode=request.wallet_mode or "agent",
+                wallet_address=request.wallet_address
+            )
             logger.info(f"Creating tools with dual authority for {agent_context}")
             tools = create_user_tools(agent_context)
         else:
-            agent_context = AgentContext(user_id="anonymous")
+            agent_context = AgentContext(
+                user_id="anonymous",
+                wallet_mode=request.wallet_mode or "agent",
+                wallet_address=request.wallet_address
+            )
             logger.info(f"Creating tools with dual authority for {agent_context}")
             tools = create_anonymous_tools(agent_context)
 
@@ -123,14 +135,22 @@ async def chat_stream_endpoint(
             return
 
         try:
-            # Create per-request tools with AgentContext
+            # Create per-request tools with AgentContext (including wallet mode)
             if current_user:
                 user_id = current_user['id']
-                agent_context = AgentContext(user_id=user_id)
+                agent_context = AgentContext(
+                    user_id=user_id,
+                    wallet_mode=request.wallet_mode or "agent",
+                    wallet_address=request.wallet_address
+                )
                 logger.info(f"Creating tools with dual authority for {agent_context}")
                 tools = create_user_tools(agent_context)
             else:
-                agent_context = AgentContext(user_id="anonymous")
+                agent_context = AgentContext(
+                    user_id="anonymous",
+                    wallet_mode=request.wallet_mode or "agent",
+                    wallet_address=request.wallet_address
+                )
                 logger.info(f"Creating tools with dual authority for {agent_context}")
                 tools = create_anonymous_tools(agent_context)
 
@@ -232,14 +252,22 @@ async def chat_live_summary_endpoint(
             return
 
         try:
-            # Create per-request tools with AgentContext
+            # Create per-request tools with AgentContext (including wallet mode)
             if current_user:
                 user_id = current_user['id']
-                agent_context = AgentContext(user_id=user_id)
+                agent_context = AgentContext(
+                    user_id=user_id,
+                    wallet_mode=request.wallet_mode or "agent",
+                    wallet_address=request.wallet_address
+                )
                 logger.info(f"Creating tools with dual authority for {agent_context}")
                 tools = create_user_tools(agent_context)
             else:
-                agent_context = AgentContext(user_id="anonymous")
+                agent_context = AgentContext(
+                    user_id="anonymous",
+                    wallet_mode=request.wallet_mode or "agent",
+                    wallet_address=request.wallet_address
+                )
                 logger.info(f"Creating tools with dual authority for {agent_context}")
                 tools = create_anonymous_tools(agent_context)
 
