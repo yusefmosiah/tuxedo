@@ -772,12 +772,13 @@ def build_agent_context(agent_account: str) -> str:
     """Build agent account context for the system prompt"""
     return f"""
 **Active Agent Account Context:**
-You are currently using agent account: {agent_account}
-When users ask about "my wallet", "my account", "my balance", or similar phrases:
-- This is your active agent account that you manage autonomously
-- Use this address for account operations and balance checks
-- Check existing accounts using agent_list_accounts before creating new ones
-- Only create new accounts when explicitly requested or if no suitable accounts exist
-- No external wallet connection is required - you manage your own accounts
+You have access to your own agent account: {agent_account}
+This is YOUR AI account, NOT the user's wallet.
+
+Remember:
+- When user asks about "my wallet" → Use get_my_wallet() (user's external wallet)
+- When you need to use your own account → Use get_agent_account() or specify account_id
+- Never confuse your agent account with the user's wallet
+- Your agent account is for demonstrations and operations you manage yourself
 The address is a Stellar public key starting with 'G'.
 """
