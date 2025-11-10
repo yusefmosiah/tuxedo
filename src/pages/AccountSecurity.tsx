@@ -3,6 +3,7 @@ import { useAuth } from "../contexts/AuthContext_passkey";
 import { passkeyAuthService, PasskeyCredential } from "../services/passkeyAuth";
 import { Button, Text } from "@stellar/design-system";
 import { useNavigate } from "react-router-dom";
+import { WalletSelector } from "../components/WalletSelector";
 
 export const AccountSecurity: React.FC = () => {
   const { user, sessionToken, isAuthenticated, logout } = useAuth();
@@ -162,6 +163,41 @@ export const AccountSecurity: React.FC = () => {
             </Text>
           </div>
         </div>
+      </section>
+
+      {/* Wallet Management Section */}
+      <section
+        style={{
+          backgroundColor: "var(--color-bg-surface)",
+          borderRadius: "var(--border-radius-md)",
+          padding: "24px",
+          marginBottom: "24px",
+          border: "1px solid var(--color-border)",
+        }}
+      >
+        <Text
+          as="h2"
+          size="md"
+          style={{
+            fontSize: "18px",
+            fontWeight: "600",
+            marginBottom: "16px",
+          }}
+        >
+          Stellar Wallet
+        </Text>
+        <Text
+          as="p"
+          size="sm"
+          style={{
+            color: "var(--color-text-secondary)",
+            marginBottom: "16px",
+          }}
+        >
+          Connect your external wallet or manage agent-controlled accounts for
+          autonomous DeFi operations.
+        </Text>
+        <WalletSelector />
       </section>
 
       {/* Passkeys Section */}
