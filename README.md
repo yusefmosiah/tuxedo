@@ -1,6 +1,6 @@
 # 🎩 Tuxedo: Agentic DeFi for Everyone
 
-**Part of the [Choir](./CHOIR_WHITEPAPER.md) ecosystem | Building the future of AI-managed yield optimization**
+**Part of the [Choir](./docs/CHOIR_WHITEPAPER.md) ecosystem | Building the future of AI-managed yield optimization**
 
 > "DeFi agents are inevitable. By 2027, everyone will have one. The only question is: will they be secure enough to trust with your capital?"
 
