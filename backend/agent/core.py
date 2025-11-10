@@ -737,7 +737,11 @@ def get_default_agent_account() -> Optional[str]:
     """
     Get the default agent account to use.
 
-    Returns the first account with a balance, or None if no accounts exist.
+    Priority order:
+    1. Agent's own imported account from AGENT_STELLAR_SECRET
+    2. First account with a meaningful balance (at least 1 XLM)
+    3. First available account
+    Returns None if no accounts exist.
     """
     try:
         from tools.agent.account_management import list_agent_accounts
@@ -749,12 +753,17 @@ def get_default_agent_account() -> Optional[str]:
         if not accounts:
             return None
 
-        # Find first account with a meaningful balance (at least 1 XLM)
+        # First, try to find the agent's own imported account from environment
+        agent_own_account = get_agent_own_account()
+        if agent_own_account and agent_own_account.get('address'):
+            return agent_own_account['address']
+
+        # Second, find first account with a meaningful balance (at least 1 XLM)
         for account in accounts:
             if account.get('balance', 0) >= 1.0:
                 return account['address']
 
-        # If no accounts with significant balance, return the first one
+        # Finally, return the first available account
         if accounts:
             return accounts[0]['address']
 

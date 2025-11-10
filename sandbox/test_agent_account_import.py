@@ -18,8 +18,8 @@ async def test_agent_account():
     print("=" * 60)
 
     # Check env var
-    agent_secret = os.getenv("AGENT_ACCOUNT_SECRET")
-    print(f"\n1. AGENT_ACCOUNT_SECRET env var: {'SET' if agent_secret else 'NOT SET'}")
+    agent_secret = os.getenv("AGENT_STELLAR_SECRET")
+    print(f"\n1. AGENT_STELLAR_SECRET env var: {'SET' if agent_secret else 'NOT SET'}")
 
     if agent_secret:
         from stellar_sdk import Keypair
