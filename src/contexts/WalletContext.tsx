@@ -37,8 +37,8 @@ interface WalletContextType {
   disconnectWallet: () => void;
   signTransaction: (xdr: string) => Promise<string>;
 
-  // Agent accounts
-  agentAccounts: AgentAccount[];
+  // User-managed accounts (agent has custody)
+  agentAccounts: AgentAccount[];  // TODO: Rename to "userAccounts" or "managedAccounts"
   selectedAgentAccount: AgentAccount | null;
   setSelectedAgentAccount: (account: AgentAccount | null) => void;
   refreshAgentAccounts: () => Promise<void>;
