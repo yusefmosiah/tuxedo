@@ -4,7 +4,8 @@ members = [
     "contracts/farming",
     "contracts/fungible-token-interface",
     "contracts/guess-the-number",
-    "contracts/nft-enumerable"
+    "contracts/nft-enumerable",
+    "contracts/vault"
 ]
 resolver = "2"
 
