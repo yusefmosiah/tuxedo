@@ -486,27 +486,47 @@ async def blend_get_reserve_apy(
 
         reserve = result['result']
 
+        # DEBUG: Print raw reserve data
+        logger.info(f"DEBUG: Raw reserve type: {type(reserve)}")
+        logger.info(f"DEBUG: Raw reserve data: {reserve}")
+
         # Extract reserve data
         reserve_data = reserve.get('data', {})
         reserve_config = reserve.get('config', {})
 
+        # DEBUG: Print specific fields
+        logger.info(f"DEBUG: Reserve data fields:")
+        for key, value in reserve_data.items():
+            logger.info(f"  {key}: {value} (type: {type(value)})")
+            if key in ['b_rate', 'd_rate']:
+                rate_val = float(value) if isinstance(value, (int, str)) else 0
+                logger.info(f"    → As rate (12 decimals): {rate_val / 1e12:.8f}")
+            if key in ['b_supply', 'd_supply']:
+                supply_val = float(value) if isinstance(value, (int, str)) else 0
+                logger.info(f"    → As supply (6 decimals): {supply_val / 1e6:.2f}")
+                logger.info(f"    → As supply (7 decimals): {supply_val / 1e7:.2f}")
+                logger.info(f"    → As supply (12 decimals): {supply_val / 1e12:.2f}")
+
         # Calculate APY from rates
-        # b_rate is supply rate (what suppliers earn) - Blend v2 uses 12 decimals (1e12)
-        # b_rate is the cumulative token exchange rate (e.g., 1.1e12 = 10% accumulated interest)
+        # b_rate and d_rate are current instantaneous annual rates with 12 decimals (1e12)
+        # b_rate = 1.05579967 means 5.579967% annual supply rate, not cumulative
         b_rate = reserve_data.get('b_rate', 0)
-        supply_rate = b_rate / 1e12
-        supply_apr = supply_rate - 1 if supply_rate > 1 else 0  # Subtract 1 to get the interest component
-        supply_apy = ((1 + supply_apr / 365) ** 365 - 1) * 100
+        supply_rate_annual = (b_rate / 1e12 - 1) * 100  # Convert to percentage
+        supply_apy = supply_rate_annual  # These are already annual rates
 
-        # d_rate is borrow rate - also 12 decimals
+        # d_rate is borrow rate - same logic
         d_rate = reserve_data.get('d_rate', 0)
-        borrow_rate = d_rate / 1e12
-        borrow_apr = borrow_rate - 1 if borrow_rate > 1 else 0
-        borrow_apy = ((1 + borrow_apr / 365) ** 365 - 1) * 100
+        borrow_rate_annual = (d_rate / 1e12 - 1) * 100
+        borrow_apy = borrow_rate_annual
 
-        # Calculate metrics
-        total_supplied = reserve_data.get('b_supply', 0)
-        total_borrowed = reserve_data.get('d_supply', 0)
+        # Calculate metrics with correct decimal scaling
+        # USDC has 7 decimals, so divide by 1e7 to get real amounts
+        asset_decimals = reserve_config.get('decimals', 7)  # Default to 7 for USDC-like tokens
+        total_supplied_raw = reserve_data.get('b_supply', 0)
+        total_borrowed_raw = reserve_data.get('d_supply', 0)
+
+        total_supplied = total_supplied_raw / (10 ** asset_decimals)
+        total_borrowed = total_borrowed_raw / (10 ** asset_decimals)
         available = total_supplied - total_borrowed
         utilization = total_borrowed / total_supplied if total_supplied > 0 else 0
 

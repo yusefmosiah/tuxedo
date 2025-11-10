@@ -191,18 +191,29 @@ async def soroban_operations(
                     "error": sim_result.error
                 }
 
-            # Extract result
-            result_scval = sim_result.results[0].return_value if sim_result.results else None
+            # Extract result from XDR field
+            if sim_result.results:
+                # Parse the result from XDR format
+                result_xdr = sim_result.results[0].xdr
+                if result_xdr:
+                    from stellar_sdk.xdr import SCVal
+                    result_scval = SCVal.from_xdr(result_xdr)
+                else:
+                    result_scval = None
+            else:
+                result_scval = None
 
             return {
                 "success": True,
                 "result": scval.to_native(result_scval) if result_scval else None,
                 "cost": {
-                    "cpu_instructions": sim_result.cost.cpu_insns if sim_result.cost else None,
-                    "memory_bytes": sim_result.cost.mem_bytes if sim_result.cost else None
+                    # Cost information might not be available in current SDK version
+                    "cpu_instructions": None,
+                    "memory_bytes": None
                 },
                 "min_resource_fee": sim_result.min_resource_fee,
-                "latest_ledger": sim_result.latest_ledger
+                "latest_ledger": sim_result.latest_ledger,
+                "transaction_data": sim_result.transaction_data
             }
 
         elif action == "invoke":

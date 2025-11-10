@@ -71,10 +71,10 @@ async def test_with_agent_account():
         logger.info("Testing Blend Reserve Query")
         logger.info("=" * 80)
 
-        pool_address = BLEND_MAINNET_CONTRACTS['comet']
+        pool_address = BLEND_MAINNET_CONTRACTS['fixed']  # Fixed Pool V2
         usdc_address = BLEND_MAINNET_CONTRACTS['usdc']
 
-        logger.info(f"Pool: Comet ({pool_address[:8]}...)")
+        logger.info(f"Pool: Fixed ({pool_address[:8]}...)")
         logger.info(f"Asset: USDC ({usdc_address[:8]}...)")
         logger.info("")
 
