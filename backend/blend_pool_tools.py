@@ -468,7 +468,7 @@ async def blend_get_reserve_apy(
             # Create a temporary system account for read-only operations
             create_result = account_manager.generate_account(user_id, chain="stellar", name="blend_readonly")
             if create_result.get('success'):
-                account_id = create_result['account']['id']
+                account_id = create_result['account_id']  # Fixed: use 'account_id' not 'account'
             else:
                 raise ValueError("Failed to create read-only account for simulation")
 
@@ -495,16 +495,17 @@ async def blend_get_reserve_apy(
         reserve_config = reserve.get('config', {})
 
         # Calculate APY from rates
-        # b_rate is supply rate (what suppliers earn) - Stellar uses 7 decimals
+        # b_rate is supply rate (what suppliers earn) - Blend v2 uses 12 decimals (1e12)
+        # b_rate is the cumulative token exchange rate (e.g., 1.1e12 = 10% accumulated interest)
         b_rate = reserve_data.get('b_rate', 0)
-        supply_rate = b_rate / 1e7
-        supply_apr = supply_rate
+        supply_rate = b_rate / 1e12
+        supply_apr = supply_rate - 1 if supply_rate > 1 else 0  # Subtract 1 to get the interest component
         supply_apy = ((1 + supply_apr / 365) ** 365 - 1) * 100
 
-        # d_rate is borrow rate
+        # d_rate is borrow rate - also 12 decimals
         d_rate = reserve_data.get('d_rate', 0)
-        borrow_rate = d_rate / 1e7
-        borrow_apr = borrow_rate
+        borrow_rate = d_rate / 1e12
+        borrow_apr = borrow_rate - 1 if borrow_rate > 1 else 0
         borrow_apy = ((1 + borrow_apr / 365) ** 365 - 1) * 100
 
         # Calculate metrics
