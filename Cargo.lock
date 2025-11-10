@@ -1863,6 +1863,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "tuxedo-vault"
+version = "0.1.0"
+dependencies = [
+ "soroban-sdk 22.0.8",
+]
+
+[[package]]
 name = "typenum"
 version = "1.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
