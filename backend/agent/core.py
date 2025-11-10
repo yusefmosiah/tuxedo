@@ -45,6 +45,9 @@ async def initialize_agent():
         # Initialize agent tools
         await load_agent_tools()
 
+        # Import agent account secret if provided
+        await import_agent_account_if_exists()
+
         logger.info("Agent system initialized successfully")
 
     except Exception as e:
@@ -58,6 +61,68 @@ async def cleanup_agent():
     llm = None
     agent_tools = []
     logger.info("Agent system cleaned up")
+
+async def import_agent_account_if_exists():
+    """
+    Import AGENT_ACCOUNT_SECRET from environment if it exists.
+    This allows the agent to have a pre-funded account ready to use.
+    """
+    agent_secret = os.getenv("AGENT_ACCOUNT_SECRET")
+
+    if not agent_secret:
+        logger.info("No AGENT_ACCOUNT_SECRET found - agent will create accounts as needed")
+        return
+
+    try:
+        from account_manager import AccountManager
+        from stellar_sdk import Keypair
+
+        # Parse the secret key to get the public key
+        keypair = Keypair.from_secret(agent_secret)
+        public_key = keypair.public_key
+
+        # Use a system user ID for the agent's own account
+        system_user_id = "system_agent"
+
+        account_manager = AccountManager()
+
+        # Check if this account is already imported
+        existing_accounts = account_manager.get_user_accounts(
+            user_id=system_user_id,
+            chain="stellar"
+        )
+
+        already_imported = any(
+            acc.get("public_key") == public_key
+            for acc in existing_accounts
+        )
+
+        if already_imported:
+            logger.info(f"Agent account {public_key[:8]}... already imported")
+            return
+
+        # Import the account
+        result = account_manager.import_account(
+            user_id=system_user_id,
+            chain="stellar",
+            private_key=agent_secret,
+            name="System Agent Account",
+            network="mainnet",
+            metadata={
+                "type": "agent",
+                "source": "environment",
+                "network": "mainnet"
+            }
+        )
+
+        if result.get("success"):
+            logger.info(f"✅ Agent account imported successfully: {result['address']}")
+            logger.info(f"   Account ID: {result['account_id']}")
+        else:
+            logger.error(f"❌ Failed to import agent account: {result.get('error')}")
+
+    except Exception as e:
+        logger.error(f"Error importing agent account secret: {e}")
 
 async def load_agent_tools():
     """
@@ -603,9 +668,62 @@ async def process_agent_message(
             "iterations_used": iteration if 'iteration' in locals() else 0
         }
 
+def get_agent_own_account() -> Optional[Dict]:
+    """
+    Get the agent's own system account (imported from AGENT_ACCOUNT_SECRET).
+
+    Returns account info if available, None otherwise.
+    """
+    try:
+        from account_manager import AccountManager
+
+        system_user_id = "system_agent"
+        account_manager = AccountManager()
+
+        accounts = account_manager.get_user_accounts(
+            user_id=system_user_id,
+            chain="stellar"
+        )
+
+        # Find the agent account (marked with type="agent" in metadata)
+        for account in accounts:
+            metadata = account.get("metadata", {})
+            if metadata.get("type") == "agent" and metadata.get("source") == "environment":
+                return {
+                    "address": account.get("public_key"),
+                    "balance": account.get("balance", 0),
+                    "account_id": account.get("id"),
+                    "network": metadata.get("network", "mainnet")
+                }
+
+        return None
+
+    except Exception as e:
+        logger.error(f"Error getting agent own account: {e}")
+        return None
+
 def build_agent_system_prompt() -> str:
     """Build the system prompt for the AI agent"""
-    return """You are Tuxedo, an AI agent that manages its own Stellar accounts for DeFi operations. You help users discover and understand DeFi opportunities on Stellar including Blend Protocol and DeFindex vaults.
+
+    # Check if agent has its own funded account
+    agent_account_info = get_agent_own_account()
+    agent_account_context = ""
+
+    if agent_account_info:
+        agent_account_context = f"""
+
+**YOUR OWN FUNDED ACCOUNT:**
+You have your own mainnet Stellar account that is already funded and ready to use:
+- Address: {agent_account_info['address']}
+- Balance: {agent_account_info.get('balance', 'Unknown')} XLM
+- Network: {agent_account_info.get('network', 'Mainnet')}
+- This account is managed by you (the AI agent) and can be used for DeFi operations
+
+When users ask about your capabilities or accounts, mention that you already have a funded mainnet account ready to use.
+"""
+
+    return f"""You are Tuxedo, an AI agent that manages its own Stellar accounts for DeFi operations. You help users discover and understand DeFi opportunities on Stellar including Blend Protocol and DeFindex vaults.
+{agent_account_context}
 
 **Agent-First Approach:**
 You are an autonomous AI agent that manages your own accounts - you do NOT require users to connect external wallets. You can create and manage your own Stellar accounts for demonstrating DeFi operations.
@@ -647,7 +765,10 @@ def get_default_agent_account() -> Optional[str]:
     """
     try:
         from tools.agent.account_management import list_agent_accounts
-        accounts = list_agent_accounts()
+
+        # Use system user ID for agent's own accounts
+        system_user_id = "system_agent"
+        accounts = list_agent_accounts(user_id=system_user_id)
 
         if not accounts:
             return None

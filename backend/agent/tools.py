@@ -43,7 +43,9 @@ async def agent_create_account(account_name: Optional[str] = None) -> str:
         if not AGENT_ACCOUNT_TOOLS_AVAILABLE:
             return "Agent account management tools not available."
 
-        result = create_agent_account(account_name)
+        # Use system user ID for agent's own accounts
+        system_user_id = "system_agent"
+        result = create_agent_account(user_id=system_user_id, account_name=account_name)
 
         if not result.get("success", True):
             return f"Error creating agent account: {result.get('error', 'Unknown error')}"
@@ -79,7 +81,9 @@ async def agent_list_accounts() -> str:
         if not AGENT_ACCOUNT_TOOLS_AVAILABLE:
             return "Agent account management tools not available."
 
-        accounts = list_agent_accounts()
+        # Use system user ID for agent's own accounts
+        system_user_id = "system_agent"
+        accounts = list_agent_accounts(user_id=system_user_id)
 
         if len(accounts) == 0:
             return "No agent accounts found. Use agent_create_account to create your first account."
@@ -123,7 +127,9 @@ async def agent_get_account_info(address: str) -> str:
         if not address:
             return "Account address is required."
 
-        result = get_agent_account_info(address)
+        # Use system user ID for agent's own accounts
+        system_user_id = "system_agent"
+        result = get_agent_account_info(user_id=system_user_id, address=address)
 
         if not result.get("success", True):
             return f"Error getting account info: {result.get('error', 'Unknown error')}"
