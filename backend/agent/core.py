@@ -64,13 +64,13 @@ async def cleanup_agent():
 
 async def import_agent_account_if_exists():
     """
-    Import AGENT_ACCOUNT_SECRET from environment if it exists.
+    Import AGENT_STELLAR_SECRET from environment if it exists.
     This allows the agent to have a pre-funded account ready to use.
     """
-    agent_secret = os.getenv("AGENT_ACCOUNT_SECRET")
+    agent_secret = os.getenv("AGENT_STELLAR_SECRET")
 
     if not agent_secret:
-        logger.info("No AGENT_ACCOUNT_SECRET found - agent will create accounts as needed")
+        logger.info("No AGENT_STELLAR_SECRET found - agent will create accounts as needed")
         return
 
     try:
