@@ -17,28 +17,65 @@
 
 ---
 
-## 💰 Performance Fee Structure (The Fair Split)
+## 💰 Fee Structure: MVP → Choir Integration
 
-**Yield Distribution:**
-- **User:** 75% of yield (you provide capital)
-- **Agent:** 15% of yield (AI does the work)
-- **Platform:** 10% of yield (infrastructure & development)
+### MVP Vault Fees (Minimal, Infrastructure-Building)
 
-**Example:** Vault earns 100 USDC yield over a week
+**Philosophy:** Not revenue-optimizing. Building token value (quasi-equity). Prove the model works.
+
+**Fee Structure:**
 ```
-User receives:    75 USDC (keeps 75% of gains)
-Agent receives:   15 USDC (performance fee)
-Platform receives: 10 USDC (protocol fee)
-Total:           100 USDC
+User:     98% of all yield
+Platform:  2% performance fee (covers infrastructure costs only)
 ```
 
-**Competitive Analysis:**
+**Example:** Vault earns 100 USDC yield
+```
+User receives:    98 USDC
+Platform receives: 2 USDC (infrastructure, monitoring, development)
+```
+
+**Why so low?**
+- No citation-backed research yet (no justification for higher fees)
+- Goal: Attract TVL, prove vault model, build trust
+- Token value accrues through network effects, not fee extraction
+- Lower fees = less risk-seeking incentive for the platform
+
+**Competitive Comparison:**
 - Yearn Finance: 20% performance fee
 - Enzyme Finance: 20% performance fee
-- Index Coop: 0.95% streaming fee
-- **Tuxedo MVP:** 25% total fees (15% agent + 10% platform) - competitive with top DeFi protocols
+- Index Coop: 0.95% annual streaming fee
+- **Tuxedo MVP: 2% performance fee** (ultra-competitive)
 
-**No management fee for MVP.** Just performance-based. Align incentives.
+### Future: Choir-Integrated Vaults (Justified Higher Fees)
+
+**When we have "legibly credible alpha" from citation-backed research:**
+
+**Fee Structure (Choir Model):**
+```
+User:         80% of yield
+Citations:    14% of yield (pays researchers whose insights informed strategy)
+Platform:      4% of yield (operations)
+CHOIR Buyback: 2% of yield (deflationary token mechanism)
+Total Fee:    20% performance fee
+```
+
+**Example:** Vault earns 100 USDC yield
+```
+User receives:           80 USDC
+Citation reward pool:    14 USDC → Distributed to researchers
+Platform operations:      4 USDC → Infrastructure, development
+CHOIR buyback/burn:       2 USDC → Token value accrual
+```
+
+**Why higher fees are justified:**
+- Researchers get paid for insights that inform strategies
+- Agent decisions backed by cited research (transparency)
+- Knowledge production funded by capital performance
+- "Special sauce" = research-backed strategies worth paying for
+
+**Migration Message:**
+> "Fees are increasing from 2% to 20%, but now your yields are informed by a global research network. Every strategy decision cites the researchers who made it possible. You're not just farming yield—you're funding the intelligence that creates alpha."
 
 ---
 
