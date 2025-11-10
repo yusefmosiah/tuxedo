@@ -3,12 +3,26 @@ import { Backstop, PoolV2, Reserve } from "@blend-capital/blend-sdk";
 import { BLEND_CONTRACTS } from "../contracts/blend";
 import { network } from "../contracts/util";
 
+// Helper to check if URL uses HTTP protocol
+const isHttpUrl = (url: string): boolean => {
+  try {
+    const urlObj = new URL(url);
+    return urlObj.protocol === "http:";
+  } catch {
+    // Fallback to string check if URL parsing fails
+    return url.toLowerCase().startsWith("http://");
+  }
+};
+
 // Create Blend SDK compatible network object
 const blendNetwork = {
   rpc: network.rpcUrl,
   passphrase: network.passphrase,
   networkPassphrase: network.passphrase,
-  allowHttp: network.rpcUrl.startsWith("http://"), // Only allow HTTP for local development
+  // Allow HTTP for development and HTTP-based RPC providers
+  allowHttp: isHttpUrl(network.rpcUrl) ||
+             network.rpcUrl.includes("localhost") ||
+             network.rpcUrl.includes("127.0.0.1"),
 };
 import {
   BlendPoolData,

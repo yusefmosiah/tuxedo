@@ -28,11 +28,26 @@ export const BLEND_CONTRACTS = {
 } as const;
 
 /**
+ * Helper to check if URL uses HTTP protocol
+ */
+const isHttpUrl = (url: string): boolean => {
+  try {
+    const urlObj = new URL(url);
+    return urlObj.protocol === "http:";
+  } catch {
+    // Fallback to string check if URL parsing fails
+    return url.toLowerCase().startsWith("http://");
+  }
+};
+
+/**
  * Initialize a Soroban RPC Server instance
  */
 export function getServer() {
   return new rpc.Server(rpcUrl, {
-    allowHttp: rpcUrl.startsWith("http://"),
+    allowHttp: isHttpUrl(rpcUrl) ||
+               rpcUrl.includes("localhost") ||
+               rpcUrl.includes("127.0.0.1"),
   });
 }
 

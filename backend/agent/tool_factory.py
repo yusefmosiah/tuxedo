@@ -556,7 +556,7 @@ def create_anonymous_tools(agent_context: AgentContext) -> List:
         List of read-only LangChain tools
 
     Note:
-        - No account management (requires authentication)
+        - Account queries: read-only for external wallets ✓
         - No trading (requires authentication)
         - No trustline management (requires authentication)
         - Market data: read-only ✓
@@ -566,6 +566,7 @@ def create_anonymous_tools(agent_context: AgentContext) -> List:
 
     # Initialize shared dependencies
     horizon = Server(HORIZON_URL)
+    account_mgr = AccountManager()
 
     @tool
     def stellar_market_data(
@@ -602,6 +603,46 @@ def create_anonymous_tools(agent_context: AgentContext) -> List:
         )
 
     @tool
+    def stellar_account_manager(
+        action: str,
+        account_id: Optional[str] = None,
+        limit: int = 10
+    ):
+        """
+        Query Stellar account information (read-only for anonymous users).
+
+        Anonymous users can:
+        - Query connected external wallet balances
+        - View transaction history for external wallet
+
+        Actions:
+            - "get": Get account details (balances, sequence, trustlines)
+            - "transactions": Get transaction history
+            - "list": List accessible accounts (external wallet if connected)
+
+        Args:
+            action: Operation to perform
+            account_id: Account ID (optional for external wallet)
+            limit: Transaction limit (for "transactions" action)
+
+        Returns:
+            Action-specific response dict with account information
+
+        Note:
+            Anonymous users have read-only access to external wallets only.
+            For full account management, please register with passkey.
+        """
+        return _account_manager(
+            action=action,
+            agent_context=agent_context,
+            account_manager=account_mgr,
+            horizon=horizon,
+            account_id=account_id,
+            secret_key=None,  # Anonymous users cannot import keys
+            limit=limit
+        )
+
+    @tool
     def stellar_utilities(action: str):
         """
         Network utilities and server information (read-only, no authentication required).
@@ -623,6 +664,7 @@ def create_anonymous_tools(agent_context: AgentContext) -> List:
         )
 
     tools = [
+        stellar_account_manager,
         stellar_market_data,
         stellar_utilities
     ]

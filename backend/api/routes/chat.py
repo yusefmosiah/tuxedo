@@ -90,7 +90,7 @@ async def chat_endpoint(
                 wallet_mode=request.wallet_mode or "agent",
                 wallet_address=request.wallet_address
             )
-            logger.warning(f"⚠️ ANONYMOUS USER - Creating {2} tools with dual authority for {agent_context}")
+            logger.warning(f"⚠️ ANONYMOUS USER - Creating {3} tools with dual authority for {agent_context}")
             tools = create_anonymous_tools(agent_context)
             logger.info(f"📦 Created {len(tools)} tools for anonymous user")
 
@@ -154,7 +154,7 @@ async def chat_stream_endpoint(
                     wallet_mode=request.wallet_mode or "agent",
                     wallet_address=request.wallet_address
                 )
-                logger.warning(f"⚠️ [STREAM] ANONYMOUS USER - Creating {2} tools with dual authority for {agent_context}")
+                logger.warning(f"⚠️ [STREAM] ANONYMOUS USER - Creating {3} tools with dual authority for {agent_context}")
                 tools = create_anonymous_tools(agent_context)
                 logger.info(f"📦 [STREAM] Created {len(tools)} tools for anonymous user")
 
@@ -273,7 +273,7 @@ async def chat_live_summary_endpoint(
                     wallet_mode=request.wallet_mode or "agent",
                     wallet_address=request.wallet_address
                 )
-                logger.warning(f"⚠️ [LIVE SUMMARY] ANONYMOUS USER - Creating {2} tools with dual authority for {agent_context}")
+                logger.warning(f"⚠️ [LIVE SUMMARY] ANONYMOUS USER - Creating {3} tools with dual authority for {agent_context}")
                 tools = create_anonymous_tools(agent_context)
                 logger.info(f"📦 [LIVE SUMMARY] Created {len(tools)} tools for anonymous user")
 
