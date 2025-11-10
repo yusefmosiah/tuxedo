@@ -15,6 +15,7 @@ export interface ChatRequest {
   message: string;
   history: ChatMessage[];
   wallet_address?: string | null;
+  wallet_mode?: string | null;
 }
 
 export interface ChatResponse {
@@ -49,6 +50,7 @@ export interface LiveSummaryChatRequest {
   message: string;
   history: ChatMessage[];
   wallet_address?: string | null;
+  wallet_mode?: string | null;
   enable_summary?: boolean;
 }
 
