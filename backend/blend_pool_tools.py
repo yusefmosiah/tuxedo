@@ -841,10 +841,11 @@ async def blend_supply_collateral(
     pool_address: str,
     asset_address: str,
     amount: float,
-    user_id: str,
     account_id: str,
     account_manager: AccountManager,
     soroban_server: SorobanServerAsync,
+    agent_context = None,
+    user_id: str = None,
     network: str = "mainnet"
 ) -> Dict[str, Any]:
     """
@@ -853,14 +854,17 @@ async def blend_supply_collateral(
     This function builds and submits a transaction to supply assets as collateral
     to a Blend pool using the unified submit() function with SupplyCollateral request type.
 
+    Now supports external wallet signing via AgentContext.
+
     Args:
         pool_address: Pool contract ID (e.g., Comet pool)
         asset_address: Asset to supply (e.g., USDC, XLM)
         amount: Amount in decimal units (e.g., 100.5)
-        user_id: User identifier for permission checks
         account_id: Account ID from AccountManager
         account_manager: AccountManager instance
         soroban_server: SorobanServerAsync instance
+        agent_context: AgentContext for wallet mode support (required)
+        user_id: User identifier (backward compatibility, can be None)
         network: "mainnet" (mainnet-only)
 
     Returns:
@@ -905,12 +909,13 @@ async def blend_supply_collateral(
             }
         ])
 
-        # Execute via invoke action
+        # Execute via invoke action with agent context
         result = await soroban_operations(
             action="invoke",
-            user_id=user_id,
             soroban_server=soroban_server,
             account_manager=account_manager,
+            agent_context=agent_context,
+            user_id=user_id or (agent_context.user_id if agent_context else None),
             contract_id=pool_address,
             function_name="submit",
             parameters=parameters,
@@ -918,6 +923,10 @@ async def blend_supply_collateral(
             auto_sign=True,
             network_passphrase=NETWORK_CONFIG['passphrase']
         )
+
+        # Handle external wallet response
+        if result.get('requires_signature'):
+            return result
 
         if not result.get('success'):
             return {
@@ -927,8 +936,9 @@ async def blend_supply_collateral(
             }
 
         # Get asset symbol for user-friendly message
-        asset_symbol = await _get_asset_symbol(asset_address, soroban_server, account_manager, user_id, network=network)
-        pool_name = await _get_pool_name(pool_address, soroban_server, account_manager, user_id, network)
+        effective_user_id = user_id or (agent_context.user_id if agent_context else None)
+        asset_symbol = await _get_asset_symbol(asset_address, soroban_server, account_manager, effective_user_id, network=network)
+        pool_name = await _get_pool_name(pool_address, soroban_server, account_manager, effective_user_id, network)
 
         tx_hash = result.get('hash', 'unknown')
 
@@ -957,10 +967,11 @@ async def blend_withdraw_collateral(
     pool_address: str,
     asset_address: str,
     amount: float,
-    user_id: str,
     account_id: str,
     account_manager: AccountManager,
     soroban_server: SorobanServerAsync,
+    agent_context = None,
+    user_id: str = None,
     network: str = "mainnet"
 ) -> Dict[str, Any]:
     """
@@ -969,14 +980,17 @@ async def blend_withdraw_collateral(
     This function builds and submits a transaction to withdraw assets from collateral
     using the unified submit() function with WithdrawCollateral request type.
 
+    Now supports external wallet signing via AgentContext.
+
     Args:
         pool_address: Pool contract ID
         asset_address: Asset to withdraw
         amount: Amount in decimal units (e.g., 50.0)
-        user_id: User identifier for permission checks
         account_id: Account ID from AccountManager
         account_manager: AccountManager instance
         soroban_server: SorobanServerAsync instance
+        agent_context: AgentContext for wallet mode support (required)
+        user_id: User identifier (backward compatibility, can be None)
         network: "mainnet" (mainnet-only)
 
     Returns:
@@ -1012,12 +1026,13 @@ async def blend_withdraw_collateral(
             }
         ])
 
-        # Execute via invoke action
+        # Execute via invoke action with agent context
         result = await soroban_operations(
             action="invoke",
-            user_id=user_id,
             soroban_server=soroban_server,
             account_manager=account_manager,
+            agent_context=agent_context,
+            user_id=user_id or (agent_context.user_id if agent_context else None),
             contract_id=pool_address,
             function_name="submit",
             parameters=parameters,
@@ -1025,6 +1040,10 @@ async def blend_withdraw_collateral(
             auto_sign=True,
             network_passphrase=NETWORK_CONFIG['passphrase']
         )
+
+        # Handle external wallet response
+        if result.get('requires_signature'):
+            return result
 
         if not result.get('success'):
             return {
@@ -1034,8 +1053,9 @@ async def blend_withdraw_collateral(
             }
 
         # Get asset symbol for user-friendly message
-        asset_symbol = await _get_asset_symbol(asset_address, soroban_server, account_manager, user_id, network=network)
-        pool_name = await _get_pool_name(pool_address, soroban_server, account_manager, user_id, network)
+        effective_user_id = user_id or (agent_context.user_id if agent_context else None)
+        asset_symbol = await _get_asset_symbol(asset_address, soroban_server, account_manager, effective_user_id, network=network)
+        pool_name = await _get_pool_name(pool_address, soroban_server, account_manager, effective_user_id, network)
 
         tx_hash = result.get('hash', 'unknown')
 
