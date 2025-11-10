@@ -332,17 +332,43 @@ def account_manager(
             }
 
         elif action == "get":
-            # PERMISSION CHECK
+            # EXTERNAL WALLET SUPPORT: Allow querying external wallet without account_id
             if not account_id:
-                return {"error": "account_id required", "success": False}
+                # If no account_id but external wallet is connected, query that
+                if agent_context.wallet_mode == "external" and agent_context.wallet_address:
+                    public_key = agent_context.wallet_address
+                    chain_account = horizon.accounts().account_id(public_key).call()
 
-            if not account_manager.user_owns_account(agent_context, account_id):
-                return {"error": "Permission denied", "success": False}
+                    return {
+                        "account_id": "external_wallet",
+                        "public_key": public_key,
+                        "sequence": chain_account["sequence"],
+                        "balances": chain_account["balances"],
+                        "signers": chain_account["signers"],
+                        "thresholds": chain_account["thresholds"],
+                        "flags": chain_account.get("flags", {}),
+                        "owner_context": "external",
+                        "success": True
+                    }
+                else:
+                    return {"error": "account_id required", "success": False}
 
-            account = account_manager._get_account_by_id(account_id)
+            # PERMISSION CHECK for managed accounts
+            if account_id == "external_wallet":
+                # Virtual ID for external wallet
+                if agent_context.wallet_mode == "external" and agent_context.wallet_address:
+                    public_key = agent_context.wallet_address
+                else:
+                    return {"error": "External wallet not connected", "success": False}
+            else:
+                # Managed account
+                if not account_manager.user_owns_account(agent_context, account_id):
+                    return {"error": "Permission denied", "success": False}
+
+                account = account_manager._get_account_by_id(account_id)
+                public_key = account['public_key']
 
             # Fetch on-chain data
-            public_key = account['public_key']
             chain_account = horizon.accounts().account_id(public_key).call()
 
             return {
@@ -357,16 +383,27 @@ def account_manager(
             }
 
         elif action == "transactions":
-            # PERMISSION CHECK
+            # EXTERNAL WALLET SUPPORT
             if not account_id:
-                return {"error": "account_id required", "success": False}
+                # If no account_id but external wallet is connected, query that
+                if agent_context.wallet_mode == "external" and agent_context.wallet_address:
+                    public_key = agent_context.wallet_address
+                else:
+                    return {"error": "account_id required", "success": False}
+            elif account_id == "external_wallet":
+                # Virtual ID for external wallet
+                if agent_context.wallet_mode == "external" and agent_context.wallet_address:
+                    public_key = agent_context.wallet_address
+                else:
+                    return {"error": "External wallet not connected", "success": False}
+            else:
+                # PERMISSION CHECK for managed accounts
+                if not account_manager.user_owns_account(agent_context, account_id):
+                    return {"error": "Permission denied", "success": False}
 
-            if not account_manager.user_owns_account(agent_context, account_id):
-                return {"error": "Permission denied", "success": False}
+                account = account_manager._get_account_by_id(account_id)
+                public_key = account['public_key']
 
-            account = account_manager._get_account_by_id(account_id)
-
-            public_key = account['public_key']
             transactions = (
                 horizon.transactions()
                 .for_account(public_key)
@@ -407,6 +444,31 @@ def account_manager(
                     )
                     acc['owner_user_id'] = auth_user_id
                 all_accounts.extend(accounts)
+
+            # EXTERNAL WALLET SUPPORT: Add connected external wallet if present
+            if agent_context.wallet_mode == "external" and agent_context.wallet_address:
+                try:
+                    # Fetch external wallet details from blockchain
+                    chain_account = horizon.accounts().account_id(agent_context.wallet_address).call()
+                    external_wallet = {
+                        'id': 'external_wallet',  # Virtual ID
+                        'chain': 'stellar',
+                        'public_key': agent_context.wallet_address,
+                        'owner_context': 'external',
+                        'owner_user_id': agent_context.user_id,
+                        'name': 'Connected Wallet',
+                        'network': 'mainnet',
+                        # Add on-chain balance info
+                        'balances': chain_account.get('balances', []),
+                        'sequence': chain_account.get('sequence'),
+                    }
+                    all_accounts.append(external_wallet)
+                except Exception as e:
+                    # Log error but don't fail the entire request
+                    import logging
+                    logging.getLogger(__name__).warning(
+                        f"Could not fetch external wallet {agent_context.wallet_address}: {e}"
+                    )
 
             return {
                 "accounts": all_accounts,
