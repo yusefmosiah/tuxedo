@@ -7,9 +7,13 @@ import asyncio
 import os
 import sys
 import logging
+from dotenv import load_dotenv
 from stellar_sdk.soroban_server_async import SorobanServerAsync
 from account_manager import AccountManager
 from blend_pool_tools import blend_get_reserve_apy, BLEND_MAINNET_CONTRACTS
+
+# Load environment variables from .env file
+load_dotenv()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -34,7 +38,7 @@ async def test_with_agent_account():
     soroban_server = SorobanServerAsync(rpc_url)
     account_manager = AccountManager()
 
-    user_id = "agent"
+    user_id = "system_agent"
 
     try:
         # Check if agent account already exists

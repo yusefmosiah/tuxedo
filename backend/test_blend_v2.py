@@ -9,9 +9,13 @@ import asyncio
 import os
 import sys
 import logging
+from dotenv import load_dotenv
 from stellar_sdk.soroban_server_async import SorobanServerAsync
 from account_manager import AccountManager
 from blend_get_reserve_apy_v2 import blend_get_reserve_apy_v2
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Set up logging
 logging.basicConfig(
