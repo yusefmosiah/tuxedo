@@ -345,6 +345,82 @@ def create_user_tools(agent_context: AgentContext) -> List:
         )
 
     # ========================================================================
+    # DEFINDEX TOOLS - Strategy-based yield optimization (mainnet)
+    # ========================================================================
+
+    @tool
+    def defindex_discover_vaults(min_apy: Optional[float] = 0.0):
+        """
+        Discover DeFindex vaults sorted by APY (highest to lowest).
+
+        Use this when users ask about:
+        - Available DeFindex vaults for investment
+        - Current APY rates on DeFindex strategies
+        - Comparing DeFindex to other yield options
+
+        Args:
+            min_apy: Minimum APY threshold (default: 0.0)
+
+        Returns:
+            List of vaults with APY, TVL, strategies, and contract addresses
+        """
+        import asyncio
+        from defindex_account_tools import _defindex_discover_vaults
+
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, _defindex_discover_vaults(
+                    min_apy=min_apy,
+                    user_id=agent_context.user_id
+                ))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(
+                _defindex_discover_vaults(
+                    min_apy=min_apy,
+                    user_id=agent_context.user_id
+                )
+            )
+
+    @tool
+    def defindex_get_vault_details(vault_address: str):
+        """
+        Get detailed information about a specific DeFindex vault.
+
+        Use this when users ask about:
+        - Specific vault details
+        - Strategies used in a vault
+        - Fee structure and managers
+
+        Args:
+            vault_address: Contract address of the vault
+
+        Returns:
+            Detailed vault information including strategies, fees, and managers
+        """
+        import asyncio
+        from defindex_account_tools import _defindex_get_vault_details
+
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, _defindex_get_vault_details(
+                    vault_address=vault_address,
+                    user_id=agent_context.user_id
+                ))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(
+                _defindex_get_vault_details(
+                    vault_address=vault_address,
+                    user_id=agent_context.user_id
+                )
+            )
+
+    # ========================================================================
     # BLEND CAPITAL TOOLS - Primary yield farming solution (mainnet)
     # ========================================================================
 
@@ -640,6 +716,158 @@ def create_user_tools(agent_context: AgentContext) -> List:
                 )
             )
 
+    # ========================================================================
+    # SOROSWAP DEX TOOLS - Token swaps and DEX aggregation (mainnet)
+    # ========================================================================
+
+    @tool
+    def soroswap_get_quote(
+        token_in: str,
+        token_out: str,
+        amount_in: float
+    ):
+        """
+        Get a swap quote from Soroswap DEX without executing.
+
+        Use this when users ask about:
+        - Swap rates and prices
+        - How much they would receive for a swap
+        - Comparing DEX prices
+
+        Args:
+            token_in: Input token symbol (e.g., "XLM") or contract address
+            token_out: Output token symbol (e.g., "USDC") or contract address
+            amount_in: Amount to swap in decimal units (e.g., 100.5)
+
+        Returns:
+            Quote with expected output amount and price impact
+        """
+        import asyncio
+        from soroswap_account_tools import _soroswap_get_quote
+
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, _soroswap_get_quote(
+                    token_in=token_in,
+                    token_out=token_out,
+                    amount_in=amount_in,
+                    user_id=agent_context.user_id,
+                    account_manager=account_mgr
+                ))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(
+                _soroswap_get_quote(
+                    token_in=token_in,
+                    token_out=token_out,
+                    amount_in=amount_in,
+                    user_id=agent_context.user_id,
+                    account_manager=account_mgr
+                )
+            )
+
+    @tool
+    def soroswap_get_pools():
+        """
+        Get available Soroswap liquidity pools.
+
+        Use this when users ask about:
+        - Available trading pairs on Soroswap
+        - Liquidity pool information
+        - DEX pool discovery
+
+        Returns:
+            List of available pools with liquidity information
+        """
+        import asyncio
+        from soroswap_account_tools import _soroswap_get_pools
+
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, _soroswap_get_pools(
+                    user_id=agent_context.user_id,
+                    account_manager=account_mgr
+                ))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(
+                _soroswap_get_pools(
+                    user_id=agent_context.user_id,
+                    account_manager=account_mgr
+                )
+            )
+
+    @tool
+    def soroswap_swap(
+        token_in: str,
+        token_out: str,
+        amount_in: float,
+        account_id: str = None,
+        slippage: float = 0.5
+    ):
+        """
+        Execute a token swap on Soroswap DEX.
+
+        NOTE: Currently returns transaction info only. Use stellar_trading for actual swaps.
+
+        Use this when users want to:
+        - Swap tokens via Soroswap
+        - Execute a DEX trade
+
+        Args:
+            token_in: Input token symbol (e.g., "XLM")
+            token_out: Output token symbol (e.g., "USDC")
+            amount_in: Amount to swap in decimal units
+            account_id: Optional account ID (defaults to connected wallet)
+            slippage: Slippage tolerance in percent (default: 0.5%)
+
+        Returns:
+            Transaction information (execution pending implementation)
+        """
+        import asyncio
+        from soroswap_account_tools import _soroswap_swap
+
+        # Auto-detect account: prefer external wallet if connected
+        if account_id is None:
+            if agent_context.wallet_mode == "external" and agent_context.wallet_address:
+                account_id = "external_wallet"
+            else:
+                return {
+                    "success": False,
+                    "error": "No account specified and no external wallet connected. Please connect a wallet or specify an account_id."
+                }
+
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, _soroswap_swap(
+                    token_in=token_in,
+                    token_out=token_out,
+                    amount_in=amount_in,
+                    account_id=account_id,
+                    agent_context=agent_context,
+                    account_manager=account_mgr,
+                    slippage=slippage
+                ))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(
+                _soroswap_swap(
+                    token_in=token_in,
+                    token_out=token_out,
+                    amount_in=amount_in,
+                    account_id=account_id,
+                    agent_context=agent_context,
+                    account_manager=account_mgr,
+                    slippage=slippage
+                )
+            )
+
     # Return list of tools with agent_context injected
     tools = [
         get_my_wallet,  # User's external wallet ONLY
@@ -649,14 +877,21 @@ def create_user_tools(agent_context: AgentContext) -> List:
         stellar_trustline_manager,
         stellar_market_data,
         stellar_utilities,
+        # DeFindex tools (mainnet-only strategy-based yield optimization)
+        defindex_discover_vaults,
+        defindex_get_vault_details,
         # Blend Capital tools (mainnet-only yield farming)
         blend_find_best_yield,
         blend_discover_pools,
         blend_supply_to_pool,
         blend_withdraw_from_pool,
         blend_check_my_positions,
-        blend_get_pool_apy
+        blend_get_pool_apy,
+        # Soroswap DEX tools (mainnet-only token swaps)
+        soroswap_get_quote,
+        soroswap_get_pools,
+        soroswap_swap
     ]
 
-    logger.info(f"Created {len(tools)} tools (7 Stellar + 6 Blend Capital) for {agent_context}")
+    logger.info(f"Created {len(tools)} tools (7 Stellar + 2 DeFindex + 6 Blend Capital + 3 Soroswap DEX) for {agent_context}")
     return tools
