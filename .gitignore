@@ -72,6 +72,10 @@ MANIFEST
 backend/chat_threads.db
 backend/tuxedo.db
 backend/tuxedo_passkeys.db
+# Database files in root (created during testing)
+tuxedo_passkeys.db
+chat_threads.db
+tuxedo.db
 backend/.venv/
 .venv/
 # Stellar account keystores - contain private keys!
