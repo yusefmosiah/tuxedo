@@ -55,7 +55,7 @@ export function useWallet(): WalletState {
       return { signedTxXdr: xdr };
     },
     isPending: false,
-    networkPassphrase: "Test SDF Network ; September 2015",
+    networkPassphrase: "Public Global Stellar Network ; September 2015",
   };
 }
 

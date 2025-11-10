@@ -11,6 +11,7 @@
 Replace the failing DeFindex API integration with direct Blend Capital pool interactions via Soroban RPC calls. This enables autonomous yield farming operations for the AI agent without relying on external APIs.
 
 **Key Changes:**
+
 - ✅ Keep DeFindex API client code (mark as disabled, may come back)
 - ❌ Remove all fake/fallback/mock data completely
 - ✅ Create new Blend pool tools for autonomous operations
@@ -24,6 +25,7 @@ Replace the failing DeFindex API integration with direct Blend Capital pool inte
 ### 1.1 DeFindex Integration (Failing)
 
 **What exists:**
+
 - `backend/defindex_client.py` - API client calling `https://api.defindex.io` (DOWN)
 - `backend/defindex_soroban.py` - Fallback with fake mock data (TO BE CLEANED)
 - `backend/defindex_tools.py` - LangChain agent tools
@@ -32,6 +34,7 @@ Replace the failing DeFindex API integration with direct Blend Capital pool inte
 **Vault Addresses (REAL - Keep These):**
 
 **Mainnet:**
+
 ```python
 MAINNET_VAULTS = {
     'USDC_Blend_Fixed': 'CDB2WMKQQNVZMEBY7Q7GZ5C7E7IAFSNMZ7GGVD6WKTCEWK7XOIAVZSAP',
@@ -44,6 +47,7 @@ MAINNET_VAULTS = {
 ```
 
 **Testnet (HODL Vaults):**
+
 ```python
 TESTNET_VAULTS = {
     'XLM_HODL_1': 'CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA',
@@ -81,6 +85,7 @@ BLEND_TESTNET_CONTRACTS = {
 ```
 
 **Current Frontend Integration:**
+
 - `src/contracts/blend.ts` - ✅ CONFIRMED TESTNET (comment on line 10)
 - `src/hooks/useBlendPools.ts` - Working pool discovery via Backstop
 - Uses `@blend-capital/blend-sdk` v3.2.1
@@ -91,6 +96,7 @@ BLEND_TESTNET_CONTRACTS = {
 **File:** `backend/stellar_soroban.py`
 
 Already has everything needed:
+
 - ✅ `invoke` action for contract execution
 - ✅ `simulate` action for testing without fees
 - ✅ `get_data` action for reading contract storage
@@ -101,6 +107,7 @@ Already has everything needed:
 - ✅ Async-first with proper error handling
 
 **Network Configuration:**
+
 ```python
 TESTNET_RPC = "https://soroban-testnet.stellar.org"
 TESTNET_PASSPHRASE = "Test SDF Network ; September 2015"
@@ -127,6 +134,7 @@ submit(
 ### 2.2 Request Types
 
 **Enum values from Blend contracts:**
+
 ```rust
 0 = SupplyCollateral      // Supply assets as collateral (can borrow against)
 1 = WithdrawCollateral    // Withdraw collateral
@@ -140,12 +148,14 @@ submit(
 ```
 
 **For Yield Farming, we primarily need:**
+
 - `SupplyCollateral` (0) - To earn yield
 - `WithdrawCollateral` (1) - To remove funds
 
 ### 2.3 Request Structure
 
 Each request in the `requests` vector contains:
+
 ```typescript
 {
     amount: Int128,           // Scaled to asset decimals (typically 7)
@@ -155,6 +165,7 @@ Each request in the `requests` vector contains:
 ```
 
 **Example for TypeScript SDK:**
+
 ```typescript
 const submitArgs = {
   from: userAddress,
@@ -162,9 +173,9 @@ const submitArgs = {
   to: userAddress,
   requests: [
     {
-      amount: scaleInputToBigInt(amount, decimals),  // e.g., 100 XLM → 1000000000
-      request_type: RequestType.SupplyCollateral,    // = 0
-      address: assetContractId,                      // e.g., XLM token address
+      amount: scaleInputToBigInt(amount, decimals), // e.g., 100 XLM → 1000000000
+      request_type: RequestType.SupplyCollateral, // = 0
+      address: assetContractId, // e.g., XLM token address
     },
   ],
 };
@@ -202,6 +213,7 @@ Reserve {
 ```
 
 **APY Calculation from Reserve Data:**
+
 ```python
 supply_rate = reserve_data['b_rate'] / 1e7  # Adjust for decimals
 supply_apr = supply_rate  # Annual rate
@@ -222,6 +234,7 @@ apy_percentage = supply_apy * 100
 **File:** `backend/defindex_client.py`
 
 Add at the top:
+
 ```python
 """
 DeFindex API Client
@@ -239,12 +252,14 @@ DEFINDEX_ENABLED = False  # Set to True if API comes back
 **File:** `backend/defindex_soroban.py`
 
 **Lines to remove/modify:**
+
 - Remove any `REALISTIC_APY_DATA` dictionaries (already removed on line 36)
 - Remove `enhanced_mock` data generation
 - Remove fallback APY calculations
 - Keep only MAINNET_VAULTS and TESTNET_VAULTS dictionaries
 
 **Function changes:**
+
 ```python
 async def get_available_vaults(self, min_apy: float = 15.0) -> List[Dict]:
     """Get available vaults - REQUIRES API"""
@@ -265,6 +280,7 @@ async def get_available_vaults(self, min_apy: float = 15.0) -> List[Dict]:
 **File:** `backend/defindex_tools.py`
 
 Add warning at top:
+
 ```python
 """
 ⚠️ DEPRECATED: DeFindex API is down
@@ -882,6 +898,7 @@ async def test_full_yield_farming_flow():
 ## 4. Implementation Checklist
 
 ### 4.1 Phase 1: Cleanup (1-2 hours)
+
 - [ ] Add `DEFINDEX_ENABLED = False` flag to `defindex_client.py`
 - [ ] Remove all fake/mock data from `defindex_soroban.py`
 - [ ] Update `get_available_vaults()` to raise error if API unavailable
@@ -889,6 +906,7 @@ async def test_full_yield_farming_flow():
 - [ ] Comment out DeFindex tool registration in agent
 
 ### 4.2 Phase 2: Blend Tools (4-6 hours)
+
 - [ ] Create `backend/blend_pool_tools.py`
 - [ ] Implement `blend_discover_pools()`
 - [ ] Implement `blend_get_reserve_apy()`
@@ -899,12 +917,14 @@ async def test_full_yield_farming_flow():
 - [ ] Add helper functions (`_get_asset_symbol`, `_get_pool_name`, etc.)
 
 ### 4.3 Phase 3: Agent Integration (2-3 hours)
+
 - [ ] Update `tool_factory.py` with Blend tools
 - [ ] Add proper tool descriptions for LangChain
 - [ ] Test tool invocation from agent
 - [ ] Update agent prompts to understand Blend operations
 
 ### 4.4 Phase 4: Testing (2-3 hours)
+
 - [ ] Write unit tests for each function
 - [ ] Create integration test script
 - [ ] Test on testnet with real pools
@@ -912,6 +932,7 @@ async def test_full_yield_farming_flow():
 - [ ] Test full flow: discover → supply → check → withdraw
 
 ### 4.5 Phase 5: Documentation (1 hour)
+
 - [ ] Update `CLAUDE.md` with Blend integration details
 - [ ] Add examples to README
 - [ ] Document testnet vs mainnet differences
@@ -922,6 +943,7 @@ async def test_full_yield_farming_flow():
 ## 5. Example Agent Interactions
 
 ### Example 1: Find Best Yield
+
 ```
 User: "Help me earn yield on my 100 USDC"
 
@@ -950,6 +972,7 @@ You'll start earning interest immediately!"
 ```
 
 ### Example 2: Check Positions
+
 ```
 User: "What's in my yield farming positions?"
 
@@ -969,6 +992,7 @@ Total estimated yearly earnings: $15.63"
 ```
 
 ### Example 3: Rebalance
+
 ```
 User: "Move my funds to the highest yield pool"
 
@@ -997,11 +1021,13 @@ Your new APY: 15.8% (+3.3%)"
 **Current Focus: Testnet Only**
 
 Differences:
+
 - Different contract addresses
 - Different network passphrase
 - Different RPC URL
 
 **Config structure:**
+
 ```python
 NETWORK_CONFIG = {
     'testnet': {
@@ -1020,6 +1046,7 @@ NETWORK_CONFIG = {
 ### 6.2 Amount Scaling
 
 Stellar assets use **7 decimals**:
+
 ```python
 # User input: 100.5 USDC
 amount_stroops = int(100.5 * 10_000_000)  # = 1005000000
@@ -1032,22 +1059,24 @@ amount_usdc = 1005000000 / 10_000_000  # = 100.5
 
 Common errors and solutions:
 
-| Error | Cause | Solution |
-|-------|-------|----------|
-| `MissingValue` | Wrong contract address for network | Verify testnet vs mainnet |
-| `InsufficientBalance` | Not enough tokens | Check balance first |
-| `PermissionDenied` | Wrong user_id | Verify AccountManager ownership |
-| `PoolPaused` | Pool is frozen | Check pool status before operations |
-| `ExceedsAvailable` | Trying to withdraw more than supplied | Query positions first |
+| Error                 | Cause                                 | Solution                            |
+| --------------------- | ------------------------------------- | ----------------------------------- |
+| `MissingValue`        | Wrong contract address for network    | Verify testnet vs mainnet           |
+| `InsufficientBalance` | Not enough tokens                     | Check balance first                 |
+| `PermissionDenied`    | Wrong user_id                         | Verify AccountManager ownership     |
+| `PoolPaused`          | Pool is frozen                        | Check pool status before operations |
+| `ExceedsAvailable`    | Trying to withdraw more than supplied | Query positions first               |
 
 ### 6.4 Rate Limiting
 
 RPC calls have limits:
+
 - Simulate: No limits (doesn't hit chain)
 - Invoke: Transaction fees apply
 - Query: Reasonable rate limits
 
 **Best practices:**
+
 - Use `simulate` for read-only operations
 - Batch queries when possible
 - Cache pool data (refresh every 5 minutes)
@@ -1066,17 +1095,17 @@ RPC calls have limits:
 
 ## 7. Comparison: DeFindex API vs Direct Blend
 
-| Aspect | DeFindex API | Direct Blend |
-|--------|--------------|--------------|
-| **Availability** | ❌ Down | ✅ Always available |
-| **Data Source** | External API | ✅ On-chain contracts |
-| **Latency** | API roundtrip | ✅ Direct RPC (faster) |
-| **Dependencies** | API key, network | ✅ Just Soroban RPC |
-| **APY Data** | Pre-calculated | ✅ Real-time from reserves |
-| **Reliability** | Single point of failure | ✅ Decentralized |
-| **Autonomy** | API returns XDR to sign | ✅ Full autonomous control |
-| **Testnet Support** | Limited | ✅ Full support |
-| **Transaction Control** | External | ✅ Complete control |
+| Aspect                  | DeFindex API            | Direct Blend               |
+| ----------------------- | ----------------------- | -------------------------- |
+| **Availability**        | ❌ Down                 | ✅ Always available        |
+| **Data Source**         | External API            | ✅ On-chain contracts      |
+| **Latency**             | API roundtrip           | ✅ Direct RPC (faster)     |
+| **Dependencies**        | API key, network        | ✅ Just Soroban RPC        |
+| **APY Data**            | Pre-calculated          | ✅ Real-time from reserves |
+| **Reliability**         | Single point of failure | ✅ Decentralized           |
+| **Autonomy**            | API returns XDR to sign | ✅ Full autonomous control |
+| **Testnet Support**     | Limited                 | ✅ Full support            |
+| **Transaction Control** | External                | ✅ Complete control        |
 
 ---
 
@@ -1144,18 +1173,21 @@ After implementation, validate:
 ## 10. References
 
 **Official Documentation:**
+
 - Blend v2 Docs: https://docs.blend.capital/
 - Testnet Contracts: https://github.com/blend-capital/blend-utils/blob/main/testnet.contracts.json
 - Blend SDK: https://www.npmjs.com/package/@blend-capital/blend-sdk
 - Soroban RPC: https://developers.stellar.org/docs/data/rpc
 
 **Testnet Resources:**
+
 - Blend Testnet UI: https://testnet.blend.capital/
 - Friendbot (testnet XLM): https://friendbot.stellar.org
 - Testnet RPC: https://soroban-testnet.stellar.org
 - Stellar Expert (testnet): https://stellar.expert/explorer/testnet
 
 **Codebase References:**
+
 - Frontend pool loading: `src/hooks/useBlendPools.ts`
 - Soroban operations: `backend/stellar_soroban.py`
 - Account management: `backend/account_manager.py`

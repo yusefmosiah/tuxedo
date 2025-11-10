@@ -18,10 +18,12 @@ This document outlines the strategy for migrating Tuxedo from testnet-only to a 
 ## Implementation Progress
 
 ### ✅ Phase 1: Backend Implementation (Complete)
+
 **Completed**: 2025-11-09
 **Commit**: `7eef1c4` - "Implement mainnet integration for Blend Capital pools"
 
 **What Was Implemented**:
+
 - ✅ Added `BLEND_MAINNET_CONTRACTS` with all production addresses to `backend/blend_pool_tools.py`
 - ✅ Created `NETWORK_CONFIG` supporting both testnet and mainnet
 - ✅ Configured Ankr RPC URL from environment (`ANKR_STELLER_RPC`)
@@ -37,6 +39,7 @@ This document outlines the strategy for migrating Tuxedo from testnet-only to a 
 - ✅ Created `test_mainnet_blend.py` for mainnet connectivity validation
 
 **Key Benefits**:
+
 - Users now see **real mainnet yields** (5-15% APY) instead of testnet's 0%
 - Environment-driven network selection with fallback mechanism
 - Read operations query mainnet by default (real data)
@@ -45,9 +48,11 @@ This document outlines the strategy for migrating Tuxedo from testnet-only to a 
 **Files Changed**: `backend/blend_pool_tools.py`, `backend/blend_account_tools.py`, `backend/test_mainnet_blend.py`
 
 ### ✅ Phase 2: Frontend Contract Addresses (Complete)
+
 **Completed**: 2025-11-09
 
 **What Was Implemented**:
+
 - ✅ Added `BLEND_MAINNET_CONTRACTS` to `src/contracts/blend.ts` with all production addresses:
   - Core infrastructure: Backstop, PoolFactory, Emitter
   - Tokens: BLND, USDC, XLM
@@ -59,9 +64,11 @@ This document outlines the strategy for migrating Tuxedo from testnet-only to a 
 **Files Changed**: `src/contracts/blend.ts`
 
 ### ✅ Phase 3: Centralized Network Configuration (Complete)
+
 **Completed**: 2025-11-09
 
 **What Was Implemented**:
+
 - ✅ Enhanced `backend/config/settings.py` with comprehensive network configuration:
   - `default_network`: Defaults to "mainnet" for read operations
   - Mainnet config: `mainnet_horizon_url`, `mainnet_rpc_url`, `mainnet_passphrase`
@@ -76,9 +83,11 @@ This document outlines the strategy for migrating Tuxedo from testnet-only to a 
 **Files Changed**: `backend/config/settings.py`
 
 ### ✅ Phase 4: Account Network Tracking (Complete)
+
 **Completed**: 2025-11-09
 
 **What Was Implemented**:
+
 - ✅ Database schema updated in `backend/database_passkeys.py`:
   - Added `network` column to `wallet_accounts` table (defaults to "testnet")
   - Idempotent migration for existing databases
@@ -96,9 +105,11 @@ This document outlines the strategy for migrating Tuxedo from testnet-only to a 
 **Files Changed**: `backend/database_passkeys.py`, `backend/account_manager.py`
 
 ### ✅ Phase 5: Environment Configuration (Complete)
+
 **Completed**: 2025-11-09
 
 **What Was Implemented**:
+
 - ✅ Created `.env.local` for frontend with mainnet configuration:
   - `PUBLIC_STELLAR_NETWORK="PUBLIC"` (mainnet)
   - `PUBLIC_STELLAR_NETWORK_PASSPHRASE` set to mainnet passphrase
@@ -113,9 +124,11 @@ This document outlines the strategy for migrating Tuxedo from testnet-only to a 
 **Files Changed**: `.env.local` (new), `backend/.env.example`
 
 ### ✅ Phase 6: Testing (Complete)
+
 **Completed**: 2025-11-09
 
 **What Was Tested**:
+
 - ✅ Ran `test_mainnet_blend.py` successfully
 - ✅ Pool discovery working (found 1 mainnet pool)
 - ✅ Best yield finder working (infrastructure validated)
@@ -125,7 +138,9 @@ This document outlines the strategy for migrating Tuxedo from testnet-only to a 
 **Test Results**: 2/3 tests passed (network connectivity issues in sandbox expected)
 
 ### 🎯 Phase 7: Deployment (Pending)
+
 **Status**: Ready for deployment
+
 - ✅ RPC Provider: Ankr configured via `ANKR_STELLER_RPC` environment variable
 - ✅ Render.com: User reported adding `ANKR_STELLER_RPC` to secrets
 - ⏳ Production deployment: Ready to deploy with mainnet configuration
@@ -134,12 +149,14 @@ This document outlines the strategy for migrating Tuxedo from testnet-only to a 
 ## Problem Statement
 
 ### Current State
+
 - **Tuxedo is testnet-only** with hardcoded testnet contract addresses and URLs
 - **Blend testnet pools have 0% APY** making yield farming demonstrations impossible
 - **Configuration is scattered** across 13+ locations (frontend + backend)
 - **No mainnet support** despite production-ready architecture
 
 ### Why Mainnet Now?
+
 1. **Real market data**: Mainnet pools have actual yield (e.g., 5-15% APY on USDC)
 2. **Real user value**: Demonstrable DeFi operations with meaningful returns
 3. **Low risk entry**: $10 deposit is sufficient for educational demonstration
@@ -177,21 +194,21 @@ TESTNET_SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
 ```typescript
 export const NETWORK_CONFIG = {
   mainnet: {
-    passphrase: 'Public Global Stellar Network ; September 2015',
-    horizonUrl: 'https://horizon.stellar.org',
+    passphrase: "Public Global Stellar Network ; September 2015",
+    horizonUrl: "https://horizon.stellar.org",
     rpcUrl: process.env.VITE_MAINNET_RPC_URL,
-    contracts: BLEND_MAINNET_CONTRACTS
+    contracts: BLEND_MAINNET_CONTRACTS,
   },
   testnet: {
-    passphrase: 'Test SDF Network ; September 2015',
-    horizonUrl: 'https://horizon-testnet.stellar.org',
-    rpcUrl: 'https://soroban-testnet.stellar.org',
-    contracts: BLEND_TESTNET_CONTRACTS
-  }
-}
+    passphrase: "Test SDF Network ; September 2015",
+    horizonUrl: "https://horizon-testnet.stellar.org",
+    rpcUrl: "https://soroban-testnet.stellar.org",
+    contracts: BLEND_TESTNET_CONTRACTS,
+  },
+};
 
 // Default to mainnet for read operations
-export const DEFAULT_NETWORK = 'mainnet'
+export const DEFAULT_NETWORK = "mainnet";
 ```
 
 ## Implementation Checklist
@@ -201,6 +218,7 @@ export const DEFAULT_NETWORK = 'mainnet'
 **File: `backend/blend_pool_tools.py`**
 
 Current:
+
 ```python
 BLEND_TESTNET_CONTRACTS = {
     'backstop': 'CBHWKF4RHIKOKSURAKXSJRIIA7RJAMJH4VHRVPYGUF4AJ5L544LYZ35X',
@@ -213,6 +231,7 @@ NETWORK_CONFIG = {
 ```
 
 Required Changes:
+
 ```python
 # Add mainnet contract addresses
 BLEND_MAINNET_CONTRACTS = {
@@ -256,14 +275,16 @@ DEFAULT_NETWORK = 'mainnet'
 **File: `src/contracts/blend.ts`**
 
 Current:
+
 ```typescript
 export const BLEND_CONTRACTS = {
   poolFactory: "CDSMKKCWEAYQW4DAUSH3XGRMIVIJB44TZ3UA5YCRHT6MP4LWEWR4GYV6",
   // ... testnet only
-}
+};
 ```
 
 Required Changes:
+
 ```typescript
 // Mainnet contract addresses
 export const BLEND_MAINNET_CONTRACTS = {
@@ -292,7 +313,7 @@ export const BLEND_TESTNET_CONTRACTS = {
 
 // Export based on environment (default to mainnet)
 export const BLEND_CONTRACTS =
-  import.meta.env.VITE_STELLAR_NETWORK === 'testnet'
+  import.meta.env.VITE_STELLAR_NETWORK === "testnet"
     ? BLEND_TESTNET_CONTRACTS
     : BLEND_MAINNET_CONTRACTS;
 ```
@@ -428,18 +449,19 @@ def blend_find_best_yield(
 
 **Mainnet Soroban RPC Providers** (required for mainnet):
 
-| Provider       | Free Tier | Pricing | URL Pattern |
-|----------------|-----------|---------|-------------|
-| **QuickNode** | 3M requests/month | $9-299/mo | `https://[your-endpoint].stellar-mainnet.quiknode.pro/...` |
-| **Blockdaemon** | 25M requests | $19-299/mo | `https://svc.blockdaemon.com/stellar/mainnet/rpc` |
-| **Validation Cloud** | 100M requests | Contact | Custom endpoint |
-| **Ankr** | 500M requests | Free tier available | `https://rpc.ankr.com/stellar` |
+| Provider             | Free Tier         | Pricing             | URL Pattern                                                |
+| -------------------- | ----------------- | ------------------- | ---------------------------------------------------------- |
+| **QuickNode**        | 3M requests/month | $9-299/mo           | `https://[your-endpoint].stellar-mainnet.quiknode.pro/...` |
+| **Blockdaemon**      | 25M requests      | $19-299/mo          | `https://svc.blockdaemon.com/stellar/mainnet/rpc`          |
+| **Validation Cloud** | 100M requests     | Contact             | Custom endpoint                                            |
+| **Ankr**             | 500M requests     | Free tier available | `https://rpc.ankr.com/stellar`                             |
 
 **Recommendation**: Start with **Ankr** (free tier) or **QuickNode** (best DX)
 
 ### Phase 7: Environment Variables Update
 
 **Backend `.env`**:
+
 ```bash
 # Network Selection
 STELLAR_NETWORK=mainnet  # or "testnet"
@@ -455,6 +477,7 @@ FRIENDBOT_URL=https://friendbot.stellar.org
 ```
 
 **Frontend `.env.local`**:
+
 ```bash
 # Network Selection
 VITE_STELLAR_NETWORK=mainnet
@@ -533,6 +556,7 @@ Network: Depends on account
 ### Mainnet Safety Guardrails
 
 1. **Explicit Confirmation for Mainnet Transactions**
+
    ```python
    if network == 'mainnet' and operation_type == 'write':
        # Require explicit user confirmation
@@ -540,6 +564,7 @@ Network: Depends on account
    ```
 
 2. **Transaction Limits for First-Time Mainnet Users**
+
    ```python
    if account.mainnet_tx_count < 5:
        max_amount = 10  # USD equivalent
@@ -559,23 +584,27 @@ Network: Depends on account
 ### Gradual Rollout
 
 **Week 1**: Backend Configuration
+
 - Add mainnet contract addresses
 - Update network config system
 - Set up RPC provider
 - Deploy to staging
 
 **Week 2**: Frontend Updates
+
 - Add network toggle UI
 - Update contract imports
 - Test pool discovery on mainnet
 - Deploy to production (read-only mode)
 
 **Week 3**: Account Network Tracking
+
 - Update AccountManager with network field
 - Implement testnet auto-funding
 - Add mainnet detection logic
 
 **Week 4**: Full Integration
+
 - Enable mainnet write operations
 - Add safety confirmations
 - Monitor transactions
@@ -584,17 +613,20 @@ Network: Depends on account
 ## Testing Plan
 
 ### Mainnet Read Operations (Safe)
+
 - [ ] Pool discovery returns mainnet pools
 - [ ] APY queries show real yields
 - [ ] Reserve data matches Blend UI
 - [ ] Best yield finder works correctly
 
 ### Testnet Account Creation (Safe)
+
 - [ ] New accounts funded via Friendbot
 - [ ] Account metadata includes network field
 - [ ] Testnet operations isolated
 
 ### Mainnet Transactions (Careful Testing)
+
 - [ ] Start with $1-5 test deposits
 - [ ] Verify transaction signing
 - [ ] Confirm blockchain submission
@@ -603,11 +635,13 @@ Network: Depends on account
 ## Success Metrics
 
 **Pre-Launch**:
+
 - ❌ Blend testnet APY: 0%
 - ❌ User frustration with fake data
 - ❌ Cannot demonstrate real value
 
 **Post-Launch**:
+
 - ✅ Blend mainnet APY: 5-15% (real!)
 - ✅ Users see actual yield opportunities
 - ✅ $10 deposits enable real DeFi learning
@@ -617,23 +651,23 @@ Network: Depends on account
 
 ### Monthly Operating Costs
 
-| Resource | Provider | Tier | Cost |
-|----------|----------|------|------|
-| Mainnet RPC | Ankr | Free | $0 |
-| Mainnet RPC | QuickNode | Basic | $9/mo |
-| Horizon API | Stellar SDF | Free | $0 |
-| User Test Funds | N/A | $10 one-time | $10 |
+| Resource        | Provider    | Tier         | Cost  |
+| --------------- | ----------- | ------------ | ----- |
+| Mainnet RPC     | Ankr        | Free         | $0    |
+| Mainnet RPC     | QuickNode   | Basic        | $9/mo |
+| Horizon API     | Stellar SDF | Free         | $0    |
+| User Test Funds | N/A         | $10 one-time | $10   |
 
 **Total**: $0-9/month + one-time $10 test deposit
 
 ## Risks and Mitigations
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| User loses mainnet funds | High | Multi-level confirmations, small limits |
-| RPC provider downtime | Medium | Fallback to testnet for queries |
-| Network confusion | Medium | Clear UI indicators, agent messaging |
-| Gas fee spikes | Low | Pre-calculate fees, warn if >$1 |
+| Risk                     | Impact | Mitigation                              |
+| ------------------------ | ------ | --------------------------------------- |
+| User loses mainnet funds | High   | Multi-level confirmations, small limits |
+| RPC provider downtime    | Medium | Fallback to testnet for queries         |
+| Network confusion        | Medium | Clear UI indicators, agent messaging    |
+| Gas fee spikes           | Low    | Pre-calculate fees, warn if >$1         |
 
 ## Open Questions
 

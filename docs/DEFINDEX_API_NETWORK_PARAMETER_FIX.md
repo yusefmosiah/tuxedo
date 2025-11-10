@@ -49,6 +49,7 @@ When the network parameter is omitted, the API defaults to **mainnet**. Since ou
 ### 1. Initial Diagnosis
 
 Checked environment configuration:
+
 - ✅ `DEFINDEX_API_KEY` correctly set on Render
 - ✅ Testnet vault addresses are real (verified on Stellar testnet)
 - ❌ API requests were not including network parameter
@@ -58,6 +59,7 @@ Checked environment configuration:
 Examined `backend/defindex_client.py` and found inconsistency:
 
 **Working method** (`get_vault_balance`):
+
 ```python
 response = self.session.get(
     f"{self.base_url}/vault/{vault_address}/balance",
@@ -67,6 +69,7 @@ response = self.session.get(
 ```
 
 **Broken method** (`get_vault_info`):
+
 ```python
 response = self.session.get(
     f"{self.base_url}/vault/{vault_address}",
@@ -78,6 +81,7 @@ response = self.session.get(
 ### 3. Impact Assessment
 
 Found 4 methods missing the network parameter:
+
 1. `get_vault_info()` - GET requests failing
 2. `build_deposit_transaction()` - POST requests failing
 3. `get_vault_apy()` - GET requests failing
@@ -96,6 +100,7 @@ Found 4 methods missing the network parameter:
 #### 1. Fixed `get_vault_info()` (Line 93-110)
 
 **Before:**
+
 ```python
 response = self.session.get(
     f"{self.base_url}/vault/{vault_address}",
@@ -104,6 +109,7 @@ response = self.session.get(
 ```
 
 **After:**
+
 ```python
 response = self.session.get(
     f"{self.base_url}/vault/{vault_address}",
@@ -115,6 +121,7 @@ response = self.session.get(
 #### 2. Fixed `build_deposit_transaction()` (Line 148-182)
 
 **Before:**
+
 ```python
 response = self.session.post(
     f"{self.base_url}/vault/{vault_address}/deposit",
@@ -124,6 +131,7 @@ response = self.session.post(
 ```
 
 **After:**
+
 ```python
 response = self.session.post(
     f"{self.base_url}/vault/{vault_address}/deposit",
@@ -136,6 +144,7 @@ response = self.session.post(
 #### 3. Fixed `get_vault_apy()` (Line 210-227)
 
 **Before:**
+
 ```python
 response = self.session.get(
     f"{self.base_url}/vault/{vault_address}/apy",
@@ -144,6 +153,7 @@ response = self.session.get(
 ```
 
 **After:**
+
 ```python
 response = self.session.get(
     f"{self.base_url}/vault/{vault_address}/apy",
@@ -155,6 +165,7 @@ response = self.session.get(
 #### 4. Fixed `submit_transaction()` (Line 243-266)
 
 **Before:**
+
 ```python
 data = {
     'xdr': signed_xdr,
@@ -169,6 +180,7 @@ response = self.session.post(
 ```
 
 **After:**
+
 ```python
 data = {
     'xdr': signed_xdr,
@@ -187,15 +199,15 @@ response = self.session.post(
 
 ## API Method Audit Results
 
-| Method | Endpoint | Network Param | Status |
-|--------|----------|---------------|--------|
-| `test_connection()` | `/health`, `/factory/address` | N/A | ✅ OK (general endpoints) |
-| `get_vaults()` | Calls `get_vault_info()` | Inherited | ✅ FIXED |
-| `get_vault_info()` | `/vault/{address}` | Query param | ✅ FIXED |
-| `get_vault_balance()` | `/vault/{address}/balance` | Query param | ✅ Already had it |
-| `build_deposit_transaction()` | `/vault/{address}/deposit` | Query param | ✅ FIXED |
-| `get_vault_apy()` | `/vault/{address}/apy` | Query param | ✅ FIXED |
-| `submit_transaction()` | `/send` | Body param | ✅ FIXED |
+| Method                        | Endpoint                      | Network Param | Status                    |
+| ----------------------------- | ----------------------------- | ------------- | ------------------------- |
+| `test_connection()`           | `/health`, `/factory/address` | N/A           | ✅ OK (general endpoints) |
+| `get_vaults()`                | Calls `get_vault_info()`      | Inherited     | ✅ FIXED                  |
+| `get_vault_info()`            | `/vault/{address}`            | Query param   | ✅ FIXED                  |
+| `get_vault_balance()`         | `/vault/{address}/balance`    | Query param   | ✅ Already had it         |
+| `build_deposit_transaction()` | `/vault/{address}/deposit`    | Query param   | ✅ FIXED                  |
+| `get_vault_apy()`             | `/vault/{address}/apy`        | Query param   | ✅ FIXED                  |
+| `submit_transaction()`        | `/send`                       | Body param    | ✅ FIXED                  |
 
 ---
 
@@ -218,12 +230,14 @@ python test_agent.py
 Try these queries through the chat interface:
 
 1. **Vault Discovery**:
+
    ```
    "Show me available vaults"
    "What are the best yield opportunities?"
    ```
 
 2. **Vault Details**:
+
    ```
    "Tell me about vault CAHWRPKBPX4FNLXZOAD565IBSICQPL5QX37IDLGJYOPWX22WWKFWQUBA"
    ```
@@ -236,11 +250,13 @@ Try these queries through the chat interface:
 ### 3. Expected Results
 
 **Before Fix**:
+
 ```
 Error: Unable to fetch vault data from DeFindex: No vault data available from API...
 ```
 
 **After Fix**:
+
 ```
 Found 4 available DeFindex vaults on testnet (sorted by APY):
 
@@ -275,16 +291,19 @@ Found 4 available DeFindex vaults on testnet (sorted by APY):
 ## Related Files
 
 ### Core Integration Files
+
 - `backend/defindex_client.py` - API client (FIXED)
 - `backend/defindex_soroban.py` - Soroban integration (uses client)
 - `backend/defindex_tools.py` - LangChain tools (uses soroban)
 
 ### Documentation
+
 - `DEFINDEX_COMPREHENSIVE_GUIDE.md` - Overall integration guide
 - `ENVIRONMENT_SETUP.md` - Environment variables guide
 - `backend/defindex_api_diagnosis_report.md` - Previous API investigation
 
 ### Test Files
+
 - `backend/test_defindex_api.py` - API client tests
 - `backend/test_autonomous_transactions.py` - End-to-end tests
 - `test_agent.py` - Agent functionality tests

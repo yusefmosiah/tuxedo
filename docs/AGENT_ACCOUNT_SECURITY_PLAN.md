@@ -1,4 +1,5 @@
 # Agent Account Security Implementation Plan
+
 **Chain-Agnostic Filesystem-Based Account Management with Wallet Import/Export**
 
 ---
@@ -10,6 +11,7 @@
 **Current Critical Issue:** No secure user isolation for agent-managed accounts. Any authenticated user can access any agent's blockchain accounts across all chains.
 
 **Goal:** Implement production-ready security architecture that:
+
 - Provides agents with user-isolated filesystem access
 - Supports multiple blockchain networks (Stellar, Solana, EVM, Sui, etc.)
 - Enables wallet import/export as a **killer feature**
@@ -26,6 +28,7 @@
 ### Chain-Agnostic Design
 
 Tuxedo's future is **multi-chain**. The agent backend will support:
+
 - **Stellar** (current MVP on testnet)
 - **Solana** (Phantom wallet compatibility)
 - **EVM chains** (Metamask compatibility)
@@ -37,6 +40,7 @@ Wallets and blockchain tools are just **data and code** at the agent's fingertip
 ### Filesystem-Based Account Management
 
 Agents don't have **one account**. Agents have **filesystem access** to organize accounts:
+
 - User-isolated directory structure
 - Multiple accounts per chain stored as files/database entries
 - Agent constructs "portfolio" abstractions dynamically as needed for users
@@ -47,12 +51,14 @@ Agents don't have **one account**. Agents have **filesystem access** to organize
 ### Wallet Import/Export: The Killer Feature
 
 **Why this matters:**
+
 1. **Bridges existing DeFi users** into the agentic world
 2. **Onboards Tuxedo users** to enjoy full custodial control
 3. **Respects "not-your-keys-not-your-crypto"** principles
 4. **Legitimates Tuxedo** with blockchain enthusiasts who demand key ownership
 
 **Use cases:**
+
 - Import existing Stellar wallet → let agent manage it → export back to Freighter
 - Import Phantom wallet → agent optimizes Solana yields → export to mobile
 - Import Metamask wallet → agent executes EVM strategies → maintain full control
@@ -63,6 +69,7 @@ Agents don't have **one account**. Agents have **filesystem access** to organize
 ### Mobile Future
 
 Eventually mobile app support will enable:
+
 - Import/export to **local mobile wallets**
 - Native Phantom integration on mobile
 - Native Freighter integration on mobile
@@ -75,29 +82,35 @@ Eventually mobile app support will enable:
 **Important Nuance:** This plan does NOT create a "portfolio abstraction" that agents must work with. Instead:
 
 ### ❌ Wrong Approach (Rigid Schema)
+
 ```
 Agent → Portfolio Object (database table) → Must organize accounts this way
 ```
+
 - Portfolio is a first-class database table
 - Agent must work within portfolio structure
 - Inflexible, prescriptive organization
 
 ### ✅ Correct Approach (Filesystem Primitives)
+
 ```
 Agent → Filesystem Access → Organizes accounts freely → Constructs portfolio views for users
 ```
+
 - Agent has user-isolated filesystem workspace
 - Agent can organize accounts however it wants (files, directories, database entries)
 - Agent **constructs** "portfolio" abstractions dynamically when users need them
 - Portfolio is a **pattern**, not a **schema**
 
 **Why This Matters:**
+
 - Gives agent flexibility to create organizational patterns that match user needs
 - Agent can evolve organization strategies without database migrations
 - Portfolio is just one possible way to group accounts - agent might create others
 - Lower-level primitives enable higher-level intelligence
 
 **Example:**
+
 - User: "Show me my DeFi portfolio"
 - Agent: Reads accounts from filesystem, constructs portfolio view, presents it
 - User: "Organize my accounts by strategy instead"
@@ -309,6 +322,7 @@ def init_database(self):
 ```
 
 **Key Changes:**
+
 - ❌ Removed `portfolios` table entirely
 - ✅ `wallet_accounts.user_id` links directly to `users.id`
 - ✅ Agent reads user's accounts from filesystem/database
@@ -528,6 +542,7 @@ class EncryptionManager:
 ```
 
 **Add to `.env`:**
+
 ```bash
 # Generate with: python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'
 ENCRYPTION_MASTER_KEY=your_generated_key_here
@@ -833,6 +848,7 @@ class AccountManager:
 ```
 
 **Key Architectural Changes:**
+
 - ✅ Renamed `PortfolioManager` → `AccountManager`
 - ✅ Removed `create_portfolio()` - no portfolio table!
 - ✅ Removed `portfolio_id` parameter from all methods
@@ -995,6 +1011,7 @@ async def list_user_accounts(
 ```
 
 **Key Changes:**
+
 - ❌ Removed `/portfolios` endpoint - no portfolio table!
 - ❌ Removed `portfolio_id` from all requests
 - ✅ `/accounts` endpoint returns user's accounts for agent to organize
@@ -1033,6 +1050,7 @@ async def list_user_accounts(
    - Future: wallet connection buttons (Freighter, Phantom, Metamask)
 
 **File locations:**
+
 - `src/components/portfolio/PortfolioDashboard.tsx`
 - `src/components/portfolio/ImportWallet.tsx`
 - `src/components/portfolio/ExportWallet.tsx`
@@ -1068,14 +1086,17 @@ async def list_user_accounts(
 ## Supported Chains
 
 ### Phase 1 (MVP - Current)
+
 - **Stellar** (testnet) - Current implementation
 
 ### Phase 2 (Post-MVP)
+
 - **Stellar** (mainnet) - Production deployment
 - **Solana** - Phantom wallet compatibility
 - **EVM** - Ethereum, Polygon, Arbitrum (Metamask compatibility)
 
 ### Phase 3 (Future)
+
 - **Sui** - Token economics chain (per Choir whitepaper)
 - **Additional chains** - Based on user demand
 
@@ -1109,11 +1130,13 @@ self.chains = {
 ## Mobile Integration (Future)
 
 ### iOS
+
 - Import/export to iOS Keychain
 - Native Phantom integration
 - Native Freighter integration
 
 ### Android
+
 - Import/export to Android Keystore
 - Native wallet app integrations
 
@@ -1126,6 +1149,7 @@ self.chains = {
 **Approach:** Delete `KeyManager`, replace with `AccountManager` in one atomic change.
 
 **Rationale:**
+
 - No valuable data exists (testnet accounts only, recreatable from faucet)
 - Gradual migration adds complexity without benefit
 - Clean break enables simpler, more secure architecture
@@ -1134,6 +1158,7 @@ self.chains = {
 **Migration Steps:**
 
 1. **Delete Old System** (no data migration needed)
+
    ```bash
    # Backup if paranoid
    cp backend/key_manager.py backend/key_manager.py.backup
@@ -1147,6 +1172,7 @@ self.chains = {
    ```
 
 2. **Update Tool Signatures** - Add `user_id` as mandatory second parameter
+
    ```python
    # OLD (insecure):
    def account_manager(action: str, key_manager, horizon: Server, ...):
@@ -1159,6 +1185,7 @@ self.chains = {
    ```
 
 3. **Update Agent Tool Registration** - Inject `user_id` via lambda
+
    ```python
    # backend/main.py
    @app.post("/chat")
@@ -1195,13 +1222,13 @@ self.chains = {
 
 ## Timeline & Effort Estimate
 
-| Phase | Tasks | Time | Priority |
-|-------|-------|------|----------|
-| **Phase 1** | Database schema, chain abstraction, encryption | 3-4 hours | CRITICAL |
-| **Phase 2** | PortfolioManager, import/export logic | 2-3 hours | CRITICAL |
-| **Phase 3** | API routes, authentication | 1-2 hours | CRITICAL |
-| **Phase 4** | Frontend UI, wallet flows | 2-3 hours | HIGH |
-| **TOTAL** | | **8-12 hours** | |
+| Phase       | Tasks                                          | Time           | Priority |
+| ----------- | ---------------------------------------------- | -------------- | -------- |
+| **Phase 1** | Database schema, chain abstraction, encryption | 3-4 hours      | CRITICAL |
+| **Phase 2** | PortfolioManager, import/export logic          | 2-3 hours      | CRITICAL |
+| **Phase 3** | API routes, authentication                     | 1-2 hours      | CRITICAL |
+| **Phase 4** | Frontend UI, wallet flows                      | 2-3 hours      | HIGH     |
+| **TOTAL**   |                                                | **8-12 hours** |          |
 
 ---
 

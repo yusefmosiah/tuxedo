@@ -1,4 +1,5 @@
 # Agent Account Migration: Quantum Leap Strategy
+
 **Complete Replacement of KeyManager with AccountManager**
 
 ---
@@ -8,6 +9,7 @@
 **Approach:** Complete architectural replacement, no gradual migration, no backward compatibility.
 
 **Rationale:**
+
 - No valuable data exists (testnet accounts only, recreatable from faucet)
 - Gradual migration adds complexity without benefit
 - Clean break enables simpler, more secure architecture
@@ -30,6 +32,7 @@ User Chat → Agent → Stellar Tools → KeyManager (global) → .stellar_keyst
 ```
 
 **Files to Delete:**
+
 - `backend/key_manager.py` - Entire class removed
 - `.stellar_keystore.json` - Deleted (backed up if paranoid)
 
@@ -79,6 +82,7 @@ def account_manager(
 ```
 
 **All Stellar Tools Updated:**
+
 - `account_manager(action, user_id, ...)`
 - `trading(action, user_id, account_id, ...)`
 - `trustline_manager(action, user_id, account_id, ...)`
@@ -179,6 +183,7 @@ async def chat(request: ChatRequest, current_user: dict = Depends(get_current_us
 ```
 
 **Key Security Properties:**
+
 - `user_id` comes from `get_current_user(session_token)` - verified by auth system
 - LLM cannot provide `user_id` parameter (lambda injects it)
 - Even if LLM hallucinates account IDs, permission check catches it
@@ -411,6 +416,7 @@ git commit -m "Remove KeyManager: quantum leap to AccountManager"
 - Use `account_manager.get_keypair_for_signing(user_id, account_id)` for transactions
 
 **Pattern for ALL tools:**
+
 ```python
 def tool_name(action: str, user_id: str, account_manager: AccountManager, ...):
     # 1. Validate user_id present
@@ -436,6 +442,7 @@ def tool_name(action: str, user_id: str, account_manager: AccountManager, ...):
 - Ensure `current_user` extracted from auth middleware
 
 **Template:**
+
 ```python
 account_mgr = AccountManager()
 
@@ -551,6 +558,7 @@ if __name__ == "__main__":
 ```
 
 **Run:**
+
 ```bash
 cd backend
 source .venv/bin/activate
@@ -596,12 +604,14 @@ sed -i 's/KeyManager()/AccountManager()/g' backend/*.py
 ## Verification Checklist
 
 **Before Quantum Leap:**
+
 - [ ] All changes reviewed and understood
 - [ ] `ENCRYPTION_MASTER_KEY` generated and set in `.env`
 - [ ] Database schema includes `wallet_accounts` table
 - [ ] `AccountManager` class tested in isolation
 
 **During Quantum Leap:**
+
 - [ ] `KeyManager` class deleted
 - [ ] `.stellar_keystore.json` deleted (backed up)
 - [ ] All tool signatures updated with `user_id` parameter
@@ -610,6 +620,7 @@ sed -i 's/KeyManager()/AccountManager()/g' backend/*.py
 - [ ] No references to `KeyManager` remain in codebase
 
 **After Quantum Leap:**
+
 - [ ] User isolation tests pass
 - [ ] Agent can create accounts (testnet)
 - [ ] Agent can fund accounts via Friendbot
@@ -643,6 +654,7 @@ git reset --hard HEAD~1
 ## Success Metrics
 
 **Post-Migration:**
+
 - ✅ No `KeyManager` in codebase
 - ✅ All accounts stored in database (encrypted)
 - ✅ User A cannot access User B's accounts
@@ -651,6 +663,7 @@ git reset --hard HEAD~1
 - ✅ System ready for production deployment
 
 **Production Readiness Score:** 8/10
+
 - Security: ✅ User isolated, encrypted at rest
 - Scalability: ✅ Database-backed, multi-chain ready
 - Maintainability: ✅ Clean architecture, no legacy code
@@ -679,6 +692,7 @@ git reset --hard HEAD~1
 **Reward:** Production-ready multi-user agent architecture
 
 **Related Documents:**
+
 - `AGENT_ACCOUNT_SECURITY_PLAN.md` - Overall security architecture
 - `AGENT_FILESYSTEM_ISOLATION.md` - Layered security strategy
 - `PASSKEY_ARCHITECTURE_V2.md` - User authentication system

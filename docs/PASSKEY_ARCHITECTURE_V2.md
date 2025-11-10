@@ -1,4 +1,5 @@
 # Passkey Authentication Architecture v2
+
 **Clean Separation of Concerns**
 
 ---
@@ -15,12 +16,14 @@ Application features answer: "What can you do?"
 ## Context: Production Financial Platform
 
 **Choir is a production financial platform launching Q4 2025**, not an educational testnet tool. Users:
+
 - Earn real money (stablecoins from citation rewards)
 - Deploy real capital (DeFi yield mining on mainnet)
 - Build valuable IP (research articles earning passive income)
 - Accumulate financial assets (tokens, citation history, capital)
 
 **Account loss = financial loss.** Therefore:
+
 - ✅ Email required for account recovery
 - ✅ Persistent accounts non-negotiable
 - ✅ Transactional emails via SendGrid (already configured)
@@ -35,6 +38,7 @@ Application features answer: "What can you do?"
 Replace magic link authentication with WebAuthn passkey authentication.
 
 **In Scope**:
+
 - User registration with passkey
 - User login with passkey
 - Session management (token-based with sliding expiration)
@@ -44,6 +48,7 @@ Replace magic link authentication with WebAuthn passkey authentication.
 - Multiple passkeys per user support
 
 **Out of Scope** (for this sprint):
+
 - Multi-agent system
 - Stellar key derivation from passkeys
 - Sidebar UI component
@@ -339,22 +344,23 @@ NOTE: Cannot delete last remaining passkey
 ```typescript
 // src/services/passkeyAuth.ts
 export class PasskeyAuthService {
-  async register(email: string): Promise<RegistrationResult>
-  async authenticate(email?: string): Promise<AuthResult>
-  async useRecoveryCode(email: string, code: string): Promise<AuthResult>
-  async acknowledgeRecoveryCodes(token: string): Promise<void>
-  async validateSession(token: string): Promise<User | null>
-  async listPasskeys(token: string): Promise<Passkey[]>
-  async addPasskey(token: string, friendlyName?: string): Promise<Passkey>
-  async removePasskey(token: string, passkeyId: string): Promise<void>
-  logout(): void
-  isSupported(): boolean
+  async register(email: string): Promise<RegistrationResult>;
+  async authenticate(email?: string): Promise<AuthResult>;
+  async useRecoveryCode(email: string, code: string): Promise<AuthResult>;
+  async acknowledgeRecoveryCodes(token: string): Promise<void>;
+  async validateSession(token: string): Promise<User | null>;
+  async listPasskeys(token: string): Promise<Passkey[]>;
+  async addPasskey(token: string, friendlyName?: string): Promise<Passkey>;
+  async removePasskey(token: string, passkeyId: string): Promise<void>;
+  logout(): void;
+  isSupported(): boolean;
 }
 ```
 
 #### UI Components
 
 **Minimal changes**:
+
 - Update `src/components/Login.tsx` to use passkey service
 - Update `src/contexts/AuthContext.tsx` to manage passkey sessions
 - **NO sidebar changes**
@@ -367,6 +373,7 @@ Choir already has SendGrid configured for transactional emails. Passkey system r
 #### Email Templates Needed
 
 **1. Welcome Email (After Registration)**
+
 ```
 Subject: Welcome to Choir - Your Recovery Codes
 Body:
@@ -377,6 +384,7 @@ Body:
 ```
 
 **2. Recovery Code Used Alert**
+
 ```
 Subject: Security Alert: Recovery Code Used
 Body:
@@ -387,6 +395,7 @@ Body:
 ```
 
 **3. Email Recovery Link**
+
 ```
 Subject: Choir Account Recovery Request
 Body:
@@ -397,6 +406,7 @@ Body:
 ```
 
 **4. Account Recovered Confirmation**
+
 ```
 Subject: Your Choir Account Has Been Recovered
 Body:
@@ -407,6 +417,7 @@ Body:
 ```
 
 **5. New Passkey Added**
+
 ```
 Subject: New Passkey Added to Your Account
 Body:
@@ -456,6 +467,7 @@ async def send_passkey_added_alert(email: str, device_info: str):
 ### Security Considerations
 
 #### Session Tokens
+
 - Random 32-byte tokens (URL-safe base64)
 - Sliding expiration: 24 hours of inactivity
 - Absolute timeout: 7 days maximum
@@ -465,6 +477,7 @@ async def send_passkey_added_alert(email: str, device_info: str):
 - Session extended automatically if within absolute timeout
 
 #### Recovery Codes
+
 - 8 codes, each 24 characters (128-bit entropy)
 - SHA-256 hashed before storage
 - Single-use only (marked as used after validation)
@@ -472,6 +485,7 @@ async def send_passkey_added_alert(email: str, device_info: str):
 - User must acknowledge saving codes before proceeding
 
 #### Rate Limiting
+
 - **Recovery code attempts**: Max 5 failed attempts per hour
 - **Lockout period**: 1 hour after exceeding limit
 - **Tracking**: All attempts logged in `recovery_attempts` table
@@ -479,12 +493,14 @@ async def send_passkey_added_alert(email: str, device_info: str):
 - **IP tracking**: Optional IP address logging for forensics
 
 #### Challenges
+
 - 32-byte random challenges
 - 15-minute expiration
 - Single-use only
 - Cleaned up after use or expiration
 
 #### WebAuthn Configuration
+
 ```typescript
 {
   rp: {
@@ -513,6 +529,7 @@ async def send_passkey_added_alert(email: str, device_info: str):
 ```
 
 **Rationale**:
+
 - `residentKey: "preferred"` not "required" - We use email-based flow, so discoverable credentials are optional
 - Better hardware compatibility (security keys, older devices)
 - Still supports usernameless flow if authenticator supports it
@@ -533,6 +550,7 @@ All errors follow a standardized format for consistent frontend handling:
 ```
 
 **Error Codes**:
+
 - `INVALID_CHALLENGE` - Challenge expired or invalid
 - `INVALID_CREDENTIAL` - Passkey verification failed
 - `EXPIRED_SESSION` - Session token expired
@@ -545,6 +563,7 @@ All errors follow a standardized format for consistent frontend handling:
 - `VALIDATION_ERROR` - Request validation failed
 
 **HTTP Status Codes**:
+
 - 400 - Bad Request (validation errors)
 - 401 - Unauthorized (auth failed)
 - 404 - Not Found (user/resource not found)
@@ -554,6 +573,7 @@ All errors follow a standardized format for consistent frontend handling:
 ### Testing Strategy
 
 #### Unit Tests
+
 - [ ] Passkey credential creation and storage
 - [ ] Challenge generation and validation
 - [ ] Session token generation and validation
@@ -564,6 +584,7 @@ All errors follow a standardized format for consistent frontend handling:
 - [ ] Old passkey invalidation on recovery
 
 #### Integration Tests
+
 - [ ] Full registration flow with acknowledgment
 - [ ] Full login flow
 - [ ] Recovery code flow with rate limiting
@@ -574,6 +595,7 @@ All errors follow a standardized format for consistent frontend handling:
 - [ ] Email recovery with passkey invalidation
 
 #### Load/Security Tests
+
 - [ ] 1000 failed recovery code attempts (verify rate limiting)
 - [ ] 100 concurrent email recovery requests
 - [ ] 50 concurrent passkey registrations
@@ -582,6 +604,7 @@ All errors follow a standardized format for consistent frontend handling:
 - [ ] Concurrent session management (same user, multiple devices)
 
 #### Manual Testing Checklist
+
 - [ ] Register new user with passkey
 - [ ] Acknowledge recovery codes before proceeding
 - [ ] Receive welcome email with recovery codes
@@ -612,6 +635,7 @@ All errors follow a standardized format for consistent frontend handling:
 ### Deployment Checklist
 
 #### Pre-Deployment
+
 - [ ] All tests pass
 - [ ] `npm run build` succeeds
 - [ ] Backend starts without errors
@@ -620,12 +644,15 @@ All errors follow a standardized format for consistent frontend handling:
 - [ ] Database backup created
 
 #### Deployment Steps
+
 1. **Backup production database**
+
    ```bash
    cp tuxedo.db tuxedo.db.backup.$(date +%Y%m%d_%H%M%S)
    ```
 
 2. **Install backend dependencies**
+
    ```bash
    cd backend
    source .venv/bin/activate
@@ -634,22 +661,26 @@ All errors follow a standardized format for consistent frontend handling:
    ```
 
 3. **Install frontend dependencies**
+
    ```bash
    npm install
    ```
 
 4. **Run database migration**
+
    ```bash
    cd backend
    python migrate_to_passkeys.py
    ```
 
 5. **Build frontend**
+
    ```bash
    npm run build
    ```
 
 6. **Test backend health**
+
    ```bash
    cd backend
    python -c "from api.routes import passkey; print('✓ Passkey routes OK')"
@@ -659,6 +690,7 @@ All errors follow a standardized format for consistent frontend handling:
    ```
 
 7. **Deploy**
+
    ```bash
    # Your deployment process here
    ```
@@ -691,6 +723,7 @@ If deployment fails:
 ### Metrics to Track
 
 **Authentication Metrics**:
+
 - Registration attempts vs. completions
 - Login success/failure rates
 - Average session duration
@@ -698,6 +731,7 @@ If deployment fails:
 - Recovery code usage patterns
 
 **Security Metrics**:
+
 - Failed authentication attempts per user
 - Rate limit triggers per day
 - Recovery code exhaustion warnings
@@ -705,6 +739,7 @@ If deployment fails:
 - Passkey additions/removals per day
 
 **Performance Metrics**:
+
 - WebAuthn challenge generation time
 - Credential verification latency
 - Session validation response time
@@ -714,18 +749,21 @@ If deployment fails:
 ### Alerts & Notifications
 
 **Critical Alerts** (Immediate attention):
+
 - More than 10 rate limit triggers in 5 minutes (potential attack)
 - SendGrid delivery failure rate > 5%
 - Database connection failures
 - Session validation errors > 10/minute
 
 **Warning Alerts** (Review within 1 hour):
+
 - User down to last recovery code (alert user)
 - Failed recovery attempts for single user > 3 in 10 minutes
 - Email recovery token generation > 50/hour
 - Abnormal spike in registrations (>100/hour)
 
 **Info Alerts** (Daily summary):
+
 - Daily authentication stats
 - Recovery code usage summary
 - New user registrations
@@ -734,6 +772,7 @@ If deployment fails:
 ### Logging Strategy
 
 **What to Log**:
+
 - All authentication attempts (success/failure)
 - Recovery code usage
 - Email recovery requests
@@ -743,12 +782,14 @@ If deployment fails:
 - API errors with stack traces
 
 **What NOT to Log**:
+
 - Recovery codes (plain text)
 - Session tokens (plain text)
 - WebAuthn credentials
 - User passwords (we don't have any)
 
 **Log Levels**:
+
 - `INFO`: Successful auth, registrations
 - `WARN`: Failed auth attempts, rate limits
 - `ERROR`: System errors, email failures
@@ -757,6 +798,7 @@ If deployment fails:
 ### Monitoring Tools
 
 **Recommended Setup**:
+
 - **Application Performance**: Sentry or similar for error tracking
 - **Uptime Monitoring**: Pingdom, UptimeRobot for /health endpoint
 - **Log Aggregation**: CloudWatch, Papertrail, or similar
@@ -766,6 +808,7 @@ If deployment fails:
 ### Security Best Practices
 
 **Environment-Specific Configuration**:
+
 ```bash
 # Development
 CORS_ORIGINS=http://localhost:5173
@@ -789,12 +832,14 @@ IP_TRACKING_ENABLED=true
 ```
 
 **Compliance Considerations**:
+
 - **GDPR**: Email storage with consent, right to deletion
 - **CCPA**: User data export capability
 - **SOC 2**: Audit logs, access controls
 - **PCI DSS**: Not applicable (no payment card data)
 
 **Regular Security Tasks**:
+
 - [ ] Weekly: Review failed auth attempts
 - [ ] Monthly: Audit rate limit effectiveness
 - [ ] Quarterly: Review and update recovery code policies
@@ -841,6 +886,7 @@ Add ability for authenticated users to create and manage multiple AI agents.
 ```
 
 **Key Points**:
+
 - Agents are **application features**, not auth features
 - Each agent can have **multiple** Stellar accounts
 - User manages agents via API (CRUD operations)
@@ -906,6 +952,7 @@ Add sidebar component for agent management and thread switching.
 - `ThreadHistory.tsx` - Conversation history
 
 **UX Considerations**:
+
 - Agent switching should be keyboard-accessible (Cmd+K, Ctrl+K)
 - Quick switcher for frequent agent changes
 - Visual indicators for active agent
@@ -917,6 +964,7 @@ Add sidebar component for agent management and thread switching.
 ## Success Metrics
 
 ### Phase 1 (Current Sprint)
+
 - [ ] Users can register with passkey
 - [ ] Users must acknowledge recovery codes
 - [ ] Users can login with passkey
@@ -932,12 +980,14 @@ Add sidebar component for agent management and thread switching.
 - [ ] All SendGrid emails deliver correctly
 
 ### Phase 2 (Future)
+
 - [ ] Users can create agents
 - [ ] Users can manage multiple agents
 - [ ] Agents can have multiple Stellar accounts
 - [ ] Thread-to-agent relationships work
 
 ### Phase 3 (Future)
+
 - [ ] Sidebar shows agent list
 - [ ] Users can switch between agents
 - [ ] UI is responsive and intuitive
@@ -949,16 +999,19 @@ Add sidebar component for agent management and thread switching.
 ### Separation of Concerns
 
 **Authentication Layer** (Phase 1):
+
 - Handles: Who is the user?
 - Concerns: Security, sessions, credentials
 - Changes rarely
 
 **Application Layer** (Phase 2):
+
 - Handles: What can the user do?
 - Concerns: Business logic, features, data
 - Changes frequently
 
 **Presentation Layer** (Phase 3):
+
 - Handles: How does the user interact?
 - Concerns: UI, UX, responsiveness
 - Changes very frequently
@@ -966,6 +1019,7 @@ Add sidebar component for agent management and thread switching.
 ### Testability
 
 Each phase can be:
+
 - Developed independently
 - Tested independently
 - Deployed independently
@@ -974,18 +1028,21 @@ Each phase can be:
 ### Simplicity
 
 **Phase 1 complexity**: Low
+
 - Standard WebAuthn implementation
 - No crypto derivation
 - No complex relationships
 - ~500 lines of code
 
 **Phase 2 complexity**: Medium
+
 - Agent CRUD operations
 - Account management
 - Standard database relations
 - ~300 lines of code
 
 **Phase 3 complexity**: Low
+
 - UI components
 - State management
 - ~200 lines of code
@@ -1006,6 +1063,7 @@ vs. Experimental branch: ~2000 lines of tightly coupled code
 ## What We Learned from Experimental Branch
 
 ### What Worked ✅
+
 - WebAuthn endpoint structure
 - Database schema design (for passkeys)
 - Recovery code system
@@ -1013,6 +1071,7 @@ vs. Experimental branch: ~2000 lines of tightly coupled code
 - Email-based flow (vs. usernameless)
 
 ### What Didn't Work ❌
+
 - Coupling passkeys to agent key derivation
 - PRF extension complexity
 - Sidebar in auth sprint
@@ -1021,6 +1080,7 @@ vs. Experimental branch: ~2000 lines of tightly coupled code
 - Missing monitoring strategy
 
 ### Applying the Lessons ✅
+
 - Focus on ONE thing: passkey auth
 - Save agent system for Phase 2
 - Save UI changes for Phase 3
@@ -1051,6 +1111,7 @@ Then, and only then, move to Phase 2.
 **Last Updated**: 2025-11-06
 **Status**: Current architectural plan (with security enhancements)
 **Changes from v2.0**:
+
 - Added rate limiting for recovery codes
 - Added sliding session expiration (24h idle, 7d absolute)
 - Added multiple passkeys per user support

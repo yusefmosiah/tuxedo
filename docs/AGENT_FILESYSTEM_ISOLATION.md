@@ -1,4 +1,5 @@
 # Agent Filesystem Isolation Strategy
+
 **Preventing Cross-User Data Access in Multi-Tenant Agent Environment**
 
 ---
@@ -63,6 +64,7 @@ class PortfolioManager:
 ```
 
 **Key points:**
+
 - Private keys **never** touch the filesystem
 - Decrypted keys exist only in-memory during transaction signing
 - Python garbage collection clears keys from memory after use
@@ -174,6 +176,7 @@ class AgentStateManager:
 ```
 
 **Benefits:**
+
 - User isolation enforced by SQL foreign keys
 - Automatic cascade delete when user is deleted
 - Easy to audit and backup
@@ -225,6 +228,7 @@ class FileSystemManager:
 ```
 
 **Directory Structure:**
+
 ```
 /data/tuxedo/
 ├── user_abc123/          (mode: 0700 - rwx------)
@@ -237,6 +241,7 @@ class FileSystemManager:
 ```
 
 **Key protections:**
+
 - Each user gets isolated directory
 - Directory permissions `0700` (owner read/write/execute only)
 - Path validation prevents directory traversal attacks
@@ -270,12 +275,14 @@ class FileSystemManager:
 ```
 
 **TEE Benefits:**
+
 - Hardware-level isolation between users
 - Keys never leave encrypted memory
 - Attestation proves code integrity
 - Industry standard for custody (mentioned in Choir whitepaper)
 
 **TEE Options:**
+
 - Intel SGX
 - AMD SEV
 - AWS Nitro Enclaves
@@ -296,6 +303,7 @@ class FileSystemManager:
 ⏳ **Layer 4: Filesystem isolation** - DEFERRED (only if filesystem storage needed)
 
 **Quantum Leap Implementation:**
+
 1. Delete `KeyManager` and `.stellar_keystore.json` (no valuable data)
 2. Update all tool signatures: `user_id` as mandatory second parameter
 3. Agent tool registration: inject `user_id` via lambda wrapper
@@ -327,6 +335,7 @@ class FileSystemManager:
 ## Security Checklist
 
 ### Development Phase
+
 - [ ] All tools accept `user_id` as first parameter
 - [ ] Permission checks in every tool function
 - [ ] Private keys stored in database (encrypted)
@@ -336,6 +345,7 @@ class FileSystemManager:
 - [ ] SQL foreign keys enforce user isolation
 
 ### Pre-Production
+
 - [ ] User-specific directories implemented
 - [ ] Path validation prevents directory traversal
 - [ ] File permissions set to owner-only
@@ -344,6 +354,7 @@ class FileSystemManager:
 - [ ] Penetration testing completed
 
 ### Production
+
 - [ ] TEE deployment configured
 - [ ] Per-user TEE instances running
 - [ ] Attestation mechanism active
@@ -435,23 +446,27 @@ def test_full_isolation_scenario():
 ## Best Practices
 
 ### 1. Principle of Least Privilege
+
 - Agents get minimum permissions needed
 - Read-only access by default
 - Write access only when necessary
 - Scope permissions to specific resources
 
 ### 2. Defense in Depth
+
 - Multiple layers of security
 - Database isolation + API checks + context enforcement
 - Fail securely (deny by default)
 
 ### 3. Audit Everything
+
 - Log all account accesses
 - Log permission denials
 - Monitor for suspicious patterns
 - Alert on unauthorized access attempts
 
 ### 4. Zero Trust
+
 - Never trust user_id from client
 - Always verify via session token
 - Re-verify permissions on every operation
@@ -461,15 +476,15 @@ def test_full_isolation_scenario():
 
 ## Comparison: Database vs Filesystem Storage
 
-| Aspect | Database Storage | Filesystem Storage |
-|--------|-----------------|-------------------|
-| **Isolation** | SQL foreign keys (strong) | OS permissions (medium) |
-| **Encryption** | Column-level encryption | File encryption required |
-| **Audit** | Built-in query logs | Requires custom logging |
-| **Backup** | Standard DB backup | Need file backup strategy |
-| **Recovery** | Transaction rollback | Manual file recovery |
-| **Performance** | Good for small data | Better for large files |
-| **Complexity** | Lower (one system) | Higher (DB + FS) |
+| Aspect          | Database Storage          | Filesystem Storage        |
+| --------------- | ------------------------- | ------------------------- |
+| **Isolation**   | SQL foreign keys (strong) | OS permissions (medium)   |
+| **Encryption**  | Column-level encryption   | File encryption required  |
+| **Audit**       | Built-in query logs       | Requires custom logging   |
+| **Backup**      | Standard DB backup        | Need file backup strategy |
+| **Recovery**    | Transaction rollback      | Manual file recovery      |
+| **Performance** | Good for small data       | Better for large files    |
+| **Complexity**  | Lower (one system)        | Higher (DB + FS)          |
 
 **Recommendation:** Use **database storage** for all sensitive data unless file size requires filesystem.
 
@@ -525,6 +540,7 @@ This layered approach provides security appropriate for each deployment phase wh
 ---
 
 **Related Documents:**
+
 - `AGENT_ACCOUNT_SECURITY_PLAN.md` - Overall security architecture
 - `CHOIR_WHITEPAPER.md` - TEE deployment vision
 - `PASSKEY_ARCHITECTURE_V2.md` - User authentication

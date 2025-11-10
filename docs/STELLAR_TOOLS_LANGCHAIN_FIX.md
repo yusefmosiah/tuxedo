@@ -7,11 +7,13 @@ The agent-first architecture is failing due to Pydantic v2 JSON schema generatio
 ## Error Details
 
 ### Primary Error
+
 ```
 Cannot generate a JsonSchema for core_schema.IsInstanceSchema (<class 'key_manager.KeyManager'>)
 ```
 
 ### Secondary Error
+
 ```
 Arg key_manager in docstring not found in function signature.
 ```
@@ -27,6 +29,7 @@ Arg key_manager in docstring not found in function signature.
 **Recommended Approach**: Create LangChain-compatible tool wrappers that handle dependencies internally, following LangChain best practices.
 
 This approach:
+
 - ✅ Maintains clean separation between AI and business logic
 - ✅ Uses schema-compatible primitive types only
 - ✅ Preserves existing Stellar tools unchanged
@@ -410,6 +413,7 @@ except ImportError as e:
 ### Step 3: Test the Implementation
 
 1. **Backend Testing**:
+
    ```bash
    cd backend
    source .venv/bin/activate
@@ -417,6 +421,7 @@ except ImportError as e:
    ```
 
 2. **API Testing**:
+
    ```bash
    # Start backend
    python main.py
@@ -432,6 +437,7 @@ except ImportError as e:
    ```
 
 3. **Frontend Testing**:
+
    ```bash
    # Start frontend
    npm run dev
