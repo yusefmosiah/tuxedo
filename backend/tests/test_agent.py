@@ -30,10 +30,10 @@ async def test_agent():
     else:
         print(f"❌ Failed: {response.status_code} - {response.text}")
 
-    # Test 2: Account management with testnet
-    print("\n👤 Test 2: Create a testnet account")
+    # Test 2: Account management on mainnet
+    print("\n👤 Test 2: Create a mainnet account")
     response = requests.post(f"{BACKEND_URL}/chat", json={
-        "message": "Please create a new testnet account for me and fund it using Friendbot",
+        "message": "Please create a new Stellar account for me",
         "history": [],
         "wallet_address": None
     })

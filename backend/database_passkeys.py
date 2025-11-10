@@ -150,7 +150,7 @@ class PasskeyDatabaseManager:
                     encrypted_private_key TEXT NOT NULL,
                     name TEXT,
                     source TEXT DEFAULT 'generated',
-                    network TEXT DEFAULT 'testnet',
+                    network TEXT DEFAULT 'mainnet',
                     metadata TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     last_used_at TIMESTAMP,
@@ -164,7 +164,7 @@ class PasskeyDatabaseManager:
             try:
                 cursor.execute('''
                     ALTER TABLE wallet_accounts
-                    ADD COLUMN network TEXT DEFAULT 'testnet'
+                    ADD COLUMN network TEXT DEFAULT 'mainnet'
                 ''')
             except sqlite3.OperationalError:
                 # Column already exists, skip migration

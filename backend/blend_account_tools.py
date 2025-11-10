@@ -47,7 +47,7 @@ async def _blend_find_best_yield(
         min_apy: Minimum APY threshold
         user_id: User identifier (injected by tool factory)
         account_manager: AccountManager instance (injected by tool factory)
-        network: "mainnet" (real yields) or "testnet" (usually 0%)
+        network: "mainnet" (real yields)
 
     Returns:
         Formatted string with yield opportunities
@@ -118,7 +118,7 @@ async def _blend_discover_pools(
     Args:
         user_id: User identifier (injected by tool factory)
         account_manager: AccountManager instance (injected by tool factory)
-        network: "mainnet" (real pools) or "testnet"
+        network: "mainnet" (real pools)
 
     Returns:
         Formatted string with pool information
@@ -177,7 +177,7 @@ async def _blend_supply_to_pool(
     account_id: str,
     user_id: str,
     account_manager: AccountManager,
-    network: str = "mainnet"  # Default to testnet for safety (write operation)
+    network: str = "mainnet"  # Mainnet-only system
 ) -> str:
     """
     Supply assets to a Blend pool to earn yield.
@@ -189,7 +189,7 @@ async def _blend_supply_to_pool(
         account_id: Account ID from AccountManager
         user_id: User identifier (injected by tool factory)
         account_manager: AccountManager instance (injected by tool factory)
-        network: "mainnet" (real funds) or "testnet" (practice)
+        network: "mainnet" (real funds)
 
     Returns:
         Formatted string with transaction result
@@ -230,7 +230,7 @@ async def _blend_supply_to_pool(
         response += f"   • Yield generation starts immediately\n"
         response += f"   • Use blend_check_my_positions to see your holdings\n"
         response += f"   • Check back later to see earned yield\n\n"
-        explorer_network = "public" if network == "mainnet" else "testnet"
+        explorer_network = "public"  # Mainnet-only
         response += f"🔗 **Stellar Explorer**: https://stellar.expert/explorer/{explorer_network}/tx/{result['hash']}\n"
         response += f"👤 User: {user_id[:8]}..."
 
@@ -248,7 +248,7 @@ async def _blend_withdraw_from_pool(
     account_id: str,
     user_id: str,
     account_manager: AccountManager,
-    network: str = "mainnet"  # Default to testnet for safety (write operation)
+    network: str = "mainnet"  # Mainnet-only system
 ) -> str:
     """
     Withdraw assets from a Blend pool.
@@ -260,7 +260,7 @@ async def _blend_withdraw_from_pool(
         account_id: Account ID from AccountManager
         user_id: User identifier (injected by tool factory)
         account_manager: AccountManager instance (injected by tool factory)
-        network: "mainnet" (real funds) or "testnet" (practice)
+        network: "mainnet" (real funds)
 
     Returns:
         Formatted string with transaction result
@@ -300,7 +300,7 @@ async def _blend_withdraw_from_pool(
         response += f"💡 **Next Steps:**\n"
         response += f"   • Funds are now available in your account\n"
         response += f"   • Consider reinvesting in other pools\n\n"
-        explorer_network = "public" if network == "mainnet" else "testnet"
+        explorer_network = "public"  # Mainnet-only
         response += f"🔗 **Stellar Explorer**: https://stellar.expert/explorer/{explorer_network}/tx/{result['hash']}\n"
         response += f"👤 User: {user_id[:8]}..."
 
@@ -326,7 +326,7 @@ async def _blend_check_my_positions(
         account_id: Account ID from AccountManager
         user_id: User identifier (injected by tool factory)
         account_manager: AccountManager instance (injected by tool factory)
-        network: "mainnet" or "testnet"
+        network: "mainnet" (mainnet-only)
 
     Returns:
         Formatted string with position information
@@ -401,7 +401,7 @@ async def _blend_get_pool_apy(
         asset_address: Asset contract ID
         user_id: User identifier (injected by tool factory)
         account_manager: AccountManager instance (injected by tool factory)
-        network: "mainnet" (real yields) or "testnet" (usually 0%)
+        network: "mainnet" (real yields)
 
     Returns:
         Formatted string with APY information

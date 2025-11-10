@@ -135,7 +135,7 @@ async def _get_asset_symbol(
         account_manager: AccountManager instance
         user_id: User identifier
         account_id: Optional account ID for simulation
-        network: "testnet" or "mainnet"
+        network: "mainnet" (mainnet-only)
 
     Returns:
         Asset symbol (e.g., "USDC", "XLM") or shortened address if not found
@@ -195,7 +195,7 @@ async def _get_pool_name(
         soroban_server: SorobanServerAsync instance
         account_manager: AccountManager instance
         user_id: User identifier
-        network: "testnet" or "mainnet"
+        network: "mainnet" (mainnet-only)
 
     Returns:
         Pool name or "Unknown Pool"
@@ -246,7 +246,7 @@ async def _get_pool_basic_info(
         soroban_server: SorobanServerAsync instance
         account_manager: AccountManager instance
         user_id: User identifier
-        network: "testnet" or "mainnet"
+        network: "mainnet" (mainnet-only)
 
     Returns:
         Dictionary with pool info or None if failed
@@ -283,7 +283,7 @@ async def _get_pool_reserves(
         soroban_server: SorobanServerAsync instance
         account_manager: AccountManager instance
         user_id: User identifier
-        network: "testnet" or "mainnet"
+        network: "mainnet" (mainnet-only)
 
     Returns:
         List of reserve info dictionaries
@@ -336,7 +336,7 @@ async def blend_discover_pools(
     For mainnet: Comet, Fixed, and YieldBlox pools.
 
     Args:
-        network: "testnet" or "mainnet"
+        network: "mainnet" (mainnet-only)
         soroban_server: SorobanServerAsync instance (created if None)
         account_manager: AccountManager instance (created if None)
         user_id: User identifier (default "system" for discovery)
@@ -369,18 +369,12 @@ async def blend_discover_pools(
 
         # Define pool mappings with proper names
         pool_mappings = []
-        if network == 'mainnet':
-            pool_mappings = [
-                ('comet', 'Comet'),
-                ('fixed', 'Fixed'),
-                ('yieldBlox', 'YieldBlox')
-            ]
-        else:  # testnet
-            pool_mappings = [
-                ('comet', 'Comet'),
-                ('stable', 'Stable'),
-                ('fixed', 'Fixed')
-            ]
+        # Mainnet-only system
+        pool_mappings = [
+            ('comet', 'Comet'),
+            ('fixed', 'Fixed'),
+            ('yieldBlox', 'YieldBlox')
+        ]
 
         pools = []
         for key, name in pool_mappings:
@@ -438,7 +432,7 @@ async def blend_get_reserve_apy(
         user_id: User identifier
         soroban_server: SorobanServerAsync instance
         account_manager: AccountManager instance
-        network: "testnet" or "mainnet"
+        network: "mainnet" (mainnet-only)
 
     Returns:
         Dictionary with APY and reserve metrics:
@@ -565,7 +559,7 @@ async def blend_supply_collateral(
         account_id: Account ID from AccountManager
         account_manager: AccountManager instance
         soroban_server: SorobanServerAsync instance
-        network: "testnet" or "mainnet"
+        network: "mainnet" (mainnet-only)
 
     Returns:
         Dictionary with transaction result:
@@ -681,7 +675,7 @@ async def blend_withdraw_collateral(
         account_id: Account ID from AccountManager
         account_manager: AccountManager instance
         soroban_server: SorobanServerAsync instance
-        network: "testnet" or "mainnet"
+        network: "mainnet" (mainnet-only)
 
     Returns:
         Dictionary with transaction result
@@ -784,7 +778,7 @@ async def blend_get_my_positions(
         account_id: Account ID from AccountManager
         account_manager: AccountManager instance
         soroban_server: SorobanServerAsync instance
-        network: "testnet" or "mainnet"
+        network: "mainnet" (mainnet-only)
 
     Returns:
         Dictionary with position information:
@@ -901,7 +895,7 @@ async def blend_find_best_yield(
         user_id: User identifier (default "system")
         soroban_server: SorobanServerAsync instance (created if None)
         account_manager: AccountManager instance (created if None)
-        network: "testnet" or "mainnet"
+        network: "mainnet" (mainnet-only)
 
     Returns:
         Sorted list of opportunities (highest APY first):

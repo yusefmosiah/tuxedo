@@ -64,7 +64,7 @@ class StellarAiohttpClient(AiohttpClient):
         >>>
         >>> client = StellarAiohttpClient()
         >>> soroban = SorobanServerAsync(
-        ...     server_url="https://soroban-testnet.stellar.org",
+        ...     server_url="https://rpc.ankr.com/stellar_soroban",  # Mainnet RPC
         ...     client=client
         ... )
     """
@@ -137,14 +137,14 @@ def create_soroban_client_with_ssl(server_url: str):
     with SSL properly configured for macOS Python 3.6+ and all other platforms.
 
     Args:
-        server_url: Soroban RPC endpoint URL (e.g., "https://soroban-testnet.stellar.org")
+        server_url: Soroban RPC endpoint URL (e.g., "https://rpc.ankr.com/stellar_soroban")
 
     Returns:
         SorobanServerAsync: Configured Soroban RPC client
 
     Example:
         >>> soroban = create_soroban_client_with_ssl(
-        ...     "https://soroban-testnet.stellar.org"
+        ...     "https://rpc.ankr.com/stellar_soroban"
         ... )
         >>> health = await soroban.get_health()
     """

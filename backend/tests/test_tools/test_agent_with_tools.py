@@ -31,9 +31,9 @@ async def test_agent_with_tools():
         print(f"❌ Failed: {response.status_code} - {response.text}")
 
     # Test with account operations
-    print("\n👤 Test: Create and fund testnet account")
+    print("\n👤 Test: Create mainnet account")
     response = requests.post(f"{BACKEND_URL}/chat", json={
-        "message": "Please create a new Stellar testnet account and fund it with Friendbot",
+        "message": "Please create a new Stellar account",
         "history": [],
         "wallet_address": None
     })

@@ -63,7 +63,7 @@ class TestAgentAccountManagement:
             assert result["success"] is True
             assert result["address"] == "GDTEST123456789"
             assert result["name"] == "Test Account"
-            assert result["network"] == "testnet"
+            assert result["network"] == "mainnet"
             assert result["funded"] is True
 
             mock_key_manager.store.assert_called_once_with("GDTEST123456789", "SDTEST123456789")
@@ -198,7 +198,7 @@ class TestAgentLangChainTools:
                 "success": True,
                 "address": "GDTEST123456789",
                 "name": "Test Account",
-                "network": "testnet",
+                "network": "mainnet",
                 "funded": True
             }
 
@@ -223,7 +223,7 @@ class TestAgentLangChainTools:
                     "address": "GDTEST123456789",
                     "name": "Test Account",
                     "balance": 1000.0,
-                    "network": "testnet"
+                    "network": "mainnet"
                 }
             ]
 
@@ -247,7 +247,7 @@ class TestAgentLangChainTools:
                 "success": True,
                 "address": "GDTEST123456789",
                 "balance": 1000.0,
-                "network": "testnet",
+                "network": "mainnet",
                 "metadata": {"name": "Test Account"}
             }
 
@@ -276,7 +276,7 @@ class TestAgentAPI:
                 "address": "GDTEST123456789",
                 "name": "Test Account",
                 "balance": 1000.0,
-                "network": "testnet",
+                "network": "mainnet",
                 "funded": True
             }
 
@@ -301,7 +301,7 @@ class TestAgentAPI:
                     "address": "GDTEST123456789",
                     "name": "Test Account",
                     "balance": 1000.0,
-                    "network": "testnet"
+                    "network": "mainnet"
                 }
             ]
 

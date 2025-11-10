@@ -35,14 +35,14 @@ def create_agent_account(user_id: str, account_name: Optional[str] = None) -> Di
             name=account_name or "Agent Account",
             metadata={
                 "type": "agent",
-                "network": "testnet"
+                "network": "mainnet"
             }
         )
 
         if not result.get("success"):
             return result
 
-        # Fund with testnet lumens
+        # Note: Account funding required on mainnet
         funded = False
         try:
             response = requests.get(f"{FRIENDBOT_URL}?addr={result['address']}")
@@ -55,7 +55,7 @@ def create_agent_account(user_id: str, account_name: Optional[str] = None) -> Di
             "address": result["address"],
             "name": result["name"],
             "funded": funded,
-            "network": "testnet",
+            "network": "mainnet",
             "success": True
         }
 
@@ -89,7 +89,7 @@ def list_agent_accounts(user_id: str) -> List[Dict]:
                 agent_accounts.append({
                     "address": account["public_key"],
                     "balance": account.get("balance", 0),
-                    "network": "testnet",
+                    "network": "mainnet",
                     "name": account.get("name", "Agent Account")
                 })
 
@@ -129,7 +129,7 @@ def get_agent_account_info(user_id: str, address: str) -> Dict:
             "address": target_account["public_key"],
             "balance": target_account.get("balance", 0),
             "metadata": metadata,
-            "network": "testnet",
+            "network": "mainnet",
             "name": target_account.get("name", "Agent Account"),
             "success": True
         }

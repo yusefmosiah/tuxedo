@@ -18,7 +18,7 @@ def test_multiturn_with_tools():
     response1 = requests.post(
         f"{API_URL}/chat",
         json={
-            "message": "Create a new Stellar testnet account and fund it",
+            "message": "Create a new Stellar account",
             "history": [],
             "wallet_address": None
         },
@@ -47,7 +47,7 @@ def test_multiturn_with_tools():
         json={
             "message": "What was the address of the account we just created?",
             "history": [
-                {"role": "user", "content": "Create a new Stellar testnet account and fund it"},
+                {"role": "user", "content": "Create a new Stellar account"},
                 {"role": "assistant", "content": data1['response']}
             ],
             "wallet_address": None
