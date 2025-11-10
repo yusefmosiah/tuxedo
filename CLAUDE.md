@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Current State**: Production-ready for mainnet DeFi operations
 
 **🚀 Mainnet-Only Architecture**:
+
 - All operations run on Stellar mainnet (real funds, real yields)
 - Blend Capital pools: Comet, Fixed, and YieldBlox
 - Real APY data from on-chain sources
@@ -18,7 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - ALWAYS use web-search-prime to search the web. NEVER use built in web search
 - **Mainnet Only**: This system operates exclusively on Stellar mainnet with real funds
-- **Python Development**: Use UV for virtual environment management (NOT python3 -m venv). See backend commands below.
+- **Python Development**: Use UV for virtual environment management. See backend commands below.
 
 ## Development Commands
 
@@ -45,11 +46,11 @@ npm install
 # Setup virtual environment (from project root)
 cd backend
 
-# IMPORTANT: Use UV for environment management (NOT python3 -m venv)
+# Use UV for environment management
 # UV creates and manages the virtual environment automatically
 uv sync  # Creates .venv and installs all dependencies
 
-# IMPORTANT: Always activate environment before working
+# Always activate environment before working
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Start backend server
@@ -76,10 +77,6 @@ source .venv/bin/activate && python main.py
 ### UV Environment Management
 
 ```bash
-# If .venv becomes corrupted or has issues:
-rm -rf .venv
-uv sync  # Recreates environment with proper UV structure
-
 # Install new dependencies:
 uv add package_name  # Adds to pyproject.toml and installs
 
@@ -91,6 +88,9 @@ uv pip list
 
 # Update all dependencies:
 uv sync --upgrade
+
+# Reinstall/refresh environment:
+uv sync  # Recreates environment with correct dependencies
 ```
 
 ### Service URLs (Development)
@@ -196,6 +196,7 @@ This system operates **exclusively on mainnet**:
 ### Key Files
 
 **Core Infrastructure:**
+
 - `main.py` - FastAPI app with AI agent loop
 - `stellar_tools.py` - All 6 Stellar tools implementation
 - `stellar_soroban.py` - Smart contract support with async operations
@@ -203,6 +204,7 @@ This system operates **exclusively on mainnet**:
 - `agent/tool_factory.py` - Per-request tool creation with user isolation
 
 **Blend Capital Integration (MAINNET-ONLY):**
+
 - `blend_pool_tools.py` - Core Blend pool operations (discovery, APY, supply, withdraw, positions)
 - `blend_account_tools.py` - LangChain tool wrappers for AI agent (mainnet defaults)
 - Supports 3 mainnet pools: Comet, Fixed, YieldBlox
@@ -229,7 +231,7 @@ python3 test_agent_with_tools.py         # Comprehensive tool testing
 # 1. Connect wallet
 # 2. Try queries like:
 #    - "What is the network status?"
-#    - "Create a new testnet account and fund it"
+#    - "Create a new account and fund it"
 #    - "Show me the XLM/USDC orderbook"
 #    - "What's in my wallet?" (requires connected wallet)
 ```
@@ -239,7 +241,6 @@ python3 test_agent_with_tools.py         # Comprehensive tool testing
 - `test_agent.py` - Basic AI agent functionality tests
 - `test_agent_with_tools.py` - Comprehensive Stellar tools validation
 - `test_wallet_fix.py` - Wallet integration testing
-- `test_blend_integration.py` - **NEW**: Blend Capital integration tests
 
 ### Blend Capital Integration Testing
 
@@ -253,11 +254,13 @@ python3 test_blend_integration.py
 ```
 
 **Tests included:**
+
 1. Pool discovery from Backstop contract
 2. Real-time APY query for USDC in Comet pool
 3. Best yield finder across all pools
 
 **Expected results:** All 3 tests should pass, demonstrating:
+
 - Connection to Blend protocol contracts
 - On-chain data retrieval via Soroban RPC
 - APY calculation from reserve data
@@ -265,6 +268,7 @@ python3 test_blend_integration.py
 ### Common Test Scenarios
 
 **Stellar Operations (Mainnet):**
+
 - Network status queries: "What is the current Stellar network status?"
 - Account creation: "Create a new account" (user must fund with real XLM)
 - Balance queries: "Check the balance for account [ADDRESS]"
@@ -274,6 +278,7 @@ python3 test_blend_integration.py
 - Soroban contracts: "Get contract data for [CONTRACT_ID]"
 
 **Blend Capital Yield Farming (Mainnet - Real Funds):**
+
 - Find yield: "What's the best APY for USDC on mainnet?"
 - Pool discovery: "Show me all Blend pools" (returns Comet, Fixed, YieldBlox)
 - Supply assets: "Supply 100 USDC to the Comet pool" ⚠️ REAL FUNDS
@@ -307,28 +312,22 @@ All Stellar tools follow consistent patterns:
 
 ## Development Notes
 
-### ⚠️ CRITICAL: Virtual Environment Management
+### Virtual Environment Management
 
-**NEVER mix Python venv with UV package management**:
+**UV Environment Best Practices**:
 
 ```bash
-# ❌ WRONG - This will break your environment
-python3 -m venv .venv
-source .venv/bin/activate
-uv sync  # UV expects its own environment structure!
-
-# ✅ CORRECT - Let UV manage everything
-rm -rf .venv  # Remove any broken environment
+# ✅ RECOMMENDED - Let UV manage everything
 uv sync       # UV creates proper .venv with correct structure
 source .venv/bin/activate
 ```
 
-**Why this matters**:
+**Why UV works well**:
 
-- UV creates virtual environments with specific structure that differs from Python's built-in venv
-- Mixed tooling causes missing activation scripts and import errors
+- UV creates virtual environments with optimized structure
 - UV handles both environment creation AND package management consistently
-- If you get "activate not found" errors, recreate with `uv sync`
+- Automatic dependency resolution from pyproject.toml and uv.lock
+- Faster installation and better caching than standard pip
 
 ### Port Configuration
 
@@ -338,10 +337,10 @@ source .venv/bin/activate
 
 ### Network Configuration
 
-- Currently testnet-only (major limitation)
-- Contract addresses: `src/contracts/blend.ts` (hardcoded testnet values)
-- Network URLs: Scattered across `backend/main.py` and `stellar_tools.py`
-- Friendbot URL: Hardcoded to `https://friendbot.stellar.org`
+- **Mainnet only** - All operations use Stellar mainnet
+- Contract addresses: `src/contracts/blend.ts` (mainnet values)
+- Network URLs: Centralized in `backend/config/settings.py`
+- RPC provider: Ankr (configurable via environment variables)
 
 ### Wallet Integration
 
@@ -367,12 +366,12 @@ source .venv/bin/activate
 4. ✅ **Multi-pool support**: Comet, Fixed, and YieldBlox pools
 5. ✅ **User isolation**: AccountManager with encrypted secrets
 
-**Known Limitations**:
+**Current Scope**:
 
-- Blend Capital only (no other DeFi protocols)
-- Limited to configured pools (Comet, Fixed, YieldBlox)
+- Blend Capital focused (no other DeFi protocols)
+- Supports mainnet pools: Comet, Fixed, and YieldBlox
 - Requires Ankr RPC or compatible mainnet RPC provider
-- No testnet fallback (mainnet-only by design)
+- Mainnet-only by design (no testnet fallback)
 
 **Contract Addresses (Mainnet)**:
 
@@ -400,9 +399,9 @@ source .venv/bin/activate
 
 ### Configuration Updates
 
-- **Contract addresses**: `src/contracts/blend.ts` - Testnet contracts (⚠️ hardcoded)
+- **Contract addresses**: `src/contracts/blend.ts` - Mainnet contracts
 - **Environment setup**: `.env.local`, `backend/.env` - API keys and URLs
-- **Network settings**: Multiple backend files (⚠️ needs refactoring)
+- **Network settings**: `backend/config/settings.py` - Centralized configuration
 - **Dependencies**: `package.json`, `backend/pyproject.toml` - Libraries and versions
 
 ### Quick Reference for Common Issues
@@ -411,6 +410,5 @@ source .venv/bin/activate
 - **Frontend can't reach backend**: Verify port 8000 is available
 - **Tools not working**: Ensure `STELLAR_TOOLS_AVAILABLE = True` in backend logs
 - **Wallet not connecting**: Check Freighter extension and network settings
-- **Testnet only**: All contracts and URLs hardcoded to testnet (see Production Limitations)
-- note the "npm run dev:full" command to run server and client concurrently
+- Use "npm run dev:full" to run server and client concurrently
 - ALWAYS use web-search-prime to search the web. NEVER use built in web search
