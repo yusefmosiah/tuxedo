@@ -1,16 +1,10 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-} from "react";
+import { createContext, use, useState, useEffect, ReactNode } from "react";
 import {
   StellarWalletsKit,
   WalletNetwork,
   ISupportedWallet,
 } from "@creit.tech/stellar-wallets-kit";
-import { FREIGHTER_ID } from "@creit.tech/stellar-wallets-kit/modules/freighter";
+import { FREIGHTER_ID } from "@creit.tech/stellar-wallets-kit/modules/freighter.module";
 import { API_BASE_URL } from "../lib/api";
 
 export type AccountMode = "agent" | "external" | "imported";
@@ -38,7 +32,7 @@ interface WalletContextType {
   signTransaction: (xdr: string) => Promise<string>;
 
   // User-managed accounts (agent has custody)
-  agentAccounts: AgentAccount[];  // TODO: Rename to "userAccounts" or "managedAccounts"
+  agentAccounts: AgentAccount[]; // TODO: Rename to "userAccounts" or "managedAccounts"
   selectedAgentAccount: AgentAccount | null;
   setSelectedAgentAccount: (account: AgentAccount | null) => void;
   refreshAgentAccounts: () => Promise<void>;
@@ -68,8 +62,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         const walletKit = new StellarWalletsKit({
           network: WalletNetwork.PUBLIC, // mainnet
           selectedWalletId: FREIGHTER_ID,
-          modules: await import("@creit.tech/stellar-wallets-kit").then(
-            (mod) => mod.allowAllModules()
+          modules: await import("@creit.tech/stellar-wallets-kit").then((mod) =>
+            mod.allowAllModules(),
           ),
         });
         setKit(walletKit);
@@ -155,7 +149,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             setIsConnected(true);
             setMode("external");
             console.log(
-              `✅ Connected to ${option.name}: ${walletAddress.slice(0, 8)}...`
+              `✅ Connected to ${option.name}: ${walletAddress.slice(0, 8)}...`,
             );
           } catch (error) {
             console.error("Failed to get wallet address:", error);
@@ -224,13 +218,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     isLoading,
   };
 
-  return (
-    <WalletContext.Provider value={value}>{children}</WalletContext.Provider>
-  );
+  return <WalletContext value={value}>{children}</WalletContext>;
 }
 
 export function useWalletContext() {
-  const context = useContext(WalletContext);
+  const context = use(WalletContext);
   if (!context) {
     throw new Error("useWalletContext must be used within WalletProvider");
   }

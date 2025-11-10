@@ -148,8 +148,8 @@ export const InvokeContractForm = ({
       try {
         const result = await signTransaction(xdr || "");
 
-        if (result.signedTxXdr && result.signedTxXdr !== "") {
-          return result.signedTxXdr;
+        if (result && result !== "") {
+          return result;
         }
       } catch (error: unknown) {
         if (error instanceof Error && error.message) {
