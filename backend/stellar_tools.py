@@ -332,26 +332,10 @@ def account_manager(
             }
 
         elif action == "get":
-            # EXTERNAL WALLET SUPPORT: Automatically use external wallet when connected
+            # account_id is now required for stellar_account_manager get action
+            # For "my wallet" queries, use get_my_wallet() tool instead
             if not account_id:
-                # If no account_id but external wallet is connected, automatically use that
-                if agent_context.wallet_mode == "external" and agent_context.wallet_address:
-                    public_key = agent_context.wallet_address
-                    chain_account = horizon.accounts().account_id(public_key).call()
-
-                    return {
-                        "account_id": "external_wallet",
-                        "public_key": public_key,
-                        "sequence": chain_account["sequence"],
-                        "balances": chain_account["balances"],
-                        "signers": chain_account["signers"],
-                        "thresholds": chain_account["thresholds"],
-                        "flags": chain_account.get("flags", {}),
-                        "owner_context": "external",
-                        "success": True
-                    }
-                else:
-                    return {"error": "account_id required", "success": False}
+                return {"error": "account_id required. Use get_my_wallet() for connected external wallet.", "success": False}
 
             # PERMISSION CHECK for managed accounts
             if account_id == "external_wallet":

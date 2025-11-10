@@ -63,6 +63,82 @@ def create_user_tools(agent_context: AgentContext) -> List:
     # LLM only sees tool parameters, agent_context is hidden
 
     @tool
+    def get_my_wallet():
+        """
+        Get the user's connected external wallet information ONLY.
+
+        This tool ONLY works with a connected external wallet (Freighter, etc.).
+        It will never return the AI agent's system account.
+
+        Returns:
+            User's external wallet information including:
+            - Public address
+            - Balance details
+            - Account status
+
+        Example queries:
+            - "What's in my wallet?"
+            - "Check my balance"
+            - "Show me my account details"
+
+        Error:
+            Returns error if no external wallet is connected.
+        """
+        if agent_context.wallet_mode != "external" or not agent_context.wallet_address:
+            return {
+                "error": "No external wallet connected. Please connect your wallet first.",
+                "success": False,
+                "wallet_mode": agent_context.wallet_mode
+            }
+
+        return _account_manager(
+            action="get",
+            agent_context=agent_context,
+            account_manager=account_mgr,
+            horizon=horizon,
+            account_id="external_wallet"  # Strictly only external wallet
+        )
+
+    @tool
+    def get_agent_account():
+        """
+        Get the AI agent's own system account information.
+
+        This returns the AI agent's mainnet account that it manages
+        for operations and demonstrations.
+
+        Returns:
+            Agent account information including:
+            - Public address
+            - Balance details
+            - Account status
+        """
+
+        # Get agent's primary account
+        agent_accounts = account_mgr.list_accounts(user_id="system_agent", chain="stellar")
+        if not agent_accounts:
+            return {
+                "error": "Agent account not available",
+                "success": False
+            }
+
+        agent_account = agent_accounts[0]  # Use first agent account
+        public_key = agent_account['public_key']
+        chain_account = horizon.accounts().account_id(public_key).call()
+
+        return {
+            "account_id": agent_account['id'],
+            "public_key": public_key,
+            "sequence": chain_account["sequence"],
+            "balances": chain_account["balances"],
+            "signers": chain_account["signers"],
+            "thresholds": chain_account["thresholds"],
+            "flags": chain_account.get("flags", {}),
+            "owner_context": "agent",
+            "success": True
+        }
+
+    @tool
     def stellar_account_manager(
         action: str,
         account_id: Optional[str] = None,
@@ -70,24 +146,28 @@ def create_user_tools(agent_context: AgentContext) -> List:
         limit: int = 10
     ):
         """
-        Stellar account management operations (MAINNET ONLY).
+        Advanced Stellar account management operations (MAINNET ONLY).
+
+        Use get_my_wallet() for user's external wallet queries.
+        Use get_agent_account() for AI agent account queries.
+        Use this tool for specific account operations.
 
         With dual authority, this tool can access:
         - Agent's own funded mainnet account
         - Current user's accounts (if authenticated)
-        - Connected external wallet (automatically used when available)
+        - Connected external wallet (when account_id="external_wallet")
 
         Actions:
             - "create": Generate new mainnet account (requires manual funding)
-            - "get": Get account details (balances, sequence, trustlines)
+            - "get": Get specific account details (requires account_id)
             - "transactions": Get transaction history
-            - "list": List all accessible accounts (agent + user)
+            - "list": List all accessible accounts (agent + user + external)
             - "export": Export secret key (⚠️ dangerous!)
             - "import": Import existing keypair
 
         Args:
             action: Operation to perform
-            account_id: Account ID (internal ID, optional - if not provided and external wallet is connected, will use that)
+            account_id: Account ID (internal ID, or "external_wallet" for connected wallet)
             secret_key: Secret key (required only for "import")
             limit: Transaction limit (for "transactions" action)
 
@@ -97,7 +177,7 @@ def create_user_tools(agent_context: AgentContext) -> List:
 
         Note:
             Mainnet-only system - new accounts must be funded manually with real XLM
-            External wallet is automatically used when connected and no account_id is specified
+            For "my wallet" queries, use get_my_wallet() instead
         """
         # agent_context is injected here, LLM cannot see or modify it
         return _account_manager(
@@ -532,7 +612,9 @@ def create_user_tools(agent_context: AgentContext) -> List:
 
     # Return list of tools with agent_context injected
     tools = [
-        stellar_account_manager,
+        get_my_wallet,  # User's external wallet ONLY
+        get_agent_account,  # AI agent's system account
+        stellar_account_manager,  # Advanced account operations
         stellar_trading,
         stellar_trustline_manager,
         stellar_market_data,
@@ -546,5 +628,5 @@ def create_user_tools(agent_context: AgentContext) -> List:
         blend_get_pool_apy
     ]
 
-    logger.info(f"Created {len(tools)} tools (5 Stellar + 6 Blend Capital) for {agent_context}")
+    logger.info(f"Created {len(tools)} tools (7 Stellar + 6 Blend Capital) for {agent_context}")
     return tools
