@@ -846,7 +846,8 @@ async def blend_supply_collateral(
     soroban_server: SorobanServerAsync,
     agent_context = None,
     user_id: str = None,
-    network: str = "mainnet"
+    network: str = "mainnet",
+    simulate_only: bool = False
 ) -> Dict[str, Any]:
     """
     Supply assets to a Blend pool to earn yield (autonomous operation).
@@ -854,7 +855,7 @@ async def blend_supply_collateral(
     This function builds and submits a transaction to supply assets as collateral
     to a Blend pool using the unified submit() function with SupplyCollateral request type.
 
-    Now supports external wallet signing via AgentContext.
+    Now supports external wallet signing via AgentContext and simulation mode.
 
     Args:
         pool_address: Pool contract ID (e.g., Comet pool)
@@ -866,6 +867,7 @@ async def blend_supply_collateral(
         agent_context: AgentContext for wallet mode support (required)
         user_id: User identifier (backward compatibility, can be None)
         network: "mainnet" (mainnet-only)
+        simulate_only: If True, only simulate the transaction without broadcasting
 
     Returns:
         Dictionary with transaction result:
@@ -876,6 +878,11 @@ async def blend_supply_collateral(
             'asset_symbol': 'USDC',
             'pool': 'Comet Pool',
             'message': 'Successfully supplied 100.5 USDC to Comet Pool'
+        }
+        or for simulation:
+        {
+            'simulation_success': True,
+            'message': 'Transaction simulation successful'
         }
     """
     try:
@@ -909,9 +916,13 @@ async def blend_supply_collateral(
             }
         ])
 
-        # Execute via invoke action with agent context
+        # Choose action based on simulation mode
+        action = "simulate" if simulate_only else "invoke"
+        auto_sign = False if simulate_only else True
+
+        # Execute via soroban operations with agent context
         result = await soroban_operations(
-            action="invoke",
+            action=action,
             soroban_server=soroban_server,
             account_manager=account_manager,
             agent_context=agent_context,
@@ -920,17 +931,20 @@ async def blend_supply_collateral(
             function_name="submit",
             parameters=parameters,
             account_id=account_id,
-            auto_sign=True,
+            auto_sign=auto_sign,
             network_passphrase=NETWORK_CONFIG['passphrase']
         )
 
-        # Handle external wallet response
-        if result.get('requires_signature'):
+        # Handle external wallet response (only for real transactions)
+        if not simulate_only and result.get('requires_signature'):
             return result
 
-        if not result.get('success'):
+        # Check for success (different keys for simulation vs real)
+        success_key = 'simulation_success' if simulate_only else 'success'
+        if not result.get(success_key) and not result.get('success'):
             return {
                 'success': False,
+                'simulation_success': False,
                 'error': result.get('error', 'Unknown error'),
                 'message': f"Failed to supply {amount} to pool"
             }
@@ -940,19 +954,35 @@ async def blend_supply_collateral(
         asset_symbol = await _get_asset_symbol(asset_address, soroban_server, account_manager, effective_user_id, network=network)
         pool_name = await _get_pool_name(pool_address, soroban_server, account_manager, effective_user_id, network)
 
-        tx_hash = result.get('hash', 'unknown')
+        if simulate_only:
+            logger.info(f"✅ Successfully simulated supply of {amount} {asset_symbol} to {pool_name}")
+            return {
+                'simulation_success': True,
+                'success': True,
+                'amount_supplied': amount,
+                'asset_symbol': asset_symbol,
+                'pool': pool_name,
+                'message': f"✅ Transaction simulation successful: Supply {amount} {asset_symbol} to {pool_name}",
+                'parameters_validated': {
+                    'pool_address': pool_address,
+                    'asset_address': asset_address,
+                    'amount_scaled': amount_scaled,
+                    'request_type': RequestType.SUPPLY_COLLATERAL
+                }
+            }
+        else:
+            tx_hash = result.get('hash', 'unknown')
+            logger.info(f"✅ Successfully supplied {amount} {asset_symbol} to {pool_name}. Tx: {tx_hash}")
 
-        logger.info(f"✅ Successfully supplied {amount} {asset_symbol} to {pool_name}. Tx: {tx_hash}")
-
-        return {
-            'success': True,
-            'hash': tx_hash,
-            'ledger': result.get('ledger'),
-            'amount_supplied': amount,
-            'asset_symbol': asset_symbol,
-            'pool': pool_name,
-            'message': f"✅ Successfully supplied {amount} {asset_symbol} to {pool_name}. Tx: {tx_hash[:16]}..."
-        }
+            return {
+                'success': True,
+                'hash': tx_hash,
+                'ledger': result.get('ledger'),
+                'amount_supplied': amount,
+                'asset_symbol': asset_symbol,
+                'pool': pool_name,
+                'message': f"✅ Successfully supplied {amount} {asset_symbol} to {pool_name}. Tx: {tx_hash[:16]}..."
+            }
 
     except Exception as e:
         logger.error(f"Error in blend_supply_collateral: {e}")
@@ -972,7 +1002,8 @@ async def blend_withdraw_collateral(
     soroban_server: SorobanServerAsync,
     agent_context = None,
     user_id: str = None,
-    network: str = "mainnet"
+    network: str = "mainnet",
+    simulate_only: bool = False
 ) -> Dict[str, Any]:
     """
     Withdraw supplied assets from a Blend pool (autonomous operation).
@@ -980,7 +1011,7 @@ async def blend_withdraw_collateral(
     This function builds and submits a transaction to withdraw assets from collateral
     using the unified submit() function with WithdrawCollateral request type.
 
-    Now supports external wallet signing via AgentContext.
+    Now supports external wallet signing via AgentContext and simulation mode.
 
     Args:
         pool_address: Pool contract ID
@@ -992,9 +1023,10 @@ async def blend_withdraw_collateral(
         agent_context: AgentContext for wallet mode support (required)
         user_id: User identifier (backward compatibility, can be None)
         network: "mainnet" (mainnet-only)
+        simulate_only: If True, only simulate the transaction without broadcasting
 
     Returns:
-        Dictionary with transaction result
+        Dictionary with transaction result or simulation result
     """
     try:
         # Get account details for user address
@@ -1026,9 +1058,13 @@ async def blend_withdraw_collateral(
             }
         ])
 
-        # Execute via invoke action with agent context
+        # Choose action based on simulation mode
+        action = "simulate" if simulate_only else "invoke"
+        auto_sign = False if simulate_only else True
+
+        # Execute via soroban operations with agent context
         result = await soroban_operations(
-            action="invoke",
+            action=action,
             soroban_server=soroban_server,
             account_manager=account_manager,
             agent_context=agent_context,
@@ -1037,17 +1073,20 @@ async def blend_withdraw_collateral(
             function_name="submit",
             parameters=parameters,
             account_id=account_id,
-            auto_sign=True,
+            auto_sign=auto_sign,
             network_passphrase=NETWORK_CONFIG['passphrase']
         )
 
-        # Handle external wallet response
-        if result.get('requires_signature'):
+        # Handle external wallet response (only for real transactions)
+        if not simulate_only and result.get('requires_signature'):
             return result
 
-        if not result.get('success'):
+        # Check for success (different keys for simulation vs real)
+        success_key = 'simulation_success' if simulate_only else 'success'
+        if not result.get(success_key) and not result.get('success'):
             return {
                 'success': False,
+                'simulation_success': False,
                 'error': result.get('error', 'Unknown error'),
                 'message': f"Failed to withdraw {amount} from pool"
             }
@@ -1057,19 +1096,35 @@ async def blend_withdraw_collateral(
         asset_symbol = await _get_asset_symbol(asset_address, soroban_server, account_manager, effective_user_id, network=network)
         pool_name = await _get_pool_name(pool_address, soroban_server, account_manager, effective_user_id, network)
 
-        tx_hash = result.get('hash', 'unknown')
+        if simulate_only:
+            logger.info(f"✅ Successfully simulated withdrawal of {amount} {asset_symbol} from {pool_name}")
+            return {
+                'simulation_success': True,
+                'success': True,
+                'amount_withdrawn': amount,
+                'asset_symbol': asset_symbol,
+                'pool': pool_name,
+                'message': f"✅ Transaction simulation successful: Withdraw {amount} {asset_symbol} from {pool_name}",
+                'parameters_validated': {
+                    'pool_address': pool_address,
+                    'asset_address': asset_address,
+                    'amount_scaled': amount_scaled,
+                    'request_type': RequestType.WITHDRAW_COLLATERAL
+                }
+            }
+        else:
+            tx_hash = result.get('hash', 'unknown')
+            logger.info(f"✅ Successfully withdrew {amount} {asset_symbol} from {pool_name}. Tx: {tx_hash}")
 
-        logger.info(f"✅ Successfully withdrew {amount} {asset_symbol} from {pool_name}. Tx: {tx_hash}")
-
-        return {
-            'success': True,
-            'hash': tx_hash,
-            'ledger': result.get('ledger'),
-            'amount_withdrawn': amount,
-            'asset_symbol': asset_symbol,
-            'pool': pool_name,
-            'message': f"✅ Successfully withdrew {amount} {asset_symbol} from {pool_name}. Tx: {tx_hash[:16]}..."
-        }
+            return {
+                'success': True,
+                'hash': tx_hash,
+                'ledger': result.get('ledger'),
+                'amount_withdrawn': amount,
+                'asset_symbol': asset_symbol,
+                'pool': pool_name,
+                'message': f"✅ Successfully withdrew {amount} {asset_symbol} from {pool_name}. Tx: {tx_hash[:16]}..."
+            }
 
     except Exception as e:
         logger.error(f"Error in blend_withdraw_collateral: {e}")

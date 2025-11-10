@@ -45,21 +45,21 @@ def _parse_parameters(parameters_json: str) -> list:
 
         # Map type to scval function
         type_map = {
-            "address": scval.to_address,
+            "address": lambda v: scval.to_address(Address(v) if isinstance(v, str) else v),
             "bool": scval.to_bool,
             "bytes": lambda v: scval.to_bytes(v.encode() if isinstance(v, str) else v),
             "duration": scval.to_duration,
-            "int32": scval.to_int32,
-            "int64": scval.to_int64,
-            "int128": scval.to_int128,
-            "int256": scval.to_int256,
+            "int32": lambda v: scval.to_int32(int(v) if isinstance(v, str) else v),
+            "int64": lambda v: scval.to_int64(int(v) if isinstance(v, str) else v),
+            "int128": lambda v: scval.to_int128(int(v) if isinstance(v, str) else v),
+            "int256": lambda v: scval.to_int256(int(v) if isinstance(v, str) else v),
             "string": scval.to_string,
             "symbol": scval.to_symbol,
             "timepoint": scval.to_timepoint,
-            "uint32": scval.to_uint32,
-            "uint64": scval.to_uint64,
-            "uint128": scval.to_uint128,
-            "uint256": scval.to_uint256,
+            "uint32": lambda v: scval.to_uint32(int(v) if isinstance(v, str) else v),
+            "uint64": lambda v: scval.to_uint64(int(v) if isinstance(v, str) else v),
+            "uint128": lambda v: scval.to_uint128(int(v) if isinstance(v, str) else v),
+            "uint256": lambda v: scval.to_uint256(int(v) if isinstance(v, str) else v),
             "void": lambda v: scval.to_void(),
             "native": lambda v: scval.to_native(),
             # Complex types need recursive parsing
@@ -77,7 +77,58 @@ def _parse_parameters(parameters_json: str) -> list:
 
 def _parse_single_param(param: dict):
     """Helper for recursive parameter parsing"""
-    return _parse_parameters(json.dumps([param]))[0]
+    param_type = param["type"]
+    value = param["value"]
+
+    # Handle simple types directly
+    if param_type == "address":
+        return scval.to_address(Address(value) if isinstance(value, str) else value)
+    elif param_type in ["int32", "int64", "int128", "int256", "uint32", "uint64", "uint128", "uint256"]:
+        int_val = int(value) if isinstance(value, str) else value
+        if param_type == "int32":
+            return scval.to_int32(int_val)
+        elif param_type == "int64":
+            return scval.to_int64(int_val)
+        elif param_type == "int128":
+            return scval.to_int128(int_val)
+        elif param_type == "int256":
+            return scval.to_int256(int_val)
+        elif param_type == "uint32":
+            return scval.to_uint32(int_val)
+        elif param_type == "uint64":
+            return scval.to_uint64(int_val)
+        elif param_type == "uint128":
+            return scval.to_uint128(int_val)
+        elif param_type == "uint256":
+            return scval.to_uint256(int_val)
+    elif param_type == "string":
+        return scval.to_string(value)
+    elif param_type == "bool":
+        return scval.to_bool(value)
+    elif param_type == "vec":
+        return scval.to_vec([_parse_single_param(item) for item in value])
+    elif param_type == "map":
+        # For maps with string keys, convert keys to symbols
+        map_items = []
+        for key, val in value.items():
+            if isinstance(key, str):
+                # Convert string key to symbol
+                key_scval = scval.to_symbol(key)
+                val_scval = _parse_single_param(val) if isinstance(val, dict) else scval.to_native(val)
+                map_items.append((key_scval, val_scval))
+            else:
+                # Handle non-string keys
+                key_scval = _parse_single_param(key) if isinstance(key, dict) else scval.to_native(key)
+                val_scval = _parse_single_param(val) if isinstance(val, dict) else scval.to_native(val)
+                map_items.append((key_scval, val_scval))
+
+        # Sort map items by key (required by Stellar Soroban)
+        map_items.sort(key=lambda x: str(x[0]))
+
+        return scval.to_map(dict(map_items))
+    else:
+        # Fall back to original method for complex types
+        return _parse_parameters(json.dumps([param]))[0]
 
 
 async def soroban_operations(
@@ -175,8 +226,13 @@ async def soroban_operations(
 
             public_key = account_data['public_key']
 
-            # Load account from blockchain
-            source = await soroban_server.load_account(public_key)
+            # Load account from blockchain, use mock account for simulation if not found
+            try:
+                source = await soroban_server.load_account(public_key)
+            except Exception as e:
+                # Account doesn't exist on network - create mock account for simulation
+                from stellar_sdk import Account
+                source = Account(public_key, 1)  # Mock account with sequence 1
 
             # Parse parameters
             scval_params = _parse_parameters(parameters) if parameters else []
@@ -249,8 +305,13 @@ async def soroban_operations(
 
             public_key = account_data['public_key']
 
-            # Load account from blockchain
-            source = await soroban_server.load_account(public_key)
+            # Load account from blockchain, use mock account for simulation if not found
+            try:
+                source = await soroban_server.load_account(public_key)
+            except Exception as e:
+                # Account doesn't exist on network - create mock account for simulation
+                from stellar_sdk import Account
+                source = Account(public_key, 1)  # Mock account with sequence 1
 
             # Parse parameters
             scval_params = _parse_parameters(parameters) if parameters else []
