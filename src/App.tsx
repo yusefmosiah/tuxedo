@@ -8,7 +8,6 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { useAuth } from "./contexts/AuthContext_passkey";
 import { useWalletContext } from "./contexts/WalletContext";
 import { Button, Text } from "@stellar/design-system";
-import { DebugPanel } from "./components/DebugPanel";
 
 const AppLayout: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -198,9 +197,6 @@ const AppLayout: React.FC = () => {
       </header>
 
       <Outlet />
-
-      {/* Debug Panel for Passkey Authentication */}
-      <DebugPanel />
     </main>
   );
 };
