@@ -9,11 +9,11 @@ Updated for Quantum Leap migration:
 """
 
 import asyncio
-from stellar_sdk import TransactionBuilder, scval
+from stellar_sdk import TransactionBuilder, scval, xdr, Address
 from stellar_sdk.soroban_server_async import SorobanServerAsync
 from stellar_sdk.soroban_rpc import EventFilter, EventFilterType, GetEventsRequest
 from account_manager import AccountManager
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import json
 
 
@@ -92,12 +92,14 @@ async def soroban_operations(
     event_types: Optional[list] = None,
     limit: int = 100,
     auto_sign: bool = True,
-    network_passphrase: str = None
+    network_passphrase: str = None,
+    ledger_keys: Optional[List[Dict[str, Any]]] = None
 ) -> Dict[str, Any]:
     """
     Unified Soroban operations handler with async support and user isolation.
 
     Actions:
+        - "get_ledger_entries": Query multiple ledger entries directly (NEW - for Blend queries)
         - "get_data": Query contract storage (read-only)
         - "simulate": Simulate contract call (read-only)
         - "invoke": Execute contract function (write, requires account_id)
@@ -119,14 +121,105 @@ async def soroban_operations(
         limit: Result limit
         auto_sign: Auto-sign transactions (requires account_id)
         network_passphrase: Network passphrase
+        ledger_keys: List of ledger key specifications for get_ledger_entries action
+                     Each entry: {"type": "contract_instance"|"contract_data", "contract_id": "...", "key": "...", "durability": "..."}
 
     Security:
         - user_id enforced for all write operations
         - Permission check before signing transactions
-        - Read-only operations (get_data, simulate, get_events) don't require ownership
+        - Read-only operations (get_data, get_ledger_entries, simulate, get_events) don't require ownership
     """
     try:
-        if action == "get_data":
+        if action == "get_ledger_entries":
+            # Query multiple ledger entries directly (NEW - for Blend queries)
+            # No account required, single RPC call, matches official Blend SDK pattern
+            if not ledger_keys:
+                return {"error": "ledger_keys required for get_ledger_entries"}
+
+            try:
+                # Convert ledger key specifications to XDR LedgerKey objects
+                xdr_keys = []
+                for key_spec in ledger_keys:
+                    key_type = key_spec.get("type")
+
+                    if key_type == "contract_instance":
+                        # Contract instance key (pool configuration)
+                        contract_id = key_spec.get("contract_id")
+                        if not contract_id:
+                            return {"error": "contract_id required for contract_instance key"}
+
+                        xdr_key = xdr.LedgerKey(
+                            type=xdr.LedgerEntryType.CONTRACT_DATA,
+                            contract_data=xdr.LedgerKeyContractData(
+                                contract=Address(contract_id).to_xdr_sc_address(),
+                                key=xdr.SCVal(xdr.SCValType.SCV_LEDGER_KEY_CONTRACT_INSTANCE),
+                                durability=xdr.ContractDataDurability.PERSISTENT
+                            )
+                        )
+                        xdr_keys.append(xdr_key)
+
+                    elif key_type == "contract_data":
+                        # Contract data key (reserve data, config, etc.)
+                        contract_id = key_spec.get("contract_id")
+                        key_name = key_spec.get("key")
+                        dur = key_spec.get("durability", "PERSISTENT")
+
+                        if not contract_id or not key_name:
+                            return {"error": "contract_id and key required for contract_data key"}
+
+                        xdr_key = xdr.LedgerKey(
+                            type=xdr.LedgerEntryType.CONTRACT_DATA,
+                            contract_data=xdr.LedgerKeyContractData(
+                                contract=Address(contract_id).to_xdr_sc_address(),
+                                key=scval.to_symbol(key_name),
+                                durability=getattr(xdr.ContractDataDurability, dur)
+                            )
+                        )
+                        xdr_keys.append(xdr_key)
+
+                    else:
+                        return {"error": f"Unknown ledger key type: {key_type}"}
+
+                # Execute query - fetch multiple entries in single RPC call
+                response = await soroban_server.get_ledger_entries(xdr_keys)
+
+                # Parse results
+                entries = []
+                if response.entries:
+                    for entry_result in response.entries:
+                        try:
+                            # Decode XDR data
+                            entry_data = xdr.LedgerEntryData.from_xdr(entry_result.xdr)
+
+                            # Extract value and convert to native types
+                            value = scval.to_native(entry_data.contract_data.val)
+
+                            entries.append({
+                                "key_xdr": entry_result.key,
+                                "value": value,
+                                "last_modified_ledger": entry_result.last_modified_ledger_seq,
+                                "live_until_ledger": entry_result.live_until_ledger_seq
+                            })
+                        except Exception as parse_error:
+                            # Log parse errors but continue with other entries
+                            import logging
+                            logging.error(f"Error parsing ledger entry: {parse_error}")
+                            continue
+
+                return {
+                    "success": True,
+                    "entries": entries,
+                    "latest_ledger": response.latest_ledger,
+                    "count": len(entries)
+                }
+
+            except Exception as e:
+                return {
+                    "success": False,
+                    "error": f"Ledger entry query failed: {str(e)}"
+                }
+
+        elif action == "get_data":
             # Read contract storage directly
             if not contract_id or not key:
                 return {"error": "contract_id and key required for get_data"}
@@ -318,7 +411,7 @@ async def soroban_operations(
         else:
             return {
                 "error": f"Unknown action: {action}",
-                "valid_actions": ["get_data", "simulate", "invoke", "get_events"]
+                "valid_actions": ["get_ledger_entries", "get_data", "simulate", "invoke", "get_events"]
             }
 
     except Exception as e:

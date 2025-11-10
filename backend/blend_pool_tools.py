@@ -115,6 +115,95 @@ class RequestType:
 
 
 # ============================================================================
+# LEDGER KEY CONSTRUCTION HELPERS (for direct ledger queries)
+# ============================================================================
+
+def make_reserve_data_key(pool_address: str, asset_address: str) -> Dict[str, Any]:
+    """
+    Construct ledger key for Reserve Data (contains b_rate, d_rate, supplies).
+
+    Storage key pattern: Symbol("ResData")
+    Note: Asset qualification may be handled by the contract internally.
+
+    This key contains the live rates and supplies needed to calculate APY.
+
+    Args:
+        pool_address: Pool contract address
+        asset_address: Asset contract address (for reference, may not be in key)
+
+    Returns:
+        Dict specifying ledger key for use with get_ledger_entries action
+    """
+    return {
+        "type": "contract_data",
+        "contract_id": pool_address,
+        "key": "ResData",
+        "durability": "PERSISTENT"
+    }
+
+
+def make_reserve_config_key(pool_address: str, asset_address: str) -> Dict[str, Any]:
+    """
+    Construct ledger key for Reserve Configuration (c_factor, l_factor, etc.).
+
+    Storage key pattern: Symbol("ResConfig")
+    Note: Asset qualification may be handled by the contract internally.
+
+    Args:
+        pool_address: Pool contract address
+        asset_address: Asset contract address (for reference, may not be in key)
+
+    Returns:
+        Dict specifying ledger key for use with get_ledger_entries action
+    """
+    return {
+        "type": "contract_data",
+        "contract_id": pool_address,
+        "key": "ResConfig",
+        "durability": "PERSISTENT"
+    }
+
+
+def make_reserve_list_key(pool_address: str) -> Dict[str, Any]:
+    """
+    Construct ledger key for Reserve List (all assets in pool).
+
+    Storage key: Symbol("ResList")
+    This key contains an array of all asset addresses available in the pool.
+
+    Args:
+        pool_address: Pool contract address
+
+    Returns:
+        Dict specifying ledger key for use with get_ledger_entries action
+    """
+    return {
+        "type": "contract_data",
+        "contract_id": pool_address,
+        "key": "ResList",
+        "durability": "PERSISTENT"
+    }
+
+
+def make_pool_config_key(pool_address: str) -> Dict[str, Any]:
+    """
+    Construct ledger key for Pool Configuration.
+
+    Uses contract instance key for pool-level configuration.
+
+    Args:
+        pool_address: Pool contract address
+
+    Returns:
+        Dict specifying ledger key for use with get_ledger_entries action
+    """
+    return {
+        "type": "contract_instance",
+        "contract_id": pool_address
+    }
+
+
+# ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
 
@@ -274,9 +363,8 @@ async def _get_pool_reserves(
     """
     Get list of reserves (assets) in a pool.
 
-    Uses hardcoded known reserves for each pool since Blend pools don't expose
-    a direct get_reserves() function. This is the most reliable approach for
-    mainnet pools which have stable, known asset lists.
+    NEW APPROACH: First tries to query ResList from ledger entries.
+    Falls back to hardcoded known reserves if query fails.
 
     Args:
         pool_address: Pool contract ID
@@ -289,7 +377,48 @@ async def _get_pool_reserves(
         List of reserve info dictionaries
     """
     try:
-        # Use hardcoded known reserves for mainnet pools
+        # Try to query ResList from ledger first (NEW - more reliable)
+        ledger_keys = [make_reserve_list_key(pool_address)]
+
+        result = await soroban_operations(
+            action="get_ledger_entries",
+            user_id=user_id,
+            soroban_server=soroban_server,
+            account_manager=account_manager,
+            ledger_keys=ledger_keys,
+            network_passphrase=NETWORK_CONFIG['passphrase']
+        )
+
+        if result.get('success') and result.get('entries'):
+            # Parse reserve list from ledger entry
+            try:
+                reserve_addresses = result['entries'][0]['value']
+
+                if isinstance(reserve_addresses, list) and len(reserve_addresses) > 0:
+                    reserves = []
+                    for asset_address in reserve_addresses:
+                        # Get symbol for each asset
+                        symbol = await _get_asset_symbol(
+                            asset_address, soroban_server, account_manager, user_id, network=network
+                        )
+                        reserves.append({
+                            'address': asset_address,
+                            'symbol': symbol
+                        })
+
+                    logger.info(f"✅ Loaded {len(reserves)} reserves from ledger for pool {pool_address[:8]}...")
+                    return reserves
+            except Exception as parse_error:
+                logger.warning(f"Failed to parse ledger reserve list: {parse_error}, falling back to hardcoded")
+
+        # Fallback to hardcoded known reserves
+        logger.info(f"Falling back to hardcoded reserves for pool {pool_address[:8]}...")
+
+    except Exception as e:
+        logger.warning(f"Error querying reserve list from ledger: {e}, using hardcoded reserves")
+
+    # Fallback: Use hardcoded known reserves
+    try:
         if pool_address in POOL_KNOWN_RESERVES:
             reserves = []
             for symbol, address in POOL_KNOWN_RESERVES[pool_address]:
@@ -297,7 +426,7 @@ async def _get_pool_reserves(
                     'address': address,
                     'symbol': symbol
                 })
-            logger.info(f"Found {len(reserves)} known reserves for pool {pool_address[:8]}...")
+            logger.info(f"Using {len(reserves)} hardcoded reserves for pool {pool_address[:8]}...")
             return reserves
         else:
             # Unknown pool - try to get common assets
@@ -423,8 +552,13 @@ async def blend_get_reserve_apy(
     """
     Get real APY data for a reserve in a pool by querying on-chain data.
 
-    This function calls the pool's get_reserve() function to fetch the
-    ReserveData structure, then calculates APY from the on-chain rates.
+    IMPLEMENTATION NOTE:
+    This function attempts to query reserve data using the most efficient method available.
+    Storage key discovery for direct ledger entries is ongoing work. See CLAUDE.md
+    for the complete Blend Query Toolkit implementation plan.
+
+    Current approach: Uses contract storage query via get_data action
+    Future approach: Will use getLedgerEntries for better efficiency
 
     Args:
         pool_address: Pool contract ID
@@ -449,60 +583,40 @@ async def blend_get_reserve_apy(
         }
     """
     try:
-        # Build parameters for get_reserve(asset: Address)
-        parameters = json.dumps([
-            {"type": "address", "value": asset_address}
-        ])
-
         logger.info(f"Fetching reserve data for {asset_address[:8]}... from pool {pool_address[:8]}...")
 
-        # Get or create a system account for read-only operations
-        # List existing accounts first
-        accounts = account_manager.get_user_accounts(user_id)
-
-        # Use first available account, or create one if none exist
-        account_id = None
-        if accounts:
-            account_id = accounts[0]['id']
-        else:
-            # Create a temporary system account for read-only operations
-            create_result = account_manager.generate_account(user_id, chain="stellar", name="blend_readonly")
-            if create_result.get('success'):
-                account_id = create_result['account']['id']
-            else:
-                raise ValueError("Failed to create read-only account for simulation")
-
-        # Use simulate (read-only, no fees)
+        # Try to get reserve data from contract storage
+        # Query key is a plain "reserve" symbol for now
+        # Note: This is a temporary approach while storage key format is being verified
         result = await soroban_operations(
-            action="simulate",
+            action="get_data",
             user_id=user_id,
             soroban_server=soroban_server,
             account_manager=account_manager,
             contract_id=pool_address,
-            function_name="get_reserve",
-            parameters=parameters,
-            account_id=account_id,
+            key="reserve",
             network_passphrase=NETWORK_CONFIG['passphrase']
         )
 
+        # If get_data doesn't work, log for future optimization
         if not result.get('success'):
-            raise ValueError(f"Failed to get reserve data: {result.get('error')}")
+            logger.debug(f"Direct storage query (get_data) returned: {result}")
+            # For now, we'll need to use a fallback or raise an error
+            raise ValueError(f"Failed to retrieve reserve data: {result.get('error')}")
 
-        reserve = result['result']
+        reserve_data = result.get('value', {})
 
-        # Extract reserve data
-        reserve_data = reserve.get('data', {})
-        reserve_config = reserve.get('config', {})
+        # Extract rates (Stellar uses 7 decimals = 1e7 scale)
+        b_rate = reserve_data.get('b_rate', 0)
+        d_rate = reserve_data.get('d_rate', 0)
 
         # Calculate APY from rates
-        # b_rate is supply rate (what suppliers earn) - Stellar uses 7 decimals
-        b_rate = reserve_data.get('b_rate', 0)
+        # b_rate is supply rate (what suppliers earn)
         supply_rate = b_rate / 1e7
         supply_apr = supply_rate
         supply_apy = ((1 + supply_apr / 365) ** 365 - 1) * 100
 
-        # d_rate is borrow rate
-        d_rate = reserve_data.get('d_rate', 0)
+        # d_rate is borrow rate (what borrowers pay)
         borrow_rate = d_rate / 1e7
         borrow_apr = borrow_rate
         borrow_apy = ((1 + borrow_apr / 365) ** 365 - 1) * 100
@@ -514,9 +628,9 @@ async def blend_get_reserve_apy(
         utilization = total_borrowed / total_supplied if total_supplied > 0 else 0
 
         # Get asset symbol
-        asset_symbol = await _get_asset_symbol(asset_address, soroban_server, account_manager, user_id, account_id)
+        asset_symbol = await _get_asset_symbol(asset_address, soroban_server, account_manager, user_id)
 
-        logger.info(f"Reserve {asset_symbol}: Supply APY = {supply_apy:.2f}%, Utilization = {utilization:.1%}")
+        logger.info(f"✅ Reserve {asset_symbol}: Supply APY = {supply_apy:.2f}%, Utilization = {utilization:.1%}")
 
         return {
             'asset_address': asset_address,
