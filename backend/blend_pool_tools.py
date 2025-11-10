@@ -49,7 +49,7 @@ if os.getenv('HTTP_PROXY') or os.getenv('HTTPS_PROXY'):
     logger.info("Applied aiohttp proxy support (HTTP_PROXY/HTTPS_PROXY detected)")
 
 # Blend Capital Mainnet Contract Addresses (MAINNET ONLY)
-# Source: https://docs-v1.blend.capital/mainnet-deployments
+# Source: https://stellar.expert (Verified V2 Pools)
 BLEND_MAINNET_CONTRACTS = {
     # Core V2 Infrastructure
     'backstop': 'CAQQR5SWBXKIGZKPBZDH3KM5GQ5GUTPKB7JAFCINLZBC5WXPJKRG3IM7',
@@ -65,31 +65,27 @@ BLEND_MAINNET_CONTRACTS = {
     'eurc': 'CDCQP3LVDYYHVUIHW6BMVYJQWC7QPFTIZAYOQJYFHGFQHVNLTQAMV6TX',  # Euro Coin
 
     # Pools
-    'comet': 'CAS3FL6TLZKDGGSISDBWGGPXT3NRR4DYTZD7YOD3HMYO6LTJUVGRVEAM',
-    'fixed': 'CAJJZSGMMM3PD7N33TAPHGBUGTB43OC73HVIK2L2G6BNGGGYOSSYBXBD',
-    'yieldBlox': 'CCCCIQSDILITHMM7PBSLVDT5MISSY7R26MNZXCX4H7J5JQ5FPIYOGYFS',
+    'fixed': 'CAJJZSGMMM3PD7N33TAPHGBUGTB43OC73HVIK2L2G6BNGGGYOSSYBXBD',  # Fixed Pool V2
+    'yieldBlox': 'CCCCIQSDILITHMM7PBSLVDT5MISSY7R26MNZXCX4H7J5JQ5FPIYOGYFS',  # YieldBlox V2
+    'orbit': 'CAE7QVOMBLZ53CDRGK3UNRRHG5EZ5NQA7HHTFASEMYBWHG6MDFZTYHXC',  # Orbit Pool V2
+    'forex': 'CBYOBT7ZCCLQCBUYYIABZLSEGDPEUWXCUXQTZYOG3YBDR7U357D5ZIRF',  # Forex Pool V2
 }
 
-# Known reserves for each mainnet pool
+# Known reserves for each mainnet V2 pool
 # Source: https://mainnet.blend.capital/ and on-chain data
 POOL_KNOWN_RESERVES = {
-    # Comet Pool - DAO-managed multi-asset pool
-    'CAS3FL6TLZKDGGSISDBWGGPXT3NRR4DYTZD7YOD3HMYO6LTJUVGRVEAM': [
-        ('USDC', 'CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75'),
-        ('XLM', 'CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA'),
-        ('wETH', 'CDMLFMKMMD7MWZP76FZCMGK3DQCV6VLPBR5DD2WWWKLBUQZLQJFUQJSK'),
-        ('wBTC', 'CBMR5J4LZ5QUCFPQQ6YWJ4UUQISOOJJGQ7IMQX36C2V7LC2EDNDODJ7F'),
-    ],
-    # Fixed Pool - Fixed-rate USDC:XLM pool
+    # Fixed Pool V2 - Fixed-rate USDC:XLM pool
     'CAJJZSGMMM3PD7N33TAPHGBUGTB43OC73HVIK2L2G6BNGGGYOSSYBXBD': [
         ('USDC', 'CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75'),
         ('XLM', 'CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA'),
     ],
-    # YieldBlox Pool - Community pool
+    # YieldBlox Pool V2 - Community pool
     'CCCCIQSDILITHMM7PBSLVDT5MISSY7R26MNZXCX4H7J5JQ5FPIYOGYFS': [
         ('USDC', 'CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75'),
         ('XLM', 'CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA'),
     ],
+    # Orbit Pool V2 - Add reserves as discovered
+    # Forex Pool V2 - Add reserves as discovered
 }
 
 # Network configuration - MAINNET ONLY
@@ -468,7 +464,7 @@ async def blend_get_reserve_apy(
             # Create a temporary system account for read-only operations
             create_result = account_manager.generate_account(user_id, chain="stellar", name="blend_readonly")
             if create_result.get('success'):
-                account_id = create_result['account']['id']
+                account_id = create_result['account_id']  # Fixed: use 'account_id' not 'account'
             else:
                 raise ValueError("Failed to create read-only account for simulation")
 
@@ -490,26 +486,47 @@ async def blend_get_reserve_apy(
 
         reserve = result['result']
 
+        # DEBUG: Print raw reserve data
+        logger.info(f"DEBUG: Raw reserve type: {type(reserve)}")
+        logger.info(f"DEBUG: Raw reserve data: {reserve}")
+
         # Extract reserve data
         reserve_data = reserve.get('data', {})
         reserve_config = reserve.get('config', {})
 
+        # DEBUG: Print specific fields
+        logger.info(f"DEBUG: Reserve data fields:")
+        for key, value in reserve_data.items():
+            logger.info(f"  {key}: {value} (type: {type(value)})")
+            if key in ['b_rate', 'd_rate']:
+                rate_val = float(value) if isinstance(value, (int, str)) else 0
+                logger.info(f"    → As rate (12 decimals): {rate_val / 1e12:.8f}")
+            if key in ['b_supply', 'd_supply']:
+                supply_val = float(value) if isinstance(value, (int, str)) else 0
+                logger.info(f"    → As supply (6 decimals): {supply_val / 1e6:.2f}")
+                logger.info(f"    → As supply (7 decimals): {supply_val / 1e7:.2f}")
+                logger.info(f"    → As supply (12 decimals): {supply_val / 1e12:.2f}")
+
         # Calculate APY from rates
-        # b_rate is supply rate (what suppliers earn) - Stellar uses 7 decimals
+        # b_rate and d_rate are current instantaneous annual rates with 12 decimals (1e12)
+        # b_rate = 1.05579967 means 5.579967% annual supply rate, not cumulative
         b_rate = reserve_data.get('b_rate', 0)
-        supply_rate = b_rate / 1e7
-        supply_apr = supply_rate
-        supply_apy = ((1 + supply_apr / 365) ** 365 - 1) * 100
+        supply_rate_annual = (b_rate / 1e12 - 1) * 100  # Convert to percentage
+        supply_apy = supply_rate_annual  # These are already annual rates
 
-        # d_rate is borrow rate
+        # d_rate is borrow rate - same logic
         d_rate = reserve_data.get('d_rate', 0)
-        borrow_rate = d_rate / 1e7
-        borrow_apr = borrow_rate
-        borrow_apy = ((1 + borrow_apr / 365) ** 365 - 1) * 100
+        borrow_rate_annual = (d_rate / 1e12 - 1) * 100
+        borrow_apy = borrow_rate_annual
 
-        # Calculate metrics
-        total_supplied = reserve_data.get('b_supply', 0)
-        total_borrowed = reserve_data.get('d_supply', 0)
+        # Calculate metrics with correct decimal scaling
+        # USDC has 7 decimals, so divide by 1e7 to get real amounts
+        asset_decimals = reserve_config.get('decimals', 7)  # Default to 7 for USDC-like tokens
+        total_supplied_raw = reserve_data.get('b_supply', 0)
+        total_borrowed_raw = reserve_data.get('d_supply', 0)
+
+        total_supplied = total_supplied_raw / (10 ** asset_decimals)
+        total_borrowed = total_borrowed_raw / (10 ** asset_decimals)
         available = total_supplied - total_borrowed
         utilization = total_borrowed / total_supplied if total_supplied > 0 else 0
 
