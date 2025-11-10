@@ -1,87 +1,88 @@
 /**
- * Legacy Wallet Hook - Agent-First Architecture
+ * Wallet Hook - Hybrid Architecture with stellar-wallets-kit
  *
- * This file provides backward compatibility for components that still expect
- * a wallet interface. In our new agent-first architecture, AI agents manage
- * their own accounts autonomously.
+ * This hook provides a unified interface for both agent-managed accounts
+ * and external wallet connections (Freighter, xBull, etc.).
+ *
+ * Supports three modes:
+ * - agent: Agent-managed accounts with autonomous signing
+ * - external: External wallet (Freighter/xBull) with user approval
+ * - imported: External wallet imported into agent management
  */
 
-import { useState, useEffect } from "react";
-import { API_BASE_URL } from "../lib/api";
+import { useWalletContext } from "../contexts/WalletContext";
 
 export interface WalletState {
   address: string | null;
   isConnected: boolean;
   network: string;
-  signTransaction?: (tx: any) => Promise<any>;
-  isPending?: boolean;
-  networkPassphrase?: string;
+  mode: "agent" | "external" | "imported";
+  signTransaction: (xdr: string) => Promise<string>;
+  isPending: boolean;
+  networkPassphrase: string;
+
+  // Extended properties
+  connectWallet?: () => Promise<void>;
+  disconnectWallet?: () => void;
+  agentAccounts?: any[];
+  selectedAgentAccount?: any;
+  setSelectedAgentAccount?: (account: any) => void;
+  refreshAgentAccounts?: () => Promise<void>;
+  setMode?: (mode: "agent" | "external" | "imported") => void;
 }
 
 /**
- * Legacy useWallet hook for agent-first architecture
- * Returns a simplified wallet-like interface for backward compatibility
+ * Modern useWallet hook with stellar-wallets-kit integration
+ * Provides backward compatibility while adding new wallet connection features
  */
 export function useWallet(): WalletState {
-  const [agentAddress, setAgentAddress] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Fetch agent accounts on mount
-    const fetchAgentAccounts = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/agent/accounts`);
-        if (response.ok) {
-          const accounts = await response.json();
-          if (accounts.length > 0) {
-            setAgentAddress(accounts[0].address);
-          }
-        }
-      } catch (error) {
-        console.log("No agent accounts available, agent works autonomously");
-      }
-    };
-
-    fetchAgentAccounts();
-  }, []);
+  const {
+    address,
+    isConnected,
+    mode,
+    signTransaction,
+    isLoading,
+    connectWallet,
+    disconnectWallet,
+    agentAccounts,
+    selectedAgentAccount,
+    setSelectedAgentAccount,
+    refreshAgentAccounts,
+    setMode,
+  } = useWalletContext();
 
   return {
-    address: agentAddress,
-    isConnected: !!agentAddress,
-    network: "testnet",
-    signTransaction: async (xdr: any, _options?: any) => {
-      // In agent-first architecture, agents sign their own transactions
-      // This is a no-op for backward compatibility
-      console.log("Agent manages transaction signing autonomously");
-      return { signedTxXdr: xdr };
-    },
-    isPending: false,
+    address,
+    isConnected,
+    network: "mainnet",
+    mode,
+    signTransaction,
+    isPending: isLoading,
     networkPassphrase: "Public Global Stellar Network ; September 2015",
+
+    // Extended properties for new functionality
+    connectWallet,
+    disconnectWallet,
+    agentAccounts,
+    selectedAgentAccount,
+    setSelectedAgentAccount,
+    refreshAgentAccounts,
+    setMode,
   };
 }
 
 /**
- * Legacy wallet balance hook for agent-first architecture
+ * Hook for accessing wallet balance
  */
 export function useWalletBalance() {
-  const [balance, setBalance] = useState<string>("0");
+  const { selectedAgentAccount, mode } = useWalletContext();
 
-  useEffect(() => {
-    const fetchBalance = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/agent/accounts`);
-        if (response.ok) {
-          const accounts = await response.json();
-          if (accounts.length > 0 && accounts[0].balance !== undefined) {
-            setBalance(accounts[0].balance.toString());
-          }
-        }
-      } catch (error) {
-        console.log("Could not fetch balance");
-      }
-    };
+  const balance = mode === "agent" && selectedAgentAccount
+    ? selectedAgentAccount.balance?.toString() || "0"
+    : "0";
 
-    fetchBalance();
-  }, []);
-
-  return { balance, nativeBalance: balance };
+  return {
+    balance,
+    nativeBalance: balance
+  };
 }
