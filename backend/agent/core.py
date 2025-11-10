@@ -136,18 +136,9 @@ async def load_agent_tools():
 
     agent_tools = []
 
-    # Load anonymous (read-only) tools as global fallback
-    # These tools don't require authentication but also can't modify state
-    try:
-        from agent.tool_factory import create_anonymous_tools
-        from agent.context import AgentContext
-        # Create anonymous context for global tools
-        anonymous_context = AgentContext(user_id="anonymous")
-        agent_tools.extend(create_anonymous_tools(anonymous_context))
-        logger.info(f"Global anonymous tools loaded (read-only fallback) for {anonymous_context}")
-    except ImportError as e:
-        logger.error(f"Failed to load anonymous tools: {e}")
-        logger.info("Stellar functionality will be unavailable")
+    # REMOVED: Anonymous tools fallback - all users must be authenticated
+    # Stellar tools are now created per-request in chat endpoints
+    logger.info("Agent system initialized - tools will be created per-request for authenticated users")
 
     # Import agent account management tools
     try:

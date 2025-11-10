@@ -14,7 +14,7 @@ from live_summary_service import get_live_summary_service, is_live_summary_enabl
 from agent.core import process_agent_message_streaming
 from agent.context import AgentContext
 from api.dependencies import get_optional_user
-from agent.tool_factory import create_user_tools, create_anonymous_tools
+from agent.tool_factory import create_user_tools
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +50,7 @@ class StreamChatRequest(BaseModel):
 # Import agent system
 try:
     from agent.core import process_agent_message, get_agent_status
+    from agent.tool_factory import create_user_tools
     AGENT_SYSTEM_AVAILABLE = True
     logger.info("Agent system loaded successfully")
 except ImportError as e:
@@ -59,40 +60,35 @@ except ImportError as e:
 @router.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(
     request: ChatRequest,
-    current_user: Optional[Dict[str, Any]] = Depends(get_optional_user)
+    current_user: Dict[str, Any] = Depends(get_optional_user)
 ):
     """
     Process a chat message through the AI agent with delegated authority.
 
     Security:
-        - Authenticated users: Dual authority (agent's account + user's accounts)
-        - Anonymous users: Dual authority (agent's account + anonymous context)
+        - Requires authentication: All users must be authenticated
+        - Dual authority: Agent's account + user's accounts
         - AgentContext injected via tool factory, LLM cannot spoof it
     """
     if not AGENT_SYSTEM_AVAILABLE:
         raise HTTPException(status_code=503, detail="Agent system not available")
 
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
     try:
         # Create per-request tools with AgentContext (including wallet mode)
-        if current_user:
-            user_id = current_user['id']
-            agent_context = AgentContext(
-                user_id=user_id,
-                wallet_mode=request.wallet_mode or "agent",
-                wallet_address=request.wallet_address
-            )
-            logger.info(f"✅ AUTHENTICATED USER - Creating {12} tools with dual authority for {agent_context}")
-            tools = create_user_tools(agent_context)
-            logger.info(f"📦 Created {len(tools)} tools for authenticated user")
-        else:
-            agent_context = AgentContext(
-                user_id="anonymous",
-                wallet_mode=request.wallet_mode or "agent",
-                wallet_address=request.wallet_address
-            )
-            logger.warning(f"⚠️ ANONYMOUS USER - Creating {2} tools with dual authority for {agent_context}")
-            tools = create_anonymous_tools(agent_context)
-            logger.info(f"📦 Created {len(tools)} tools for anonymous user")
+        user_id = current_user['id']
+        agent_context = AgentContext(
+            user_id=user_id,
+            wallet_mode=request.wallet_mode or "agent",
+            wallet_address=request.wallet_address
+        )
+        logger.info(f"✅ AUTHENTICATED USER - Creating tools with dual authority for {agent_context}")
+        if agent_context.wallet_mode == "external" and agent_context.wallet_address:
+            logger.info(f"🔗 External wallet connected: {agent_context.wallet_address[:8]}...")
+        tools = create_user_tools(agent_context)
+        logger.info(f"📦 Created {len(tools)} tools for authenticated user")
 
         # Convert request history to dict format
         history = [{"role": msg.role, "content": msg.content} for msg in request.history]
@@ -116,14 +112,14 @@ async def chat_endpoint(
 @router.post("/chat/stream")
 async def chat_stream_endpoint(
     request: StreamChatRequest,
-    current_user: Optional[Dict[str, Any]] = Depends(get_optional_user)
+    current_user: Dict[str, Any] = Depends(get_optional_user)
 ):
     """
     Stream chat response through the AI agent with user isolation.
 
     Security:
-        - Authenticated users: Dual authority (agent's account + user's accounts)
-        - Anonymous users: Dual authority (agent's account + anonymous context)
+        - Requires authentication: All users must be authenticated
+        - Dual authority: Agent's account + user's accounts
         - AgentContext injected via tool factory, LLM cannot spoof it
     """
     async def generate_chat_stream():
@@ -136,27 +132,28 @@ async def chat_stream_endpoint(
             yield f"data: {json.dumps(error_data)}\n\n"
             return
 
+        if not current_user:
+            # Return authentication error as SSE
+            error_data = {
+                "type": "error",
+                "content": "Authentication required"
+            }
+            yield f"data: {json.dumps(error_data)}\n\n"
+            return
+
         try:
             # Create per-request tools with AgentContext (including wallet mode)
-            if current_user:
-                user_id = current_user['id']
-                agent_context = AgentContext(
-                    user_id=user_id,
-                    wallet_mode=request.wallet_mode or "agent",
-                    wallet_address=request.wallet_address
-                )
-                logger.info(f"✅ [STREAM] AUTHENTICATED USER - Creating {12} tools with dual authority for {agent_context}")
-                tools = create_user_tools(agent_context)
-                logger.info(f"📦 [STREAM] Created {len(tools)} tools for authenticated user")
-            else:
-                agent_context = AgentContext(
-                    user_id="anonymous",
-                    wallet_mode=request.wallet_mode or "agent",
-                    wallet_address=request.wallet_address
-                )
-                logger.warning(f"⚠️ [STREAM] ANONYMOUS USER - Creating {2} tools with dual authority for {agent_context}")
-                tools = create_anonymous_tools(agent_context)
-                logger.info(f"📦 [STREAM] Created {len(tools)} tools for anonymous user")
+            user_id = current_user['id']
+            agent_context = AgentContext(
+                user_id=user_id,
+                wallet_mode=request.wallet_mode or "agent",
+                wallet_address=request.wallet_address
+            )
+            logger.info(f"✅ [STREAM] AUTHENTICATED USER - Creating tools with dual authority for {agent_context}")
+            if agent_context.wallet_mode == "external" and agent_context.wallet_address:
+                logger.info(f"🔗 [STREAM] External wallet connected: {agent_context.wallet_address[:8]}...")
+            tools = create_user_tools(agent_context)
+            logger.info(f"📦 [STREAM] Created {len(tools)} tools for authenticated user")
 
             # Convert request history to dict format
             history = [{"role": msg.role, "content": msg.content} for msg in request.history]
@@ -227,7 +224,7 @@ async def chat_status():
 @router.post("/chat-stream")
 async def chat_stream_endpoint_alias(
     request: StreamChatRequest,
-    current_user: Optional[Dict[str, Any]] = Depends(get_optional_user)
+    current_user: Dict[str, Any] = Depends(get_optional_user)
 ):
     """Alias for /chat/stream to match frontend expectations"""
     return await chat_stream_endpoint(request, current_user)
@@ -235,7 +232,7 @@ async def chat_stream_endpoint_alias(
 @router.post("/chat-live-summary")
 async def chat_live_summary_endpoint(
     request: StreamChatRequest,
-    current_user: Optional[Dict[str, Any]] = Depends(get_optional_user)
+    current_user: Dict[str, Any] = Depends(get_optional_user)
 ):
     """
     Chat with live summary and streaming agent execution with delegated authority.
@@ -255,27 +252,28 @@ async def chat_live_summary_endpoint(
             yield f"data: {json.dumps(error_data)}\n\n"
             return
 
+        if not current_user:
+            # Return authentication error as SSE
+            error_data = {
+                "type": "error",
+                "content": "Authentication required"
+            }
+            yield f"data: {json.dumps(error_data)}\n\n"
+            return
+
         try:
             # Create per-request tools with AgentContext (including wallet mode)
-            if current_user:
-                user_id = current_user['id']
-                agent_context = AgentContext(
-                    user_id=user_id,
-                    wallet_mode=request.wallet_mode or "agent",
-                    wallet_address=request.wallet_address
-                )
-                logger.info(f"✅ [LIVE SUMMARY] AUTHENTICATED USER - Creating {12} tools with dual authority for {agent_context}")
-                tools = create_user_tools(agent_context)
-                logger.info(f"📦 [LIVE SUMMARY] Created {len(tools)} tools for authenticated user")
-            else:
-                agent_context = AgentContext(
-                    user_id="anonymous",
-                    wallet_mode=request.wallet_mode or "agent",
-                    wallet_address=request.wallet_address
-                )
-                logger.warning(f"⚠️ [LIVE SUMMARY] ANONYMOUS USER - Creating {2} tools with dual authority for {agent_context}")
-                tools = create_anonymous_tools(agent_context)
-                logger.info(f"📦 [LIVE SUMMARY] Created {len(tools)} tools for anonymous user")
+            user_id = current_user['id']
+            agent_context = AgentContext(
+                user_id=user_id,
+                wallet_mode=request.wallet_mode or "agent",
+                wallet_address=request.wallet_address
+            )
+            logger.info(f"✅ [LIVE SUMMARY] AUTHENTICATED USER - Creating tools with dual authority for {agent_context}")
+            if agent_context.wallet_mode == "external" and agent_context.wallet_address:
+                logger.info(f"🔗 [LIVE SUMMARY] External wallet connected: {agent_context.wallet_address[:8]}...")
+            tools = create_user_tools(agent_context)
+            logger.info(f"📦 [LIVE SUMMARY] Created {len(tools)} tools for authenticated user")
 
             # Convert request history to dict format
             history = [{"role": msg.role, "content": msg.content} for msg in request.history]
