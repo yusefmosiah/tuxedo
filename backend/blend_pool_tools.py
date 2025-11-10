@@ -408,6 +408,177 @@ async def blend_discover_pools(
         raise RuntimeError(error_msg) from e
 
 
+# ============================================================================
+# BLND Emission Functions
+# ============================================================================
+
+async def get_blnd_price_usd() -> float:
+    """
+    Get current BLND token price in USD from CoinGecko.
+
+    Returns:
+        BLND price in USD, or conservative fallback if API fails
+    """
+    try:
+        async with aiohttp.ClientSession() as session:
+            url = "https://api.coingecko.com/api/v3/simple/price"
+            params = {
+                'ids': 'blend',
+                'vs_currencies': 'usd'
+            }
+            async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    price = data.get('blend', {}).get('usd', 0.0)
+                    if price > 0:
+                        logger.info(f"BLND price from CoinGecko: ${price:.4f}")
+                        return price
+    except Exception as e:
+        logger.warning(f"Failed to get BLND price from CoinGecko: {e}")
+
+    # Fallback: Conservative estimate
+    fallback_price = 0.05
+    logger.info(f"Using fallback BLND price: ${fallback_price}")
+    return fallback_price
+
+
+async def get_reserve_emissions(
+    pool_address: str,
+    reserve_index: int,
+    token_type: str,
+    user_id: str,
+    account_manager: AccountManager,
+    soroban_server: SorobanServerAsync,
+    account_id: str
+) -> Optional[Dict[str, Any]]:
+    """
+    Get BLND emission data for a reserve token from pool contract.
+
+    Args:
+        pool_address: Pool contract address
+        reserve_index: Reserve index (0, 1, 2, ...)
+        token_type: 'supply' for bTokens, 'borrow' for dTokens
+        user_id: User identifier
+        account_manager: AccountManager instance
+        soroban_server: SorobanServerAsync instance
+        account_id: Account ID for simulation
+
+    Returns:
+        {
+            'index': int,
+            'last_time': int,
+            'expiration': int,
+            'eps': int,  # Emissions per second (scaled)
+        }
+        or None if no emissions active
+    """
+    try:
+        # Calculate reserve_token_id based on type
+        # dTokens (borrow): reserve_index * 2
+        # bTokens (supply): reserve_index * 2 + 1
+        if token_type == 'borrow':
+            reserve_token_id = reserve_index * 2
+        else:  # supply
+            reserve_token_id = reserve_index * 2 + 1
+
+        logger.info(f"Getting emissions for reserve_token_id={reserve_token_id} ({token_type})")
+
+        # Call pool contract: get_reserve_emissions(reserve_token_id: u32)
+        parameters = json.dumps([reserve_token_id])
+
+        result = await soroban_operations(
+            action='simulate',
+            user_id=user_id,
+            contract_id=pool_address,
+            function_name='get_reserve_emissions',
+            parameters=parameters,
+            account_manager=account_manager,
+            account_id=account_id,
+            soroban_server=soroban_server,
+            network_passphrase='Public Global Stellar Network ; September 2015'
+        )
+
+        if result.get('success') and result.get('result'):
+            emissions = result['result']
+            logger.info(f"Emissions data for {token_type}: {emissions}")
+            return emissions
+
+        logger.info(f"No emissions data found for {token_type}")
+        return None
+
+    except Exception as e:
+        logger.warning(f"Error getting reserve emissions for {token_type}: {e}")
+        return None
+
+
+async def calculate_emission_apy(
+    emissions_data: Optional[Dict[str, Any]],
+    reserve_token_value_usd: float,
+    total_supply_or_borrow: float,
+    blnd_price_usd: float
+) -> float:
+    """
+    Calculate APY contribution from BLND emissions.
+
+    Formula:
+        emission_apr = (blnd_per_year * blnd_price) / (total_value) * 100
+
+    Args:
+        emissions_data: Data from get_reserve_emissions()
+        reserve_token_value_usd: USD value of 1 reserve token
+        total_supply_or_borrow: Total tokens supplied or borrowed
+        blnd_price_usd: Current BLND price in USD
+
+    Returns:
+        Emission APY as percentage (e.g., 7.58 for 7.58%)
+    """
+    if not emissions_data or not total_supply_or_borrow or total_supply_or_borrow == 0:
+        return 0.0
+
+    try:
+        # Get emissions per second (scaled by 1e7 based on Blend contracts)
+        eps = emissions_data.get('eps', 0)
+        if eps == 0:
+            return 0.0
+
+        # Convert EPS to annual BLND tokens
+        # eps is scaled by 1e7 (7 decimals)
+        eps_decimal = eps / 1e7
+        seconds_per_year = 365 * 24 * 60 * 60
+        blnd_per_year = eps_decimal * seconds_per_year
+
+        # Calculate annual BLND value in USD
+        blnd_value_per_year = blnd_per_year * blnd_price_usd
+
+        # Calculate total reserve value in USD
+        total_reserve_value = total_supply_or_borrow * reserve_token_value_usd
+
+        # APY = (annual BLND value / total reserve value) * 100
+        if total_reserve_value > 0:
+            emission_apy = (blnd_value_per_year / total_reserve_value) * 100
+
+            # Sanity check: emission APY should be reasonable (0-100%)
+            if emission_apy > 100:
+                logger.warning(f"Suspicious emission APY: {emission_apy:.2f}% - may need decimal adjustment")
+                return 0.0
+            if emission_apy < 0:
+                logger.warning(f"Negative emission APY: {emission_apy:.2f}%")
+                return 0.0
+
+            logger.info(f"Emission APY calculation: {blnd_per_year:.2f} BLND/year * ${blnd_price_usd:.4f} / ${total_reserve_value:.2f} = {emission_apy:.2f}%")
+            return emission_apy
+
+        return 0.0
+
+    except Exception as e:
+        logger.error(f"Error calculating emission APY: {e}")
+        return 0.0
+
+
+# ============================================================================
+# Reserve APY Query (Base + Emissions)
+# ============================================================================
+
 async def blend_get_reserve_apy(
     pool_address: str,
     asset_address: str,
@@ -452,21 +623,25 @@ async def blend_get_reserve_apy(
 
         logger.info(f"Fetching reserve data for {asset_address[:8]}... from pool {pool_address[:8]}...")
 
-        # Get or create a system account for read-only operations
-        # List existing accounts first
+        # Get account for read-only simulation operations
+        # For read operations, preferably use system_agent account if user doesn't have one
         accounts = account_manager.get_user_accounts(user_id)
-
-        # Use first available account, or create one if none exist
         account_id = None
+
         if accounts:
             account_id = accounts[0]['id']
         else:
-            # Create a temporary system account for read-only operations
-            create_result = account_manager.generate_account(user_id, chain="stellar", name="blend_readonly")
-            if create_result.get('success'):
-                account_id = create_result['account_id']  # Fixed: use 'account_id' not 'account'
+            # Try system_agent as fallback for read operations
+            system_accounts = account_manager.get_user_accounts('system_agent')
+            if system_accounts:
+                account_id = system_accounts[0]['id']
             else:
-                raise ValueError("Failed to create read-only account for simulation")
+                # Last resort: create account for this user
+                create_result = account_manager.generate_account(user_id, chain="stellar", name="blend_readonly")
+                if create_result.get('success'):
+                    account_id = create_result['account_id']
+                else:
+                    raise ValueError(f"No accounts available for simulation (tried {user_id} and system_agent)")
 
         # Use simulate (read-only, no fees)
         result = await soroban_operations(
@@ -533,18 +708,128 @@ async def blend_get_reserve_apy(
         # Get asset symbol
         asset_symbol = await _get_asset_symbol(asset_address, soroban_server, account_manager, user_id, account_id)
 
-        logger.info(f"Reserve {asset_symbol}: Supply APY = {supply_apy:.2f}%, Utilization = {utilization:.1%}")
+        # Store base APY before adding emissions
+        base_supply_apy = supply_apy
+        base_borrow_apy = borrow_apy
+
+        # ================================================================
+        # BLND Emission APY Calculation
+        # ================================================================
+
+        supply_emission_apy = 0.0
+        borrow_emission_apy = 0.0
+        blnd_price = 0.0
+
+        try:
+            # Get BLND price from CoinGecko
+            blnd_price = await get_blnd_price_usd()
+
+            # Get reserve index from reserve data or config
+            # Reserve structure should have an 'index' field
+            reserve_index = reserve.get('index', None)
+
+            # Fallback: Try to determine index from known pool reserves
+            if reserve_index is None:
+                logger.info(f"Reserve index not found in data, attempting to determine from pool reserves")
+                # For Fixed pool, USDC=0, XLM=1
+                # For YieldBlox pool, USDC=0, XLM=1
+                known_reserves = POOL_KNOWN_RESERVES.get(pool_address, [])
+                for idx, (symbol, addr) in enumerate(known_reserves):
+                    if addr == asset_address:
+                        reserve_index = idx
+                        logger.info(f"Determined reserve_index={reserve_index} for {symbol} from known reserves")
+                        break
+
+            if reserve_index is not None:
+                # Get emission data for supply (bToken)
+                supply_emissions = await get_reserve_emissions(
+                    pool_address,
+                    reserve_index,
+                    'supply',
+                    user_id,
+                    account_manager,
+                    soroban_server,
+                    account_id
+                )
+
+                # Get emission data for borrow (dToken)
+                borrow_emissions = await get_reserve_emissions(
+                    pool_address,
+                    reserve_index,
+                    'borrow',
+                    user_id,
+                    account_manager,
+                    soroban_server,
+                    account_id
+                )
+
+                # Calculate reserve token USD value
+                # For USDC: $1.00
+                # For XLM and others: Would need price lookup (TODO: integrate price oracle)
+                reserve_token_value_usd = 1.0  # Default to USDC value
+                if asset_symbol == 'USDC':
+                    reserve_token_value_usd = 1.0
+                elif asset_symbol == 'XLM':
+                    # TODO: Get XLM price from CoinGecko or oracle
+                    reserve_token_value_usd = 0.10  # Conservative placeholder
+                else:
+                    # TODO: Add support for WETH, WBTC, etc.
+                    reserve_token_value_usd = 1.0
+
+                # Calculate emission APYs
+                if supply_emissions:
+                    supply_emission_apy = await calculate_emission_apy(
+                        supply_emissions,
+                        reserve_token_value_usd,
+                        total_supplied,
+                        blnd_price
+                    )
+
+                if borrow_emissions:
+                    borrow_emission_apy = await calculate_emission_apy(
+                        borrow_emissions,
+                        reserve_token_value_usd,
+                        total_borrowed,
+                        blnd_price
+                    )
+
+                # Add emissions to base APY
+                supply_apy = base_supply_apy + supply_emission_apy
+                borrow_apy = base_borrow_apy + borrow_emission_apy
+
+                logger.info(f"Reserve {asset_symbol} APY breakdown:")
+                logger.info(f"  Supply: {base_supply_apy:.2f}% (base) + {supply_emission_apy:.2f}% (BLND) = {supply_apy:.2f}%")
+                logger.info(f"  Borrow: {base_borrow_apy:.2f}% (base) + {borrow_emission_apy:.2f}% (BLND) = {borrow_apy:.2f}%")
+            else:
+                logger.warning(f"Could not determine reserve_index for {asset_symbol}, skipping emission calculations")
+
+        except Exception as e:
+            logger.warning(f"Error calculating BLND emissions, using base APY only: {e}")
+            # Continue with base APY if emissions fail
+            supply_apy = base_supply_apy
+            borrow_apy = base_borrow_apy
+
+        logger.info(f"Reserve {asset_symbol}: Final Supply APY = {supply_apy:.2f}%, Utilization = {utilization:.1%}")
 
         return {
             'asset_address': asset_address,
             'asset_symbol': asset_symbol,
             'supply_apy': round(supply_apy, 2),
             'borrow_apy': round(borrow_apy, 2),
+            'supply_apy_breakdown': {
+                'base': round(base_supply_apy, 2),
+                'blnd_emissions': round(supply_emission_apy, 2)
+            },
+            'borrow_apy_breakdown': {
+                'base': round(base_borrow_apy, 2),
+                'blnd_emissions': round(borrow_emission_apy, 2)
+            },
             'total_supplied': total_supplied,
             'total_borrowed': total_borrowed,
             'utilization': round(utilization, 4),
             'available_liquidity': available,
-            'data_source': 'on_chain'
+            'blnd_price': round(blnd_price, 4) if blnd_price > 0 else None,
+            'data_source': 'on_chain_with_emissions' if supply_emission_apy > 0 or borrow_emission_apy > 0 else 'on_chain'
         }
 
     except Exception as e:
