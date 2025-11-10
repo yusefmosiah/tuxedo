@@ -14,6 +14,7 @@ from stellar_sdk import (
 )
 import requests
 from account_manager import AccountManager
+from agent.context import AgentContext
 from typing import Optional, Dict, Any
 from decimal import Decimal
 
@@ -174,7 +175,7 @@ def _calculate_market_fill(
 
 
 def _build_sign_submit(
-    user_id: str,
+    agent_context: AgentContext,
     account_id: str,
     operations: list,
     account_manager: AccountManager,
@@ -182,10 +183,10 @@ def _build_sign_submit(
     auto_sign: bool = True
 ) -> Dict[str, Any]:
     """
-    Unified transaction flow: build → sign → submit
+    Unified transaction flow: build → sign → submit with delegated authority.
 
     Args:
-        user_id: User identifier (MANDATORY - enforces user isolation)
+        agent_context: Agent execution context with dual authority
         account_id: Account ID (internal ID, not public key)
         operations: List of operation callbacks
         account_manager: AccountManager instance
@@ -196,10 +197,10 @@ def _build_sign_submit(
         Transaction result or unsigned XDR if auto_sign=False
     """
     try:
-        # Permission check: verify user owns this account
-        if not account_manager.user_owns_account(user_id, account_id):
+        # Permission check: verify agent has permission for this account
+        if not account_manager.user_owns_account(agent_context, account_id):
             return {
-                "error": "Permission denied: account not owned by user",
+                "error": "Permission denied: account not owned by authorized users",
                 "success": False
             }
 
@@ -232,7 +233,7 @@ def _build_sign_submit(
             }
 
         # Sign and submit
-        chain_keypair = account_manager.get_keypair_for_signing(user_id, account_id)
+        chain_keypair = account_manager.get_keypair_for_signing(agent_context, account_id)
         # ChainKeypair is a dataclass, need to create Stellar SDK Keypair for signing
         stellar_keypair = Keypair.from_secret(chain_keypair.private_key)
         tx.sign(stellar_keypair)
@@ -256,7 +257,7 @@ def _build_sign_submit(
 
 def account_manager(
     action: str,
-    user_id: str,
+    agent_context: AgentContext,
     account_manager: AccountManager,
     horizon: Server,
     account_id: Optional[str] = None,
@@ -266,20 +267,24 @@ def account_manager(
     amount: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Unified account management tool with mandatory user isolation (MAINNET ONLY).
+    Unified account management tool with delegated authority (MAINNET ONLY).
+
+    With dual authority, this tool can access:
+    - Agent's own funded mainnet account
+    - Current user's accounts (if authenticated)
 
     Actions:
         - "create": Generate new mainnet account (requires manual funding)
         - "get": Get account details (balances, sequence, trustlines)
         - "transactions": Get transaction history
-        - "list": List all managed accounts
+        - "list": List all accessible accounts (agent + user)
         - "export": Export secret key (⚠️ dangerous!)
         - "import": Import existing keypair
         - "send": Send XLM payment to destination address
 
     Args:
         action: Operation to perform
-        user_id: User identifier (MANDATORY - injected by auth layer)
+        agent_context: Agent execution context with dual authority
         account_manager: AccountManager instance
         horizon: Horizon server instance
         account_id: Account ID (internal ID, required for most actions)
@@ -289,21 +294,19 @@ def account_manager(
         amount: Amount to send in XLM (required for "send")
 
     Returns:
-        Action-specific response dict
+        Action-specific response dict. For "list", returns accounts
+        tagged with owner_context: "agent" or "user"
 
     Note:
         - Mainnet-only system - no Friendbot funding available
         - New accounts must be funded manually with real XLM
     """
     try:
-        # Validate user_id present
-        if not user_id:
-            return {"error": "user_id required", "success": False}
 
         if action == "create":
-            # Generate new account for THIS user
+            # Generate new account for current user (not agent)
             result = account_manager.generate_account(
-                user_id=user_id,
+                user_id=agent_context.user_id,
                 chain="stellar",
                 name="Stellar Account"
             )
@@ -322,9 +325,10 @@ def account_manager(
             if not account_id:
                 return {"error": "account_id required", "success": False}
 
-            account = account_manager._get_account_by_id(account_id)
-            if not account or account['user_id'] != user_id:
+            if not account_manager.user_owns_account(agent_context, account_id):
                 return {"error": "Permission denied", "success": False}
+
+            account = account_manager._get_account_by_id(account_id)
 
             # Fetch on-chain data
             public_key = account['public_key']
@@ -346,9 +350,10 @@ def account_manager(
             if not account_id:
                 return {"error": "account_id required", "success": False}
 
-            account = account_manager._get_account_by_id(account_id)
-            if not account or account['user_id'] != user_id:
+            if not account_manager.user_owns_account(agent_context, account_id):
                 return {"error": "Permission denied", "success": False}
+
+            account = account_manager._get_account_by_id(account_id)
 
             public_key = account['public_key']
             transactions = (
@@ -376,11 +381,25 @@ def account_manager(
             }
 
         elif action == "list":
-            # List THIS user's accounts only
-            accounts = account_manager.get_user_accounts(user_id, chain="stellar")
+            # Return accounts from ALL authorized user IDs
+            all_accounts = []
+            for auth_user_id in agent_context.get_authorized_user_ids():
+                accounts = account_manager.get_user_accounts(
+                    user_id=auth_user_id,
+                    chain="stellar"
+                )
+                # Tag each account with ownership context
+                for acc in accounts:
+                    acc['owner_context'] = (
+                        'agent' if agent_context.is_agent_account(auth_user_id)
+                        else 'user'
+                    )
+                    acc['owner_user_id'] = auth_user_id
+                all_accounts.extend(accounts)
+
             return {
-                "accounts": accounts,
-                "count": len(accounts),
+                "accounts": all_accounts,
+                "count": len(all_accounts),
                 "success": True
             }
 
@@ -389,16 +408,16 @@ def account_manager(
             if not account_id:
                 return {"error": "account_id required", "success": False}
 
-            result = account_manager.export_account(user_id, account_id)
+            result = account_manager.export_account(agent_context, account_id)
             return result
 
         elif action == "import":
-            # Import to THIS user's account list
+            # Import always goes to current user, not agent
             if not secret_key:
                 return {"error": "secret_key required", "success": False}
 
             result = account_manager.import_account(
-                user_id=user_id,
+                user_id=agent_context.user_id,
                 chain="stellar",
                 private_key=secret_key,
                 name="Imported Account"
@@ -425,7 +444,7 @@ def account_manager(
 
             # Build, sign, and submit transaction
             result = _build_sign_submit(
-                user_id=user_id,
+                agent_context=agent_context,
                 account_id=account_id,
                 operations=[payment_op],
                 account_manager=account_manager,
@@ -457,7 +476,7 @@ def account_manager(
 
 def trading(
     action: str,
-    user_id: str,
+    agent_context: AgentContext,
     account_id: str,
     account_manager: AccountManager,
     horizon: Server,
@@ -473,7 +492,11 @@ def trading(
     auto_sign: bool = True
 ) -> Dict[str, Any]:
     """
-    Unified SDEX trading tool with mandatory user isolation.
+    Unified SDEX trading tool with delegated authority.
+
+    Can execute trades from:
+    - Agent's funded account
+    - User's accounts
 
     Actions:
         - "buy": Acquire buying_asset by spending selling_asset
@@ -483,7 +506,7 @@ def trading(
 
     Args:
         action: Trading operation ("buy", "sell", "cancel_order", "get_orders")
-        user_id: User identifier (MANDATORY - injected by auth layer)
+        agent_context: Agent execution context with dual authority
         account_id: Account ID (internal ID)
         account_manager: AccountManager instance
         horizon: Horizon server instance
@@ -502,10 +525,10 @@ def trading(
         {"success": bool, "hash": "...", "ledger": 123, "market_execution": {...}}
     """
     try:
-        # PERMISSION CHECK: verify user owns this account
-        if not account_manager.user_owns_account(user_id, account_id):
+        # PERMISSION CHECK: verify agent has permission for this account
+        if not account_manager.user_owns_account(agent_context, account_id):
             return {
-                "error": "Permission denied: account not owned by user",
+                "error": "Permission denied: account not owned by authorized users",
                 "success": False
             }
 
@@ -555,7 +578,7 @@ def trading(
                     offer_id=int(offer_id)
                 )
 
-            result = _build_sign_submit(user_id, account_id, [cancel_op], account_manager, horizon, auto_sign)
+            result = _build_sign_submit(agent_context, account_id, [cancel_op], account_manager, horizon, auto_sign)
             if result.get("success"):
                 result["message"] = f"Order {offer_id} cancelled successfully"
             return result
@@ -654,7 +677,7 @@ def trading(
                         price=price_value
                     )
 
-            result = _build_sign_submit(user_id, account_id, [trade_op], account_manager, horizon, auto_sign)
+            result = _build_sign_submit(agent_context, account_id, [trade_op], account_manager, horizon, auto_sign)
 
             # Add market execution details for market orders
             if result.get("success") and order_type == "market":
@@ -686,7 +709,7 @@ def trading(
 
 def trustline_manager(
     action: str,
-    user_id: str,
+    agent_context: AgentContext,
     account_id: str,
     asset_code: str,
     asset_issuer: str,
@@ -695,7 +718,7 @@ def trustline_manager(
     limit: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Manage trustlines for issued assets with mandatory user isolation.
+    Manage trustlines for issued assets with delegated authority.
 
     Actions:
         - "establish": Create trustline (required before receiving assets)
@@ -703,7 +726,7 @@ def trustline_manager(
 
     Args:
         action: Trustline operation
-        user_id: User identifier (MANDATORY - injected by auth layer)
+        agent_context: Agent execution context with dual authority
         account_id: Account ID (internal ID)
         asset_code: Asset code (e.g., "USDC")
         asset_issuer: Asset issuer public key
@@ -716,9 +739,9 @@ def trustline_manager(
     """
     try:
         # PERMISSION CHECK
-        if not account_manager.user_owns_account(user_id, account_id):
+        if not account_manager.user_owns_account(agent_context, account_id):
             return {
-                "error": "Permission denied: account not owned by user",
+                "error": "Permission denied: account not owned by authorized users",
                 "success": False
             }
 
@@ -732,7 +755,7 @@ def trustline_manager(
             else:
                 raise ValueError(f"Unknown action: {action}")
 
-        result = _build_sign_submit(user_id, account_id, [trustline_op], account_manager, horizon, auto_sign=True)
+        result = _build_sign_submit(agent_context, account_id, [trustline_op], account_manager, horizon, auto_sign=True)
 
         if result.get("success"):
             result["message"] = f"Trustline {'established' if action == 'establish' else 'removed'} for {asset_code}"
@@ -751,7 +774,7 @@ def trustline_manager(
 
 def market_data(
     action: str,
-    user_id: str,
+    agent_context: AgentContext,
     horizon: Server,
     base_asset: str = "XLM",
     quote_asset: Optional[str] = None,
@@ -759,14 +782,14 @@ def market_data(
     limit: int = 20
 ) -> Dict[str, Any]:
     """
-    Query SDEX market data (read-only with user tracking).
+    Query SDEX market data (read-only, no authentication required).
 
     Actions:
         - "orderbook": Get orderbook for asset pair
 
     Args:
         action: Market data query type
-        user_id: User identifier (MANDATORY - for logging)
+        agent_context: Agent execution context (for consistency)
         horizon: Horizon server instance
         base_asset: Base asset code (default: "XLM")
         quote_asset: Quote asset code
@@ -806,9 +829,9 @@ def market_data(
 # COMPOSITE TOOL 5: UTILITIES
 # ============================================================================
 
-def utilities(action: str, user_id: str, horizon: Server) -> Dict[str, Any]:
+def utilities(action: str, agent_context: AgentContext, horizon: Server) -> Dict[str, Any]:
     """
-    Network utilities and server information (read-only with user tracking).
+    Network utilities and server information (read-only, no authentication required).
 
     Actions:
         - "status": Get Horizon server status
@@ -816,7 +839,7 @@ def utilities(action: str, user_id: str, horizon: Server) -> Dict[str, Any]:
 
     Args:
         action: Utility operation
-        user_id: User identifier (MANDATORY - for logging)
+        agent_context: Agent execution context (for consistency)
         horizon: Horizon server instance
 
     Returns:

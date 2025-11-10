@@ -3,7 +3,7 @@ Account Manager - Chain-agnostic wallet account management
 Provides filesystem primitives for agents to organize accounts
 Agents construct "portfolio" patterns dynamically from these primitives
 """
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, TYPE_CHECKING
 from database_passkeys import PasskeyDatabaseManager
 from encryption import EncryptionManager
 from chains.base import ChainAdapter
@@ -11,6 +11,9 @@ from chains.stellar import StellarAdapter
 import secrets
 import sqlite3
 import json
+
+if TYPE_CHECKING:
+    from agent.context import AgentContext
 
 class AccountManager:
     """
@@ -204,12 +207,16 @@ class AccountManager:
 
     def export_account(
         self,
-        user_id: str,
+        agent_context: "AgentContext",
         account_id: str
     ) -> Dict:
         """
-        Export wallet private key
+        Export wallet private key with delegated authority support.
         KILLER FEATURE: Users maintain full custodial control
+
+        Args:
+            agent_context: Agent execution context with dual authority
+            account_id: Account to export
         """
         try:
             # Get account
@@ -220,17 +227,17 @@ class AccountManager:
                     "success": False
                 }
 
-            # Verify ownership
-            if account['user_id'] != user_id:
+            # Verify permission
+            if not agent_context.has_permission(account['user_id']):
                 return {
-                    "error": "Permission denied: account not owned by user",
+                    "error": "Permission denied: account not owned by authorized users",
                     "success": False
                 }
 
-            # Decrypt private key
+            # Decrypt private key using actual owner
             private_key = self.encryption.decrypt(
                 account['encrypted_private_key'],
-                user_id
+                account['user_id']  # Use actual owner for decryption
             )
 
             # Get chain adapter for export format
@@ -306,11 +313,15 @@ class AccountManager:
 
     def delete_account(
         self,
-        user_id: str,
+        agent_context: "AgentContext",
         account_id: str
     ) -> Dict:
         """
-        Delete an account (soft delete by marking as inactive or hard delete)
+        Delete an account with delegated authority support.
+
+        Args:
+            agent_context: Agent execution context with dual authority
+            account_id: Account to delete
         """
         try:
             # Get account
@@ -321,10 +332,10 @@ class AccountManager:
                     "success": False
                 }
 
-            # Verify ownership
-            if account['user_id'] != user_id:
+            # Verify permission
+            if not agent_context.has_permission(account['user_id']):
                 return {
-                    "error": "Permission denied: account not owned by user",
+                    "error": "Permission denied: account not owned by authorized users",
                     "success": False
                 }
 
@@ -358,29 +369,54 @@ class AccountManager:
             row = cursor.fetchone()
         return dict(row) if row else None
 
-    def user_owns_account(self, user_id: str, account_id: str) -> bool:
-        """Check if user owns account"""
-        account = self._get_account_by_id(account_id)
-        return account is not None and account['user_id'] == user_id
-
-    def get_keypair_for_signing(self, user_id: str, account_id: str):
+    def user_owns_account(self, agent_context: "AgentContext", account_id: str) -> bool:
         """
-        Get decrypted keypair for transaction signing
-        Keypair exists only in-memory during transaction
+        Check if agent has permission to access account.
+
+        Args:
+            agent_context: Agent execution context with dual authority
+            account_id: Account to check
+
+        Returns:
+            True if agent has permission to access this account
+        """
+        account = self._get_account_by_id(account_id)
+        return account is not None and agent_context.has_permission(account['user_id'])
+
+    def get_keypair_for_signing(self, agent_context: "AgentContext", account_id: str):
+        """
+        Get decrypted keypair for transaction signing with delegated authority.
+
+        Agent can sign for accounts owned by any of the authorized user IDs
+        in the agent context.
+
+        Args:
+            agent_context: Agent execution context with dual authority
+            account_id: Account to access
+
+        Returns:
+            Keypair object for signing
+
+        Raises:
+            ValueError: If account not found
+            PermissionError: If agent not authorized for this account
         """
         # Get account
         account = self._get_account_by_id(account_id)
         if not account:
             raise ValueError("Account not found")
 
-        # Verify ownership
-        if account['user_id'] != user_id:
-            raise PermissionError("Permission denied: account not owned by user")
+        # Check permission using context
+        if not agent_context.has_permission(account['user_id']):
+            raise PermissionError(
+                f"Permission denied: account owned by {account['user_id']}, "
+                f"agent context: {agent_context}"
+            )
 
-        # Decrypt private key
+        # Decrypt private key using the account's actual owner
         private_key = self.encryption.decrypt(
             account['encrypted_private_key'],
-            user_id
+            account['user_id']  # Use actual owner for decryption
         )
 
         # Create keypair object (in-memory)

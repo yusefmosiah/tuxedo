@@ -12,6 +12,7 @@ import json
 import asyncio
 from live_summary_service import get_live_summary_service, is_live_summary_enabled
 from agent.core import process_agent_message_streaming
+from agent.context import AgentContext
 from api.dependencies import get_optional_user
 from agent.tool_factory import create_user_tools, create_anonymous_tools
 
@@ -57,25 +58,27 @@ async def chat_endpoint(
     current_user: Optional[Dict[str, Any]] = Depends(get_optional_user)
 ):
     """
-    Process a chat message through the AI agent with user isolation.
+    Process a chat message through the AI agent with delegated authority.
 
     Security:
-        - Authenticated users: Tools scoped to their user_id (from auth)
-        - Anonymous users: Read-only tools (market data, utilities)
-        - user_id injected via tool factory, LLM cannot spoof it
+        - Authenticated users: Dual authority (agent's account + user's accounts)
+        - Anonymous users: Dual authority (agent's account + anonymous context)
+        - AgentContext injected via tool factory, LLM cannot spoof it
     """
     if not AGENT_SYSTEM_AVAILABLE:
         raise HTTPException(status_code=503, detail="Agent system not available")
 
     try:
-        # Create per-request tools with user_id injection
+        # Create per-request tools with AgentContext
         if current_user:
             user_id = current_user['id']
-            logger.info(f"Creating authenticated tools for user_id: {user_id}")
-            tools = create_user_tools(user_id)
+            agent_context = AgentContext(user_id=user_id)
+            logger.info(f"Creating tools with dual authority for {agent_context}")
+            tools = create_user_tools(agent_context)
         else:
-            logger.info("Creating anonymous (read-only) tools")
-            tools = create_anonymous_tools()
+            agent_context = AgentContext(user_id="anonymous")
+            logger.info(f"Creating tools with dual authority for {agent_context}")
+            tools = create_anonymous_tools(agent_context)
 
         # Convert request history to dict format
         history = [{"role": msg.role, "content": msg.content} for msg in request.history]
@@ -105,9 +108,9 @@ async def chat_stream_endpoint(
     Stream chat response through the AI agent with user isolation.
 
     Security:
-        - Authenticated users: Tools scoped to their user_id (from auth)
-        - Anonymous users: Read-only tools (market data, utilities)
-        - user_id injected via tool factory, LLM cannot spoof it
+        - Authenticated users: Dual authority (agent's account + user's accounts)
+        - Anonymous users: Dual authority (agent's account + anonymous context)
+        - AgentContext injected via tool factory, LLM cannot spoof it
     """
     async def generate_chat_stream():
         if not AGENT_SYSTEM_AVAILABLE:
@@ -120,14 +123,16 @@ async def chat_stream_endpoint(
             return
 
         try:
-            # Create per-request tools with user_id injection
+            # Create per-request tools with AgentContext
             if current_user:
                 user_id = current_user['id']
-                logger.info(f"Creating authenticated tools for user_id: {user_id}")
-                tools = create_user_tools(user_id)
+                agent_context = AgentContext(user_id=user_id)
+                logger.info(f"Creating tools with dual authority for {agent_context}")
+                tools = create_user_tools(agent_context)
             else:
-                logger.info("Creating anonymous (read-only) tools")
-                tools = create_anonymous_tools()
+                agent_context = AgentContext(user_id="anonymous")
+                logger.info(f"Creating tools with dual authority for {agent_context}")
+                tools = create_anonymous_tools(agent_context)
 
             # Convert request history to dict format
             history = [{"role": msg.role, "content": msg.content} for msg in request.history]
@@ -209,12 +214,12 @@ async def chat_live_summary_endpoint(
     current_user: Optional[Dict[str, Any]] = Depends(get_optional_user)
 ):
     """
-    Chat with live summary and streaming agent execution with user isolation.
+    Chat with live summary and streaming agent execution with delegated authority.
 
     Security:
-        - Authenticated users: Tools scoped to their user_id (from auth)
-        - Anonymous users: Read-only tools (market data, utilities)
-        - user_id injected via tool factory, LLM cannot spoof it
+        - Authenticated users: Dual authority (agent's account + user's accounts)
+        - Anonymous users: Dual authority (agent's account + anonymous context)
+        - AgentContext injected via tool factory, LLM cannot spoof it
     """
     async def generate_stream():
         if not AGENT_SYSTEM_AVAILABLE:
@@ -227,14 +232,16 @@ async def chat_live_summary_endpoint(
             return
 
         try:
-            # Create per-request tools with user_id injection
+            # Create per-request tools with AgentContext
             if current_user:
                 user_id = current_user['id']
-                logger.info(f"Creating authenticated tools for user_id: {user_id}")
-                tools = create_user_tools(user_id)
+                agent_context = AgentContext(user_id=user_id)
+                logger.info(f"Creating tools with dual authority for {agent_context}")
+                tools = create_user_tools(agent_context)
             else:
-                logger.info("Creating anonymous (read-only) tools")
-                tools = create_anonymous_tools()
+                agent_context = AgentContext(user_id="anonymous")
+                logger.info(f"Creating tools with dual authority for {agent_context}")
+                tools = create_anonymous_tools(agent_context)
 
             # Convert request history to dict format
             history = [{"role": msg.role, "content": msg.content} for msg in request.history]

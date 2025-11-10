@@ -140,8 +140,11 @@ async def load_agent_tools():
     # These tools don't require authentication but also can't modify state
     try:
         from agent.tool_factory import create_anonymous_tools
-        agent_tools.extend(create_anonymous_tools())
-        logger.info("Global anonymous tools loaded (read-only fallback)")
+        from agent.context import AgentContext
+        # Create anonymous context for global tools
+        anonymous_context = AgentContext(user_id="anonymous")
+        agent_tools.extend(create_anonymous_tools(anonymous_context))
+        logger.info(f"Global anonymous tools loaded (read-only fallback) for {anonymous_context}")
     except ImportError as e:
         logger.error(f"Failed to load anonymous tools: {e}")
         logger.info("Stellar functionality will be unavailable")
