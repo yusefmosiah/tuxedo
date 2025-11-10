@@ -9,11 +9,11 @@ Updated for Quantum Leap migration:
 """
 
 import asyncio
-from stellar_sdk import TransactionBuilder, scval
+from stellar_sdk import TransactionBuilder, scval, xdr, Address
 from stellar_sdk.soroban_server_async import SorobanServerAsync
 from stellar_sdk.soroban_rpc import EventFilter, EventFilterType, GetEventsRequest
 from account_manager import AccountManager
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import json
 
 
@@ -92,13 +92,15 @@ async def soroban_operations(
     event_types: Optional[list] = None,
     limit: int = 100,
     auto_sign: bool = True,
-    network_passphrase: str = None
+    network_passphrase: str = None,
+    ledger_keys: Optional[List] = None
 ) -> Dict[str, Any]:
     """
     Unified Soroban operations handler with async support and user isolation.
 
     Actions:
         - "get_data": Query contract storage (read-only)
+        - "get_ledger_entries": Query multiple ledger entries directly (read-only)
         - "simulate": Simulate contract call (read-only)
         - "invoke": Execute contract function (write, requires account_id)
         - "get_events": Query contract events (read-only)
@@ -119,11 +121,12 @@ async def soroban_operations(
         limit: Result limit
         auto_sign: Auto-sign transactions (requires account_id)
         network_passphrase: Network passphrase
+        ledger_keys: List of ledger key specifications (for get_ledger_entries)
 
     Security:
         - user_id enforced for all write operations
         - Permission check before signing transactions
-        - Read-only operations (get_data, simulate, get_events) don't require ownership
+        - Read-only operations (get_data, get_ledger_entries, simulate, get_events) don't require ownership
     """
     try:
         if action == "get_data":
@@ -147,6 +150,86 @@ async def soroban_operations(
                 "value": scval.to_native(result.val),
                 "last_modified_ledger": result.last_modified_ledger_seq,
                 "live_until_ledger": result.live_until_ledger_seq
+            }
+
+        elif action == "get_ledger_entries":
+            # Direct ledger entry queries (no account required)
+            if not ledger_keys:
+                return {"error": "ledger_keys required for get_ledger_entries"}
+
+            # Convert ledger keys from dict format to XDR LedgerKey objects
+            xdr_keys = []
+            for key_spec in ledger_keys:
+                if key_spec["type"] == "contract_instance":
+                    xdr_keys.append(
+                        xdr.LedgerKey(
+                            type=xdr.LedgerEntryType.CONTRACT_DATA,
+                            contract_data=xdr.LedgerKeyContractData(
+                                contract=Address(key_spec["contract_id"]).to_xdr_sc_address(),
+                                key=xdr.SCVal(xdr.SCValType.SCV_LEDGER_KEY_CONTRACT_INSTANCE),
+                                durability=xdr.ContractDataDurability.PERSISTENT
+                            )
+                        )
+                    )
+                elif key_spec["type"] == "contract_data":
+                    # Handle different key formats for contract data
+                    key_value = key_spec["key"]
+                    if isinstance(key_value, str):
+                        # Simple string key
+                        scval_key = scval.to_symbol(key_value)
+                    else:
+                        # Complex key - try to parse as JSON
+                        try:
+                            if isinstance(key_value, dict):
+                                # Handle tuple/map structure
+                                if "tuple" in key_value:
+                                    scval_key = scval.to_tuple([
+                                        scval.to_symbol(key_value["tuple"][0]),
+                                        Address(key_value["tuple"][1]).to_xdr_sc_address()
+                                    ])
+                                else:
+                                    # Default to symbol
+                                    scval_key = scval.to_symbol(str(key_value))
+                            else:
+                                scval_key = scval.to_symbol(str(key_value))
+                        except:
+                            scval_key = scval.to_symbol(str(key_value))
+
+                    xdr_keys.append(
+                        xdr.LedgerKey(
+                            type=xdr.LedgerEntryType.CONTRACT_DATA,
+                            contract_data=xdr.LedgerKeyContractData(
+                                contract=Address(key_spec["contract_id"]).to_xdr_sc_address(),
+                                key=scval_key,
+                                durability=getattr(
+                                    xdr.ContractDataDurability,
+                                    key_spec.get("durability", "PERSISTENT")
+                                )
+                            )
+                        )
+                    )
+
+            # Execute query
+            response = await soroban_server.get_ledger_entries(xdr_keys)
+
+            # Parse results
+            entries = []
+            for entry_result in response.entries:
+                entry_data = xdr.LedgerEntryData.from_xdr(entry_result.xdr)
+                value = entry_data.contract_data.val
+
+                entries.append({
+                    "key_xdr": entry_result.key,
+                    "value": scval.to_native(value),
+                    "last_modified_ledger": entry_result.last_modified_ledger_seq,
+                    "live_until_ledger": entry_result.live_until_ledger_seq
+                })
+
+            return {
+                "success": True,
+                "entries": entries,
+                "latest_ledger": response.latest_ledger,
+                "count": len(entries)
             }
 
         elif action == "simulate":
@@ -318,7 +401,7 @@ async def soroban_operations(
         else:
             return {
                 "error": f"Unknown action: {action}",
-                "valid_actions": ["get_data", "simulate", "invoke", "get_events"]
+                "valid_actions": ["get_data", "get_ledger_entries", "simulate", "invoke", "get_events"]
             }
 
     except Exception as e:
