@@ -50,6 +50,17 @@ class ExportAccountResponse(BaseModel):
     warning: str
     success: bool = True
 
+class SubmitSignedTransactionRequest(BaseModel):
+    signed_xdr: str
+    transaction_type: Optional[str] = "stellar"  # "stellar" or "soroban"
+
+class SubmitSignedTransactionResponse(BaseModel):
+    success: bool
+    hash: Optional[str] = None
+    ledger: Optional[int] = None
+    message: str
+    status: Optional[str] = None  # For Soroban transactions
+
 # Import agent account management tools
 try:
     from tools.agent.account_management import create_agent_account, list_agent_accounts, get_agent_account_info
@@ -252,4 +263,111 @@ async def export_account(
         raise
     except Exception as e:
         logger.error(f"Error exporting account: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@router.post("/submit-signed-transaction", response_model=SubmitSignedTransactionResponse)
+async def submit_signed_transaction(
+    request: SubmitSignedTransactionRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Submit a signed transaction from external wallet.
+
+    This endpoint receives transactions that were:
+    1. Built by the agent in external wallet mode
+    2. Signed by user's external wallet (Freighter, xBull, etc.)
+    3. Submitted back for blockchain submission
+
+    Supports both regular Stellar transactions and Soroban contract invocations.
+
+    Args:
+        signed_xdr: The signed transaction XDR string
+        transaction_type: "stellar" or "soroban" (default: "stellar")
+
+    Returns:
+        Transaction submission result with hash and confirmation
+    """
+    try:
+        from agent.transaction_handler import TransactionHandler
+        from account_manager import AccountManager
+        from stellar_sdk import Server
+        from stellar_sdk.soroban_server_async import SorobanServerAsync
+        import os
+
+        user_id = current_user['id']
+        account_manager = AccountManager()
+        transaction_handler = TransactionHandler(account_manager)
+
+        if request.transaction_type == "soroban":
+            # Soroban transaction submission
+            soroban_rpc = os.getenv('ANKR_STELLER_RPC', 'https://rpc.ankr.com/stellar_soroban')
+            soroban_server = SorobanServerAsync(soroban_rpc)
+
+            try:
+                from stellar_sdk import TransactionEnvelope, Network
+
+                # Parse signed transaction
+                tx_envelope = TransactionEnvelope.from_xdr(
+                    request.signed_xdr,
+                    Network.PUBLIC_NETWORK_PASSPHRASE
+                )
+
+                # Submit to Soroban network
+                send_response = await soroban_server.send_transaction(tx_envelope)
+
+                if send_response.error:
+                    return SubmitSignedTransactionResponse(
+                        success=False,
+                        message=f"Failed to submit Soroban transaction: {send_response.error}"
+                    )
+
+                # Poll for result
+                result = await soroban_server.poll_transaction(send_response.hash)
+
+                logger.info(f"✅ User {user_id} submitted Soroban transaction: {send_response.hash}")
+
+                return SubmitSignedTransactionResponse(
+                    success=result.status == "SUCCESS",
+                    hash=send_response.hash,
+                    ledger=result.ledger,
+                    status=result.status,
+                    message="Soroban transaction submitted successfully" if result.status == "SUCCESS" else f"Transaction status: {result.status}"
+                )
+
+            except Exception as e:
+                logger.error(f"Error submitting Soroban transaction: {e}")
+                return SubmitSignedTransactionResponse(
+                    success=False,
+                    message=f"Failed to submit Soroban transaction: {str(e)}"
+                )
+
+        else:
+            # Regular Stellar transaction submission
+            horizon_url = os.getenv("HORIZON_URL", "https://horizon.stellar.org")
+            horizon = Server(horizon_url)
+
+            result = await transaction_handler.submit_signed_transaction(
+                signed_xdr=request.signed_xdr,
+                horizon_server=horizon
+            )
+
+            if not result.get("success"):
+                raise HTTPException(
+                    status_code=400,
+                    detail=result.get("message", "Failed to submit transaction")
+                )
+
+            logger.info(f"✅ User {user_id} submitted Stellar transaction: {result.get('hash')}")
+
+            return SubmitSignedTransactionResponse(
+                success=result["success"],
+                hash=result.get("hash"),
+                ledger=result.get("ledger"),
+                message=result["message"]
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error submitting signed transaction: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")

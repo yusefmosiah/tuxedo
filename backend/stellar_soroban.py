@@ -6,6 +6,7 @@ Updated for Quantum Leap migration:
 - Uses AccountManager instead of KeyManager
 - Enforces user_id isolation
 - Permission checks before signing
+- TransactionHandler integration for external wallet support
 """
 
 import asyncio
@@ -13,7 +14,9 @@ from stellar_sdk import TransactionBuilder, scval, xdr, Address
 from stellar_sdk.soroban_server_async import SorobanServerAsync
 from stellar_sdk.soroban_rpc import EventFilter, EventFilterType, GetEventsRequest
 from account_manager import AccountManager
-from typing import Optional, Dict, Any, List
+from agent.context import AgentContext
+from agent.transaction_handler import TransactionHandler
+from typing import Optional, Dict, Any, List, Union
 import json
 
 
@@ -79,9 +82,10 @@ def _parse_single_param(param: dict):
 
 async def soroban_operations(
     action: str,
-    user_id: str,
     soroban_server: SorobanServerAsync,
     account_manager: AccountManager,
+    user_id: Optional[str] = None,
+    agent_context: Optional[AgentContext] = None,
     contract_id: Optional[str] = None,
     key: Optional[str] = None,
     function_name: Optional[str] = None,
@@ -98,36 +102,43 @@ async def soroban_operations(
     """
     Unified Soroban operations handler with async support and user isolation.
 
+    Now supports external wallet signing via TransactionHandler integration.
+
     Actions:
         - "get_data": Query contract storage (read-only)
         - "get_ledger_entries": Query multiple ledger entries directly (read-only, no account needed)
         - "simulate": Simulate contract call (read-only)
-        - "invoke": Execute contract function (write, requires account_id)
+        - "invoke": Execute contract function (write, requires account_id, supports external wallet)
         - "get_events": Query contract events (read-only)
 
     Args:
         action: Operation type
-        user_id: User identifier (MANDATORY - injected by auth layer)
         soroban_server: SorobanServerAsync instance
         account_manager: AccountManager instance
+        user_id: User identifier (for backward compatibility with read operations)
+        agent_context: AgentContext (required for invoke action, supports external wallet)
         contract_id: Contract ID
         key: Storage key (for get_data)
         function_name: Contract function name
         parameters: JSON-encoded parameters
-        account_id: Account ID (internal ID, required for invoke with auto_sign)
+        account_id: Account ID (internal ID, required for invoke)
         durability: Storage durability ("persistent" or "temporary")
         start_ledger: Starting ledger for event queries
         event_types: Event type filters
         limit: Result limit
-        auto_sign: Auto-sign transactions (requires account_id)
+        auto_sign: Auto-sign transactions (legacy parameter, ignored in external mode)
         network_passphrase: Network passphrase
         ledger_keys: List of ledger key specifications (for get_ledger_entries)
 
     Security:
-        - user_id enforced for all write operations
+        - agent_context enforced for all write operations
         - Permission check before signing transactions
         - Read-only operations (get_data, get_ledger_entries, simulate, get_events) don't require ownership
+        - TransactionHandler handles dual-mode signing (agent or external wallet)
     """
+    # Backward compatibility: extract user_id from agent_context if provided
+    if agent_context and not user_id:
+        user_id = agent_context.user_id
     try:
         if action == "get_data":
             # Read contract storage directly
@@ -221,8 +232,11 @@ async def soroban_operations(
             if not contract_id or not function_name or not account_id:
                 return {"error": "contract_id, function_name, and account_id required"}
 
+            if not agent_context:
+                return {"error": "agent_context required for invoke action"}
+
             # PERMISSION CHECK: verify user owns this account
-            if not account_manager.user_owns_account(user_id, account_id):
+            if not account_manager.user_owns_account(agent_context, account_id):
                 return {
                     "error": "Permission denied: account not owned by user",
                     "success": False
@@ -234,12 +248,6 @@ async def soroban_operations(
                 return {"error": "Account not found", "success": False}
 
             public_key = account_data['public_key']
-
-            # Get keypair for signing
-            keypair = None
-            if auto_sign:
-                keypair_result = account_manager.get_keypair_for_signing(user_id, account_id)
-                keypair = keypair_result.keypair  # StellarAdapter returns object with .keypair attribute
 
             # Load account from blockchain
             source = await soroban_server.load_account(public_key)
@@ -266,31 +274,45 @@ async def soroban_operations(
                 return {"success": False, "error": f"Simulation failed: {sim_result.error}"}
 
             # Prepare transaction (adds soroban data automatically!)
-            tx = await soroban_server.prepare_transaction(tx, sim_result)
+            prepared_tx = await soroban_server.prepare_transaction(tx, sim_result)
 
-            if not auto_sign:
+            # Check wallet mode for signing
+            if agent_context.requires_user_signing():
+                # External wallet mode - return unsigned XDR
+                description = f"Invoke {function_name} on {contract_id[:8]}..."
                 return {
-                    "transaction_xdr": tx.to_xdr(),
-                    "message": "Transaction ready for wallet signing"
+                    "requires_signature": True,
+                    "xdr": prepared_tx.to_xdr(),
+                    "network_passphrase": network_passphrase,
+                    "description": description,
+                    "message": "Please approve this Soroban contract invocation in your wallet",
+                    "wallet_address": agent_context.wallet_address,
+                    "contract_id": contract_id,
+                    "function_name": function_name
                 }
+            else:
+                # Agent/imported mode - sign and submit automatically
+                keypair_result = account_manager.get_keypair_for_signing(agent_context, account_id)
+                from stellar_sdk import Keypair
+                keypair = Keypair.from_secret(keypair_result.private_key)
 
-            # Sign and submit
-            tx.sign(keypair)
-            send_response = await soroban_server.send_transaction(tx)
+                # Sign and submit
+                prepared_tx.sign(keypair)
+                send_response = await soroban_server.send_transaction(prepared_tx)
 
-            if send_response.error:
-                return {"success": False, "error": send_response.error}
+                if send_response.error:
+                    return {"success": False, "error": send_response.error}
 
-            # Poll for result (automatic retry with backoff!)
-            result = await soroban_server.poll_transaction(send_response.hash)
+                # Poll for result (automatic retry with backoff!)
+                result = await soroban_server.poll_transaction(send_response.hash)
 
-            return {
-                "success": result.status == "SUCCESS",
-                "hash": send_response.hash,
-                "status": result.status,
-                "ledger": result.ledger,
-                "message": "Contract invocation successful" if result.status == "SUCCESS" else "Invocation failed"
-            }
+                return {
+                    "success": result.status == "SUCCESS",
+                    "hash": send_response.hash,
+                    "status": result.status,
+                    "ledger": result.ledger,
+                    "message": "Contract invocation successful" if result.status == "SUCCESS" else "Invocation failed"
+                }
 
         elif action == "get_ledger_entries":
             # Direct ledger entry queries (no account required!)

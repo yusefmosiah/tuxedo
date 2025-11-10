@@ -15,6 +15,7 @@ from stellar_sdk import (
 import requests
 from account_manager import AccountManager
 from agent.context import AgentContext
+from agent.transaction_handler import TransactionHandler
 from typing import Optional, Dict, Any
 from decimal import Decimal
 
@@ -180,10 +181,13 @@ def _build_sign_submit(
     operations: list,
     account_manager: AccountManager,
     horizon: Server,
-    auto_sign: bool = True
+    auto_sign: bool = True,
+    description: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Unified transaction flow: build → sign → submit with delegated authority.
+
+    Now uses TransactionHandler to support external wallet signing flows.
 
     Args:
         agent_context: Agent execution context with dual authority
@@ -191,10 +195,26 @@ def _build_sign_submit(
         operations: List of operation callbacks
         account_manager: AccountManager instance
         horizon: Horizon server instance
-        auto_sign: If True, automatically sign and submit
+        auto_sign: If True, automatically sign and submit (legacy parameter, ignored in external mode)
+        description: Human-readable transaction description
 
     Returns:
-        Transaction result or unsigned XDR if auto_sign=False
+        For agent/imported mode:
+            {
+                "success": bool,
+                "hash": str,
+                "ledger": int,
+                "message": str
+            }
+
+        For external mode:
+            {
+                "requires_signature": True,
+                "xdr": str,
+                "network_passphrase": str,
+                "description": str,
+                "message": str
+            }
     """
     try:
         # Permission check: verify agent has permission for this account
@@ -223,28 +243,19 @@ def _build_sign_submit(
         for op in operations:
             op(tx_builder)
 
-        tx = tx_builder.build()
+        # Use TransactionHandler for dual-mode signing
+        transaction_handler = TransactionHandler(account_manager)
 
-        if not auto_sign:
-            return {
-                "xdr": tx.to_xdr(),
-                "tx_hash": tx.hash().hex(),
-                "message": "Transaction built (unsigned). Call with auto_sign=True to submit."
-            }
+        # TransactionHandler will check agent_context.requires_user_signing()
+        # and return either unsigned XDR or submit the transaction
+        return asyncio.run(transaction_handler.sign_and_submit(
+            tx_builder=tx_builder,
+            agent_context=agent_context,
+            account_id=account_id,
+            horizon_server=horizon,
+            description=description
+        ))
 
-        # Sign and submit
-        chain_keypair = account_manager.get_keypair_for_signing(agent_context, account_id)
-        # ChainKeypair is a dataclass, need to create Stellar SDK Keypair for signing
-        stellar_keypair = Keypair.from_secret(chain_keypair.private_key)
-        tx.sign(stellar_keypair)
-        response = horizon.submit_transaction(tx)
-
-        return {
-            "success": response.get("successful", False),
-            "hash": response.get("hash"),
-            "ledger": response.get("ledger"),
-            "message": "Transaction submitted successfully"
-        }
     except PermissionError as e:
         return {"success": False, "error": str(e)}
     except Exception as e:
@@ -449,7 +460,8 @@ def account_manager(
                 operations=[payment_op],
                 account_manager=account_manager,
                 horizon=horizon,
-                auto_sign=True
+                auto_sign=True,
+                description=f"Payment: Send {amount} XLM to {destination[:8]}..."
             )
 
             if result.get("success"):
@@ -578,7 +590,10 @@ def trading(
                     offer_id=int(offer_id)
                 )
 
-            result = _build_sign_submit(agent_context, account_id, [cancel_op], account_manager, horizon, auto_sign)
+            result = _build_sign_submit(
+                agent_context, account_id, [cancel_op], account_manager, horizon, auto_sign,
+                description=f"Cancel order {offer_id}"
+            )
             if result.get("success"):
                 result["message"] = f"Order {offer_id} cancelled successfully"
             return result
@@ -677,7 +692,17 @@ def trading(
                         price=price_value
                     )
 
-            result = _build_sign_submit(agent_context, account_id, [trade_op], account_manager, horizon, auto_sign)
+            # Generate description
+            trade_desc = f"{action.capitalize()}: {amount} {buying_asset if action == 'buy' else selling_asset}"
+            if order_type == "market":
+                trade_desc += f" at market price"
+            else:
+                trade_desc += f" at {price_value}"
+
+            result = _build_sign_submit(
+                agent_context, account_id, [trade_op], account_manager, horizon, auto_sign,
+                description=trade_desc
+            )
 
             # Add market execution details for market orders
             if result.get("success") and order_type == "market":
@@ -755,7 +780,10 @@ def trustline_manager(
             else:
                 raise ValueError(f"Unknown action: {action}")
 
-        result = _build_sign_submit(agent_context, account_id, [trustline_op], account_manager, horizon, auto_sign=True)
+        result = _build_sign_submit(
+            agent_context, account_id, [trustline_op], account_manager, horizon, auto_sign=True,
+            description=f"{'Establish' if action == 'establish' else 'Remove'} trustline for {asset_code}"
+        )
 
         if result.get("success"):
             result["message"] = f"Trustline {'established' if action == 'establish' else 'removed'} for {asset_code}"
