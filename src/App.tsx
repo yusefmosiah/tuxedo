@@ -6,16 +6,26 @@ import Account from "./pages/Account";
 import AccountSecurity from "./pages/AccountSecurity";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { useAuth } from "./contexts/AuthContext_passkey";
+import { useWalletContext } from "./contexts/WalletContext";
 import { Button, Text } from "@stellar/design-system";
 import { DebugPanel } from "./components/DebugPanel";
 
 const AppLayout: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
+  const wallet = useWalletContext();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
     navigate("/dashboard");
+  };
+
+  const handleWalletConnect = async () => {
+    try {
+      await wallet.connectWallet();
+    } catch (error) {
+      console.error("Failed to connect wallet:", error);
+    }
   };
 
   return (
@@ -82,6 +92,57 @@ const AppLayout: React.FC = () => {
               </button>
             )}
           </NavLink>
+
+          {/* Wallet Connection Button */}
+          {wallet.isConnected && wallet.address ? (
+            <div
+              onClick={wallet.disconnectWallet}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "4px 12px",
+                backgroundColor: "var(--color-bg-primary)",
+                borderRadius: "var(--border-radius-md)",
+                border: "1px solid var(--color-border)",
+                cursor: "pointer",
+              }}
+              title="Click to disconnect wallet"
+            >
+              <div
+                style={{
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "50%",
+                  backgroundColor: "var(--color-stellar-glow-subtle)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "12px",
+                }}
+              >
+                {wallet.mode === 'external' ? '👛' : '🤖'}
+              </div>
+              <Text as="span" size="sm" style={{ margin: 0 }}>
+                {wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}
+              </Text>
+            </div>
+          ) : (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleWalletConnect}
+              style={{
+                fontSize: "12px",
+                fontFamily: "var(--font-tertiary-mono)",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                padding: "8px 16px",
+              }}
+            >
+              👛 Connect Wallet
+            </Button>
+          )}
 
           {isAuthenticated && user && (
             <>

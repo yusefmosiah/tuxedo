@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { chatApi, ChatMessage, StreamMessage, type HealthResponse } from '../lib/api';
 import { useAgent } from '../providers/AgentProvider';
+import { useWalletContext } from '../contexts/WalletContext';
 import '../App.module.css';
 import 'highlight.js/styles/github.css';
 
@@ -20,6 +21,7 @@ interface ExtendedChatMessage extends ChatMessage {
 
 export const ChatInterface: React.FC = () => {
   const agent = useAgent();
+  const wallet = useWalletContext();
   const [messages, setMessages] = useState<ExtendedChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -191,10 +193,11 @@ export const ChatInterface: React.FC = () => {
   const handleSend = async () => {
     if (!input.trim() || isLoading || apiStatus === 'disconnected') return;
 
-    console.log('🔍 Agent state:', {
-      agent: agent,
-      activeAccount: agent.activeAccount,
-      isConnected: !!agent.activeAccount
+    console.log('🔍 Wallet state:', {
+      walletAddress: wallet.address,
+      walletMode: wallet.mode,
+      isConnected: wallet.isConnected,
+      agentAccount: agent.activeAccount
     });
 
     const streamId = Date.now().toString();
@@ -232,6 +235,8 @@ export const ChatInterface: React.FC = () => {
               )
               .map(({ role, content }) => ({ role, content })),
             enable_summary: true,
+            wallet_address: wallet.address,
+            wallet_mode: wallet.mode,
           },
           (streamMessage: StreamMessage) => {
             
@@ -273,6 +278,8 @@ export const ChatInterface: React.FC = () => {
                 m.content && m.content.trim() !== '' // Ensure content exists and is not empty
               )
               .map(({ role, content }) => ({ role, content })),
+            wallet_address: wallet.address,
+            wallet_mode: wallet.mode,
           },
           (streamMessage: StreamMessage) => {
             // Handle thinking states for loading indicator
@@ -426,7 +433,12 @@ export const ChatInterface: React.FC = () => {
             <Text as="p" size="md" style={{ color: '#666' }}>
               I can help you with Stellar blockchain operations, account management, trading, market data, and smart contracts
             </Text>
-            {agent.activeAccount && (
+            {wallet.isConnected && wallet.address && (
+              <Text as="p" size="sm" style={{ color: '#999', marginTop: '8px' }}>
+                {wallet.mode === 'external' ? '👛' : '🤖'} Connected: {wallet.address.slice(0, 8)}...{wallet.address.slice(-4)} ({wallet.mode})
+              </Text>
+            )}
+            {!wallet.isConnected && agent.activeAccount && (
               <Text as="p" size="sm" style={{ color: '#999', marginTop: '8px' }}>
                 🤖 Agent Account: {agent.activeAccount.slice(0, 8)}...{agent.activeAccount.slice(-4)}
               </Text>
