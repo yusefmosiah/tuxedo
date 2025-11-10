@@ -107,14 +107,22 @@ CHOIR buyback/burn:       2 USDC → Token value accrual
 └──────────────────────────────────────────────────────┘
 ```
 
-### Vault Share Token (TUX-CORE)
+### Vault Share Token (TUX0)
 
+**Symbol:** TUX0
 **Type:** Stellar Asset (SEP-41 compatible)
 **Issuer:** TuxedoVault contract address
+
+**Why TUX0:**
+- Zero = MVP phase (2% fees, building foundation)
+- Zero = First vault, ground floor opportunity
+- Clean, simple, memeable
+
 **Properties:**
 - Immediately tradeable on Stellar DEX
 - Represents proportional claim on vault assets
 - Price reflects agent performance (TVL / total_shares)
+- Can evolve to TUX-CORE when Choir integration launches
 
 ### Agent Custody Model
 
@@ -635,10 +643,10 @@ stellar contract invoke \
 
 ## 📝 Open Questions (Resolve During Sprint)
 
-1. **Share token symbol:** TUX-CORE or TUXCORE or tuxCORE?
+1. ✅ **Share token symbol:** TUX0 (clean, memeable, represents MVP/ground floor)
 2. **Initial share value:** 1.0 USDC or 0.01 USDC?
 3. **Minimum deposit:** 1 USDC or 10 USDC or none?
-4. **Agent strategy:** Just Blend or include Stellar DEX?
+4. **Agent strategy scope:** Just Blend or include Stellar DEX?
 5. **Yield distribution timing:** Daily, weekly, or on-demand?
 
 ---
