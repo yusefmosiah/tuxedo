@@ -17,6 +17,7 @@ from langchain.tools import tool
 from stellar_sdk import Server
 from account_manager import AccountManager
 from agent.context import AgentContext
+from stellar_soroban import create_soroban_server
 
 # Import original Stellar tools
 from stellar_tools import (
@@ -717,154 +718,96 @@ def create_user_tools(agent_context: AgentContext) -> List:
             )
 
     # ========================================================================
-    # SOROSWAP DEX TOOLS - Token swaps and DEX aggregation (mainnet)
+    # SOROSWAP DEX TOOLS - First DEX on Stellar with Soroban
     # ========================================================================
 
     @tool
-    def soroswap_get_quote(
-        token_in: str,
-        token_out: str,
-        amount_in: float
+    def soroswap_dex(
+        action: str,
+        token_in: Optional[str] = None,
+        token_out: Optional[str] = None,
+        amount_in: Optional[str] = None,
+        amount_out_min: Optional[str] = None,
+        slippage: float = 0.5,
+        account_id: str = None
     ):
         """
-        Get a swap quote from Soroswap DEX without executing.
+        Unified Soroswap DEX operations tool for quotes, swaps, and pool information.
 
-        Use this when users ask about:
-        - Swap rates and prices
-        - How much they would receive for a swap
-        - Comparing DEX prices
+        Soroswap is the first DEX and exchange aggregator built on Stellar, powered by Soroban smart contracts.
 
-        Args:
-            token_in: Input token symbol (e.g., "XLM") or contract address
-            token_out: Output token symbol (e.g., "USDC") or contract address
-            amount_in: Amount to swap in decimal units (e.g., 100.5)
-
-        Returns:
-            Quote with expected output amount and price impact
-        """
-        import asyncio
-        from soroswap_account_tools import _soroswap_get_quote
-
-        try:
-            loop = asyncio.get_running_loop()
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(asyncio.run, _soroswap_get_quote(
-                    token_in=token_in,
-                    token_out=token_out,
-                    amount_in=amount_in,
-                    user_id=agent_context.user_id,
-                    account_manager=account_mgr
-                ))
-                return future.result()
-        except RuntimeError:
-            return asyncio.run(
-                _soroswap_get_quote(
-                    token_in=token_in,
-                    token_out=token_out,
-                    amount_in=amount_in,
-                    user_id=agent_context.user_id,
-                    account_manager=account_mgr
-                )
-            )
-
-    @tool
-    def soroswap_get_pools():
-        """
-        Get available Soroswap liquidity pools.
-
-        Use this when users ask about:
-        - Available trading pairs on Soroswap
-        - Liquidity pool information
-        - DEX pool discovery
-
-        Returns:
-            List of available pools with liquidity information
-        """
-        import asyncio
-        from soroswap_account_tools import _soroswap_get_pools
-
-        try:
-            loop = asyncio.get_running_loop()
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(asyncio.run, _soroswap_get_pools(
-                    user_id=agent_context.user_id,
-                    account_manager=account_mgr
-                ))
-                return future.result()
-        except RuntimeError:
-            return asyncio.run(
-                _soroswap_get_pools(
-                    user_id=agent_context.user_id,
-                    account_manager=account_mgr
-                )
-            )
-
-    @tool
-    def soroswap_swap(
-        token_in: str,
-        token_out: str,
-        amount_in: float,
-        account_id: str = None,
-        slippage: float = 0.5
-    ):
-        """
-        Execute a token swap on Soroswap DEX.
-
-        NOTE: Currently returns transaction info only. Use stellar_trading for actual swaps.
-
-        Use this when users want to:
-        - Swap tokens via Soroswap
-        - Execute a DEX trade
+        Actions:
+            - "quote": Get swap quote without executing
+            - "swap": Execute token swap (requires account)
+            - "pools": Get available pools
+            - "pool_info": Get specific pool information
 
         Args:
-            token_in: Input token symbol (e.g., "XLM")
-            token_out: Output token symbol (e.g., "USDC")
-            amount_in: Amount to swap in decimal units
-            account_id: Optional account ID (defaults to connected wallet)
+            action: Operation to perform ("quote", "swap", "pools", "pool_info")
+            token_in: Input token (symbol, contract address, or "native" for XLM)
+            token_out: Output token (symbol, contract address, or "native" for XLM)
+            amount_in: Amount to swap (in smallest units)
+            amount_out_min: Minimum output amount (slippage protection)
             slippage: Slippage tolerance in percent (default: 0.5%)
+            account_id: Account ID for swap operations (optional, defaults to external wallet)
 
         Returns:
-            Transaction information (execution pending implementation)
+            Action-specific response with swap details, quotes, or pool information
+
+        Examples:
+            - "What's the best rate to swap 1000 XLM for USDC?"
+            - "Swap 500 XLM for USDC with 0.5% slippage"
+            - "Show me available Soroswap pools"
+            - "Get pool information for address"
         """
         import asyncio
-        from soroswap_account_tools import _soroswap_swap
+        from soroswap_tools import soroswap_dex as _soroswap_dex
 
-        # Auto-detect account: prefer external wallet if connected
-        if account_id is None:
+        # Auto-detect account for swap operations
+        if action == "swap" and account_id is None:
             if agent_context.wallet_mode == "external" and agent_context.wallet_address:
                 account_id = "external_wallet"
             else:
                 return {
                     "success": False,
-                    "error": "No account specified and no external wallet connected. Please connect a wallet or specify an account_id."
+                    "error": "No account specified for swap. Please connect a wallet or specify an account_id."
                 }
+
+        # Create Soroban server
+        soroban_server = create_soroban_server()
 
         try:
             loop = asyncio.get_running_loop()
             import concurrent.futures
             with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(asyncio.run, _soroswap_swap(
+                future = executor.submit(asyncio.run, _soroswap_dex(
+                    action=action,
+                    agent_context=agent_context,
+                    account_manager=account_mgr,
+                    soroban_server=soroban_server,
+                    account_id=account_id,
                     token_in=token_in,
                     token_out=token_out,
                     amount_in=amount_in,
-                    account_id=account_id,
-                    agent_context=agent_context,
-                    account_manager=account_mgr,
-                    slippage=slippage
+                    amount_out_min=amount_out_min,
+                    slippage=slippage,
+                    network="mainnet"
                 ))
                 return future.result()
         except RuntimeError:
             return asyncio.run(
-                _soroswap_swap(
+                _soroswap_dex(
+                    action=action,
+                    agent_context=agent_context,
+                    account_manager=account_mgr,
+                    soroban_server=soroban_server,
+                    account_id=account_id,
                     token_in=token_in,
                     token_out=token_out,
                     amount_in=amount_in,
-                    account_id=account_id,
-                    agent_context=agent_context,
-                    account_manager=account_mgr,
-                    slippage=slippage
+                    amount_out_min=amount_out_min,
+                    slippage=slippage,
+                    network="mainnet"
                 )
             )
 
@@ -887,11 +830,9 @@ def create_user_tools(agent_context: AgentContext) -> List:
         blend_withdraw_from_pool,
         blend_check_my_positions,
         blend_get_pool_apy,
-        # Soroswap DEX tools (mainnet-only token swaps)
-        soroswap_get_quote,
-        soroswap_get_pools,
-        soroswap_swap
+        # Soroswap DEX tools
+        soroswap_dex
     ]
 
-    logger.info(f"Created {len(tools)} tools (7 Stellar + 2 DeFindex + 6 Blend Capital + 3 Soroswap DEX) for {agent_context}")
+    logger.info(f"Created {len(tools)} tools (7 Stellar + 2 DeFindex + 6 Blend Capital + 1 Soroswap) for {agent_context}")
     return tools
