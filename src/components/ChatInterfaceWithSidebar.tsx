@@ -11,12 +11,14 @@ import {
 } from "../lib/api";
 import { useChatThreads, ExtendedChatMessage } from "../hooks/useChatThreads";
 import { ThreadSidebar } from "./ThreadSidebar";
+import { useWalletContext } from "../contexts/WalletContext";
 import "../App.module.css";
 import "highlight.js/styles/github.css";
 import styles from "./ChatInterfaceWithSidebar.module.css";
 
 export const ChatInterfaceWithSidebar: React.FC = () => {
-  // Agent-first approach: AI agents manage their own accounts
+  // Wallet context integration - supports both agent and external wallets
+  const wallet = useWalletContext();
   const [agentAddress, setAgentAddress] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -244,10 +246,15 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
   const handleSend = async () => {
     if (!input.trim() || isLoading || apiStatus === "disconnected") return;
 
-    console.log("🔍 Agent state:", {
+    // Get active wallet address (external wallet takes precedence over agent wallet)
+    const activeWalletAddress = wallet.address || agentAddress;
+
+    console.log("🔍 Wallet state:", {
+      externalWallet: wallet.address,
       agentAddress: agentAddress,
-      isAgentMode: true,
-      hasAgentAccount: !!agentAddress,
+      activeWalletAddress: activeWalletAddress,
+      walletMode: wallet.mode,
+      isConnected: wallet.isConnected,
     });
 
     const streamId = Date.now().toString();
@@ -286,7 +293,8 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
                   m.content.trim() !== "", // Ensure content exists and is not empty
               )
               .map(({ role, content }) => ({ role, content })),
-            wallet_address: agentAddress || null,
+            wallet_address: activeWalletAddress || null,
+            wallet_mode: wallet.mode,
             enable_summary: true,
           },
           (streamMessage: StreamMessage) => {
@@ -330,7 +338,8 @@ export const ChatInterfaceWithSidebar: React.FC = () => {
                   m.content.trim() !== "", // Ensure content exists and is not empty
               )
               .map(({ role, content }) => ({ role, content })),
-            wallet_address: agentAddress || null,
+            wallet_address: activeWalletAddress || null,
+            wallet_mode: wallet.mode,
           },
           (streamMessage: StreamMessage) => {
             // Handle thinking states for loading indicator

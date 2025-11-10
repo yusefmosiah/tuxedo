@@ -115,7 +115,7 @@ def create_user_tools(agent_context: AgentContext) -> List:
         """
 
         # Get agent's primary account
-        agent_accounts = account_mgr.list_accounts(user_id="system_agent", chain="stellar")
+        agent_accounts = account_mgr.get_user_accounts(user_id="system_agent", chain="stellar")
         if not agent_accounts:
             return {
                 "error": "Agent account not available",
