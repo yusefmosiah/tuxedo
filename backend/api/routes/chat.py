@@ -81,16 +81,18 @@ async def chat_endpoint(
                 wallet_mode=request.wallet_mode or "agent",
                 wallet_address=request.wallet_address
             )
-            logger.info(f"Creating tools with dual authority for {agent_context}")
+            logger.info(f"✅ AUTHENTICATED USER - Creating {12} tools with dual authority for {agent_context}")
             tools = create_user_tools(agent_context)
+            logger.info(f"📦 Created {len(tools)} tools for authenticated user")
         else:
             agent_context = AgentContext(
                 user_id="anonymous",
                 wallet_mode=request.wallet_mode or "agent",
                 wallet_address=request.wallet_address
             )
-            logger.info(f"Creating tools with dual authority for {agent_context}")
+            logger.warning(f"⚠️ ANONYMOUS USER - Creating {2} tools with dual authority for {agent_context}")
             tools = create_anonymous_tools(agent_context)
+            logger.info(f"📦 Created {len(tools)} tools for anonymous user")
 
         # Convert request history to dict format
         history = [{"role": msg.role, "content": msg.content} for msg in request.history]
@@ -143,16 +145,18 @@ async def chat_stream_endpoint(
                     wallet_mode=request.wallet_mode or "agent",
                     wallet_address=request.wallet_address
                 )
-                logger.info(f"Creating tools with dual authority for {agent_context}")
+                logger.info(f"✅ [STREAM] AUTHENTICATED USER - Creating {12} tools with dual authority for {agent_context}")
                 tools = create_user_tools(agent_context)
+                logger.info(f"📦 [STREAM] Created {len(tools)} tools for authenticated user")
             else:
                 agent_context = AgentContext(
                     user_id="anonymous",
                     wallet_mode=request.wallet_mode or "agent",
                     wallet_address=request.wallet_address
                 )
-                logger.info(f"Creating tools with dual authority for {agent_context}")
+                logger.warning(f"⚠️ [STREAM] ANONYMOUS USER - Creating {2} tools with dual authority for {agent_context}")
                 tools = create_anonymous_tools(agent_context)
+                logger.info(f"📦 [STREAM] Created {len(tools)} tools for anonymous user")
 
             # Convert request history to dict format
             history = [{"role": msg.role, "content": msg.content} for msg in request.history]
@@ -260,16 +264,18 @@ async def chat_live_summary_endpoint(
                     wallet_mode=request.wallet_mode or "agent",
                     wallet_address=request.wallet_address
                 )
-                logger.info(f"Creating tools with dual authority for {agent_context}")
+                logger.info(f"✅ [LIVE SUMMARY] AUTHENTICATED USER - Creating {12} tools with dual authority for {agent_context}")
                 tools = create_user_tools(agent_context)
+                logger.info(f"📦 [LIVE SUMMARY] Created {len(tools)} tools for authenticated user")
             else:
                 agent_context = AgentContext(
                     user_id="anonymous",
                     wallet_mode=request.wallet_mode or "agent",
                     wallet_address=request.wallet_address
                 )
-                logger.info(f"Creating tools with dual authority for {agent_context}")
+                logger.warning(f"⚠️ [LIVE SUMMARY] ANONYMOUS USER - Creating {2} tools with dual authority for {agent_context}")
                 tools = create_anonymous_tools(agent_context)
+                logger.info(f"📦 [LIVE SUMMARY] Created {len(tools)} tools for anonymous user")
 
             # Convert request history to dict format
             history = [{"role": msg.role, "content": msg.content} for msg in request.history]
