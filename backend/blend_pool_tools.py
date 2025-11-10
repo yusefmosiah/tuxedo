@@ -49,7 +49,7 @@ if os.getenv('HTTP_PROXY') or os.getenv('HTTPS_PROXY'):
     logger.info("Applied aiohttp proxy support (HTTP_PROXY/HTTPS_PROXY detected)")
 
 # Blend Capital Mainnet Contract Addresses (MAINNET ONLY)
-# Source: https://docs-v1.blend.capital/mainnet-deployments
+# Source: https://stellar.expert (Verified V2 Pools)
 BLEND_MAINNET_CONTRACTS = {
     # Core V2 Infrastructure
     'backstop': 'CAQQR5SWBXKIGZKPBZDH3KM5GQ5GUTPKB7JAFCINLZBC5WXPJKRG3IM7',
@@ -71,26 +71,21 @@ BLEND_MAINNET_CONTRACTS = {
     'forex': 'CBYOBT7ZCCLQCBUYYIABZLSEGDPEUWXCUXQTZYOG3YBDR7U357D5ZIRF',  # Forex Pool V2
 }
 
-# Known reserves for each mainnet pool
+# Known reserves for each mainnet V2 pool
 # Source: https://mainnet.blend.capital/ and on-chain data
 POOL_KNOWN_RESERVES = {
-    # Comet Pool - DAO-managed multi-asset pool
-    'CAS3FL6TLZKDGGSISDBWGGPXT3NRR4DYTZD7YOD3HMYO6LTJUVGRVEAM': [
-        ('USDC', 'CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75'),
-        ('XLM', 'CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA'),
-        ('wETH', 'CDMLFMKMMD7MWZP76FZCMGK3DQCV6VLPBR5DD2WWWKLBUQZLQJFUQJSK'),
-        ('wBTC', 'CBMR5J4LZ5QUCFPQQ6YWJ4UUQISOOJJGQ7IMQX36C2V7LC2EDNDODJ7F'),
-    ],
-    # Fixed Pool - Fixed-rate USDC:XLM pool
+    # Fixed Pool V2 - Fixed-rate USDC:XLM pool
     'CAJJZSGMMM3PD7N33TAPHGBUGTB43OC73HVIK2L2G6BNGGGYOSSYBXBD': [
         ('USDC', 'CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75'),
         ('XLM', 'CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA'),
     ],
-    # YieldBlox Pool - Community pool
+    # YieldBlox Pool V2 - Community pool
     'CCCCIQSDILITHMM7PBSLVDT5MISSY7R26MNZXCX4H7J5JQ5FPIYOGYFS': [
         ('USDC', 'CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75'),
         ('XLM', 'CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA'),
     ],
+    # Orbit Pool V2 - Add reserves as discovered
+    # Forex Pool V2 - Add reserves as discovered
 }
 
 # Network configuration - MAINNET ONLY
