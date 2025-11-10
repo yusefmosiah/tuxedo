@@ -232,8 +232,10 @@ def _build_sign_submit(
             }
 
         # Sign and submit
-        keypair = account_manager.get_keypair_for_signing(user_id, account_id)
-        tx.sign(keypair.keypair)  # StellarAdapter returns object with .keypair attribute
+        chain_keypair = account_manager.get_keypair_for_signing(user_id, account_id)
+        # ChainKeypair is a dataclass, need to create Stellar SDK Keypair for signing
+        stellar_keypair = Keypair.from_secret(chain_keypair.private_key)
+        tx.sign(stellar_keypair)
         response = horizon.submit_transaction(tx)
 
         return {
@@ -259,7 +261,9 @@ def account_manager(
     horizon: Server,
     account_id: Optional[str] = None,
     secret_key: Optional[str] = None,
-    limit: int = 10
+    limit: int = 10,
+    destination: Optional[str] = None,
+    amount: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Unified account management tool with mandatory user isolation (MAINNET ONLY).
@@ -271,6 +275,7 @@ def account_manager(
         - "list": List all managed accounts
         - "export": Export secret key (⚠️ dangerous!)
         - "import": Import existing keypair
+        - "send": Send XLM payment to destination address
 
     Args:
         action: Operation to perform
@@ -280,6 +285,8 @@ def account_manager(
         account_id: Account ID (internal ID, required for most actions)
         secret_key: Secret key (required only for "import")
         limit: Transaction limit (for "transactions" action)
+        destination: Destination address (required for "send")
+        amount: Amount to send in XLM (required for "send")
 
     Returns:
         Action-specific response dict
@@ -398,10 +405,45 @@ def account_manager(
             )
             return result
 
+        elif action == "send":
+            # Send XLM payment
+            if not account_id:
+                return {"error": "account_id required", "success": False}
+
+            if not destination:
+                return {"error": "destination address required", "success": False}
+            if not amount:
+                return {"error": "amount required", "success": False}
+
+            # Create payment operation
+            def payment_op(builder):
+                builder.append_payment_op(
+                    destination=destination,
+                    asset=Asset.native(),
+                    amount=str(amount)
+                )
+
+            # Build, sign, and submit transaction
+            result = _build_sign_submit(
+                user_id=user_id,
+                account_id=account_id,
+                operations=[payment_op],
+                account_manager=account_manager,
+                horizon=horizon,
+                auto_sign=True
+            )
+
+            if result.get("success"):
+                result["amount"] = amount
+                result["destination"] = destination
+                result["asset"] = "XLM"
+
+            return result
+
         else:
             return {
                 "error": f"Unknown action: {action}",
-                "valid_actions": ["create", "fund", "get", "transactions", "list", "export", "import"],
+                "valid_actions": ["create", "fund", "get", "transactions", "list", "export", "import", "send"],
                 "success": False
             }
 
