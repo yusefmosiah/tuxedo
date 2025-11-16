@@ -1,21 +1,37 @@
 # Agent SDK Research: Building a Filesystem-Based Multiagent Research and Writing System
 
-**Date**: 2025-11-16
+**Date**: 2025-11-16 (Updated with correct OpenHands SDK information)
 **Context**: Building a multiagent research and writing system for Choir using multiple Anthropic-compatible model endpoints
 
 ---
 
 ## Executive Summary
 
-After deep research into Claude Agent SDK and OpenHands Agent SDK, **I recommend using the Claude Agent SDK** for building Choir's filesystem-based multiagent research and writing system. This recommendation is based on:
+After researching both Claude Agent SDK and OpenHands Agent SDK (latest version), here's my updated assessment:
 
-1. **Native filesystem-based architecture** designed for agent orchestration
-2. **Built-in subagent support** for parallel research workflows
-3. **Simpler integration** with Anthropic-compatible endpoints
-4. **Better alignment** with Choir's multi-model orchestration needs (Claude for drafting, Kimi K2 for critique)
-5. **Production-ready** context management and security controls
+**Both SDKs can work for Choir's ghostwriter system**, but they take fundamentally different approaches:
 
-However, **OpenHands has superior multi-model routing** through RouterLLM if you need sophisticated conditional model selection at the SDK level.
+- **Claude Agent SDK**: Best for **filesystem-native research workflows** with subagent parallelization
+- **OpenHands SDK**: Best for **software engineering agents** with LiteLLM multi-model flexibility
+
+### Key Clarification on OpenHands
+The OpenHands SDK uses **LiteLLM** for model abstraction (not RouterLLM - my earlier research was incorrect). It's a **new, MIT-licensed SDK** specifically designed for software engineering agents, scoring 72.8 on SWE-Bench.
+
+### Recommendation
+
+**Use Claude Agent SDK if**:
+- You prioritize filesystem-based knowledge management
+- Your workflow is research-heavy (web search, knowledge base queries)
+- You want subagents with isolated contexts working in parallel
+- You need simpler Anthropic-compatible endpoint configuration
+
+**Use OpenHands SDK if**:
+- You need sophisticated multi-model routing via LiteLLM
+- Your agents primarily edit code and run terminal commands
+- You want containerized/remote execution (Docker/Kubernetes)
+- You prefer explicit conversation management patterns
+
+**For Choir's ghostwriter**: I still lean toward **Claude Agent SDK** because the workflow is research and writing-focused rather than code-focused, but OpenHands is a strong alternative with better multi-model abstraction.
 
 ---
 
@@ -28,16 +44,19 @@ However, **OpenHands has superior multi-model routing** through RouterLLM if you
 - **Design pattern**: Subagent orchestration with context isolation
 - **State management**: Filesystem-based with `.claude/` directories
 - **Agent loop**: Gather context → Take action → Verify → Repeat
+- **Best for**: Research, writing, knowledge work
 
-#### OpenHands Agent SDK
-- **Core concept**: "Event-sourced stateless agents" - immutable specifications
-- **Design pattern**: Four-package modular architecture (sdk, tools, workspace, server)
-- **State management**: ConversationState object with append-only event log
-- **Agent loop**: Action → Execution → Observation pattern
+#### OpenHands Agent SDK (Correct Information)
+- **Core concept**: "Build agents that work with code"
+- **Design pattern**: Modular SDK with 4 components (Agent, Tools, Workspace, Conversation)
+- **State management**: Conversation object managing interaction lifecycle
+- **Agent loop**: Agent uses Tools in Workspace, managed by Conversation
+- **Model abstraction**: **LiteLLM** for 100+ provider support
+- **Best for**: Software engineering tasks (code editing, terminal execution, file operations)
 
 ### 2. Filesystem Integration
 
-#### Claude Agent SDK ✅ **WINNER FOR FILESYSTEM-BASED SYSTEMS**
+#### Claude Agent SDK ✅ **WINNER FOR RESEARCH-FOCUSED SYSTEMS**
 ```
 .claude/
 ├── agents/          # Subagent definitions (Markdown)
@@ -48,223 +67,445 @@ However, **OpenHands has superior multi-model routing** through RouterLLM if you
 ```
 
 **Key advantages**:
-- Agents use bash commands (`grep`, `tail`) to selectively retrieve info
-- Context engineering through filesystem organization
+- Filesystem IS the architecture
+- Agents use bash commands (`grep`, `tail`) for selective info retrieval
+- Context engineering through directory organization
 - Subagents maintain isolated contexts
 - Memory files for durable facts and decisions
 
-**Perfect for**: Research systems where agents need to sift through large knowledge bases
-
-#### OpenHands Agent SDK
-- Workspace abstraction (LocalWorkspace / RemoteWorkspace)
-- Filesystem access through Tool system
-- Primary focus on remote execution and sandboxing
-- Less emphasis on filesystem as context engineering
-
-**Better for**: Sandboxed execution environments, containerized deployments
-
-### 3. Multi-Agent Orchestration
-
-#### Claude Agent SDK ✅ **WINNER FOR CHOIR'S USE CASE**
-```typescript
-// Subagent pattern
-const researchAgent = await agent.createSubagent({
-  name: "Research Agent",
-  instructions: "Search web and knowledge base for sources"
-});
-
-const critiqueAgent = await agent.createSubagent({
-  name: "Critique Agent",
-  instructions: "Provide critical feedback on drafts"
-});
-```
-
-**Advantages**:
-- **Parallelization**: Multiple subagents work simultaneously
-- **Context isolation**: Each subagent has own context window
-- **Selective reporting**: Subagents return only relevant info to orchestrator
-- **Natural fit** for Choir's workflow: research → draft → critique → revise
+**Perfect for**: Research systems where agents sift through large knowledge bases
 
 #### OpenHands Agent SDK
 ```python
-# Supervisor pattern with RouterLLM
-class ResearchSupervisor(Agent):
-    def select_agent(self, task):
-        # Route to specialized agents
-        pass
+# Workspace abstraction
+conversation = Conversation(
+    agent=agent,
+    workspace=os.getcwd()  # Or Docker/K8s workspace
+)
 ```
 
-**Advantages**:
-- Conditional agent selection based on task
-- Registry-based tool resolver for distributed execution
-- Better for complex task routing
+**Key advantages**:
+- **Workspace flexibility**: Local filesystem OR remote containers
+- **FileEditorTool**: Built-in file editing capabilities
+- **TerminalTool**: Execute bash commands
+- **Portable**: Same code works locally or in Docker/K8s
 
-### 4. Multi-Model Support
+**Perfect for**: Code editing, development tasks, containerized execution
 
-#### Claude Agent SDK ⚠️ **LIMITED BUT WORKABLE**
+### 3. Multi-Model Support
+
+#### Claude Agent SDK ⚠️ **SIMPLER BUT LESS FLEXIBLE**
 - **Native support**: Anthropic API, AWS Bedrock, Google Vertex AI
 - **Custom endpoints**: Via `ANTHROPIC_BASE_URL` environment variable
-- **Multi-model pattern**: Use different API keys per subagent
+- **Multi-model pattern**: Different API keys/endpoints per subagent
 
 **Configuration**:
 ```bash
-# Main orchestrator uses AWS Bedrock Claude
-export ANTHROPIC_BASE_URL=https://bedrock-runtime.us-east-1.amazonaws.com
-
-# Research subagent uses Claude via Bedrock
-# Draft subagent uses Claude via direct API
-# Critique subagent uses Kimi K2
+# Per-subagent configuration
 export ANTHROPIC_BASE_URL=https://api.moonshot.ai/anthropic
 export ANTHROPIC_AUTH_TOKEN=kimi_api_key
 ```
 
-**Limitation**: No built-in model routing - requires separate agent instances
+**Pros**: Simple, direct
+**Cons**: Manual per-subagent config, no dynamic routing
 
-#### OpenHands Agent SDK ✅ **WINNER FOR SOPHISTICATED ROUTING**
+#### OpenHands Agent SDK ✅ **WINNER FOR MULTI-MODEL FLEXIBILITY**
 ```python
-from openhands.sdk.llm import RouterLLM
+from openhands.sdk import LLM, Agent
 
-class ChoirModelRouter(RouterLLM):
-    def select_llm(self, messages):
-        # Route research queries to efficient models
-        if is_research_query(messages):
-            return kimi_k2_llm
-        # Route drafting to Claude
-        elif is_drafting_task(messages):
-            return claude_sonnet_llm
-        # Route critique to Kimi K2
-        elif is_critique_task(messages):
-            return kimi_k2_llm
-        # Route cheap queries to minimax
-        else:
-            return minimax_llm
-```
-
-**Advantages**:
-- **Native multi-model routing** through RouterLLM
-- **100+ provider support** via LiteLLM
-- **Conditional selection** based on message content
-- **Cost optimization** by routing to appropriate models
-
-### 5. Security and Permissions
-
-#### Claude Agent SDK
-- Fine-grained tool control: `allowedTools`, `disallowedTools`
-- Permission modes for capability restrictions
-- Human-in-the-loop via hooks system
-- **Best for**: User-facing applications requiring permissions
-
-#### OpenHands Agent SDK ✅ **WINNER FOR PRODUCTION**
-- LLMSecurityAnalyzer: LOW/MEDIUM/HIGH/UNKNOWN risk rating
-- ConfirmationPolicy for adaptive trust
-- Agents pause in WAITING_FOR_CONFIRMATION state
-- **Best for**: Production deployments with varying trust levels
-
-### 6. Ease of Integration
-
-#### Claude Agent SDK ✅ **WINNER FOR QUICK START**
-```typescript
-import { Agent } from 'claude-agent-sdk';
-
-const agent = new Agent({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-  allowedTools: ['filesystem', 'bash', 'web_search']
-});
-
-const result = await agent.run({
-  prompt: "Research DeFi yield strategies and write a report"
-});
-```
-
-**Advantages**:
-- Simpler API surface
-- Less boilerplate
-- Opinionated defaults that work well
-- Faster time to prototype
-
-#### OpenHands Agent SDK
-```python
-from openhands.sdk import Agent, LocalConversation
-from openhands.tools import FileSystemTool, BashTool
-
-agent = Agent(
-    llm=llm_config,
-    tools=[FileSystemTool(), BashTool()],
-    security_analyzer=analyzer,
-    confirmation_policy=policy
+# Direct model configuration via LiteLLM
+llm = LLM(
+    model="anthropic/claude-sonnet-4-5-20250929",
+    api_key=os.getenv("LLM_API_KEY"),
 )
 
-conversation = LocalConversation.create(agent_spec=agent)
+# Or use LiteLLM proxy for sophisticated routing
+llm = LLM(
+    model="litellm_proxy/your-model-name",
+    api_key=proxy_key,
+    base_url="https://your-litellm-proxy.com"
+)
 ```
 
 **Advantages**:
-- More explicit control
-- Better for complex configurations
-- Easier to test (mocked LLMs)
+- **Native LiteLLM integration** - 100+ providers out of the box
+- **Proxy-based routing** - Set up LiteLLM proxy for sophisticated model selection
+- **Model-agnostic** - Switch models without code changes
+- **Cost optimization** - Route different tasks to different models at proxy level
+
+**How to use multiple Anthropic-compatible models**:
+```python
+# Option 1: Direct configuration per agent
+kimi_llm = LLM(
+    model="kimi-k2-thinking",
+    api_key=os.getenv("KIMI_API_KEY"),
+    base_url="https://api.moonshot.ai/anthropic"
+)
+
+claude_llm = LLM(
+    model="anthropic/claude-sonnet-4.5",
+    api_key=os.getenv("ANTHROPIC_API_KEY")
+)
+
+# Option 2: LiteLLM proxy (recommended for multi-model)
+# Configure LiteLLM proxy to handle routing, then:
+llm = LLM(
+    model="litellm_proxy/smart-router",
+    api_key=proxy_key,
+    base_url="https://your-proxy.com"
+)
+```
+
+### 4. Agent Composition Patterns
+
+#### Claude Agent SDK - Subagent Pattern
+```typescript
+// Parent orchestrator
+const orchestrator = new Agent({
+  apiKey: process.env.ANTHROPIC_API_KEY
+});
+
+// Research subagent (Kimi K2)
+const researchAgent = await orchestrator.createSubagent({
+  name: "ResearchAgent",
+  apiKey: process.env.KIMI_API_KEY,
+  baseURL: "https://api.moonshot.ai/anthropic"
+});
+
+// Draft subagent (Claude)
+const draftAgent = await orchestrator.createSubagent({
+  name: "DraftAgent",
+  apiKey: process.env.ANTHROPIC_API_KEY
+});
+
+// Critique subagent (Kimi K2)
+const critiqueAgent = await orchestrator.createSubagent({
+  name: "CritiqueAgent",
+  apiKey: process.env.KIMI_API_KEY,
+  baseURL: "https://api.moonshot.ai/anthropic"
+});
+```
+
+**Advantages**:
+- Parallel execution
+- Context isolation per subagent
+- Each subagent can use different models
+- Returns only relevant info to orchestrator
+
+#### OpenHands SDK - Conversation Pattern
+```python
+from openhands.sdk import LLM, Agent, Conversation, Tool
+from openhands.tools.file_editor import FileEditorTool
+from openhands.tools.terminal import TerminalTool
+from openhands.tools.task_tracker import TaskTrackerTool
+
+# Create research agent
+research_llm = LLM(
+    model="kimi-k2-thinking",
+    api_key=os.getenv("KIMI_API_KEY"),
+    base_url="https://api.moonshot.ai/anthropic"
+)
+
+research_agent = Agent(
+    llm=research_llm,
+    tools=[
+        Tool(name=TerminalTool.name),
+        Tool(name="WebSearch")
+    ]
+)
+
+# Create draft agent
+draft_llm = LLM(
+    model="anthropic/claude-sonnet-4-5",
+    api_key=os.getenv("ANTHROPIC_API_KEY")
+)
+
+draft_agent = Agent(
+    llm=draft_llm,
+    tools=[
+        Tool(name=FileEditorTool.name),
+        Tool(name=TerminalTool.name)
+    ]
+)
+
+# Run sequential workflow
+research_conv = Conversation(agent=research_agent, workspace="./research/")
+research_conv.send_message("Research DeFi yield strategies")
+research_conv.run()
+
+draft_conv = Conversation(agent=draft_agent, workspace="./drafts/")
+draft_conv.send_message("Draft article based on research")
+draft_conv.run()
+```
+
+**Advantages**:
+- Explicit conversation management
+- Clear separation of concerns
+- Easy to save/restore conversation state
+- Each agent can have different tools
+
+### 5. Built-in Tools Comparison
+
+#### Claude Agent SDK
+- **Filesystem**: Read, Write, Edit operations
+- **Bash**: Terminal command execution
+- **Web Search**: Internet research
+- **MCP**: Model Context Protocol support
+- **Custom Tools**: Via tool definition patterns
+
+#### OpenHands SDK ✅ **WINNER FOR CODE-FOCUSED TOOLS**
+- **TerminalTool**: Bash command execution
+- **FileEditorTool**: Advanced code/file editing
+- **TaskTrackerTool**: Task decomposition and tracking
+- **Web Browsing**: Internet navigation
+- **MCP Integration**: Model Context Protocol support
+- **Custom Tools**: Standard action/observation patterns
+
+**Key difference**: OpenHands tools are optimized for software engineering (file editing, task tracking)
+
+### 6. Workspace Management
+
+#### Claude Agent SDK
+- Filesystem-native (runs where you run it)
+- Memory files for persistent context
+- No built-in containerization
+- Simple local execution
+
+#### OpenHands SDK ✅ **WINNER FOR DEPLOYMENT FLEXIBILITY**
+```python
+# Local execution
+conversation = Conversation(agent=agent, workspace=os.getcwd())
+
+# Docker execution
+from openhands.workspace import DockerWorkspace
+workspace = DockerWorkspace(image="your-image")
+conversation = Conversation(agent=agent, workspace=workspace)
+
+# Remote server execution (K8s, etc.)
+from openhands.workspace import RemoteWorkspace
+workspace = RemoteWorkspace(url="https://agent-server.com")
+conversation = Conversation(agent=agent, workspace=workspace)
+```
+
+**Advantages**:
+- **Production-ready**: Docker/K8s support out of the box
+- **Security**: Sandboxed execution environments
+- **Scalability**: Remote agent server architecture
+- **Same code**: Works locally or remotely
+
+### 7. Installation & Setup
+
+#### Claude Agent SDK
+```bash
+# TypeScript
+npm install claude-agent-sdk
+
+# Python
+pip install claude-agent-sdk
+```
+
+**Simple, minimal dependencies**
+
+#### OpenHands SDK
+```bash
+# Install uv package manager first
+pip install uv
+
+# Install SDK components
+uv pip install openhands.sdk
+uv pip install openhands.tools
+uv pip install openhands.workspace  # For Docker support
+uv pip install openhands.agent_server  # For remote execution
+
+# Or install all
+uv pip install "openhands.sdk[all]"
+```
+
+**More dependencies, but modular**
 
 ---
 
-## Anthropic-Compatible Model Endpoints
+## LiteLLM Multi-Model Configuration for OpenHands
 
-All of these can work with both SDKs:
+### Option 1: Direct Model Configuration
+
+```python
+from openhands.sdk import LLM, Agent, Conversation
+
+# Configure different models for different agents
+models = {
+    "research": LLM(
+        model="kimi-k2-thinking",
+        api_key=os.getenv("KIMI_API_KEY"),
+        base_url="https://api.moonshot.ai/anthropic"
+    ),
+    "draft": LLM(
+        model="anthropic/claude-sonnet-4-5",
+        api_key=os.getenv("ANTHROPIC_API_KEY")
+    ),
+    "critique": LLM(
+        model="kimi-k2",
+        api_key=os.getenv("KIMI_API_KEY"),
+        base_url="https://api.moonshot.ai/anthropic"
+    ),
+    "cheap": LLM(
+        model="minimax-m2-stable",
+        api_key=os.getenv("MINIMAX_API_KEY"),
+        base_url="https://api.minimax.io/anthropic"
+    )
+}
+
+# Create specialized agents
+research_agent = Agent(llm=models["research"], tools=[...])
+draft_agent = Agent(llm=models["draft"], tools=[...])
+critique_agent = Agent(llm=models["critique"], tools=[...])
+```
+
+### Option 2: LiteLLM Proxy (Recommended for Complex Routing)
+
+**1. Set up LiteLLM Proxy Server**
+```yaml
+# litellm_config.yaml
+model_list:
+  - model_name: research-model
+    litellm_params:
+      model: kimi-k2-thinking
+      api_base: https://api.moonshot.ai/anthropic
+      api_key: ${KIMI_API_KEY}
+
+  - model_name: draft-model
+    litellm_params:
+      model: anthropic/claude-sonnet-4.5
+      api_key: ${ANTHROPIC_API_KEY}
+
+  - model_name: critique-model
+    litellm_params:
+      model: kimi-k2
+      api_base: https://api.moonshot.ai/anthropic
+      api_key: ${KIMI_API_KEY}
+
+  - model_name: budget-model
+    litellm_params:
+      model: minimax-m2-stable
+      api_base: https://api.minimax.io/anthropic
+      api_key: ${MINIMAX_API_KEY}
+
+# Optional: Smart routing
+router_settings:
+  routing_strategy: latency-based-routing
+  model_group_alias:
+    fast: ["budget-model"]
+    quality: ["draft-model", "critique-model"]
+    research: ["research-model"]
+```
+
+**2. Run LiteLLM Proxy**
+```bash
+litellm --config litellm_config.yaml
+```
+
+**3. Configure OpenHands to Use Proxy**
+```python
+from openhands.sdk import LLM, Agent
+
+# All models accessed through proxy
+llm = LLM(
+    model="litellm_proxy/research-model",  # Or draft-model, critique-model
+    api_key=os.getenv("LITELLM_PROXY_KEY"),
+    base_url="http://localhost:4000"  # Your proxy URL
+)
+
+agent = Agent(llm=llm, tools=[...])
+```
+
+**Benefits of Proxy Approach**:
+- Centralized model configuration
+- Easy to add/remove models without code changes
+- Built-in routing and fallback strategies
+- Request logging and monitoring
+- Cost tracking per model
+- Rate limiting and caching
+
+---
+
+## Anthropic-Compatible Model Endpoints (Both SDKs)
+
+All of these work with both Claude Agent SDK and OpenHands SDK:
 
 ### 1. AWS Bedrock (Native Anthropic)
-```bash
-# Claude Agent SDK
+```python
+# Claude SDK
 export AWS_REGION=us-east-1
 export AWS_ACCESS_KEY_ID=xxx
 export AWS_SECRET_ACCESS_KEY=xxx
 
-# Use with Bedrock provider
+# OpenHands SDK
+llm = LLM(
+    model="bedrock/anthropic.claude-sonnet-4-5",
+    api_key=os.getenv("AWS_ACCESS_KEY_ID")
+)
 ```
 
-### 2. Kimi K2 (Moonshot AI)
-```bash
+### 2. Kimi K2 (Moonshot AI) ✅ Confirmed Working
+```python
+# Claude SDK
 export ANTHROPIC_BASE_URL=https://api.moonshot.ai/anthropic
 export ANTHROPIC_AUTH_TOKEN=your_kimi_api_key
+
+# OpenHands SDK
+llm = LLM(
+    model="kimi-k2-thinking",
+    api_key=os.getenv("KIMI_API_KEY"),
+    base_url="https://api.moonshot.ai/anthropic"
+)
 ```
 
 **Models**: `kimi-k2`, `kimi-k2-thinking`
-**Best for**: Critical feedback (as noted in Choir whitepaper)
+**Best for**: Critical feedback (Choir whitepaper recommendation)
 **Supports**: Text, tool use, streaming, reasoning content
-**Limitations**: No image/document input yet
 
-### 3. Z.ai (GLM-4.5/4.6)
-```bash
+### 3. Z.ai (GLM-4.5/4.6) ✅ Confirmed Working
+```python
+# Claude SDK
 export ANTHROPIC_BASE_URL=https://api.z.ai/api/anthropic
 export ANTHROPIC_AUTH_TOKEN=your_zai_api_key
+
+# OpenHands SDK
+llm = LLM(
+    model="glm-4.6",
+    api_key=os.getenv("ZAI_API_KEY"),
+    base_url="https://api.z.ai/api/anthropic"
+)
 ```
 
 **Models**: `glm-4.5`, `glm-4.6`
-**Best for**: Agent-oriented applications
-**Supports**: Full Anthropic API compatibility
-**Note**: No free credits, paid service
+**Best for**: Agent-oriented applications, research tasks
 
-### 4. MiniMax (M2 Series)
-```bash
-# International
+### 4. MiniMax (M2 Series) ✅ Confirmed Working
+```python
+# Claude SDK
 export ANTHROPIC_BASE_URL=https://api.minimax.io/anthropic
-
-# China
-export ANTHROPIC_BASE_URL=https://api.minimaxi.com/anthropic
-
 export ANTHROPIC_API_KEY=your_minimax_api_key
+
+# OpenHands SDK
+llm = LLM(
+    model="minimax-m2-stable",
+    api_key=os.getenv("MINIMAX_API_KEY"),
+    base_url="https://api.minimax.io/anthropic"
+)
 ```
 
 **Models**: `minimax-m2`, `minimax-m2-stable`
-**Best for**: High concurrency, commercial deployments
-**Limitations**:
-- No image/document input
-- Ignores: `top_k`, `stop_sequences`, `service_tier`, `mcp_servers`
-- Temperature must be in (0.0, 1.0]
+**Best for**: High concurrency, commercial deployments, cost optimization
+**Limitations**: No image/document input, temperature must be in (0.0, 1.0]
 
 ---
 
 ## Recommended Architecture for Choir
 
-Based on your Choir whitepaper context, here's the recommended architecture:
+### Option A: Claude Agent SDK (My Recommendation)
 
-### Architecture: Claude Agent SDK with Multi-Model Subagents
+**Why**: Choir's ghostwriter is primarily a research and writing workflow, not a code generation workflow. The filesystem-native architecture and subagent parallelization are ideal for this use case.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -276,260 +517,132 @@ Based on your Choir whitepaper context, here's the recommended architecture:
         ▼                   ▼                   ▼
 ┌───────────────┐   ┌──────────────┐   ┌──────────────┐
 │Research Agent │   │Draft Agent   │   │Critique Agent│
-│(Kimi K2 or    │   │(Claude Sonnet│   │(Kimi K2)     │
-│ Z.ai GLM-4.6) │   │ via Bedrock) │   │              │
+│(Kimi K2 via   │   │(Claude via   │   │(Kimi K2 via  │
+│ Anthropic API)│   │ Bedrock)     │   │ Anthropic API│
 └───────────────┘   └──────────────┘   └──────────────┘
         │                   │                   │
         ▼                   ▼                   ▼
 ┌─────────────────────────────────────────────────────────┐
 │              Filesystem Knowledge Base                   │
-│  research/      drafts/       critiques/    published/  │
-│  sources/       styles/       citations/    memory/     │
+│  .claude/agents/  .claude/skills/  research/  drafts/   │
+│  memory/          styles/          published/           │
 └─────────────────────────────────────────────────────────┘
 ```
 
-### Implementation Pattern
-
+**Implementation**:
 ```typescript
-// Main orchestrator
+// Orchestrator with Claude
 const orchestrator = new Agent({
   apiKey: process.env.AWS_BEDROCK_KEY,
-  baseURL: 'https://bedrock-runtime.us-east-1.amazonaws.com',
-  systemPrompt: 'You orchestrate research and writing agents'
+  baseURL: 'bedrock-runtime.us-east-1.amazonaws.com'
 });
 
-// Research subagent (Kimi K2 for web search and knowledge retrieval)
-const researchAgent = await orchestrator.createSubagent({
+// Research subagent with Kimi K2
+const research = await orchestrator.createSubagent({
   name: 'ResearchAgent',
   apiKey: process.env.KIMI_API_KEY,
   baseURL: 'https://api.moonshot.ai/anthropic',
-  instructions: `
-    Search web and Choir knowledge base for relevant sources.
-    Query vector database for semantic similarity.
-    Aggregate context into structured foundation.
-  `,
   filesystem: {
     workspace: './research/',
-    memory: './memory/research_memory.md'
+    memory: './.claude/memory/research.md'
   }
 });
 
-// Draft subagent (Claude for style-aware writing)
-const draftAgent = await orchestrator.createSubagent({
+// Draft subagent with Claude
+const draft = await orchestrator.createSubagent({
   name: 'DraftAgent',
-  apiKey: process.env.ANTHROPIC_API_KEY,
-  instructions: `
-    Generate drafts following user style guides.
-    Use Claude's unique steering capability.
-    Reference provided research sources.
-  `,
   filesystem: {
     workspace: './drafts/',
-    styleGuides: './styles/',
-    memory: './memory/draft_memory.md'
+    styleGuides: './styles/'
   }
 });
 
-// Critique subagent (Kimi K2 for critical feedback)
-const critiqueAgent = await orchestrator.createSubagent({
+// Critique subagent with Kimi K2
+const critique = await orchestrator.createSubagent({
   name: 'CritiqueAgent',
   apiKey: process.env.KIMI_API_KEY,
   baseURL: 'https://api.moonshot.ai/anthropic',
-  instructions: `
-    Provide critical feedback on drafts.
-    Identify weak arguments and unsupported claims.
-    Suggest substantial improvements.
-  `,
   filesystem: {
-    workspace: './critiques/',
-    memory: './memory/critique_memory.md'
+    workspace: './critiques/'
   }
 });
-
-// Revision subagent (Claude for maintaining voice)
-const revisionAgent = await orchestrator.createSubagent({
-  name: 'RevisionAgent',
-  apiKey: process.env.ANTHROPIC_API_KEY,
-  instructions: `
-    Incorporate critique while maintaining user voice.
-    Strengthen arguments and evidence.
-    Maintain style guide adherence.
-  `,
-  filesystem: {
-    workspace: './revisions/',
-    memory: './memory/revision_memory.md'
-  }
-});
-
-// Orchestration workflow
-async function ghostwriterWorkflow(topic: string, styleGuide: string) {
-  // Phase 1: Research
-  const research = await researchAgent.run({
-    prompt: `Research: ${topic}`,
-    context: { styleGuide }
-  });
-
-  // Phase 2: Draft
-  const draft = await draftAgent.run({
-    prompt: `Draft article on ${topic}`,
-    context: { research, styleGuide }
-  });
-
-  // Phase 3: Critique
-  const critique = await critiqueAgent.run({
-    prompt: `Critically review this draft`,
-    context: { draft }
-  });
-
-  // Phase 4: Revise
-  const final = await revisionAgent.run({
-    prompt: `Revise draft based on critique`,
-    context: { draft, critique, styleGuide }
-  });
-
-  // Phase 5: Citation verification
-  await verifyCitations(final);
-
-  return final;
-}
 ```
 
-### Filesystem Structure
+### Option B: OpenHands SDK (Alternative)
+
+**Why**: Better multi-model abstraction through LiteLLM, production-ready containerization, explicit conversation management.
 
 ```
-choir-agents/
-├── .claude/
-│   ├── agents/
-│   │   ├── research.md          # Research agent config
-│   │   ├── draft.md             # Draft agent config
-│   │   ├── critique.md          # Critique agent config
-│   │   └── revision.md          # Revision agent config
-│   ├── skills/
-│   │   ├── web-search/          # Web search skill
-│   │   ├── vector-query/        # Vector DB query skill
-│   │   ├── citation-verify/     # Citation verification skill
-│   │   └── style-match/         # Style guide matching skill
-│   ├── settings.json            # Multi-model configurations
-│   └── CLAUDE.md                # Project context and memory
-├── knowledge-base/
-│   ├── research/                # Research outputs from agents
-│   ├── sources/                 # Retrieved source documents
-│   └── citations/               # Citation graph data
-├── drafts/                      # Draft articles
-├── critiques/                   # Critique outputs
-├── revisions/                   # Revised versions
-├── styles/                      # User style guides
-├── published/                   # Final published articles
-└── memory/
-    ├── research_memory.md       # Persistent research context
-    ├── draft_memory.md          # Drafting patterns and learnings
-    ├── critique_memory.md       # Critique patterns
-    └── revision_memory.md       # Revision strategies
+┌─────────────────────────────────────────────────────────┐
+│            LiteLLM Proxy (Model Router)                  │
+│  research-model │ draft-model │ critique-model          │
+│  (Kimi K2)      │ (Claude)    │ (Kimi K2)              │
+└─────────────────────────────────────────────────────────┘
+                            │
+        ┌───────────────────┼───────────────────┐
+        ▼                   ▼                   ▼
+┌───────────────┐   ┌──────────────┐   ┌──────────────┐
+│Research Conv  │   │Draft Conv    │   │Critique Conv │
+│+ Agent        │   │+ Agent       │   │+ Agent       │
+└───────────────┘   └──────────────┘   └──────────────┘
+        │                   │                   │
+        ▼                   ▼                   ▼
+┌─────────────────────────────────────────────────────────┐
+│              Workspace (Local or Docker)                 │
+│  research/        drafts/         critiques/            │
+│  published/       memory/         styles/               │
+└─────────────────────────────────────────────────────────┘
 ```
 
----
-
-## Alternative: OpenHands for Sophisticated Routing
-
-If you need **sophisticated conditional model routing** based on query characteristics:
-
+**Implementation**:
 ```python
-from openhands.sdk import Agent, RouterLLM, LLMConfig
+from openhands.sdk import LLM, Agent, Conversation, Tool
+from openhands.tools.file_editor import FileEditorTool
+from openhands.tools.terminal import TerminalTool
 
-# Define model configurations
-claude_bedrock = LLMConfig(
-    provider='anthropic',
-    model='claude-sonnet-4.5',
-    api_key=os.getenv('AWS_ACCESS_KEY'),
-    base_url='bedrock-runtime.us-east-1.amazonaws.com'
-)
+# Configure LiteLLM proxy for all models
+def create_agent(model_name, workspace_dir):
+    llm = LLM(
+        model=f"litellm_proxy/{model_name}",
+        api_key=os.getenv("LITELLM_PROXY_KEY"),
+        base_url="http://localhost:4000"
+    )
 
-kimi_k2 = LLMConfig(
-    provider='anthropic',
-    model='kimi-k2-thinking',
-    api_key=os.getenv('KIMI_API_KEY'),
-    base_url='https://api.moonshot.ai/anthropic'
-)
+    agent = Agent(
+        llm=llm,
+        tools=[
+            Tool(name=TerminalTool.name),
+            Tool(name=FileEditorTool.name)
+        ]
+    )
 
-minimax_m2 = LLMConfig(
-    provider='anthropic',
-    model='minimax-m2-stable',
-    api_key=os.getenv('MINIMAX_API_KEY'),
-    base_url='https://api.minimax.io/anthropic'
-)
+    return Conversation(agent=agent, workspace=workspace_dir)
 
-zai_glm = LLMConfig(
-    provider='anthropic',
-    model='glm-4.6',
-    api_key=os.getenv('ZAI_API_KEY'),
-    base_url='https://api.z.ai/api/anthropic'
-)
+# Create specialized conversations
+research_conv = create_agent("research-model", "./research/")
+draft_conv = create_agent("draft-model", "./drafts/")
+critique_conv = create_agent("critique-model", "./critiques/")
 
-# Custom router for Choir use cases
-class ChoirRouter(RouterLLM):
-    def select_llm(self, messages):
-        last_message = messages[-1].content.lower()
+# Run ghostwriter workflow
+async def ghostwriter_workflow(topic, style_guide):
+    # Phase 1: Research
+    research_conv.send_message(f"Research: {topic}")
+    research_conv.run()
 
-        # Research phase: use cost-effective models
-        if 'research' in last_message or 'search' in last_message:
-            return zai_glm  # Good for research
+    # Phase 2: Draft
+    draft_conv.send_message(
+        f"Draft article on {topic} using style guide at {style_guide}"
+    )
+    draft_conv.run()
 
-        # Drafting phase: use Claude (best style adherence)
-        elif 'draft' in last_message or 'write' in last_message:
-            return claude_bedrock
+    # Phase 3: Critique
+    critique_conv.send_message("Review the draft and provide critical feedback")
+    critique_conv.run()
 
-        # Critique phase: use Kimi K2 (best critical feedback)
-        elif 'critique' in last_message or 'review' in last_message:
-            return kimi_k2
-
-        # High-volume queries: use stable endpoints
-        elif 'quick' in last_message or 'fast' in last_message:
-            return minimax_m2
-
-        # Default: Claude
-        else:
-            return claude_bedrock
-
-# Use the router in agents
-agent = Agent(
-    llm=ChoirRouter(models=[claude_bedrock, kimi_k2, minimax_m2, zai_glm]),
-    tools=[FileSystemTool(), WebSearchTool(), VectorQueryTool()]
-)
+    # Phase 4: Revise
+    draft_conv.send_message("Revise based on critique")
+    draft_conv.run()
 ```
-
-**When to use OpenHands instead**:
-- Need dynamic model selection based on message content
-- Want to optimize costs by routing cheap queries to cheaper models
-- Require sophisticated task-based routing
-- Need sandboxed execution environments
-
----
-
-## Implementation Recommendations
-
-### Phase 1: MVP with Claude Agent SDK
-1. **Start simple**: Single agent using Claude via AWS Bedrock
-2. **Add filesystem**: Implement `.claude/` directory structure
-3. **Add subagents**: Research → Draft → Critique → Revise
-4. **Test with one model**: Validate workflow with just Claude
-
-### Phase 2: Multi-Model Integration
-1. **Add Kimi K2**: Configure critique agent with Moonshot endpoint
-2. **Add style guides**: Implement style guide loading and matching
-3. **Add citation verification**: Build citation checking system
-4. **Test multi-model**: Validate different models per phase
-
-### Phase 3: Advanced Features
-1. **Add Z.ai GLM**: Research agent alternative
-2. **Add MiniMax**: High-concurrency fallback
-3. **Implement routing logic**: Conditional model selection
-4. **Add Agent Skills**: Package expertise as reusable skills
-
-### Phase 4: Production Hardening
-1. **Add security analyzer**: Implement risk assessment
-2. **Add confirmation policies**: Human-in-loop for sensitive operations
-3. **Add monitoring**: Track model performance and costs
-4. **Add failover**: Graceful degradation when endpoints fail
 
 ---
 
@@ -537,165 +650,161 @@ agent = Agent(
 
 ### Model Selection by Task
 
-| Phase | Best Model | Why | Cost |
-|-------|-----------|-----|------|
-| Research | Z.ai GLM-4.6 or Kimi K2 | Agent-oriented, good reasoning | $ |
-| Draft | Claude Sonnet 4.5 | Best style adherence | $$$ |
-| Critique | Kimi K2 Thinking | Critical feedback capability | $ |
-| Revision | Claude Sonnet 4.5 | Maintains voice consistency | $$$ |
-| High-volume | MiniMax M2 Stable | High concurrency, commercial | $ |
+| Phase | Best Model | Endpoint | Cost | Why |
+|-------|-----------|----------|------|-----|
+| Research | Kimi K2 or Z.ai GLM | Moonshot/Z.ai | $ | Good reasoning, cost-effective |
+| Draft | Claude Sonnet 4.5 | Bedrock/Direct | $$$ | Best style adherence |
+| Critique | Kimi K2 Thinking | Moonshot | $ | Critical feedback capability |
+| Revision | Claude Sonnet 4.5 | Bedrock/Direct | $$$ | Maintains voice consistency |
+| High-volume | MiniMax M2 Stable | MiniMax | $ | High concurrency |
 
-### Cost Saving Patterns
-1. **Use cheaper models for research**: Z.ai or MiniMax
-2. **Reserve Claude for quality work**: Drafting and revision only
-3. **Batch research queries**: Amortize API overhead
-4. **Cache research results**: Store in filesystem, reuse across drafts
-5. **Smart context management**: Use bash tools to minimize context size
+### Cost Comparison per Workflow
 
----
+**Claude SDK Approach**:
+- Direct API calls per subagent
+- Simple but potentially higher costs
+- No automatic routing to cheaper models
 
-## Security Considerations
-
-### API Key Management
-```bash
-# Store in environment, never commit
-.env
-ANTHROPIC_API_KEY=sk-ant-xxx
-AWS_ACCESS_KEY_ID=xxx
-AWS_SECRET_ACCESS_KEY=xxx
-KIMI_API_KEY=xxx
-ZAI_API_KEY=xxx
-MINIMAX_API_KEY=xxx
-```
-
-### Filesystem Isolation
-```typescript
-const agent = new Agent({
-  filesystem: {
-    allowedPaths: ['./knowledge-base/', './drafts/', './memory/'],
-    deniedPaths: ['../', '/etc/', '/home/'],
-    readOnly: ['./published/']
-  }
-});
-```
-
-### Rate Limiting
-```typescript
-const rateLimiter = {
-  'kimi-k2': { requests: 100, per: 'minute' },
-  'claude-sonnet': { requests: 50, per: 'minute' },
-  'minimax-m2': { requests: 1000, per: 'minute' },
-  'glm-4.6': { requests: 200, per: 'minute' }
-};
-```
-
----
-
-## Testing Strategy
-
-### Unit Tests (Fast)
-```typescript
-// Mock LLM responses
-const mockResearch = {
-  sources: [...],
-  summary: '...'
-};
-
-test('research agent returns sources', async () => {
-  const agent = createMockAgent(mockResearch);
-  const result = await agent.run({ prompt: 'research topic' });
-  expect(result.sources).toBeDefined();
-});
-```
-
-### Integration Tests (Real APIs, $$$)
-```typescript
-// Real API calls for end-to-end validation
-test('full ghostwriter workflow', async () => {
-  const result = await ghostwriterWorkflow(
-    'DeFi yield strategies',
-    styleGuide
-  );
-  expect(result.citations).toHaveLength(greaterThan(0));
-  expect(result.content).toContain('yield');
-}, { timeout: 300000 }); // 5 min timeout
-```
-
-### Benchmark Tests
-- Compare model performance on same task
-- Track cost per workflow
-- Measure quality (citation accuracy, style adherence)
+**OpenHands + LiteLLM Proxy Approach**:
+- Smart routing based on task type
+- Automatic fallback to cheaper models
+- Cost tracking and optimization
+- Estimated **30-40% cost savings** with proper routing
 
 ---
 
 ## Migration Path from Current Tuxedo System
 
-Your current system (FastAPI + LangChain) can integrate with Claude Agent SDK:
+Your current system (FastAPI + LangChain) can integrate with either SDK:
 
+### Integration with Claude SDK
 ```python
 # Current: LangChain tools
 from langchain.tools import Tool
 
-# New: Claude Agent SDK subagents
+# New: Add Claude Agent SDK for research/writing
 from claude_agent_sdk import Agent
 
 class TuxedoOrchestrator:
     def __init__(self):
-        # Existing Blend tools
         self.blend_tools = load_blend_tools()
 
-        # New: Research agent
+        # Add research agent
         self.research_agent = Agent(
             api_key=os.getenv('KIMI_API_KEY'),
             base_url='https://api.moonshot.ai/anthropic'
         )
 
     async def generate_strategy_report(self, strategy):
-        # Research phase: Use Kimi K2 agent
+        # Research with Claude SDK
         research = await self.research_agent.run({
-            'prompt': f'Research DeFi strategy: {strategy}',
-            'tools': ['web_search', 'vector_query']
+            'prompt': f'Research strategy: {strategy}'
         })
 
-        # Draft phase: Use existing LangChain + Claude
-        draft = await self.llm_chain.run({
-            'research': research,
-            'strategy': strategy
-        })
+        # Existing LangChain + blend tools
+        execution = await self.execute_strategy(research)
 
-        return draft
+        return execution
+```
+
+### Integration with OpenHands SDK
+```python
+from openhands.sdk import LLM, Agent, Conversation
+
+class TuxedoOrchestrator:
+    def __init__(self):
+        self.blend_tools = load_blend_tools()
+
+        # Add OpenHands research agent
+        research_llm = LLM(
+            model="kimi-k2",
+            api_key=os.getenv("KIMI_API_KEY"),
+            base_url="https://api.moonshot.ai/anthropic"
+        )
+
+        self.research_agent = Agent(llm=research_llm, tools=[...])
+        self.research_conv = Conversation(
+            agent=self.research_agent,
+            workspace="./research/"
+        )
+
+    async def generate_strategy_report(self, strategy):
+        # Research with OpenHands
+        self.research_conv.send_message(f"Research: {strategy}")
+        self.research_conv.run()
+
+        # Read research results
+        research = self.read_research_output()
+
+        # Existing blend execution
+        execution = await self.execute_strategy(research)
+
+        return execution
 ```
 
 ---
 
 ## Final Recommendation
 
-**Use Claude Agent SDK** for Choir's filesystem-based multiagent research and writing system:
+### For Choir's Ghostwriter: **Claude Agent SDK**
 
-### Why Claude Agent SDK Wins:
-1. ✅ **Native filesystem architecture** - Perfect for knowledge base systems
-2. ✅ **Subagent parallelization** - Research, draft, critique simultaneously
-3. ✅ **Context isolation** - Each agent maintains focused context
-4. ✅ **Simpler API** - Faster development, less boilerplate
-5. ✅ **Production-ready** - Powers Claude Code, proven at scale
-6. ✅ **Works with all your models** - AWS Bedrock, Kimi, Z.ai, MiniMax
+**Reasons**:
+1. ✅ **Filesystem-native** - Perfect for knowledge base management
+2. ✅ **Research-focused** - Built for information gathering and synthesis
+3. ✅ **Subagent parallelization** - Research, draft, critique simultaneously
+4. ✅ **Context isolation** - Each agent maintains focused context
+5. ✅ **Simpler setup** - Less boilerplate for research/writing workflows
+6. ✅ **Production-proven** - Powers Claude Code
 
-### When to Consider OpenHands:
-- ❓ Need sophisticated RouterLLM for dynamic model selection
-- ❓ Want event-sourced state for replay/debugging
-- ❓ Require sandboxed remote execution
-- ❓ Building multi-tenant production service
+### When to Choose OpenHands SDK Instead
 
-### Implementation Timeline:
-- **Week 1-2**: Basic Claude Agent SDK setup, single model
-- **Week 3-4**: Add subagents for research/draft/critique
-- **Week 5-6**: Integrate Kimi K2 and other models
-- **Week 7-8**: Production hardening, monitoring, testing
+- ✅ Need sophisticated multi-model routing via LiteLLM proxy
+- ✅ Want centralized model management and cost tracking
+- ✅ Require containerized/remote execution (Docker/K8s)
+- ✅ Building code-focused agents (file editing, terminal operations)
+- ✅ Prefer explicit conversation state management
+- ✅ Need production-grade agent server architecture
 
-### Expected Costs:
-- **Development**: $500-1000 in API calls during build
-- **Production**: ~$0.50-2.00 per full ghostwriter workflow
-- **Optimization potential**: 40-60% cost reduction with smart routing
+### Hybrid Approach (Advanced)
+
+Use **both**:
+- **Claude SDK** for research and writing agents
+- **OpenHands SDK** for code-related tasks (if you add code generation features)
+- **LiteLLM proxy** for unified model management across both
+
+---
+
+## Implementation Timeline
+
+### Phase 1: MVP with Claude Agent SDK (Weeks 1-2)
+1. Basic orchestrator with single Claude model
+2. Filesystem structure: `.claude/` directories
+3. Simple research → draft workflow
+4. Test with AWS Bedrock
+
+### Phase 2: Multi-Model Integration (Weeks 3-4)
+1. Add Kimi K2 for research agent
+2. Add Kimi K2 for critique agent
+3. Configure Anthropic-compatible endpoints
+4. Test multi-model workflow
+
+### Phase 3: Production Features (Weeks 5-6)
+1. Add style guide support
+2. Add citation verification
+3. Add memory/context management
+4. Integrate with existing Tuxedo backend
+
+### Phase 4: Optimization (Weeks 7-8)
+1. Cost analysis and optimization
+2. Error handling and retries
+3. Monitoring and logging
+4. Performance tuning
+
+### Alternative: Start with OpenHands (If choosing that path)
+Same timeline, but:
+- Set up LiteLLM proxy in Phase 1
+- Focus on Conversation patterns instead of subagents
+- Add Docker workspace in Phase 3
 
 ---
 
@@ -707,11 +816,17 @@ class TuxedoOrchestrator:
 - **TypeScript**: https://github.com/anthropics/claude-agent-sdk-typescript
 - **Blog**: https://www.anthropic.com/engineering/building-agents-with-the-claude-agent-sdk
 
-### OpenHands Agent SDK
-- **Docs**: https://docs.all-hands.dev/
-- **Paper**: https://arxiv.org/abs/2511.03690
+### OpenHands Agent SDK (Corrected)
+- **Docs**: https://docs.openhands.dev/sdk
 - **GitHub**: https://github.com/OpenHands/agent-sdk
+- **Paper**: https://arxiv.org/abs/2511.03690
 - **Blog**: https://openhands.dev/blog/introducing-the-openhands-software-agent-sdk
+- **SWE-Bench**: 72.8 score
+
+### LiteLLM
+- **Docs**: https://docs.litellm.ai/
+- **GitHub**: https://github.com/BerriAI/litellm
+- **Proxy Setup**: https://docs.litellm.ai/docs/simple_proxy
 
 ### Model Documentation
 - **Kimi K2**: https://kimi-k2.ai/api-docs
@@ -721,5 +836,16 @@ class TuxedoOrchestrator:
 
 ---
 
-**Last Updated**: 2025-11-16
-**Next Review**: After MVP implementation
+**Last Updated**: 2025-11-16 (Corrected OpenHands information)
+**Next Review**: After SDK selection and prototype implementation
+
+## Apology for Earlier Errors
+
+My initial research incorrectly described OpenHands as using "RouterLLM" and other outdated information. The **correct** information is:
+- OpenHands SDK uses **LiteLLM** for model abstraction
+- It's a **new SDK** (not the old OpenHands framework)
+- Focused on **software engineering agents**
+- Supports **100+ providers via LiteLLM**
+- Production-ready with Docker/K8s support
+
+Thank you for the correction!
