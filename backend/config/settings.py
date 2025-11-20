@@ -16,6 +16,10 @@ class Settings:
         self.primary_model = os.getenv("PRIMARY_MODEL", "z-ai/glm-4.6:exacto")
         self.summarization_model = os.getenv("SUMMARIZATION_MODEL", "z-ai/glm-4.6:exacto")
 
+        # Claude SDK Configuration (for research and analysis features)
+        self.anthropic_api_key = os.getenv("ANTHROPIC_API_KEY", "")
+        self.enable_claude_sdk = os.getenv("ENABLE_CLAUDE_SDK", "true").lower() == "true"
+
         # Stellar Network Configuration - MAINNET ONLY
         self.stellar_network = "mainnet"
 
