@@ -44,19 +44,48 @@ class ClaudeSDKAgent:
         self,
         api_key: Optional[str] = None,
         working_directory: Optional[str] = None,
-        allowed_tools: Optional[List[str]] = None
+        allowed_tools: Optional[List[str]] = None,
+        use_bedrock: bool = False
     ):
         """
         Initialize Claude SDK Agent.
 
+        Supports both direct Anthropic API and AWS Bedrock authentication.
+
         Args:
             api_key: Anthropic API key (defaults to ANTHROPIC_API_KEY env var)
+                    For Bedrock, this can be None (uses AWS credentials)
             working_directory: Working directory for file operations
             allowed_tools: List of allowed tools (defaults to Read, Write, Bash, WebSearch)
+            use_bedrock: Use AWS Bedrock instead of direct Anthropic API
         """
-        self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
-        if not self.api_key:
-            logger.warning("No ANTHROPIC_API_KEY found - Claude SDK features will be limited")
+        self.use_bedrock = use_bedrock or os.getenv("CLAUDE_SDK_USE_BEDROCK", "false").lower() == "true"
+
+        # Authentication setup
+        if self.use_bedrock:
+            # AWS Bedrock authentication via environment variables
+            # Claude SDK will automatically use AWS credentials from environment
+            self.aws_region = os.getenv("AWS_REGION", "us-east-1")
+            self.aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
+            self.aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+
+            if not (self.aws_access_key_id and self.aws_secret_access_key):
+                logger.warning(
+                    "AWS Bedrock enabled but credentials not found. "
+                    "Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables."
+                )
+            else:
+                logger.info(f"Using AWS Bedrock in region: {self.aws_region}")
+
+            self.api_key = None  # Not used for Bedrock
+        else:
+            # Direct Anthropic API authentication
+            self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+            if not self.api_key:
+                logger.warning(
+                    "No ANTHROPIC_API_KEY found - Claude SDK features will be limited. "
+                    "Set ANTHROPIC_API_KEY or enable AWS Bedrock with CLAUDE_SDK_USE_BEDROCK=true"
+                )
 
         self.working_directory = working_directory or os.getcwd()
 
@@ -75,7 +104,9 @@ class ClaudeSDKAgent:
             cwd=self.working_directory
         )
 
-        logger.info(f"Claude SDK Agent initialized with tools: {self.allowed_tools}")
+        auth_method = "AWS Bedrock" if self.use_bedrock else "Direct Anthropic API"
+        logger.info(f"Claude SDK Agent initialized with {auth_method}")
+        logger.info(f"Allowed tools: {self.allowed_tools}")
 
     async def query_simple(self, prompt: str) -> str:
         """
@@ -282,6 +313,7 @@ Format the report in clear, professional markdown.
 async def get_claude_sdk_agent() -> ClaudeSDKAgent:
     """
     Get or create global Claude SDK Agent instance.
+    Reads configuration from settings to determine authentication method.
 
     Returns:
         Initialized ClaudeSDKAgent
@@ -289,6 +321,15 @@ async def get_claude_sdk_agent() -> ClaudeSDKAgent:
     # For now, create a new instance each time
     # In production, you might want to implement proper singleton pattern
     try:
+        from config.settings import settings
+
+        agent = ClaudeSDKAgent(
+            use_bedrock=settings.claude_sdk_use_bedrock
+        )
+        return agent
+    except ImportError:
+        # Fallback if settings not available
+        logger.warning("Settings not available, using environment variables directly")
         agent = ClaudeSDKAgent()
         return agent
     except Exception as e:
@@ -300,23 +341,51 @@ async def initialize_claude_sdk():
     """
     Initialize Claude SDK integration.
     Called during app startup.
+
+    Supports both direct Anthropic API and AWS Bedrock authentication.
     """
     try:
-        # Check if Anthropic API key is available
-        api_key = os.getenv("ANTHROPIC_API_KEY")
-        if not api_key:
-            logger.warning(
-                "ANTHROPIC_API_KEY not set - Claude SDK features will be limited. "
-                "Set ANTHROPIC_API_KEY to enable advanced research and analysis."
-            )
-            return
+        from config.settings import settings
+
+        use_bedrock = settings.claude_sdk_use_bedrock
+
+        # Check authentication method and credentials
+        if use_bedrock:
+            # AWS Bedrock authentication
+            aws_access_key = os.getenv("AWS_ACCESS_KEY_ID")
+            aws_secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+            aws_region = os.getenv("AWS_REGION", "us-east-1")
+
+            if not (aws_access_key and aws_secret_key):
+                logger.warning(
+                    "CLAUDE_SDK_USE_BEDROCK=true but AWS credentials not found. "
+                    "Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY to enable AWS Bedrock."
+                )
+                return
+
+            logger.info(f"Initializing Claude SDK with AWS Bedrock (region: {aws_region})")
+        else:
+            # Direct Anthropic API authentication
+            api_key = os.getenv("ANTHROPIC_API_KEY")
+            if not api_key:
+                logger.warning(
+                    "ANTHROPIC_API_KEY not set - Claude SDK features will be limited. "
+                    "Set ANTHROPIC_API_KEY or configure AWS Bedrock to enable advanced research and analysis."
+                )
+                return
+
+            logger.info("Initializing Claude SDK with direct Anthropic API")
 
         # Test basic functionality
         agent = await get_claude_sdk_agent()
         logger.info("✅ Claude SDK initialized successfully")
+        auth_method = "AWS Bedrock" if use_bedrock else "Anthropic API"
+        logger.info(f"   Authentication: {auth_method}")
         logger.info(f"   Allowed tools: {agent.allowed_tools}")
         logger.info(f"   Working directory: {agent.working_directory}")
 
+    except ImportError:
+        logger.warning("Settings not available, Claude SDK initialization skipped")
     except Exception as e:
         logger.error(f"Failed to initialize Claude SDK: {e}")
         logger.warning("Claude SDK features will be unavailable")

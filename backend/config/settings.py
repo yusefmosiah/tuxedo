@@ -17,8 +17,15 @@ class Settings:
         self.summarization_model = os.getenv("SUMMARIZATION_MODEL", "z-ai/glm-4.6:exacto")
 
         # Claude SDK Configuration (for research and analysis features)
+        # Supports both direct Anthropic API and AWS Bedrock
         self.anthropic_api_key = os.getenv("ANTHROPIC_API_KEY", "")
         self.enable_claude_sdk = os.getenv("ENABLE_CLAUDE_SDK", "true").lower() == "true"
+
+        # AWS Bedrock Configuration (alternative to direct Anthropic API)
+        self.claude_sdk_use_bedrock = os.getenv("CLAUDE_SDK_USE_BEDROCK", "false").lower() == "true"
+        self.aws_region = os.getenv("AWS_REGION", "us-east-1")
+        self.aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID", "")
+        self.aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY", "")
 
         # Stellar Network Configuration - MAINNET ONLY
         self.stellar_network = "mainnet"

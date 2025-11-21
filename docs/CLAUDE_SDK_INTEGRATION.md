@@ -74,18 +74,47 @@ cd backend
 uv add claude-agent-sdk
 ```
 
-### 2. Configure API Key
+### 2. Configure Authentication
 
-Add to your `.env` file:
+Claude SDK supports **two authentication methods**:
+
+#### Option A: Direct Anthropic API (Recommended for Getting Started)
+
+Add to your `backend/.env` file:
 
 ```bash
-# Claude SDK Configuration (optional - for advanced research and analysis)
-# Get API key from: https://console.anthropic.com/
+# Claude SDK Configuration
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 ENABLE_CLAUDE_SDK=true
 ```
 
-**Note**: Claude SDK features work without an API key in limited mode, but full functionality requires an Anthropic API key.
+Get your API key from: https://console.anthropic.com/
+
+#### Option B: AWS Bedrock (Recommended for Production/Enterprise)
+
+Add to your `backend/.env` file:
+
+```bash
+# Claude SDK Configuration - AWS Bedrock
+CLAUDE_SDK_USE_BEDROCK=true
+ENABLE_CLAUDE_SDK=true
+
+# AWS Credentials
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your_aws_access_key_id
+AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
+```
+
+**Benefits of AWS Bedrock:**
+- Enterprise billing and governance
+- IAM role-based authentication
+- Integrated with AWS services
+- Regional data residency
+- Reserved capacity options
+
+**See detailed setup guide:** [AWS_BEDROCK_CONFIGURATION.md](./AWS_BEDROCK_CONFIGURATION.md)
+
+**Note**: Claude SDK features work without authentication in limited mode, but full functionality requires either Anthropic API key or AWS Bedrock credentials.
 
 ### 3. Verify Installation
 
