@@ -258,6 +258,71 @@ This creates systematic bias against:
 
 **The quality filter**: Publishing costs tokens (skin in the game). Spam and low-effort content become unprofitable. Only serious contributions make economic sense.
 
+### Vindication Economics: Credit for Marginalized Thinkers
+
+Traditional academia has a catastrophic track record of marginalizing correct-but-unconventional thinkers:
+
+**Historical examples**:
+- **Ignaz Semmelweis** (1840s): Proved handwashing prevented infections. Mocked by medical establishment, died in asylum. Vindicated posthumously.
+- **Alfred Wegener** (1912): Proposed continental drift. Ridiculed for decades. Plate tectonics confirmed 50 years later.
+- **Lynn Margulis** (1967): Endosymbiotic theory (mitochondria as ancient bacteria). Rejected by 15 journals. Now textbook biology.
+- **Barry Marshall** (1982): H. pylori causes ulcers. Laughed at, had to infect himself to prove it. Won Nobel Prize 2005.
+
+**The pattern**: Fringe ideas that challenge institutional consensus get marginalized regardless of merit. Researchers face career destruction for being correct too early.
+
+**When AI achieves certainty** about currently controversial, unknown, or fringe positions, there will be human progenitors who deserve credit—some of whom were unfairly maligned by academic society.
+
+**Choir's solution**:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│              IMMUTABLE ATTRIBUTION FOR ALL IDEAS              │
+├──────────────────────────────────────────────────────────────┤
+│                                                               │
+│  Publish Controversial Idea (2025)                           │
+│  ├── Anonymous (no career risk)                              │
+│  ├── Timestamped on blockchain (immutable proof)             │
+│  ├── Wallet signature proves authorship                      │
+│  └── No credentials required, pure merit                     │
+│                                                               │
+│  AI Breakthrough (2027)                                       │
+│  ├── AI achieves certainty on previously-controversial topic │
+│  ├── Cites your 2025 article (semantic similarity match)     │
+│  ├── Citation graph proves you had insight first             │
+│  └── Retroactive vindication with economic credit            │
+│                                                               │
+│  Economic Vindication                                         │
+│  ├── Citation rewards flow in stablecoins                    │
+│  ├── Foundational research generates ongoing income          │
+│  ├── Real leverage (can deploy earned capital)               │
+│  └── Credit you can use, not just prestige                   │
+│                                                               │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Why this matters**:
+
+**No career risk**: Publish anonymously. If you're right, you get credit. If you're wrong, no harm to reputation.
+
+**Immutable timestamps**: Blockchain proves you had the insight first. No retroactive revision by establishment.
+
+**Economic credit**: Not just "you were right"—actual income from citations as your ideas prove valuable.
+
+**Real leverage**: Can deploy earned capital, invest in further research, fund your work without institutional backing.
+
+**Human and AI collaboration**: AI agents achieve certainty. Humans who had the insight first receive economic compensation. Both benefit.
+
+**The vindication cycle**:
+1. Human publishes fringe idea (no credentials, just insight)
+2. Idea gets ignored/marginalized by establishment
+3. AI researches independently, achieves certainty
+4. AI cites original human insight
+5. Citations flow, economic credit materializes
+6. Marginalized thinker receives real-world compensation
+7. More people publish unconventional ideas (lower risk)
+
+**This is infrastructure for intellectual honesty**: Ideas get judged on merit, not on the status of who proposes them. When AI determines truth, the humans who saw it first get compensated—regardless of whether they had tenure, prestige, or institutional backing.
+
 ---
 
 ## V. Revision Markets: Collaborative Intelligence
