@@ -1,562 +1,945 @@
-# Choir: Unified Vision
-**The Sovereign Cloud for the Learning Economy**
+# Choir: The Thought Bank
+**Intelligence that creates value should share in that value**
 
 ---
 
 ## Executive Summary
 
-Choir is not a "DApp" or a "wallet." It is not "social media" or a "finance app."
+Choir is AI research infrastructure for the learning economy.
 
-**Choir is a Sovereign Cloud—a personal banking agent and learning economy infrastructure.**
+**The core product is Ghostwriter**: An AI agent that helps you research, write, and publish—then pays you in stablecoins when your work gets cited.
 
-Users authenticate into a Trusted Execution Environment (TEE) that contains:
-- `keys.json` - Multi-chain private keys (Stellar, EVM, SVM, Bitcoin, Zcash)
-- `context.db` - Preferences, risk tolerance, conversation history, research
-- `agent_logic.py` - AI Conductor that orchestrates specialized agents
+**No capital required to earn.** Chat freely, publish research, get cited by AI agents making decisions, receive citation rewards in real money. The pathway from zero to income exists entirely through intellectual contribution.
 
-Blockchains are **commodity settlement infrastructure**—pipes for moving capital to wherever risk-adjusted yield is highest. The user sees "12% APY" and "your research earned $50." The agent handles cross-chain bridging, gas optimization, and DeFi complexity invisibly.
+**Optional for those with capital**: Automated yield farming across multiple blockchains. AI agents manage DeFi strategies, write research reports citing the knowledge base, and fund citation rewards from performance fees.
 
-This is **Accessible Luxury**: Bank-grade security through biometric authentication. No seed phrases, no "Connect Wallet" buttons. Just scan your face and enter the vault.
+**The economic loop**: Capital deployers fund researchers. Researchers make agents smarter. Smarter agents generate better yields. Better yields fund more research.
+
+This is not social media (no feeds, no followers, no engagement farming). This is not academic publishing (no gatekeeping, no 18-month peer review, no credential requirements). This is infrastructure for the learning economy where genuine insight generates measurable economic value.
 
 ---
 
-## I. The Core Reframe: Learning Economy
+## I. The Problem: Three Broken Models
 
-### The Problem with Existing Categories
+### Academic Publishing: Credentialism Over Insight
 
-**Finance Apps**: Extract fees, require expertise, no intellectual component
-**Social Media**: Extract attention, reward engagement, degrade discourse
-**AI Platforms**: Extract training data, provide tools, capture all value
+Academic publishing exploits non-prestige scholars while rewarding institutional affiliation over merit:
+- 18-month peer review cycles when AI achieves "Move 37" breakthroughs daily
+- Paywalls extracting billions while compensating authors nothing
+- Tenure committees valuing journal prestige over intellectual contribution
+- Junior scholars producing original research, senior faculty capturing credit
+- Anonymous review enabling status quo protection and political gatekeeping
 
-None of these models reward **intelligence that creates value**.
+When AI makes fundamental breakthroughs across every field simultaneously, the traditional publishing model becomes a bottleneck. We need rapid publication, merit-based evaluation, and economic rewards for insight—not credential verification and prestige hierarchies.
 
-### The Learning Economy Model
+### Social Media: Attention Extraction
 
-Choir creates three integrated feedback loops:
+Social platforms optimize for engagement, degrading discourse:
+- Viral content rewards outrage over insight
+- Follower counts determine distribution, not quality
+- Algorithmic feeds bury depth under volume
+- Network effects create winner-take-all dynamics
+- Platforms extract all value, creators capture vanishing returns
+
+The attention economy makes individual contributions worthless as volume increases. AI-generated content accelerates this to collapse.
+
+### AI Platforms: Training Data Extraction
+
+Current AI platforms capture all value from your intellectual contributions:
+- ChatGPT: You make it smarter, OpenAI captures billions
+- Claude: Your conversations improve the model, Anthropic owns the value
+- Perplexity: Your queries refine search, you get answers worth nothing
+
+**The AI Idiot Test**: If AI is so smart, why isn't it making you money?
+
+You pay $20/month for "productivity" (unmeasurable). The platform captures training data value (billions). You get tools that make you useful to others while remaining propertyless.
+
+---
+
+## II. The Solution: Citation Economics
+
+### The Thought Bank Model
+
+Traditional banks let you deposit money and earn interest. Thought banks let you deposit ideas and earn interest.
+
+**How it works**:
+
+1. **Research and write** using Ghostwriter (multi-model AI orchestration)
+2. **Publish articles** to the knowledge base (anonymous, merit-based)
+3. **Get cited** when AI agents or other researchers reference your work
+4. **Earn stablecoins** from citation rewards funded by performance fees
+5. **Compound over time** as foundational research generates ongoing citations
+
+**The key insight**: When AI agents make profitable decisions citing your research, you receive proportional shares of performance fees. Your intellectual property becomes productive capital generating passive income.
+
+### The Risk/Trust Gradient
+
+Users enter at their trust level:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    LOOP 1: Thought Mining                    │
-│                    (Knowledge → Value)                       │
+│                     LOW FRICTION ENTRY                       │
+│                   "Try the AI assistant"                     │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
-│  Chat freely → Novelty rewards (CHOIR tokens)               │
-│  Publish articles → Get cited by agents → Stablecoin income │
-│  No capital required → Pure intellectual contribution        │
+│  Week 1: Discovery                                           │
+│  ├── See article on Twitter: "Written with Choir"           │
+│  ├── Sign up (passkey, biometric)                           │
+│  ├── Use Ghostwriter for research                           │
+│  └── No capital, no crypto knowledge required               │
 │                                                              │
-│  Pathway: Thought → Publication → Citation → Income         │
-│  No external capital needed to earn                          │
+│  Risk: Zero | Trust Required: Minimal                        │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
-│                 LOOP 2: Capital Management                   │
-│              (Capital → Intelligence → Yield)                │
+│                   MEDIUM ENGAGEMENT                          │
+│               "You earned money from writing"                │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
-│  Deposit stablecoins → Multi-chain yield strategies          │
-│  Agent researches opportunities → Cites knowledge base       │
-│  Writes research reports → Generates citable IP              │
-│  Performance fees → Fund citation rewards → Close loop       │
+│  Month 1-3: Value Realization                                │
+│  ├── Publish first articles                                 │
+│  ├── Get cited by AI agents                                 │
+│  ├── Earn first $10-50 in citation rewards                  │
+│  └── "Wait, this actually pays me?"                         │
 │                                                              │
-│  Pathway: Capital → Agent Research → Yields → Citations     │
-│  Capital deployers directly fund researchers                 │
+│  Month 3-6: Trust Building                                   │
+│  ├── Citations compound ($50-200/month)                     │
+│  ├── See system actually works                              │
+│  ├── Learn about optional yield farming                     │
+│  └── Decision: Stay in research OR deploy capital           │
+│                                                              │
+│  Risk: Time invested | Trust Required: Evidence-based        │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
-│                  LOOP 3: Network Effects                     │
-│            (Masses → Token Demand → Governance)              │
+│                    HIGH TRUST OPTIONAL                       │
+│           "Deploy capital for automated yields"              │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
-│  Free users → Create network effects → Token value          │
-│  Researchers → Earn citations → Deploy capital              │
-│  Capital deployers → Earn tokens → Governance rights        │
-│  Treasury from split decisions → Fund ecosystem              │
+│  Year 1+: Capital Deployment (10-20% of users)              │
+│  ├── Deposit stablecoins into vaults                        │
+│  ├── AI agents manage multi-chain DeFi strategies           │
+│  ├── Agents cite knowledge base in research reports         │
+│  ├── Performance fees fund citation rewards                 │
+│  └── Both capital and citations earn                        │
 │                                                              │
-│  Pathway: Participation → Tokens → Capital → Governance     │
-│  All positions valuable, natural progression                 │
+│  Risk: Capital at stake | Trust Required: Deep, earned      │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**The Flywheel**: Better research → Better yields → More capital → More citations → More researchers → Better research
+**Most users never deposit capital.** They earn citation income indefinitely through pure intellectual contribution. The finance features capitalize the system but aren't required for participation or profit.
 
 ---
 
-## II. The Sovereign Cloud Architecture
+## III. The Ghostwriter: Multi-Model Orchestration
 
-### Authentication: Direct Ownership
+### Why Specialized Agents, Not Monolithic Models
 
-**Delete**: "Connect Wallet", "Import Keys", "Social Login" (Google/Coinbase)
+Current AI platforms force analytical reasoning and communicative craft into the same generation step. This creates fundamental trade-offs:
+- GPT-4: Deep reasoning but generic communication
+- Claude: Excellent craft but shallow research
+- Gemini: Fast but inconsistent quality
 
-**Insert**: Biometric Vault
+**The insight**: Different tasks need different models. Separate the concerns.
 
-```
-User Experience:
-1. Download app
-2. Scan face (FaceID / Windows Hello)
-3. Account created
-
-Backend Reality:
-1. WebAuthn passkey generation
-2. TEE provisioned with encrypted filesystem
-3. Multi-chain keys generated in secure enclave
-4. User never sees seed phrases
-```
-
-**The Branding**: "Bank-Grade Security. Biometric Vault. Sovereign Ownership."
-
-**The Rationale**: Rich people don't "connect MetaMask." They scan their face to enter the vault.
-
-### The Filesystem: Your Personal Computer
-
-```
-/sovereign/
-├── keys.json
-│   ├── stellar_keypair
-│   ├── evm_private_key (Base, Mainnet, Arbitrum)
-│   ├── solana_keypair
-│   ├── bitcoin_keypair
-│   └── zcash_keypair
-│
-├── context.db
-│   ├── user_preferences
-│   ├── risk_tolerance
-│   ├── conversation_history
-│   ├── research_reports
-│   └── citation_graph
-│
-└── agent_logic.py
-    ├── conductor (fast orchestrator)
-    ├── ghostwriter_agent
-    ├── research_agent
-    ├── yield_agent
-    └── tax_agent (future)
-```
-
-**Key Properties**:
-- Hardware-isolated (TEE: Intel SGX, AMD SEV, Phala Network)
-- Encrypted at rest
-- User-specific (no cross-contamination)
-- Persistent across sessions
-- Fully auditable by user
-
-**Privacy Guarantee**: Even Choir cannot read your keys or queries. This is "Can't Be Evil" architecture.
-
-### Infrastructure: Chain Agnosticism
-
-**Delete**: All language implying Stellar exclusivity or primacy
-
-**Insert**: Blockchains are **commodity settlement pipes**
-
-```
-Capital Destinations (The Pipes):
-├── EVM Chains (Base, Mainnet, Arbitrum)
-│   └── Use Case: Deep liquidity, Aave/Morpho yields, Aerodrome
-│
-├── Stellar
-│   └── Use Case: Cheap USDC transport, real-world anchors, Blend Capital
-│
-├── Solana / SVM
-│   └── Use Case: High-frequency opportunities, low latency
-│
-└── Bitcoin / Zcash
-    └── Use Case: Pristine collateral, privacy, store of value
-```
-
-**User Sees**: "Your capital earned 12% APY this month"
-
-**Agent Handles**:
-- Cross-chain bridging (Wormhole, LayerZero, etc.)
-- Swap routing (1inch, Jupiter, etc.)
-- Gas optimization (batching, EIP-1559 strategies)
-- Rebalancing triggers (on-chain data, volatility)
-
-**The Narrative**: "We abstract the nerd details. You see yields and opportunities, not chains and gas."
-
----
-
-## III. The Conductor + Instruments Pattern
-
-### The Problem with Monolithic AI
-
-Current AI platforms force analytical reasoning and communicative craft into the same model. This creates fundamental trade-offs:
-
-- **ChatGPT Pro**: Expensive models don't produce proportionally better writing
-- **Claude**: Great at writing but lacks deep research capabilities
-- **Perplexity**: Good at search but generic communication
-
-### The Choir Architecture
+### The Architecture
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│                      CLIENT LAYER                             │
-│                                                               │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │                  Conductor (Client)                      │ │
-│  │                                                          │ │
-│  │  • Fast model (GPT-4o-mini, Claude Haiku)               │ │
-│  │  • Immediate responses                                  │ │
-│  │  • Orchestrates server agents                           │ │
-│  │  • Transparent escalation                               │ │
-│  │  • Wallet management, search, file ops                  │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                               │
-└───────────────────────────┬───────────────────────────────────┘
-                            │
-                            ▼
+│                      USER REQUEST                             │
+│           "Research yield farming on Base vs Arbitrum"        │
+└─────────────────────┬────────────────────────────────────────┘
+                      │
+                      ▼
 ┌──────────────────────────────────────────────────────────────┐
-│                      SERVER LAYER                             │
-│                   (Specialized Agents)                        │
+│                  CONDUCTOR (Client)                           │
+│                  Fast orchestrator                            │
 │                                                               │
-│  ┌──────────────────┐  ┌──────────────────┐                 │
-│  │  Ghostwriter     │  │  Research Agent  │                 │
-│  │  Agent           │  │                  │                 │
-│  │                  │  │  • Web search    │                 │
-│  │  • Plan          │  │  • Vector DB     │                 │
-│  │  • Research      │  │  • On-chain data │                 │
-│  │  • Draft         │  │  • Citations     │                 │
-│  │  • Cite          │  │  • Synthesis     │                 │
-│  │  • Review        │  │                  │                 │
-│  │  • Refine        │  └──────────────────┘                 │
-│  │                  │                                        │
-│  │  Uses: Claude,   │  ┌──────────────────┐                 │
-│  │  Kimi K2         │  │  Yield Agent     │                 │
-│  └──────────────────┘  │                  │                 │
-│                        │  • Multi-chain   │                 │
-│  ┌──────────────────┐  │  • DeFi protocols│                 │
-│  │  Publisher       │  │  • Rebalancing   │                 │
-│  │  Agent           │  │  • Risk mgmt     │                 │
-│  │                  │  │  • Tax reporting │                 │
-│  │  • Stake tokens  │  │                  │                 │
-│  │  • Create post   │  └──────────────────┘                 │
-│  │  • Citation graph│                                        │
-│  │  • Distribute    │  ┌──────────────────┐                 │
-│  │    rewards       │  │  Tax Agent       │                 │
-│  └──────────────────┘  │  (Future)        │                 │
-│                        │                  │                 │
-│  ┌──────────────────┐  │  • Jurisdiction  │                 │
-│  │  Revision        │  │    detection     │                 │
-│  │  Agent           │  │  • Optimization  │                 │
-│  │                  │  │  • Reporting     │                 │
-│  │  • Propose edits │  │  • Compliance    │                 │
-│  │  • Unanimous vote│  └──────────────────┘                 │
-│  │  • Split decision│                                        │
-│  │  • Treasury flow │                                        │
-│  └──────────────────┘                                        │
+│  • Immediate response: "Starting research..."                │
+│  • Routes to Ghostwriter agent                               │
+│  • Streams results as they arrive                            │
+│  • Transparent escalation                                    │
+└─────────────────────┬────────────────────────────────────────┘
+                      │
+                      ▼
+┌──────────────────────────────────────────────────────────────┐
+│               GHOSTWRITER AGENT (Server)                      │
+│               Multi-step workflow                             │
+│                                                               │
+│  Step 1: RESEARCH (OpenAI o1, Claude Opus)                   │
+│  ├── Query Choir knowledge base (vector search)              │
+│  ├── Search web for recent data                              │
+│  ├── Fetch on-chain metrics (Aave, Morpho APYs)              │
+│  └── Aggregate context                                       │
+│                                                               │
+│  Step 2: DRAFT (Claude Sonnet)                               │
+│  ├── Follow user's style guide                               │
+│  ├── Synthesize research into narrative                      │
+│  ├── Include citations to Choir articles                     │
+│  └── Maintain voice consistency                              │
+│                                                               │
+│  Step 3: CRITIQUE (Kimi K2)                                  │
+│  ├── Identify weak arguments                                 │
+│  ├── Check unsupported claims                                │
+│  ├── Suggest substantial improvements                        │
+│  └── Actually critical (not sycophantic)                     │
+│                                                               │
+│  Step 4: REFINE (Claude Sonnet)                              │
+│  ├── Incorporate critique                                    │
+│  ├── Strengthen evidence                                     │
+│  ├── Maintain style guide adherence                          │
+│  └── Final polish                                            │
+│                                                               │
+│  Step 5: VERIFY (Automated)                                  │
+│  ├── Citation validation (no hallucinated sources)           │
+│  ├── Fact checking                                           │
+│  ├── Link verification                                       │
+│  └── Quality threshold                                       │
+│                                                               │
+└─────────────────────┬────────────────────────────────────────┘
+                      │
+                      ▼
+┌──────────────────────────────────────────────────────────────┐
+│                  PUBLISHED ARTICLE                            │
+│                                                               │
+│  • Staked with CHOIR tokens (rank by stake)                  │
+│  • Enters citation graph                                     │
+│  • Earns rewards when cited                                  │
+│  • Open to revision proposals                                │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Why This Works
+
+**Model specialization**: Each step uses the model best suited for that task
+**Quality compounding**: Multi-step process produces better output than single-shot generation
+**Economic coupling**: Rewards only trigger on full workflow completion (not per prompt)
+**Transparent escalation**: User sees progress, knows when compute-heavy work happens
+
+**The result**: Writing quality that genuinely scales with computational investment. Pay more, get meaningfully better output. Unlike ChatGPT Pro where expensive models don't produce proportionally better writing.
+
+---
+
+## IV. Anonymous Publishing & Merit-Based Discovery
+
+### The Problem with Identity-Based Systems
+
+Traditional publishing couples ideas with identity:
+- **Academia**: Institutional affiliation determines credibility
+- **Social media**: Follower counts determine distribution
+- **Substack**: Early adopters capture network effects, newcomers invisible
+
+This creates systematic bias against:
+- Non-prestige institutions
+- Junior researchers
+- Unconventional thinking
+- Cross-disciplinary insights
+- Ideas that challenge status quo
+
+### The Choir Model
+
+**Authentication**: Wallet signatures (cryptographic identity, zero personal data)
+**Attribution**: Immutable citation graph (no retroactive changes)
+**Discovery**: Economic signals (stake amount determines visibility)
+**Rewards**: Citation-based (ideas that influence earn)
+
+**How it works**:
+
+1. **Sign in with passkey** (biometric, no seed phrases)
+2. **Publish anonymously** (wallet signature proves authorship without revealing identity)
+3. **Stake CHOIR tokens** on publication (higher stakes = higher visibility)
+4. **Get cited** based on merit (semantic similarity auto-detection)
+5. **Earn stablecoins** when cited (proportional to influence)
+
+**The anti-plagiarism mechanism**: If someone copies your work, the citation engine auto-detects semantic similarity and cites your original. The plagiarist pays you. Copying becomes economically irrational.
+
+**The quality filter**: Publishing costs tokens (skin in the game). Spam and low-effort content become unprofitable. Only serious contributions make economic sense.
+
+---
+
+## V. Revision Markets: Collaborative Intelligence
+
+### The Problem with Static Publications
+
+Traditional publishing treats articles as final:
+- **Academia**: No mechanism for improvement after peer review
+- **Social media**: Edits rare, no economic incentive for quality
+- **Wikipedia**: Edit wars, admin gatekeeping, no compensation
+
+Good ideas get published with flaws. Better ideas emerge later. No economic mechanism channels improvement.
+
+### The Choir Model
+
+**Anyone can propose revisions by staking tokens.**
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                    REVISION WORKFLOW                          │
+├──────────────────────────────────────────────────────────────┤
+│                                                               │
+│  1. PROPOSE                                                   │
+│     ├── Submit revised version                               │
+│     ├── Stake CHOIR tokens (non-refundable bid)              │
+│     └── Higher stakes signal serious improvements            │
+│                                                               │
+│  2. REVIEW (7-day window)                                     │
+│     ├── Original author(s) vote                              │
+│     └── Auto-reject if no response (prevents gridlock)       │
+│                                                               │
+│  3. OUTCOMES                                                  │
+│     │                                                         │
+│     ├─► UNANIMOUS APPROVAL (multi-author articles)           │
+│     │   ├── Stakes go to article treasury                    │
+│     │   ├── Proposer becomes co-author                       │
+│     │   ├── Future citations split proportionally            │
+│     │   └── Article improves collaboratively                 │
+│     │                                                         │
+│     ├─► REJECTION                                            │
+│     │   ├── Stakes returned to proposer                      │
+│     │   ├── Article unchanged                                │
+│     │   └── No economic penalty                              │
+│     │                                                         │
+│     └─► SPLIT DECISION (disagreement among co-authors)       │
+│         ├── Counts as rejection                              │
+│         ├── Stakes go to Choir Treasury                      │
+│         ├── Treasury redistributes as citation rewards       │
+│         └── Disputed improvements fund ecosystem             │
+│                                                               │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Why This Works
+
+**Economic alignment**: Proposers stake value, authors earn from curation
+**Quality compounding**: Successful articles attract improvements making them more valuable
+**Treasury funding**: Disagreements fund public goods (citation rewards)
+**Collaborative ownership**: Multi-author articles split rewards fairly
+
+**The result**: Intellectual property that improves over time, generating increasing returns as quality compounds.
+
+---
+
+## VI. The Three Learning Economy Loops
+
+### Loop 1: Thought Mining (Knowledge → Value)
+
+**No capital required. Pure intellectual contribution.**
+
+```
+Chat Freely
+  ├── Earn novelty tokens (CHOIR, decaying emissions)
+  ├── Accumulate toward publishing threshold (100 tokens)
+  └── Build toward monetization without spending
+
+Publish Articles
+  ├── Stake earned tokens (or purchase on market)
+  ├── Enter citation graph
+  └── Economic skin in the game
+
+Get Cited
+  ├── AI agents reference your work in research
+  ├── Other researchers build on your thinking
+  └── Semantic similarity auto-detects influence
+
+Earn Stablecoins
+  ├── Citation rewards from performance fees
+  ├── Proportional to influence
+  ├── Immediately convertible to local fiat
+  └── Passive income from intellectual property
+```
+
+**Pathway**: Thought → Publication → Citation → Income
+
+**Timeline**: 0-6 months to first earnings, no capital deposit required
+
+### Loop 2: Capital Management (Capital → Intelligence → Yield)
+
+**Optional. For those with capital and deep trust.**
+
+```
+Deposit Stablecoins
+  ├── Non-custodial vaults (you own shares, not agent controls)
+  ├── Multi-chain yield strategies
+  └── 10-15% APY (realistic, not hallucinated)
+
+AI Agents Research
+  ├── Query Choir knowledge base for insights
+  ├── Analyze on-chain data
+  ├── Identify best risk-adjusted opportunities
+  └── Write research reports (citable IP)
+
+Execute Strategies
+  ├── Supply to Aave, Morpho, Aerodrome on Base/Arbitrum
+  ├── Lend on Blend Capital (Stellar)
+  ├── Cross-chain rebalancing (automated)
+  └── Gas optimization, tax awareness
+
+Performance Fees → Citations
+  ├── 20% of profits go to platform
+  ├── 70% of fees fund citation rewards
+  ├── Researchers whose work was cited earn
+  └── Loop closes: Capital funds intelligence
+```
+
+**Pathway**: Capital → Agent Research → Yields → Citations
+
+**Timeline**: Immediate yields, long-term compounding
+
+**Risk**: Capital at stake (DeFi risks, smart contract risks, agent decision risks)
+
+### Loop 3: Network Effects (Masses → Token Demand → Governance)
+
+**Free users create the value that makes everything work.**
+
+```
+Free Participation
+  ├── Millions chat, share ideas
+  ├── Novelty rewards distributed
+  ├── Network effects emerge
+  └── Token demand from holdings
+
+Researchers Publish
+  ├── Knowledge base grows
+  ├── Citation quality improves
+  ├── Agents get smarter
+  └── Platform value compounds
+
+Capital Deployers Invest
+  ├── Attracted by network effects
+  ├── Yields improve from better research
+  ├── Earn governance tokens
+  └── Shape protocol evolution
+
+Treasury Accumulates
+  ├── Split decisions from revisions
+  ├── Protocol-owned liquidity
+  ├── Ecosystem investments
+  └── Sustainable funding
+```
+
+**Pathway**: Participation → Tokens → Capital → Governance
+
+**The flywheel**: More users → More research → Better yields → More capital → More citations → More researchers
+
+---
+
+## VII. Why This Works When Academic Publishing Fails
+
+### The AI Research Explosion
+
+When AI achieves "Move 37" breakthroughs across every field simultaneously, traditional publishing becomes a bottleneck:
+
+**Academic timeline**:
+- Research (6 months)
+- Write (2 months)
+- Submit (1 month)
+- Peer review (6-12 months)
+- Revisions (3 months)
+- Publication (18-24 months total)
+
+**AI timeline**:
+- Breakthrough discovery (daily)
+- Immediate obsolescence of prior work
+- Need for rapid iteration
+- Cross-disciplinary synthesis
+
+**The gap**: By the time academic peer review completes, the field has advanced several generations. The system cannot keep pace.
+
+### Choir's Advantages
+
+**Rapid publication**: Publish instantly, get cited immediately
+**Merit over credentials**: Anonymous submission, economic signals replace prestige
+**Economic rewards**: Citation income replaces prestige as motivation
+**Collaborative improvement**: Revision markets enable ongoing refinement
+**Cross-disciplinary**: No journal boundaries, semantic similarity finds connections
+**AI-native**: Built for the era where AI generates research at superhuman pace
+
+**The result**: Infrastructure suited for the research velocity AI enables, not the 20th-century institutional model.
+
+---
+
+## VIII. The Economic Model: Three Currencies
+
+### Why Three Currencies?
+
+Different users want different things:
+- **Researchers**: Stable income they can spend (stablecoins)
+- **Participants**: Low-friction entry, no crypto knowledge (credits)
+- **Investors**: Governance rights, speculative upside (CHOIR tokens)
+
+Forcing everyone into a single currency creates misaligned incentives.
+
+### Currency 1: Credits (Fiat/IAP)
+
+**Purpose**: Accessible entry, no crypto knowledge required
+
+```
+Purchase:
+├── Apple/Google IAP (in-app purchase)
+├── Credit card payment
+└── No wallet, no crypto
+
+Use:
+├── Pay for Ghostwriter calls (1, 5, 20, 100 packs)
+├── Premium features
+└── Try-before-you-buy pricing
+
+Why:
+├── Accessibility (anyone can start)
+├── Predictable pricing ($2-5 per call)
+└── No crypto barrier
+```
+
+### Currency 2: Stablecoins (USDC)
+
+**Purpose**: Stable income, real value exchange
+
+```
+Earn:
+├── Citation rewards (when research gets cited)
+├── Revision payments (collaborative improvement)
+└── Immediately convertible to local fiat
+
+Deploy:
+├── Yield farming deposits (optional)
+├── Multi-chain strategies
+└── 10-15% APY (realistic returns)
+
+Why:
+├── Researchers need spendable income
+├── Not everyone understands crypto
+└── Fiat on/off ramps integrated
+```
+
+### Currency 3: CHOIR Tokens (Sui)
+
+**Purpose**: Governance, speculation, long-term alignment
+
+```
+Earn:
+├── Novelty rewards (decaying emissions for early users)
+├── Yield farming rewards (from capital deployment)
+└── Protocol participation (governance)
+
+Use:
+├── Publishing stakes (pay to publish, rank by stake)
+├── Governance votes (protocol parameters, treasury)
+├── Revision proposals (stake to improve articles)
+└── Compute options (tradeable future AI access)
+
+Why:
+├── Long-term platform alignment
+├── Speculative upside
+├── Governance rights
+└── Decreasing emissions (deflationary)
+```
+
+### Revenue Model
+
+**Primary: Performance fees** (20% of DeFi yields)
+- 70% → Citation reward pool (stablecoins to researchers)
+- 20% → Operations (infrastructure, development)
+- 10% → Token buyback & burn (deflationary pressure)
+
+**Secondary: Protocol balance sheet**
+- Collateralized borrowing (CHOIR as collateral → USDC for operations)
+- Protocol-owned liquidity (trading fee income)
+- Covered call premiums (option income)
+- User lending (interest spreads)
+
+**Future: Ecosystem investments**
+- Incubator/accelerator programs
+- Strategic protocol investments
+- Revenue share agreements
+
+**The key**: Protocol becomes largest CHOIR holder and primary buyer. Free users holding small amounts benefit from protocol's commitment to never selling, only using as productive collateral.
+
+---
+
+## IX. Go-To-Market: Research First, Finance Last
+
+### The Honest User Journey
+
+**Week 1: Discovery**
+```
+See your article on Twitter
+  ├── "This research was written with Choir's Ghostwriter"
+  ├── Link to article on choir.chat
+  └── Curious users click, read, impressed
+
+Sign up to try
+  ├── Passkey auth (biometric, no seed phrases)
+  ├── No crypto wallet required
+  └── Start using Ghostwriter immediately
+```
+
+**Month 1-3: Engagement**
+```
+Use Ghostwriter for research
+  ├── Multi-step workflow produces quality
+  ├── Better than ChatGPT for deep work
+  └── Value prop: "This actually helps me think"
+
+Publish first articles
+  ├── Stake earned novelty tokens
+  ├── No capital deposit required
+  └── Enter citation graph
+
+First citations arrive
+  ├── "Your article was cited 3 times this week"
+  ├── Earn $10-50 in stablecoins
+  └── "Wait, I'm earning money from writing?"
+```
+
+**Month 3-6: Trust Building**
+```
+Citation rewards compound
+  ├── $50-200/month from research
+  ├── See the system actually works
+  └── Economic value from intellectual contribution
+
+Learn about yield farming
+  ├── "Optional: Deploy capital for yields"
+  ├── Understand risk/reward
+  └── Decision point: Stay research-only OR deploy capital
+```
+
+**Year 1+: Optional Finance**
+```
+10-20% of users deploy capital
+  ├── Deep trust earned through citation rewards
+  ├── Understand system through participation
+  └── Capital deployment feels natural, not required
+
+80-90% stay research-only
+  ├── Earn citation income indefinitely
+  ├── Contribute to knowledge base
+  └── Both groups benefit (citations funded by yields)
+```
+
+### Distribution Strategy
+
+**You as first user**:
+- Use Ghostwriter to produce high-quality research
+- Publish articles on choir.chat
+- Share on Twitter, Substack, etc.
+- "Written with Choir" attribution drives curiosity
+
+**Early researchers**:
+- Attracted by quality of your output
+- Try Ghostwriter, impressed by multi-model orchestration
+- Publish their own research
+- Network effects begin
+
+**Investors arrive later**:
+- See growing knowledge base
+- Recognize citation quality
+- Deploy capital to capitalize the system
+- Fund citation rewards for researchers
+
+**The gradient works**: Low-friction entry (research) → Value demonstration (citations) → Optional advanced features (finance)
+
+---
+
+## X. Technical Architecture
+
+### The Stack
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                     CLIENT LAYER                              │
+│                                                               │
+│  Mobile (iOS): SwiftUI, MVVM architecture                     │
+│  ├── Carbon fiber kintsugi aesthetics                        │
+│  ├── Biometric authentication                                │
+│  └── Conductor interface (fast, orchestrates)               │
+│                                                               │
+│  Web (React): TypeScript, TanStack Query                      │
+│  ├── Power-user interface                                    │
+│  ├── Multi-chain account management                          │
+│  └── Vault dashboards                                        │
+│                                                               │
+└─────────────────────┬────────────────────────────────────────┘
+                      │
+                      ▼
+┌──────────────────────────────────────────────────────────────┐
+│                     API LAYER (FastAPI)                       │
+│                                                               │
+│  /auth              Passkey authentication (WebAuthn)         │
+│  /conductor         Client orchestration                      │
+│  /agents            Ghostwriter, Research, Yield agents       │
+│  /publishing        Anonymous posts, citations, revisions     │
+│  /vault             Non-custodial DeFi vaults                 │
+│  /chains            Multi-chain abstraction (Stellar, EVM, etc)│
+│                                                               │
+└─────────────────────┬────────────────────────────────────────┘
+                      │
+                      ▼
+┌──────────────────────────────────────────────────────────────┐
+│                   AGENT LAYER (Python)                        │
+│                                                               │
+│  Conductor: Fast orchestrator (GPT-4o-mini, Claude Haiku)    │
+│                                                               │
+│  Ghostwriter: Multi-step research workflow                    │
+│  ├── Research (OpenAI o1, Claude Opus)                       │
+│  ├── Draft (Claude Sonnet + style guides)                   │
+│  ├── Critique (Kimi K2)                                      │
+│  ├── Refine (Claude Sonnet)                                 │
+│  └── Verify (automated)                                      │
+│                                                               │
+│  Research Agent: Data aggregation                             │
+│  ├── Web search (Perplexity, Exa)                           │
+│  ├── Vector database (Qdrant → XTrace migration)            │
+│  └── On-chain data (Stellar, EVM, Solana)                   │
+│                                                               │
+│  Yield Agent: Multi-chain DeFi                                │
+│  ├── Opportunity discovery                                   │
+│  ├── Risk assessment                                         │
+│  ├── Strategy execution                                      │
+│  └── Research report generation                              │
+│                                                               │
+└─────────────────────┬────────────────────────────────────────┘
+                      │
+                      ▼
+┌──────────────────────────────────────────────────────────────┐
+│                   DATA LAYER                                  │
+│                                                               │
+│  PostgreSQL (or SQLite):                                      │
+│  ├── Users, accounts, authentication                         │
+│  ├── Threads, messages, conversations                        │
+│  ├── Publications, citations, revisions                      │
+│  └── Vaults, portfolios, transactions                        │
+│                                                               │
+│  Vector Database (Qdrant → XTrace):                          │
+│  ├── Article embeddings                                      │
+│  ├── Semantic similarity search                              │
+│  ├── Citation auto-detection                                 │
+│  └── Homomorphic encryption (future)                         │
+│                                                               │
+│  Blockchain (Sui):                                            │
+│  ├── CHOIR token (governance, stakes)                        │
+│  ├── Citation rewards distribution                           │
+│  ├── Treasury management                                     │
+│  └── Immutable attribution                                   │
+│                                                               │
+└─────────────────────┬────────────────────────────────────────┘
+                      │
+                      ▼
+┌──────────────────────────────────────────────────────────────┐
+│                  INFRASTRUCTURE LAYER                         │
+│                                                               │
+│  TEE (Phala Network):                                         │
+│  ├── User-specific encrypted filesystems                     │
+│  ├── keys.json (multi-chain private keys)                   │
+│  ├── context.db (preferences, history)                      │
+│  └── agent_logic.py (AI execution)                          │
+│                                                               │
+│  Multi-Chain Integration:                                    │
+│  ├── Stellar (Blend Capital, cheap USDC)                    │
+│  ├── EVM (Base, Arbitrum - Aave, Morpho, Aerodrome)        │
+│  ├── Solana (high-frequency opportunities)                  │
+│  └── Bitcoin/Zcash (future - collateral, privacy)           │
 │                                                               │
 └──────────────────────────────────────────────────────────────┘
 ```
 
 ### Key Architectural Decisions
 
-**1. Separation of Concerns**
-- **Conductor**: Fast, responsive, orchestrates
-- **Instruments**: Slow, deep, specialized
-- **User Experience**: Always fast response, transparent escalation
+**1. Conductor Pattern**
+- Fast client-side orchestrator
+- Heavy server-side specialists
+- Transparent escalation
+- User always sees responsive interface
 
-**2. Model Selection by Task**
-- **Ghostwriter Draft**: Claude (style-aware, follows guides)
-- **Ghostwriter Critique**: Kimi K2 (actually critical, not sycophantic)
-- **Research**: OpenAI o1 / Claude Opus (deep reasoning)
-- **Yield Agent**: Specialized financial models (TBD)
+**2. Multi-Model Optimization**
+- Each task routed to best-suited model
+- Research ≠ Drafting ≠ Critique
+- Quality scales with compute investment
+- Economic coupling to workflow completion
 
-**3. Economic Coupling**
-- **Novelty rewards**: Trigger on Ghostwriter invocation
-- **Citation rewards**: Flow from yield agent performance fees
-- **Revision markets**: Unanimous approval or Treasury capture
+**3. Chain Agnosticism**
+- Blockchains as commodity infrastructure
+- Agent handles all chain complexity
+- User sees yields, not gas fees
+- Capital flows to best risk-adjusted returns
 
 **4. Privacy by Default**
-- **Anonymous publishing**: Wallet signatures, no personal data
-- **Homomorphic encryption**: Query without revealing (XTrace migration)
-- **TEE execution**: Hardware-level isolation
+- TEE hardware isolation
+- Homomorphic encryption (future)
+- Anonymous publishing
+- Zero personal data collection
+
+**5. Economic Sovereignty**
+- Non-custodial vaults (users own shares)
+- Passkey authentication (biometric, no seed phrases)
+- Multi-chain key management in TEE
+- Users control capital, agents execute strategies
 
 ---
 
-## IV. Economic Architecture
-
-### The Three-Currency Model
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│                    1. CREDITS (Fiat/IAP)                      │
-│                    Gate AI Compute Access                     │
-├──────────────────────────────────────────────────────────────┤
-│                                                               │
-│  • Purchase via IAP (Apple/Google) or credit card            │
-│  • Pay for Ghostwriter invocations (1, 5, 20, 100 calls)    │
-│  • No crypto knowledge required                              │
-│  • Try-before-you-buy (1 call = $2-5)                       │
-│                                                               │
-│  Why: Accessible entry, predictable pricing                  │
-│                                                               │
-└──────────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────────┐
-│                    2. STABLECOINS (USDC)                      │
-│                    Real Value Exchange                        │
-├──────────────────────────────────────────────────────────────┤
-│                                                               │
-│  • Citation rewards (when research gets cited)               │
-│  • Capital deposits (yield farming vaults)                   │
-│  • Revision payments (collaborative improvement)             │
-│  • Immediately convertible to local fiat                     │
-│                                                               │
-│  Why: Researchers need stable, spendable income              │
-│                                                               │
-└──────────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────────┐
-│                    3. CHOIR TOKENS (SUI)                      │
-│                    Governance & Compute Options               │
-├──────────────────────────────────────────────────────────────┤
-│                                                               │
-│  • Novelty rewards (decaying emissions for early users)      │
-│  • Yield farming rewards (from capital deployment)           │
-│  • Governance rights (protocol parameters, treasury)         │
-│  • Publishing stakes (pay to publish, rank by stake)         │
-│  • Compute options (tradeable future AI access)              │
-│                                                               │
-│  Why: Long-term alignment, speculative upside, governance    │
-│                                                               │
-└──────────────────────────────────────────────────────────────┘
-```
-
-### Revenue Model
-
-**Primary**: Performance fees from yield farming (20% of profits)
-- 70% → Citation reward pool
-- 20% → Operations
-- 10% → CHOIR token buyback & burn
-
-**Secondary**: Protocol balance sheet strategies
-- Collateralized borrowing (CHOIR as collateral)
-- Protocol-owned liquidity (trading fees)
-- Covered call premiums (option income)
-- User lending (interest spread)
-
-**Future**: Ecosystem investments
-- Incubator/accelerator for projects building on Choir
-- Strategic investments in aligned protocols
-- Revenue share agreements
-
-### The Natural Progression
-
-```
-Month 0-3: Free Tier
-├── Chat freely, earn novelty tokens
-├── Build reputation through citations
-└── Accumulate 100 CHOIR tokens
-
-Month 3-9: Publishing Phase
-├── Publish first article (stake 100 CHOIR)
-├── Get cited by agents
-├── Earn stablecoins from citations
-└── Convert to local fiat or save
-
-Month 9-18: Accumulation Phase
-├── Citation rewards exceed spending
-├── Decision point: withdraw or deploy?
-└── Try deploying $500 in yield farming
-
-Month 18+: Compounding Phase
-├── Earn from both sides (citations + yields)
-├── CHOIR tokens from yield farming
-├── Stake tokens on best articles
-└── Participate in governance
-
-Year 2+: Influence Phase
-├── Significant capital and tokens
-├── Govern protocol evolution
-└── Platform becomes a cooperative you partially own
-```
-
-**Critical**: You never need capital to earn. The pathway exists entirely through intellectual contribution.
-
----
-
-## V. Anonymous Publishing & Revision Markets
-
-### The Problem with Traditional Publishing
-
-**Academic Publishing**: Prestige without payment, credential barriers
-**Social Media**: Engagement metrics over quality, follower counts
-**AI Platforms**: All value extracted, no attribution or compensation
-
-### The Choir Model
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│                    ANONYMOUS PUBLISHING                       │
-├──────────────────────────────────────────────────────────────┤
-│                                                               │
-│  Authentication: Wallet signatures (no personal data)         │
-│  Attribution: Cryptographic, immutable, citation graph        │
-│  Discovery: Ranked by stake amount (economic signal)          │
-│  Rewards: Citations generate stablecoin income                │
-│                                                               │
-│  Merit-based environment where ideas find audiences           │
-│  regardless of author status or credentials                   │
-│                                                               │
-└──────────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────────┐
-│                      REVISION MARKETS                         │
-├──────────────────────────────────────────────────────────────┤
-│                                                               │
-│  Propose: Stake CHOIR tokens on improvement                   │
-│  Review: Original author(s) vote                              │
-│                                                               │
-│  Unanimous Approval:                                          │
-│  ├── Stakes go to article treasury                           │
-│  ├── Proposer becomes co-author                              │
-│  └── Future citations split proportionally                    │
-│                                                               │
-│  Rejection:                                                   │
-│  ├── Stakes returned to proposer                             │
-│  └── Article unchanged                                        │
-│                                                               │
-│  Split Decision (multi-author):                               │
-│  ├── Counts as rejection                                      │
-│  ├── Stakes go to Choir Treasury                             │
-│  └── Treasury redistributes as citation rewards              │
-│                                                               │
-└──────────────────────────────────────────────────────────────┘
-```
-
-### Quality Mechanisms
-
-**Economic Stakes**: Publishing requires skin-in-the-game (token stake)
-**Citation Tracking**: Semantic similarity auto-detects influence
-**Novelty Scoring**: AI identifies genuinely original contributions
-**Temporal Validation**: Citations months later prove enduring value
-
-**Anti-Slop Design**: Mass-produced, low-quality content becomes economically unviable
-
----
-
-## VI. The AI Idiot Test
-
-### The Question
-
-**If AI is so smart, why isn't it making you money?**
-
-### Current AI Platforms Fail
-
-- **ChatGPT**: $20/month → "Productivity" (unmeasurable)
-- **Claude**: $20/month → "Better writing" (subjective)
-- **Perplexity**: Free/Pro → "Answers" (no economic value)
-
-**You pay to be more useful to others. The platform captures all value.**
-
-### Choir Answers Differently
-
-```
-Your research gets cited in profitable strategy
-├── AI agent generates $10,000 in yields
-├── Platform takes $2,000 performance fee
-├── $1,400 goes to citation reward pool
-├── Your 50 citations this month
-└── You earn $700 in stablecoins (withdrawable)
-
-Agent operator keeps $8,000
-You earned $700 from research
-Platform earned $600 (operations + buyback)
-```
-
-**This is the business model AI should have had from the beginning**: Intelligence that generates measurable profits shared with those who contributed to that intelligence.
-
----
-
-## VII. Competitive Moats
+## XI. Competitive Moats
 
 ### Why Big Tech Can't Replicate This
 
-**1. The Sovereign Filesystem**
-- Google/Apple/Meta cannot give you a private TEE
-- They require data access for ads/training
-- Choir's entire model requires privacy
+**1. Economic Model Inversion**
 
-**2. The Economic Inversion**
-- OpenAI extracts via subscriptions ($20/month)
-- Choir pays you for contributions (citations, novelty)
-- Switching their model invalidates their valuations
+OpenAI/Anthropic extract via subscriptions ($20/month). Choir pays users for contributions.
 
-**3. The Multi-Chain Requirement**
-- Big Tech builds on single chains (Coinbase/Base)
-- Choir requires chain agnosticism for yield optimization
-- Structural difference, not feature addition
+Switching their model would:
+- Invalidate current valuations
+- Require new revenue sources
+- Conflict with training data extraction
+- Cannibalize existing subscriptions
 
-**4. The Sequence Dependency**
-- Capital deployment → Research demand → Citations → Yields
-- You cannot skip stages
-- Each stage creates preconditions for next
-- Most importantly: falsifiable (examine yields, citations, knowledge base growth)
+**2. Privacy Architecture**
+
+Google/Apple/Meta require data access for ads and training. Choir's entire model requires privacy (TEE, homomorphic encryption).
+
+They cannot give users sovereign compute without destroying their business models.
+
+**3. Multi-Chain Requirement**
+
+Coinbase builds on Base (single chain). Choir requires chain agnosticism for yield optimization.
+
+Single-chain platforms cannot offer optimal returns without contradicting their infrastructure investments.
+
+**4. Academic Publishing Disruption**
+
+Elsevier/Springer extract billions from paywalls. Choir offers immediate publication with economic rewards.
+
+Traditional publishers cannot adopt rapid publication and citation economics without destroying their journal prestige model.
 
 ### First-Mover Advantages
 
-**IP Accumulation**: Early researchers claim foundational concepts
-**Citation Networks**: Compound value through reference chains
-**Token Distribution**: Novelty rewards front-load to early users
-**Treasury Growth**: Split decisions accumulate protocol assets
+**IP Accumulation**: Early researchers claim foundational concepts, earn citations indefinitely
+
+**Citation Networks**: Compound value through reference chains (power law distribution)
+
+**Token Distribution**: Novelty rewards front-load to early users (decreasing emissions)
+
+**Treasury Growth**: Protocol accumulates assets from split decisions, ecosystem investments
+
+**Network Effects**: More users → More research → Better yields → More capital → More citations
 
 ---
 
-## VIII. Implementation Roadmap
+## XII. Success Metrics (Falsifiable)
 
-### Phase 1: MVP Foundation (Q4 2025)
-**Status: 90% Complete**
+### Economic Claims
 
-- ✅ Passkey authentication (WebAuthn, biometric vault)
-- ✅ Multi-chain key management (Stellar, EVM scaffolding)
-- ✅ Non-custodial vault system (TUX0 shares, dual authority)
-- ✅ Blend Capital integration (mainnet DeFi yields)
+- ✅ **Citation rewards > $X/month** (verify on-chain, stablecoin transfers)
+- ✅ **Yield farming APY = 10-15%** (verify via Blend/Aave/Morpho on-chain data)
+- ✅ **Performance fee split = 70/20/10** (verify in smart contracts)
+- ✅ **Token buyback volume** (verify on-chain, Sui DEX data)
+
+### Growth Metrics
+
+**Month 1-3**:
+- 1,000+ users (Ghostwriter trials)
+- 100+ articles published
+- First citations recorded
+- $10K+ in vaults (early adopters)
+
+**Month 3-6**:
+- 10,000+ users
+- 500+ articles
+- Citation rewards > $1K/month total
+- $100K+ in vaults
+
+**Month 6-12**:
+- 100,000+ users
+- 2,000+ articles
+- Citation rewards > $10K/month
+- $1M+ TVL across chains
+- Multi-chain expansion live
+
+**Year 2**:
+- 1,000,000+ users
+- 10,000+ published articles
+- Citation rewards > $100K/month
+- $10M+ TVL
+- Governance transition begins
+
+### Quality Signals
+
+- **Temporal validation**: Citations 3+ months after publication (enduring value)
+- **Revision acceptance rate**: Quality of collaborative improvements
+- **Treasury accumulation**: Growth from split decisions (sustainable funding)
+- **Citation velocity**: Citations per article per month (engagement depth)
+
+---
+
+## XIII. Implementation Roadmap
+
+### Phase 1: MVP (Q4 2025) - 90% Complete
+
+**Ghostwriter Foundation**:
+- ✅ Passkey authentication (biometric, WebAuthn)
 - ✅ LangChain agent with 19 tools
-- ✅ Claude SDK research wrapper
-- 🚧 Anonymous publishing routes
-- 🚧 Ghostwriter agent (multi-step workflow)
-- 🚧 Citation engine (semantic similarity)
+- ✅ Claude SDK research integration
+- 🚧 Multi-step Ghostwriter workflow (research → draft → critique → refine)
+- 🚧 Citation engine (semantic similarity auto-detection)
+
+**Publishing Infrastructure**:
+- 🚧 Anonymous publishing routes (wallet signatures)
+- 🚧 Stake CHOIR to publish
+- 🚧 Discovery feed (ranked by stake amount)
+- 🚧 Citation graph visualization
+
+**Optional Finance**:
+- ✅ Non-custodial vaults (TUX0 shares)
+- ✅ Blend Capital integration (Stellar mainnet)
+- ✅ Multi-chain key management scaffolding
+- 🚧 Performance fee distribution (citation rewards)
 
 ### Phase 2: Learning Economy (Q1-Q2 2026)
 
-**Publishing Infrastructure**:
-- [ ] Stake CHOIR to publish
-- [ ] Citation graph (auto-detect + manual)
-- [ ] Novelty scoring (AI detection)
-- [ ] Discovery feed (ranked by stake)
-
 **Economic Loops**:
-- [ ] Citation rewards from performance fees
-- [ ] Revision markets (unanimous approval)
-- [ ] Treasury accumulation (split decisions)
-- [ ] Token buyback program
+- [ ] Citation rewards from performance fees (stablecoins)
+- [ ] Novelty rewards system (decaying CHOIR emissions)
+- [ ] Revision markets (unanimous approval, Treasury capture)
+- [ ] Token buyback program (deflationary)
 
 **Multi-Chain Expansion**:
-- [ ] EVM integration (Base, Mainnet, Arbitrum)
+- [ ] EVM integration (Base, Arbitrum, Mainnet)
 - [ ] Aave/Morpho yield farming
+- [ ] Aerodrome liquidity strategies
 - [ ] Cross-chain bridging (Wormhole, LayerZero)
 - [ ] Solana/SVM scaffolding
 
-### Phase 3: Sovereign Cloud (Q3-Q4 2026)
+**Quality Mechanisms**:
+- [ ] Temporal validation scoring
+- [ ] Plagiarism detection (semantic similarity)
+- [ ] Collaborative filtering
+- [ ] Treasury-funded grants
+
+### Phase 3: Advanced Features (Q3-Q4 2026)
 
 **TEE Deployment**:
 - [ ] Phala Network production deployment
-- [ ] Filesystem isolation (keys, context, logic)
+- [ ] User-specific encrypted filesystems
 - [ ] Hardware attestation
-- [ ] User-specific enclaves
+- [ ] Multi-chain key isolation
 
-**Advanced Features**:
-- [ ] Tax-aware optimization (multi-jurisdiction)
+**Privacy Enhancements**:
 - [ ] Homomorphic encryption (XTrace migration)
+- [ ] Query privacy (search without revealing)
+- [ ] Anonymous citations (zero-knowledge proofs)
+
+**Premium Features**:
+- [ ] Tax-aware optimization (multi-jurisdiction)
+- [ ] Custom agent strategies
 - [ ] Choir Card (spend while earning yield)
-- [ ] Governance token migration
+- [ ] API access for developers
 
 **Mobile Excellence**:
-- [ ] SwiftUI iOS app (carbon fiber kintsugi aesthetics)
+- [ ] iOS app refinement (SwiftUI, carbon fiber kintsugi)
 - [ ] Android app (community-built, open source)
 - [ ] Low-bandwidth optimization
-- [ ] Telegram bot (SMS regions)
+- [ ] Telegram bot (no-smartphone regions)
 
 ### Phase 4: Decentralization (2027+)
 
@@ -574,230 +957,83 @@ Platform earned $600 (operations + buyback)
 
 ---
 
-## IX. Brand & Positioning
-
-### Delete These Terms
-- ❌ "DApp"
-- ❌ "Wallet"
-- ❌ "Connect Wallet"
-- ❌ "Import Keys"
-- ❌ "Social Media"
-- ❌ "SocialFi"
-- ❌ "Post", "Feed", "Followers", "Engagement"
-- ❌ "50% APY" (hallucination)
-- ❌ "Stellar-first" or chain-exclusive language
-
-### Insert These Terms
-- ✅ **"Sovereign Cloud"**
-- ✅ **"Personal Banking Agent"**
-- ✅ **"Biometric Vault"**
-- ✅ **"Learning Economy Infrastructure"**
-- ✅ **"Thought Bank"** (intellectual capital becomes productive)
-- ✅ **"Citation", "Knowledge Banking", "Reputation", "IP"**
-- ✅ **"Stock, not Flow"** (permanent, indexed, citable)
-- ✅ **"Optimized blue-chip yields"** (10-15% realistic APY)
-- ✅ **"Multi-chain aggregation"** (chain-agnostic)
-
-### The Vibe
-**Accessible Luxury**
-
-- **Aesthetics**: Braun/Leica minimalism, carbon fiber kintsugi
-- **Security**: Bank-grade, biometric, sovereign
-- **Tone**: Quiet confidence, high status, permanent
-- **Not**: Crypto-bro, hype, engagement farming, virality
-
-**Cultural Positioning**: The Anti-Feed
-- Twitter is the enemy (attention economy, rage-bait)
-- Farcaster is "Decentralized Twitter" (same problems)
-- Choir is infrastructure for the learning economy (stock, not flow)
-
----
-
-## X. Success Metrics
-
-### Falsifiable Claims
-
-**Economic**:
-- Citation rewards paid in stablecoins > $X per month (verify on-chain)
-- Yield farming APY = 10-15% (verify via Blend/Aave data)
-- Performance fee distribution = 70/20/10 (verify in smart contracts)
-- Token buyback volume (verify on-chain)
-
-**Network Growth**:
-- Knowledge base size (articles, citations)
-- Free user participation (conversations, novelty rewards)
-- Capital deployed (TVL across chains)
-- Citation velocity (citations per article per month)
-
-**Quality Signals**:
-- Temporal validation (citations 3+ months after publication)
-- Revision acceptance rate
-- Treasury accumulation from split decisions
-- Token holder distribution (Gini coefficient)
-
-### Leading Indicators
-
-**Month 1-3**:
-- 1,000+ free users chatting
-- 100+ articles published
-- First citations recorded
-- $10K+ in vaults
-
-**Month 3-6**:
-- 10,000+ free users
-- 500+ articles published
-- Citation rewards > $1K/month
-- $100K+ in vaults
-
-**Month 6-12**:
-- 100,000+ free users
-- 2,000+ articles published
-- Citation rewards > $10K/month
-- $1M+ in vaults
-- Multi-chain expansion live
-
-**Year 2**:
-- 1,000,000+ free users
-- 10,000+ articles published
-- Citation rewards > $100K/month
-- $10M+ in vaults
-- Governance transition begins
-
----
-
-## XI. The Unified Codebase
-
-### Current State: Two Repositories
-
-**choir.chat** (SwiftUI mobile):
-- Conductor architecture (client orchestrator)
-- Anonymous publishing vision
-- Token economics design
-- MVVM architecture
-- Carbon fiber kintsugi aesthetics
-
-**tuxedo** (React web):
-- Passkey authentication
-- Multi-chain agent (19 tools)
-- Non-custodial vault (TUX0)
-- TEE deployment (Phala)
-- Blend Capital integration
-
-### Convergence Strategy
-
-**Backend Unification** (FastAPI):
-```
-api/
-├── auth/          (passkey routes from tuxedo)
-├── conductor/     (orchestration logic from choir)
-├── agents/
-│   ├── ghostwriter.py   (from choir)
-│   ├── research.py      (new, unifies both)
-│   └── yield.py         (from tuxedo)
-├── publishing/    (anonymous posts, citations)
-├── vault/         (TUX0 non-custodial)
-├── chains/
-│   ├── stellar.py
-│   ├── evm.py
-│   └── solana.py
-└── database/
-    ├── threads.py
-    ├── publications.py
-    └── accounts.py
-```
-
-**Frontend Dual-Track**:
-- **Mobile**: choir.chat SwiftUI (primary, aesthetics)
-- **Web**: tuxedo React (power-user, multi-chain management)
-- **Shared**: Same backend API, same wallet, same data
-
-**Migration Path**:
-1. Backend API unification (this sprint)
-2. Mobile app connects to unified backend
-3. Web app refactor (Conductor UI pattern)
-4. Feature parity, platform-specific optimizations
-
----
-
-## XII. Conclusion: The Structural Advantage
-
-Choir succeeds not by executing better on existing models, but by **creating new infrastructure the incumbents cannot replicate**.
-
-### The Moats
-
-**Technical**:
-- Sovereign Cloud (TEE filesystem with multi-chain keys)
-- Conductor pattern (separation of concerns)
-- Chain agnosticism (no single-chain lock-in)
-
-**Economic**:
-- Learning economy loops (thought → capital → network)
-- Protocol balance sheet (CHOIR as productive asset)
-- Citation as payment rail (intellectual property → income)
-
-**Social**:
-- Anonymous publishing (merit over status)
-- Quality compounding (temporal validation)
-- Revision markets (collaborative improvement)
+## XIV. Conclusion: The Learning Economy
 
 ### The Vision
 
-**Your ideas make AI smarter. When AI makes money, you should too.**
+Intelligence that creates value should share in that value.
 
-This isn't a tagline. It's the entire economic model.
+**For researchers**: Publish work, get cited, earn income. No capital required.
 
-- Intelligence that creates value shares in that value
-- Capital that deploys intelligence pays for that intelligence
-- Network effects emerge from genuine contribution
-- Quality becomes measurably valuable in dollar terms
+**For investors**: Deploy capital, agents cite research, fund the ecosystem. Optional advanced feature.
 
-**The Thought Bank**: Deposit ideas, earn interest. Let your intellectual property work for you.
+**For everyone**: Ideas that matter generate measurable economic returns. Merit over status. Rapid iteration over institutional gatekeeping. Economic rewards over prestige games.
 
-**The Sovereign Cloud**: Your personal banking agent. Multi-chain. Private. Profitable.
+### The Opportunity
 
-**Choir**: Infrastructure for the learning economy.
+When AI achieves "Move 37" breakthroughs across every field, traditional academic publishing becomes a bottleneck. We need infrastructure for:
+- Rapid publication (not 18-month review)
+- Merit-based evaluation (not credential verification)
+- Economic rewards (not prestige hierarchies)
+- Anonymous contribution (not institutional gatekeeping)
+- Collaborative improvement (not static publications)
+
+**Choir is that infrastructure.**
+
+### The Moat
+
+Not better execution on existing models. **New infrastructure incumbents cannot replicate.**
+
+- Economic inversion (pay users, not extract subscriptions)
+- Privacy architecture (TEE, homomorphic encryption)
+- Multi-chain requirement (yield optimization)
+- Academic disruption (rapid publication + economic rewards)
+
+### The Gradient
+
+Enter at your trust level:
+- **Try Ghostwriter** (zero risk, immediate value)
+- **Publish research** (time investment, citation income)
+- **Deploy capital** (financial risk, compound returns)
+
+Most users never progress beyond research. That's the design. Finance capitalizes the system but isn't required for participation or profit.
+
+### Your Ideas Make AI Smarter
+
+When AI makes money, you should too.
+
+**Choir: The Thought Bank**
 
 ---
 
-**Document Version**: 1.0
+**Document Version**: 2.0
 **Created**: 2025-11-22
 **Status**: North Star Vision
-**Next Steps**: Architecture design → Implementation → Deployment
+**Tone**: Intellectual (not academic)
+**Focus**: Research first, finance optional
 
 ---
 
-## Appendix: Key Architectural Decisions
+## Appendix: The Intellectual vs. Academic Distinction
 
-### Why Passkeys Over Wallet Signatures?
-- Better UX (biometric, no seed phrases)
-- Multi-chain neutral (not Stellar/EVM-specific)
-- Recovery mechanisms (email backup, multiple passkeys)
-- Enterprise-ready (WebAuthn standard)
+### Academic Publishing
 
-### Why TEE Over Smart Contracts?
-- Complex multi-step workflows
-- Multi-chain orchestration
-- LLM integration
-- Privacy guarantees
-- Real-time rebalancing
+- **Gatekeeping**: Institutional affiliation required
+- **Slow**: 18-month peer review cycles
+- **Exploitative**: Authors unpaid, publishers extract billions
+- **Credential-based**: CV matters more than ideas
+- **Static**: No mechanism for improvement post-publication
+- **Prestige-driven**: Journal ranking determines distribution
 
-### Why Three Currencies?
-- Credits: Accessibility (fiat on-ramp, no crypto knowledge)
-- Stablecoins: Stability (researchers need spendable income)
-- CHOIR: Alignment (governance, speculation, long-term value)
+### Intellectual Publishing (Choir)
 
-### Why Anonymous Publishing?
-- Merit over status
-- Educational access (no credential barriers)
-- Professional freedom (share without career risk)
-- Intellectual honesty (citations detect plagiarism)
+- **Merit-based**: Anonymous submission, economic signals
+- **Rapid**: Instant publication, immediate citations
+- **Rewarding**: Citation income from real value creation
+- **Idea-based**: Quality determines distribution, not credentials
+- **Dynamic**: Revision markets enable ongoing improvement
+- **Economics-driven**: Value determines visibility, not prestige
 
-### Why Multi-Chain?
-- Yield optimization (capital goes where returns are highest)
-- Risk diversification (no single-chain dependency)
-- Future-proof (new chains emerge, old chains fade)
-- User abstraction (chains invisible, yields visible)
+**The difference**: Academia exploits junior scholars and gatekeeps based on status. Choir rewards genuine insight and enables anyone to participate based on merit.
 
----
-
-**This is Choir. This is the unified vision. All decisions flow from here.**
+When AI makes breakthroughs faster than peer review can process them, the intellectual model wins. Infrastructure for thought at the speed of intelligence.
