@@ -1,24 +1,143 @@
-# Multichain EVM Migration Plan: Stellar → Base + Multichain
+# Sovereign Cloud Architecture: Multichain Migration Plan
 
-**Status**: Planning Phase
+**Status**: Strategic Roadmap
 **Created**: 2025-11-20
-**Goal**: Transition from Stellar-only to multichain architecture, starting with Base (EVM)
+**Updated**: 2025-11-22
+**Vision**: Transform from "Stellar DApp" to "Sovereign Cloud Personal Banking Agent"
 
 ---
 
 ## Executive Summary
 
-Tuxedo is evolving from a Stellar-specific DeFi agent to a truly multichain platform. While keeping our proven passkey account system and non-custodial vault architecture, we're migrating to Base (Ethereum L2) as the primary chain, with plans for additional EVM chains.
+**Choir** (formerly Tuxedo) is NOT a DApp or wallet — it's a **Sovereign Cloud computer** running in a Trusted Execution Environment (TEE). Users authenticate with biometrics to access a private filesystem containing multi-chain keys, preferences, and an AI agent that orchestrates capital across all blockchains.
 
-### Key Decisions
+### The Paradigm Shift
 
-- ✅ **Keep**: Passkey authentication, vault shares model, AI agent framework, non-custodial security
-- 🔄 **Migrate**: Stellar → Base (EVM), Blend → Aave/Compound/Morpho, Soroban → Solidity
-- 🆕 **Add**: Agent SDK integration (Claude or OpenHands), container isolation, multichain support
+**Old framing** (rejected):
+- "Tuxedo is a Stellar yield optimizer DApp"
+- "Connect your wallet to our platform"
+- "Earn up to 50% APY!" (unsustainable)
+
+**New framing** (adopted):
+- "Choir is your Sovereign Cloud Personal Banking Agent"
+- "Log in with Face ID to access your private computer"
+- "Earn 10-15% APY + CHIP network equity" (realistic + upside)
+
+### The Filesystem Metaphor
+
+```
+Your TEE Filesystem (Phala Network):
+├── keys.json           # EVM, Stellar, Solana, Bitcoin, Zcash keys
+├── context.db          # Risk tolerance, chat history, preferences
+└── agent_logic.py      # AI that moves capital to best yields
+```
+
+### Key Architectural Principles
+
+- ✅ **TEE Compute**: Phala Network (hardware-isolated, agent runs here)
+- ✅ **Chain Agnosticism**: Blockchains are commodity infrastructure for settlement
+- ✅ **Passkey Auth**: WebAuthn/biometric (no wallet connect, no seed phrases)
+- ✅ **Realistic Economics**: 10-15% base APY + CHIP token appreciation
+- ✅ **Non-Custodial**: Users own vault shares (ERC-4626), agent manages within vault
+- ✅ **Privacy-First**: TEE black box — even Choir team can't see your keys/strategies
 
 ### Migration Approach
 
-**Non-breaking**: We'll build the new system alongside the current one, allowing gradual transition without disrupting existing users.
+**Non-breaking, Sovereign-First**: Build multichain TEE system alongside Stellar, emphasize direct ownership over wallet connections.
+
+---
+
+## The Sovereign Cloud Vision
+
+### What We're Building
+
+**Not a DApp**. Not a wallet. Not "Web3 infrastructure."
+
+We're building **personal sovereign computers** for managing financial assets. Each user gets:
+
+1. **A TEE Filesystem** (your private computer running on Phala Network)
+   - Hardware-isolated execution
+   - Encrypted storage for keys, context, preferences
+   - Provably secure via cryptographic attestation
+
+2. **An AI CFO** (agent_logic.py running in your TEE)
+   - Analyzes yields across ALL chains (EVM, Stellar, Solana, Bitcoin)
+   - Automatically routes capital to best risk-adjusted opportunities
+   - Writes research reports explaining every decision
+   - Operates within your vault (can't withdraw without your signature)
+
+3. **Multi-Chain Keys** (keys.json in your TEE)
+   - EVM: Base, Ethereum, Arbitrum (and more)
+   - Stellar: Legacy support, USDC transport
+   - Solana: High-frequency opportunities
+   - Bitcoin: Pristine collateral
+   - Zcash: Privacy layer
+
+4. **Passkey Authentication** (no wallet connect, no seed phrases)
+   - TouchID / FaceID / Windows Hello
+   - Email + recovery codes for backup
+   - Bank-grade security, consumer-grade UX
+
+### Why "Sovereign Cloud" Not "DApp"
+
+| DApp Thinking | Sovereign Cloud Thinking |
+|---------------|-------------------------|
+| "Connect MetaMask" | "Log in with Face ID" |
+| "Approve transaction" | "Agent operates within your vault" |
+| "Switch networks manually" | "Agent bridges assets invisibly" |
+| "One chain at a time" | "All chains, optimized automatically" |
+| "Seed phrases" | "Biometric vault" |
+| "User is customer" | "User is owner of sovereign computer" |
+
+### The Stack Redefined
+
+```
+┌─────────────────────────────────────────────────┐
+│              User Experience Layer               │
+│  "I deposited $10k, earning 13.7% APY"          │
+│  (Reality: 43 transactions across 3 chains)     │
+└─────────────────────────────────────────────────┘
+                    ↕
+┌─────────────────────────────────────────────────┐
+│           Sovereign Cloud Filesystem             │
+│           (Phala Network TEE)                    │
+│  - keys.json (multi-chain keys)                 │
+│  - context.db (risk tolerance, history)         │
+│  - agent_logic.py (AI orchestrator)             │
+└─────────────────────────────────────────────────┘
+                    ↕
+┌─────────────────────────────────────────────────┐
+│         Commodity Infrastructure Layer           │
+│  Chains: Base, Ethereum, Arbitrum, Stellar,     │
+│          Solana, Bitcoin, Zcash                  │
+│  Protocols: Aave, Morpho, Compound, Blend,      │
+│             Kamino, Uniswap                      │
+└─────────────────────────────────────────────────┘
+```
+
+**Key insight**: The *user* never thinks about chains. The *agent* thinks about chains. The *user* sees yields and assets.
+
+### Economic Realism: 10-15% Base + CHIP Upside
+
+**Reject**: "Earn up to 50% APY!" (unsustainable, hallucination)
+
+**Embrace**:
+- **Base yield**: 10-15% APY from blue-chip DeFi (Aave, Morpho on Base)
+- **Token upside**: CHIP appreciation backed by protocol revenue
+- **Intellectual upside**: Earn CHIP by publishing research (citations earn $$)
+
+**Example**:
+```
+User deposits: $10,000 USDC
+Base yield (12% APY): $1,200/year
+CHIP rewards: 500 tokens/year
+If CHIP appreciates $0.50 → $10: 500 × $10 = $5,000 upside
+Total potential: $1,200 + $5,000 = 62% effective return
+
+BUT: The 62% includes speculative token upside, NOT protocol promises.
+```
+
+**This is honest**. Base yields are market rates. Token appreciation is real but speculative. We don't hallucinate 50% APY from thin air.
 
 ---
 

@@ -4,24 +4,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Tuxedo** is a conversational AI agent featuring a **non-custodial vault system** for automated yield farming on Stellar **mainnet**. It's a full-stack application with React + TypeScript frontend and FastAPI Python backend, featuring a fully operational AI agent with 6 Stellar tools + 6 Blend Capital yield farming tools + 7 vault management tools.
+**Choir** (formerly Tuxedo) is a **Sovereign Cloud Personal Banking Agent** — NOT a DApp, NOT a wallet. It's a secure, private computer running in a Trusted Execution Environment (TEE) that manages your financial assets across multiple blockchains.
 
-**Current State**: Functionally complete with non-custodial TUX0 vault implementation (95% complete, deployment pending)
+**The Core Metaphor**: Users authenticate into a TEE filesystem (running on Phala Network) containing:
+- `keys.json` - Multi-chain keys (EVM, Stellar, Solana, Bitcoin, Zcash)
+- `context.db` - User preferences, risk tolerance, chat history
+- `agent_logic.py` - AI brain orchestrating cross-chain yield optimization
 
-**🏛️ Non-Custodial Vault Architecture**:
+**Current State**: Production financial platform, migrating from Stellar-only to multichain architecture
 
-- **TUX0 Vault**: Users deposit assets, receive tradeable vault shares
-- **Agent Management**: AI autonomously manages vault funds across Blend pools
-- **Fee Distribution**: 2% platform fee, 98% distributed to vault users
-- **Real Yields**: All operations on Stellar mainnet with real funds
-- **Dual-Authority Security**: Agent can execute strategies, only users can withdraw
+**🏛️ Sovereign Cloud Architecture**:
+
+- **TEE Compute**: Phala Network provides hardware-isolated execution for agent logic
+- **Multi-Chain Capital**: EVM (Base, Arbitrum), Stellar, Solana, Bitcoin — chains are commodity infrastructure
+- **Non-Custodial Vaults**: Users deposit assets, receive tradeable vault shares (ERC-4626 / Soroban)
+- **Cross-Chain Routing**: AI moves capital to highest risk-adjusted yields, handling bridges invisibly
+- **Realistic Yields**: 10-15% APY via blue-chip DeFi (Aave/Morpho on Base, Blend on Stellar)
+- **Dual-Authority Security**: Agent executes strategies, only users withdraw
+- **CHIP Token Economics**: Base yield (10-15%) + network equity (CHIP appreciation)
 
 **⚠️ Important**:
 
 - ALWAYS use web-search-prime to search the web. NEVER use built in web search
-- **Non-Custodial Model**: No wallet imports - users deposit into vaults and receive shares
-- **Mainnet Only**: This system operates exclusively on Stellar mainnet with real funds
+- **Not a DApp**: We're a Sovereign Cloud computer, not a wallet connector
+- **Chain Agnostic**: EVM (Base) as primary, Stellar maintained, Solana/Bitcoin planned
+- **Passkey Auth**: WebAuthn/biometrics only — no MetaMask required (though supported)
 - **Python Development**: Use UV for virtual environment management. See backend commands below.
+- **Realistic Economics**: 10-15% APY base yields, not 50% hallucinations
 
 ## Development Commands
 
@@ -106,25 +115,46 @@ uv sync  # Recreates environment with correct dependencies
 
 ### System Components
 
-1. **AI Agent Backend** (`backend/main.py`) - FastAPI with LangChain integration and multi-step reasoning
-2. **TUX0 Vault System** (`backend/vault_manager.py`) - Non-custodial vault management with contract interface
-3. **Stellar Tools** (`backend/stellar_tools.py`) - 6 tools for blockchain operations
-4. **Vault Tools** (`backend/vault_tools.py`) - 7 tools for vault operations (deposit, withdraw, agent strategies)
-5. **Chat Interface** (`src/components/ChatInterface.tsx`) - Real-time conversational UI
-6. **Vault Dashboard** (`src/components/vault/VaultDashboard.tsx`) - Non-custodial vault interface
-7. **Pool Dashboard** (`src/components/dashboard/`) - Blend protocol visualization
-8. **API Layer** (`src/lib/api.ts`) - HTTP client with wallet integration
+1. **TEE Runtime** (Phala Network) - Hardware-isolated execution environment for agent logic
+2. **AI Agent Backend** (`backend/main.py`) - FastAPI with LangChain integration and multi-step reasoning
+3. **Multi-Chain Integrations**:
+   - `backend/chains/evm.py` - EVM chains (Base, Arbitrum, Ethereum)
+   - `backend/stellar_tools.py` - Stellar blockchain (maintained for legacy)
+   - `backend/chains/solana.py` - Solana integration (planned)
+   - `backend/chains/bitcoin.py` - Bitcoin integration (planned)
+4. **DeFi Protocol Adapters**:
+   - `backend/protocols/aave_tools.py` - Aave V3 on Base/EVM
+   - `backend/protocols/morpho_tools.py` - Morpho optimized lending
+   - `backend/blend_pool_tools.py` - Blend Capital on Stellar
+   - `backend/protocols/uniswap_tools.py` - Uniswap V3 swaps
+5. **Vault System** (`backend/vault_manager.py`) - Multi-chain vault coordination
+6. **Passkey Auth** (`backend/api/routes/passkey_auth.py`) - WebAuthn authentication
+7. **Chat Interface** (`src/components/ChatInterface.tsx`) - Conversational AI (Thought Bank)
+8. **Vault Dashboard** (`src/components/vault/VaultDashboard.tsx`) - Multi-chain vault interface
+9. **API Layer** (`src/lib/api.ts`) - HTTP client with session management
 
 ### Data Flow
 
 ```
-User Chat → Frontend → API → AI Agent → LLM → Tool Selection → Vault/Blend Operations → Stellar Blockchain → Response → UI
+User (Passkey Auth) → TEE Filesystem → AI Agent → Cross-Chain Router → DeFi Protocols → Blockchains → Research Report → UI
 ```
 
-**Vault Flow:**
+**Multi-Chain Vault Flow:**
 
 ```
-User Deposit → Vault Contract → TUX0 Shares → Agent Strategies → Blend Pools → Yield Generation → Fee Distribution → Share Value Increase
+User Deposit (USDC)
+    ↓
+Vault Contract (ERC-4626 on Base or Soroban on Stellar)
+    ↓
+Agent Analyzes Yields Across Chains
+    ↓
+Routes to Best Opportunity (e.g., Morpho 14.2% on Base)
+    ↓
+Bridges + Supplies Assets (invisible to user)
+    ↓
+Yield Accrues → Fee Distribution → Share Value Increases
+    ↓
+User Withdraws (anytime) → Burns Shares → Receives USDC + Yield
 ```
 
 ## Key Configuration
@@ -133,35 +163,82 @@ User Deposit → Vault Contract → TUX0 Shares → Agent Strategies → Blend P
 
 **Frontend (.env.local)**:
 
-- `PUBLIC_STELLAR_NETWORK=PUBLIC` (mainnet)
-- `PUBLIC_STELLAR_HORIZON_URL=https://horizon.stellar.org`
-- `PUBLIC_STELLAR_RPC_URL=https://rpc.ankr.com/stellar_soroban` (or your RPC provider)
-- `PUBLIC_API_URL=http://localhost:8000`
+```bash
+# API Configuration
+PUBLIC_API_URL=http://localhost:8000
+
+# EVM Configuration (Primary)
+PUBLIC_BASE_RPC_URL=https://mainnet.base.org
+PUBLIC_ETHEREUM_RPC_URL=https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY
+PUBLIC_ARBITRUM_RPC_URL=https://arb-mainnet.g.alchemy.com/v2/YOUR_KEY
+
+# Stellar Configuration (Maintained)
+PUBLIC_STELLAR_NETWORK=PUBLIC
+PUBLIC_STELLAR_HORIZON_URL=https://horizon.stellar.org
+PUBLIC_STELLAR_RPC_URL=https://rpc.ankr.com/stellar_soroban
+
+# Wallet Configuration
+PUBLIC_ENABLE_PASSKEY_AUTH=true
+PUBLIC_ENABLE_EVM_WALLETS=true  # MetaMask, Coinbase Wallet (optional)
+PUBLIC_ENABLE_STELLAR_WALLETS=true  # Freighter (optional)
+```
 
 **Backend (.env)**:
 
-- `OPENAI_API_KEY=your_api_key` (required)
-- `OPENAI_BASE_URL=https://api.redpill.ai/v1` (or https://api.openai.com/v1)
-- `ANTHROPIC_API_KEY=your_anthropic_key` (optional - for Claude SDK research features)
-- `ENABLE_CLAUDE_SDK=true` (optional - default: true)
-- `STELLAR_NETWORK=mainnet`
-- `ANKR_STELLER_RPC=https://rpc.ankr.com/stellar_soroban` (mainnet RPC)
-- `MAINNET_HORIZON_URL=https://horizon.stellar.org`
-- `VAULT_CONTRACT_ID=<deployed_vault_contract>` (pending deployment)
-- `TUX_TOKEN_ID=<deployed_tux_token>` (pending deployment)
-- `PLATFORM_FEE_ADDRESS=<platform_fee_collection_address>`
-- `AGENT_ADDRESS=<authorized_agent_address>`
+```bash
+# AI/LLM Configuration
+OPENAI_API_KEY=your_api_key
+OPENAI_BASE_URL=https://api.redpill.ai/v1
+ANTHROPIC_API_KEY=your_anthropic_key
+ENABLE_CLAUDE_SDK=true
 
-### Critical Architecture Note
+# EVM Configuration
+BASE_RPC_URL=https://mainnet.base.org
+ETHEREUM_RPC_URL=https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY
+ARBITRUM_RPC_URL=https://arb-mainnet.g.alchemy.com/v2/YOUR_KEY
 
-This system operates **exclusively on mainnet** with a **non-custodial vault model**:
+# EVM Vault Contracts (Base mainnet)
+BASE_VAULT_ADDRESS=0x...  # TUX0 ERC-4626 vault on Base
+CHIP_TOKEN_ADDRESS=0x...  # CHIP ERC-20 token
+PLATFORM_FEE_ADDRESS=0x...
+AGENT_EOA_ADDRESS=0x...  # Agent's authorized address
 
-- **No Wallet Imports**: Users maintain control of their assets through vault shares
-- **TUX0 Shares**: Users deposit into vault, receive tradeable shares that appreciate with yield
-- **Agent Autonomy**: AI can execute Blend strategies but cannot withdraw user funds
-- **Dual-Authority**: Agent for strategy execution, users for withdrawals only
-- **Mainnet Operations**: All vault operations execute on Stellar mainnet with real funds
-- **Contract Deployment**: Vault system built but contracts not yet deployed (implementation complete)
+# Stellar Configuration (Legacy support)
+STELLAR_NETWORK=mainnet
+STELLAR_HORIZON_URL=https://horizon.stellar.org
+STELLAR_RPC_URL=https://rpc.ankr.com/stellar_soroban
+STELLAR_VAULT_ID=C...  # Soroban vault (if deployed)
+
+# Phala TEE Configuration (Future)
+PHALA_ENDPOINT=https://api.phala.network
+PHALA_CLUSTER_ID=0x...
+TEE_ATTESTATION_ENABLED=false  # Set true after Phala deployment
+
+# Authentication
+SENDGRID_API_KEY=your_sendgrid_key
+SENDGRID_FROM_EMAIL=no-reply@choir.chat
+SESSION_SECRET=your_random_secret
+
+# Security
+ENABLE_RATE_LIMITING=true
+MAX_RECOVERY_ATTEMPTS=5
+```
+
+### Critical Architecture Notes
+
+**Sovereign Cloud Model**:
+- **TEE Compute**: Agent logic runs in Phala Network's trusted execution environment (planned Q4 2026)
+- **Multi-Chain**: EVM (Base) as primary, Stellar maintained, Solana/Bitcoin planned
+- **Non-Custodial**: Users own vault shares (ERC-4626), not raw keys
+- **Dual-Authority**: Agent executes strategies (within vault), users withdraw (burn shares)
+- **Passkey Auth**: WebAuthn/biometrics for authentication (no seed phrases)
+- **No Wallet Connect Required**: Direct account creation, though external wallets supported
+
+**Migration Status**:
+- Current: Stellar-native implementation (functional)
+- Target: EVM-first with multichain support (Q1-Q2 2026)
+- Approach: Parallel implementation, gradual user migration
+- Contracts: Soroban vaults built (not deployed), ERC-4626 vaults in development
 
 ## AI Agent System
 
@@ -196,7 +273,21 @@ See [docs/CLAUDE_SDK_INTEGRATION.md](docs/CLAUDE_SDK_INTEGRATION.md) for complet
 
 ### Integrated AI Agent Tools
 
-**Core Stellar Tools (6 tools):**
+**Multi-Chain Tool Architecture**:
+- Current: 19 Stellar-focused tools (functional)
+- Target: ~50+ tools across all chains (Q1-Q2 2026)
+- Approach: Modular protocol adapters, agent selects best chain/protocol
+
+**EVM Chain Tools (18 tools) - IN DEVELOPMENT:**
+
+1. **Account Manager**: Create accounts, get balances, transaction history, gas estimates
+2. **Aave V3**: Supply, borrow, withdraw, repay, get APY, check health factor
+3. **Morpho**: Optimize supply, withdraw, check positions, compare vs Aave
+4. **Compound V3**: Supply, withdraw, borrow, check positions
+5. **Uniswap V3**: Swap tokens, add liquidity, remove liquidity, get quotes
+6. **Cross-Chain Bridge**: Estimate costs, execute bridges (LayerZero, native)
+
+**Stellar Tools (19 tools) - CURRENT IMPLEMENTATION:**
 
 1. **Account Manager**: `create`, `fund`, `get`, `transactions`, `list`, `export`, `import`
 2. **Market Data**: `orderbook`, `trades`, `ticker`, `pairs`
@@ -204,27 +295,34 @@ See [docs/CLAUDE_SDK_INTEGRATION.md](docs/CLAUDE_SDK_INTEGRATION.md) for complet
 4. **Trustline Manager**: `create`, `delete`, `allow_trust`, `trustlines`
 5. **Utilities**: `status`, `fees`, `ledgers`, `network`
 6. **Soroban**: `get_data`, `simulate`, `invoke`, `get_events`, `get_ledger_entries`
+7. **Blend Capital**: Pool discovery, APY queries, supply, withdraw, positions (6 tools)
 
-**TUX0 Vault Tools (7 tools) - NON-CUSTODIAL:**
+**Multi-Chain Vault Tools (7 tools) - PROTOCOL-AGNOSTIC:**
 
-1. **deposit_to_vault**: Deposit USDC, receive TUX0 shares (non-custodial)
-2. **withdraw_from_vault**: Burn TUX0 shares, receive proportional USDC
-3. **get_vault_performance**: Check vault TVL, APY, and share value
-4. **get_my_vault_position**: View user's shares and earned yield
-5. **vault_agent_supply_to_blend**: Agent supplies vault funds to Blend pools
-6. **vault_agent_withdraw_from_blend**: Agent withdraws from Blend pools back to vault
-7. **vault_distribute_yield**: Distribute 2% platform fee, 98% to vault users
+1. **deposit_to_vault**: Deposit USDC to any chain, receive vault shares
+2. **withdraw_from_vault**: Burn shares, receive USDC on any chain
+3. **get_vault_performance**: Check TVL, APY, share value across all chains
+4. **get_my_vault_position**: View shares and earned yield (aggregated)
+5. **vault_agent_optimize**: Agent routes capital to best cross-chain opportunity
+6. **vault_get_opportunities**: List current yields across all chains/protocols
+7. **vault_distribute_yield**: Distribute fees to share holders
 
-**Blend Capital Yield Farming Tools (6 tools) - MAINNET:**
+**Solana Tools (12 tools) - PLANNED Q2 2026:**
 
-1. **blend_find_best_yield**: Find highest APY opportunities across all mainnet pools for an asset
-2. **blend_discover_pools**: Discover all active Blend pools on mainnet (Comet, Fixed, YieldBlox)
-3. **blend_supply_to_pool**: Supply assets to earn yield (autonomous execution, real funds)
-4. **blend_withdraw_from_pool**: Withdraw assets from pools (real funds)
-5. **blend_check_my_positions**: Check current positions in a pool
-6. **blend_get_pool_apy**: Get real-time APY data for specific assets from on-chain sources
+1. **Kamino Finance**: Supply, withdraw, check APY
+2. **Drift Protocol**: Perps trading, positions
+3. **Jupiter Aggregator**: Optimal swaps
 
-**Total: 19 AI Agent Tools**
+**Bitcoin/Zcash Tools (6 tools) - PLANNED Q3 2026:**
+
+1. **Wrapped BTC**: Wrap/unwrap, check balances
+2. **Privacy Operations**: Zcash shielded transactions
+
+**Total Tools**:
+- Current: 19 (Stellar-focused)
+- Q1 2026: 37 (+ EVM)
+- Q2 2026: 49 (+ Solana)
+- Q3 2026: 55 (+ Bitcoin/Zcash)
 
 ## Frontend Architecture
 
@@ -242,10 +340,12 @@ See [docs/CLAUDE_SDK_INTEGRATION.md](docs/CLAUDE_SDK_INTEGRATION.md) for complet
 ### Tech Stack
 
 - Vite 7.1 + React 19 + TypeScript 5.9
-- Stellar Design System + Stellar Wallets Kit
-- TanStack React Query for data fetching
-- Blend SDK 3.2.1 for protocol integration
-- Axios for HTTP communication with backend
+- **wagmi + viem** - EVM wallet connections (MetaMask, Coinbase Wallet)
+- **ConnectKit** or **RainbowKit** - Wallet UI components
+- Stellar Wallets Kit - Freighter wallet (optional, legacy support)
+- TanStack React Query - Server state management
+- Axios - HTTP communication with backend
+- **ethers.js / web3.js** - EVM blockchain interactions
 
 ## Backend Architecture
 
@@ -277,11 +377,14 @@ See [docs/CLAUDE_SDK_INTEGRATION.md](docs/CLAUDE_SDK_INTEGRATION.md) for complet
 
 ### Tech Stack
 
-- FastAPI + Pydantic
-- LangChain + OpenAI gpt-oss 120b (via Redpill AI or openrouter exacto)
-- Stellar SDK 13.1.0+ with async support
-- uvicorn ASGI server
-- python-dotenv for environment management
+- FastAPI + Pydantic - REST API framework
+- LangChain + OpenAI gpt-oss 120b (via Redpill AI or openrouter exacto) - Agent orchestration
+- **web3.py** - EVM chain interactions (Base, Arbitrum, Ethereum)
+- Stellar SDK 13.1.0+ - Stellar blockchain (maintained)
+- **solana-py** - Solana integration (planned)
+- uvicorn ASGI server - ASGI web server
+- python-dotenv - Environment management
+- **Phala SDK** - TEE integration (planned Q4 2026)
 
 ## Testing
 
@@ -428,19 +531,34 @@ source .venv/bin/activate
 
 ### Network Configuration
 
-- **Mainnet only** - All operations use Stellar mainnet
-- Contract addresses: `src/contracts/blend.ts` (mainnet values)
+- **Multi-chain mainnet** - All operations use production chains (Base, Stellar, etc.)
+- **Primary chain**: Base (Ethereum L2) - Low fees, fast, Coinbase-backed
+- **Secondary chains**: Ethereum mainnet, Arbitrum, Stellar
+- **Future chains**: Solana, Bitcoin, Zcash
+- Contract addresses:
+  - EVM: `src/contracts/evm.ts` (Base, Arbitrum, Ethereum)
+  - Stellar: `src/contracts/stellar.ts` (Blend protocol)
 - Network URLs: Centralized in `backend/config/settings.py`
-- RPC provider: Ankr (configurable via environment variables)
+- RPC providers: Alchemy (EVM), Ankr (Stellar), configurable via environment variables
 
-### Wallet Integration
+### Authentication & Wallet Integration
 
-- Uses Stellar Wallets Kit (`@creit.tech/stellar-wallets-kit`)
-- Supports Freighter and other compatible wallets
-- Dual-mode operation: Agent accounts or external wallet connection
-- Wallet address automatically passed to AI agent in `wallet_address` parameter
-- Transaction signing support for vault operations (user signs deposits/withdrawals)
-- Non-custodial model: users control vault shares, not agent keys
+**Primary Auth**: Passkey/WebAuthn (biometric)
+- No seed phrases, no passwords
+- Hardware-backed security (TouchID, FaceID, Windows Hello)
+- Recovery via email + recovery codes
+- Session management with sliding expiration
+
+**Optional External Wallets** (for advanced users):
+- **EVM**: wagmi + viem (MetaMask, Coinbase Wallet, WalletConnect)
+- **Stellar**: Stellar Wallets Kit (Freighter)
+- Dual-mode operation: Passkey-created accounts OR external wallet connection
+- Transaction signing support for vault operations
+
+**Non-Custodial Model**:
+- Users own vault shares (ERC-4626 or Soroban), not raw keys
+- Agent operates within vault (can execute strategies, cannot withdraw)
+- Users withdraw by burning shares (requires signature)
 
 ### API Communication
 
@@ -451,39 +569,70 @@ source .venv/bin/activate
 
 ## Production Status
 
-**Implementation Complete (95%)**:
+**Sovereign Cloud Migration** (Q4 2025 - Q4 2026):
 
-1. ✅ **Non-custodial vault system**: TUX0 shares with dual-authority security
-2. ✅ **Complete smart contracts**: Vault (627 lines), TUX token, farming contracts
-3. ✅ **Full AI integration**: 19 tools including 7 vault operations
-4. ✅ **Mainnet-only configuration**: All operations default to mainnet
-5. ✅ **Centralized configuration**: `backend/config/settings.py` + environment variables
-6. ✅ **Real yield data**: On-chain APY from Blend Capital mainnet pools
-7. ✅ **Multi-pool support**: Comet, Fixed, and YieldBlox pools
-8. ✅ **User isolation**: Non-custodial shares with agent management
+### Current State (Stellar-Native)
 
-**Deployment Gap (5%)**:
+**✅ Fully Functional**:
+1. **Passkey Authentication**: WebAuthn/biometric login, recovery codes, email recovery
+2. **AI Agent**: 19 Stellar tools, LangChain orchestration, Claude SDK research
+3. **Non-Custodial Vaults**: Dual-authority security model
+4. **Blend Capital Integration**: 3 mainnet pools (Comet, Fixed, YieldBlox)
+5. **User Isolation**: Per-user accounts, encrypted keys, session management
+6. **Chat Interface**: Real-time conversational UI, vault dashboard
 
-- ❌ **Contract deployment**: Smart contracts built but not deployed
-- ❌ **Environment variables**: Missing deployed contract addresses
-- ❌ **Integration testing**: Requires deployed contracts for e2e testing
+**⚠️ Not Deployed**:
+- Soroban vault contracts (built, not deployed)
+- TUX token on Stellar (built, not deployed)
 
-**Current Scope**:
+### Target State (Multichain Sovereign Cloud)
 
-- Non-custodial vault system with automated yield farming
-- Blend Capital focused (no other DeFi protocols)
-- Supports mainnet pools: Comet, Fixed, and YieldBlox
-- Requires Ankr RPC or compatible mainnet RPC provider
-- Mainnet-only by design (no testnet fallback)
+**Q1 2026 - Base (EVM) Integration**:
+- [ ] ERC-4626 vault contracts on Base mainnet
+- [ ] Aave V3, Morpho, Compound integrations
+- [ ] 18 EVM tools (parallel to Stellar tools)
+- [ ] wagmi + viem wallet connections
+- [ ] Realistic 10-15% APY yields
 
-**Implementation Status**:
+**Q2 2026 - Cross-Chain Routing**:
+- [ ] LayerZero bridge integration
+- [ ] Automatic yield optimization across chains
+- [ ] Solana tools (Kamino, Drift, Jupiter)
+- [ ] CHIP token launch (ERC-20 on Base)
 
-- **Smart Contracts**: ✅ Complete (vault, token, farming)
-- **Backend Integration**: ✅ Complete (vault_manager, vault_tools, API routes)
-- **Frontend Interface**: ✅ Complete (VaultDashboard, hooks, wallet integration)
-- **Blend Integration**: ✅ Complete (6 tools, mainnet pools)
-- **Security Model**: ✅ Complete (dual-authority, non-custodial)
-- **Deployment**: ❌ Pending (contracts not yet deployed)
+**Q3 2026 - Bitcoin & Privacy**:
+- [ ] Wrapped BTC integrations (wBTC, tBTC)
+- [ ] Zcash privacy layer
+- [ ] Tax-aware rebalancing
+- [ ] Advanced governance features
+
+**Q4 2026 - Phala TEE Deployment**:
+- [ ] Agent logic migrated to Phala Network
+- [ ] Encrypted filesystem (keys.json, context.db)
+- [ ] Cryptographic attestation UI
+- [ ] True "Can't Be Evil" architecture
+
+### Migration Approach
+
+- **Parallel Implementation**: Build EVM alongside Stellar (non-breaking)
+- **Gradual User Migration**: 12-month transition period
+- **Maintain Stellar**: Keep functional during migration, eventual deprecation TBD
+- **User Choice**: Let users choose when to migrate
+
+### Key Metrics
+
+**Current (Stellar)**:
+- 19 tools operational
+- 0 deployed contracts
+- 0 TVL
+- Development/testnet only
+
+**Target Q4 2026 (Multichain)**:
+- 55+ tools across 6 chains
+- $50M+ TVL
+- 200,000+ users
+- 10-15% base APY
+- Full Phala TEE deployment
 
 ## File Locations for Common Tasks
 
