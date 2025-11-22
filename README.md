@@ -1,195 +1,302 @@
-# 🎩 Tuxedo: Agentic DeFi for Everyone
+# Choir: The Thought Bank
 
-**Part of the [Choir](./docs/CHOIR_WHITEPAPER.md) ecosystem | Building the future of AI-managed yield optimization**
+**Intelligence that creates value should share in that value**
 
-> "DeFi agents are inevitable. By 2027, everyone will have one. The only question is: will they be secure enough to trust with your capital?"
+> "Your ideas make AI smarter. When AI makes money, you should too."
 
-**Current Status:** 🏛️ **Non-Custodial Vault Implementation Complete** (95% - Deployment Pending)
-**Network:** Stellar Mainnet (Real Yields, Real Capital)
-**Architecture:** TUX0 Vault shares with AI-powered yield farming
-
----
-
-## 🎯 What is Tuxedo?
-
-Tuxedo is a **conversational AI agent** that manages DeFi yield strategies on Stellar mainnet. It's named Tuxedo because yield farming requires dressing up—making complex DeFi operations accessible through natural conversation while maintaining the security and sophistication the ecosystem demands.
-
-### The Architecture: Non-Custodial TUX0 Vault ✅
-
-**Current Implementation (95% Complete):**
-
-- **TUX0 Vault Contract**: 627-line production-ready smart contract
-- **Non-custodial Model**: Users deposit USDC, receive tradeable TUX0 shares
-- **Agent Autonomy**: AI executes Blend strategies within vault, cannot withdraw funds
-- **Dual-Authority Security**: Agent for strategy execution, users for withdrawals only
-- **Fee Distribution**: 2% platform fee, 98% distributed to vault users
-- **Real-time APY**: Live on-chain yield data from Blend Capital pools
-
-**How It Works:**
-
-1. **Deposit**: Users deposit USDC → Mint TUX0 shares (proportional)
-2. **Agent Management**: AI supplies vault funds to best-yield Blend pools
-3. **Yield Generation**: Blend pools generate yield → Returns to vault
-4. **Share Appreciation**: Vault assets increase → TUX0 share value rises
-5. **Withdrawal**: Users burn TUX0 shares → Receive proportional USDC
-
-**Why This Matters:** True non-custodial architecture where users maintain control through share ownership while benefiting from AI-optimized yield farming.
-
-### The Core Thesis
-
-**Everyone will have a DeFi agent by 2030.** The technology is inevitable. The critical question isn't _if_, but **how do we make it secure enough to trust?**
-
-**Our Approach:**
-
-1. **Radical transparency** - Open source, documented architecture, live on mainnet
-2. **Iterative security** - Start with working system, improve continuously
-3. **Vault evolution** - Move from key custody to deposit-based collateral
-4. **Token incentives** - Reward researchers who make us better
-5. **User sovereignty** - Always maintain exit options
-
-**We're not just building an agent. We're building the architectural patterns for an entire category of secure AI-managed DeFi.**
+**Current Phase:** Ghostwriter Foundation (Q4 2025 - 90% Complete)
+**Status:** Research infrastructure live, citation economics in development
+**Architecture:** Multi-model orchestration + optional yield farming
 
 ---
 
-## 🏗️ Architecture: Current + Future State
+## What is Choir?
 
-### Current Architecture: Non-Custodial TUX0 Vault (Implementation Complete)
+Choir is AI research infrastructure for the learning economy.
+
+**The core product is Ghostwriter**: An AI agent that helps you research, write, and publish—then pays you in stablecoins when your work gets cited.
+
+**No capital required to earn.** Chat freely, publish research, get cited by AI agents making decisions, receive citation rewards in real money. The pathway from zero to income exists entirely through intellectual contribution.
+
+**Optional for those with capital**: Automated yield farming across multiple blockchains. AI agents manage DeFi strategies, write research reports citing the knowledge base, and fund citation rewards from performance fees.
+
+**The economic loop**: Capital deployers fund researchers. Researchers make agents smarter. Smarter agents generate better yields. Better yields fund more research.
+
+This is not social media (no feeds, no followers, no engagement farming). This is not academic publishing (no gatekeeping, no 18-month peer review, no credential requirements). This is infrastructure for the learning economy where genuine insight generates measurable economic value.
+
+---
+
+## The Problem: Three Broken Models
+
+### Academic Publishing: Credentialism Over Insight
+
+- 18-month peer review when AI achieves breakthroughs daily
+- Authors unpaid while publishers extract billions
+- Junior scholars produce research, senior faculty capture credit
+- Institutional affiliation matters more than ideas
+
+### Social Media: Attention Extraction
+
+- Viral content rewards outrage over insight
+- Follower counts determine distribution
+- Platforms extract all value, creators get nothing
+- AI-generated content accelerates collapse
+
+### AI Platforms: Training Data Extraction
+
+**The AI Idiot Test**: If AI is so smart, why isn't it making you money?
+
+- ChatGPT: You make it smarter, OpenAI captures billions
+- Claude: Your conversations improve the model, Anthropic owns the value
+- Perplexity: Your queries refine search, you get answers worth nothing
+
+You pay $20/month for "productivity" (unmeasurable). The platform captures training data value (billions).
+
+---
+
+## The Solution: Citation Economics
+
+### The Thought Bank Model
+
+Traditional banks let you deposit money and earn interest. Thought banks let you deposit ideas and earn interest.
+
+**How it works:**
+
+1. **Research and write** using Ghostwriter (multi-model AI orchestration)
+2. **Publish articles** to the knowledge base (anonymous, merit-based)
+3. **Get cited** when AI agents or other researchers reference your work
+4. **Earn stablecoins** from citation rewards funded by performance fees
+5. **Compound over time** as foundational research generates ongoing citations
+
+**The key insight**: When AI agents make profitable decisions citing your research, you receive proportional shares of performance fees. Your intellectual property becomes productive capital generating passive income.
+
+### The Risk/Trust Gradient
+
+**Week 1: Discovery** (Zero Risk)
+- Try Ghostwriter for research
+- No capital, no crypto knowledge required
+- See if it helps you think better
+
+**Month 1-3: Value Realization** (Time Investment)
+- Publish first articles
+- Get cited by AI agents
+- Earn first $10-50 in citation rewards
+
+**Year 1+: Optional Capital Deployment** (Financial Risk - 10-20% of users)
+- Deposit stablecoins into vaults
+- AI agents manage multi-chain DeFi strategies
+- Performance fees fund citation rewards
+- Both capital and citations earn
+
+**Most users never deposit capital.** They earn citation income indefinitely through pure intellectual contribution.
+
+---
+
+## The Ghostwriter: Multi-Model Orchestration
+
+### Why Specialized Agents, Not Monolithic Models
+
+Current AI platforms force analytical reasoning and communicative craft into the same generation step. This creates fundamental trade-offs:
+- GPT-4: Deep reasoning but generic communication
+- Claude: Excellent craft but shallow research
+- Gemini: Fast but inconsistent quality
+
+**The insight**: Different tasks need different models. Separate the concerns.
+
+### The Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  USER (Non-Custodial)                               │
-│  - Keeps private keys (never shared)                │
-│  - Deposits USDC to vault contract                  │
-│  - Receives TUX0 shares (tradeable tokens)          │
-│  - Can withdraw anytime (burn shares)               │
-└──────────────────┬──────────────────────────────────┘
-                   │ Deposit USDC
-                   ↓
-┌─────────────────────────────────────────────────────┐
-│  TUX0 VAULT SMART CONTRACT                          │
-│  - Holds user deposits (USDC)                       │
-│  - Mints/burns TUX0 shares                          │
-│  - Enforces dual-authority security                 │
-│  - Tracks user positions proportionally              │
-└──────────────────┬──────────────────────────────────┘
-                   │ Agent manages funds
-                   ↓
-┌─────────────────────────────────────────────────────┐
-│  AI AGENT (Vault Manager)                           │
-│  - Executes Blend strategies within vault           │
-│  - Cannot withdraw user funds                       │
-│  - Optimizes yield across pools                     │
-│  - Distributes fees (2% platform, 98% users)       │
-└──────────────────┬──────────────────────────────────┘
-                   │ Yield generation
-                   ↓
-┌─────────────────────────────────────────────────────┐
-│  BLEND CAPITAL POOLS                                │
-│  - Comet Pool (diversified lending)                │
-│  - Fixed Pool (fixed-rate strategies)               │
-│  - YieldBlox Pool (yield farming)                  │
-│  - Real-time APY from on-chain data                │
-└─────────────────────────────────────────────────────┘
+USER REQUEST
+"Research yield farming on Base vs Arbitrum"
+    ↓
+CONDUCTOR (Client)
+Fast orchestrator, immediate response
+    ↓
+GHOSTWRITER AGENT (Server)
+    │
+    ├─ Step 1: RESEARCH (OpenAI o1, Claude Opus)
+    │   ├─ Query Choir knowledge base (vector search)
+    │   ├─ Search web for recent data
+    │   ├─ Fetch on-chain metrics (Aave, Morpho APYs)
+    │   └─ Aggregate context
+    │
+    ├─ Step 2: DRAFT (Claude Sonnet)
+    │   ├─ Follow user's style guide
+    │   ├─ Synthesize research into narrative
+    │   ├─ Include citations to Choir articles
+    │   └─ Maintain voice consistency
+    │
+    ├─ Step 3: CRITIQUE (Kimi K2)
+    │   ├─ Identify weak arguments
+    │   ├─ Check unsupported claims
+    │   ├─ Suggest improvements
+    │   └─ Actually critical (not sycophantic)
+    │
+    ├─ Step 4: REFINE (Claude Sonnet)
+    │   ├─ Incorporate critique
+    │   ├─ Strengthen evidence
+    │   ├─ Final polish
+    │   └─ Maintain style
+    │
+    └─ Step 5: VERIFY (Automated)
+        ├─ Citation validation
+        ├─ Fact checking
+        ├─ Link verification
+        └─ Quality threshold
+    ↓
+PUBLISHED ARTICLE
+Staked with CHOIR tokens, earns rewards when cited
 ```
 
-**Current Tools (19 total operations):**
-
-- 6 Stellar tools: Account, market data, trading, trustlines, utilities, Soroban
-- 7 TUX0 Vault tools: Deposit, withdraw, performance, positions, agent strategies
-- 6 Blend Capital tools: Pool discovery, APY tracking, supply, withdraw, positions
-
-**Security:** Non-custodial shares, dual-authority, on-chain audit trail
-
-### Implementation Status: 95% Complete, Deployment Pending
-
-**What's Built (95% Complete):**
-
-- ✅ **Smart Contracts**: Vault (627 lines), TUX token, farming contracts
-- ✅ **Backend Integration**: Vault manager, 7 AI tools, REST API
-- ✅ **Frontend Interface**: Vault dashboard, real-time stats, wallet integration
-- ✅ **Security Model**: Dual-authority, non-custodial shares, agent permissions
-- ✅ **Blend Integration**: Live connection to Comet, Fixed, YieldBlox pools
-
-**What's Missing (5% - Deployment Gap):**
-
-- ❌ Contract deployment to testnet/mainnet
-- ❌ Environment configuration with deployed addresses
-- ❌ End-to-end integration testing
-- ❌ Initial liquidity seeding
-
-**Next Steps:** Deploy contracts, configure environment, begin testing
-
-**See:** `tux0_vault_implementation_progress.md` for complete implementation tracking
+**Why This Works:**
+- Model specialization: Each step uses the model best suited for that task
+- Quality compounding: Multi-step process produces better output than single-shot
+- Economic coupling: Rewards only trigger on full workflow completion
+- Transparent escalation: User sees progress, knows when compute-heavy work happens
 
 ---
 
-## 🔐 Security Status: Non-Custodial Vault Implementation
+## Anonymous Publishing & Merit-Based Discovery
 
-### ✅ Current Security Architecture (TUX0 Vault Model)
+### The Problem with Identity-Based Systems
 
-**Non-Custodial Design:**
+Traditional publishing couples ideas with identity:
+- **Academia**: Institutional affiliation determines credibility
+- **Social media**: Follower counts determine distribution
+- **Substack**: Early adopters capture network effects
 
-- Users maintain control of private keys (never shared with agent)
-- Vault shares represent ownership rights (tradeable tokens)
-- Agent can execute strategies but cannot withdraw user funds
-- Dual-authority security: agent for operations, users for withdrawals
-- On-chain audit trail of all vault operations
+### The Choir Model
 
-**Smart Contract Security:**
+**Authentication**: Wallet signatures (cryptographic identity, zero personal data)
+**Attribution**: Immutable citation graph (no retroactive changes)
+**Discovery**: Economic signals (stake amount determines visibility)
+**Rewards**: Citation-based (ideas that influence earn)
 
-- 627-line production-ready vault contract with comprehensive error handling
-- Role-based access control (admin, agent, user roles)
-- Risk limit enforcement and emergency pause functionality
-- Event emissions for transparent operation tracking
-- Share value calculation and proportional distribution
+**How it works:**
+1. Sign in with passkey (biometric, no seed phrases)
+2. Publish anonymously (wallet signature proves authorship)
+3. Stake CHOIR tokens on publication (higher stakes = higher visibility)
+4. Get cited based on merit (semantic similarity auto-detection)
+5. Earn stablecoins when cited (proportional to influence)
 
-**User Protection:**
+**Anti-plagiarism**: If someone copies your work, the citation engine auto-detects semantic similarity and cites your original. The plagiarist pays you.
 
-- Users can withdraw anytime by burning vault shares
-- Share value automatically appreciates with yield accumulation
-- 2% platform fee, 98% of yield distributed to vault users
-- No custody requirement - users maintain sovereign control
+### Vindication Economics: Credit for Marginalized Thinkers
 
-**Authentication:**
+Traditional academia has a catastrophic track record of marginalizing correct-but-unconventional thinkers:
+- **Ignaz Semmelweis** (1840s): Proved handwashing prevented infections. Mocked, died in asylum. Vindicated posthumously.
+- **Alfred Wegener** (1912): Continental drift. Ridiculed for decades. Confirmed 50 years later.
+- **Lynn Margulis** (1967): Endosymbiotic theory. Rejected by 15 journals. Now textbook biology.
 
-- Passkey-based authentication (WebAuthn)
-- Session-based authorization
-- No passwords, no phishing vectors
-- Wallet integration for transaction signing
+**When AI achieves certainty** about currently controversial positions, there will be human progenitors who deserve credit—some unfairly maligned by academia.
 
-### ⚠️ Current Status (Implementation Complete)
+**Choir's solution:**
+- Publish controversial ideas anonymously (no career risk)
+- Blockchain timestamps prove you had insight first
+- When AI validates your work, citation rewards flow
+- Economic credit, not just prestige
 
-**What's Built:**
+---
 
-- ✅ Complete smart contracts (vault, token, farming)
-- ✅ Backend integration with all security controls
-- ✅ Frontend interface with wallet signing
-- ✅ Dual-authority security model
-- ✅ Blend Capital integration (Comet, Fixed, YieldBlox)
+## The Three Learning Economy Loops
 
-**What's Missing:**
+### Loop 1: Thought Mining (Knowledge → Value)
 
-- ❌ Contract deployment (implementation complete, not deployed)
-- ❌ Environment configuration with deployed addresses
-- ❌ Integration testing with live contracts
+**No capital required. Pure intellectual contribution.**
 
-**Security Philosophy:**
+```
+Chat Freely → Earn novelty tokens (CHOIR)
+    ↓
+Publish Articles → Stake earned tokens
+    ↓
+Get Cited → AI agents reference your work
+    ↓
+Earn Stablecoins → Citation rewards from performance fees
+```
 
-- Transparency over obscurity (open source, documented risks)
-- User sovereignty over convenience (non-custodial by design)
-- Iterative security (implementation complete, audit pending)
+**Timeline**: 0-6 months to first earnings, no capital deposit required
 
-### 🚀 Quick Start (Non-Custodial Vault)
+### Loop 2: Capital Management (Capital → Intelligence → Yield)
 
-**Note:** Vault system implementation is complete but contracts are not yet deployed. See deployment section below.
+**Optional. For those with capital and deep trust.**
+
+```
+Deposit Stablecoins → Non-custodial vaults
+    ↓
+AI Agents Research → Query Choir knowledge base
+    ↓
+Execute Strategies → Aave, Morpho, Blend Capital
+    ↓
+Performance Fees → 70% fund citation rewards
+```
+
+**Timeline**: Immediate yields, long-term compounding
+**Risk**: Capital at stake (DeFi risks, smart contract risks)
+
+### Loop 3: Network Effects (Masses → Token Demand → Governance)
+
+```
+Free Participation → Millions chat, share ideas
+    ↓
+Researchers Publish → Knowledge base grows
+    ↓
+Capital Deployers Invest → Attracted by network effects
+    ↓
+Treasury Accumulates → Sustainable ecosystem funding
+```
+
+**The flywheel**: More users → More research → Better yields → More capital → More citations
+
+---
+
+## Current Implementation Status
+
+### Phase 1: Ghostwriter Foundation (Q4 2025) - 90% Complete
+
+**Research Infrastructure:**
+- ✅ Passkey authentication (biometric, WebAuthn)
+- ✅ LangChain agent with 19 tools
+- ✅ Claude SDK research integration
+- 🚧 Multi-step Ghostwriter workflow (research → draft → critique → refine)
+- 🚧 Citation engine (semantic similarity auto-detection)
+
+**Publishing Infrastructure:**
+- 🚧 Anonymous publishing routes (wallet signatures)
+- 🚧 Stake CHOIR to publish
+- 🚧 Discovery feed (ranked by stake amount)
+- 🚧 Citation graph visualization
+
+**Optional Finance:**
+- ✅ Non-custodial vaults (TUX0 shares)
+- ✅ Blend Capital integration (Stellar mainnet)
+- ✅ Multi-chain key management scaffolding
+- 🚧 Performance fee distribution (citation rewards)
+
+### What Works Today
+
+**Research Tools:**
+- Conversational AI for research and analysis
+- Multi-model reasoning (OpenAI, Claude, specialized models)
+- Real-time blockchain data (Stellar mainnet)
+- DeFi protocol integration (Blend Capital)
+
+**Optional Yield Farming:**
+- Automated yield discovery across Blend pools
+- Real-time APY tracking from on-chain data
+- Position management and rebalancing
+- Non-custodial vault architecture (contracts built, deployment pending)
+
+---
+
+## Quick Start
 
 ### 1. Backend Setup
 
 ```bash
 cd backend
 
-# Create virtual environment with UV (recommended)
-uv sync  # Creates .venv and installs all dependencies
+# Create virtual environment with UV
+uv sync  # Creates .venv and installs dependencies
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
 # Configure environment
@@ -204,20 +311,14 @@ python main.py
 **Required Environment Variables:**
 
 ```bash
-# OpenAI-compatible API
+# OpenAI-compatible API (for AI agents)
 OPENAI_API_KEY=your_key_here
-OPENAI_BASE_URL=https://api.redpill.ai/v1  # or https://api.openai.com/v1
+OPENAI_BASE_URL=https://api.redpill.ai/v1
 
-# Stellar Network (MAINNET)
+# Stellar Network (optional for finance features)
 STELLAR_NETWORK=mainnet
 MAINNET_HORIZON_URL=https://horizon.stellar.org
 ANKR_STELLER_RPC=https://rpc.ankr.com/stellar_soroban
-
-# Vault Configuration (pending deployment)
-VAULT_CONTRACT_ID=<deployed_vault_contract>
-TUX_TOKEN_ID=<deployed_tux_token>
-PLATFORM_FEE_ADDRESS=<platform_fee_collection_address>
-AGENT_ADDRESS=<authorized_agent_address>
 ```
 
 ### 2. Frontend Setup
@@ -231,581 +332,248 @@ npm run dev
 # Frontend runs on http://localhost:5173
 ```
 
-### 3. Access the Application
+### 3. Try Ghostwriter
 
 1. Open http://localhost:5173
-2. Create account with passkey (no password needed)
-3. Connect Stellar wallet (external wallet mode)
-4. **Vault interface coming soon** (contracts need deployment first)
-5. Chat with agent: "What's my wallet balance?" or "Find best USDC yield"
-6. Explore Blend Protocol pools (mainnet: Comet, Fixed, YieldBlox)
+2. Create account with passkey (biometric, no password)
+3. Chat with Ghostwriter: "Research the best DeFi yields on Stellar"
+4. Explore research capabilities
+5. **Optional**: Connect wallet for yield farming features
 
-**⚠️ Mainnet Warning:** You're operating with real funds. Start small, test carefully.
-
----
-
-## 💰 Token Incentives: Security as Community Effort
-
-### TUX Token Economics
-
-**Supply:** 100M tokens (Sui blockchain per Choir whitepaper)
-**Distribution:**
-
-- 40% - Testnet depositors & beta users
-- 20% - Security researchers & auditors
-- 20% - Development team
-- 20% - Treasury (governance)
-
-### Security Bounty Program
-
-**Found a vulnerability?** We reward responsible disclosure.
-
-**Severity Tiers:**
-
-- 🔴 **Critical** (private key exposure, user fund theft): 50,000 TUX
-- 🟠 **High** (cross-user access, authorization bypass): 25,000 TUX
-- 🟡 **Medium** (data leakage, DoS vectors): 10,000 TUX
-- 🟢 **Low** (information disclosure, edge cases): 2,500 TUX
-
-**Contact:** security@choir.chat
-**PGP Key:** [Coming Soon]
-
-**Requirements:**
-
-- Responsible disclosure (give us time to patch)
-- Testnet demonstration (we provide test accounts)
-- Clear reproduction steps
-- Suggested mitigation
-
-### Beta Tester Rewards
-
-**Testnet participants earn TUX tokens for:**
-
-- Depositing capital on testnet (simulated risk)
-- Testing import/export workflows
-- Reporting bugs and UX issues
-- Contributing to documentation
-- Helping others in community Discord
-
-**Mainnet launch timeline depends on community validation.**
+**No capital required to start. Finance features are entirely optional.**
 
 ---
 
-## 🚀 Quick Start
-
-### Prerequisites
-
-```bash
-# Backend
-- Python 3.11+
-- uv (or pip)
-- OpenAI-compatible API key (Redpill AI, OpenRouter, etc.)
-
-# Frontend
-- Node.js 18+
-- npm or pnpm
-```
-
-### 1. Backend Setup
-
-```bash
-cd backend
-
-# Create virtual environment with UV (recommended)
-uv sync  # Creates .venv and installs all dependencies
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-
-# Configure environment
-cp .env.example .env
-# Edit .env with your API keys
-
-# Start backend
-python main.py
-# Backend runs on http://localhost:8000
-```
-
-**Required Environment Variables:**
-
-```bash
-# OpenAI-compatible API
-OPENAI_API_KEY=your_key_here
-OPENAI_BASE_URL=https://api.redpill.ai/v1  # or https://api.openai.com/v1
-
-# Stellar Network (MAINNET)
-STELLAR_NETWORK=mainnet
-MAINNET_HORIZON_URL=https://horizon.stellar.org
-ANKR_STELLER_RPC=https://rpc.ankr.com/stellar_soroban
-
-# Encryption (generate with: python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')
-ENCRYPTION_MASTER_KEY=your_generated_key
-ENCRYPTION_SALT=tuxedo-agent-accounts-v1
-```
-
-**⚠️ Mainnet Configuration:**
-
-- All operations use real Stellar mainnet
-- Real funds, real yields, real risks
-- Contract addresses in `backend/blend_pool_tools.py`
-- RPC provider: Ankr (or your preferred mainnet RPC)
-
-### 2. Frontend Setup
-
-```bash
-# From project root
-npm install
-
-# Start development server
-npm run dev
-# Frontend runs on http://localhost:5173
-```
-
-### 3. Access the Application
-
-1. Open http://localhost:5173
-2. Create account with passkey (no password needed)
-3. Connect existing Stellar wallet or import private key
-4. Chat with agent: "What's my wallet balance?" or "Find best USDC yield"
-5. Explore Blend Protocol pools (mainnet: Comet, Fixed, YieldBlox)
-6. Try yield strategies: "Supply 100 USDC to Comet pool"
-
-**⚠️ Mainnet Warning:** You're operating with real funds. Start small, test carefully.
-
----
-
-## 🎯 Core Features
-
-### 🤖 Conversational AI
-
-- Natural language blockchain interaction
-- Multi-step reasoning with LangChain
-- Context-aware conversation history
-- Tool execution with real-time feedback
-
-### 🔑 User Sovereignty (Current → Future)
-
-**Current (Wallet Import):**
-
-- Import existing wallets via private key
-- Export private keys anytime
-- Agent holds encrypted keys for operations
-- ⚠️ Custodial during active management
-
-**Future (Vault Model):**
-
-- Users deposit to vault, keep keys
-- Receive tradeable vault share tokens
-- Agent manages vault, never touches keys
-- ✅ True non-custodial architecture
-
-### 🏦 DeFi Integration (Mainnet Live)
-
-- **Blend Protocol**: Lending/borrowing on Stellar mainnet
-  - Comet Pool: Diversified stablecoin lending
-  - Fixed Pool: Fixed-rate lending strategies
-  - YieldBlox Pool: Historical yield farming
-- **Soroban**: Smart contract operations
-- **Stellar DEX**: Trading and liquidity
-- **Future**: DeFindex, multi-chain (Solana, EVM, Sui)
-
-### 📊 Yield Strategies
-
-**Current (Mainnet):**
-
-- Blend Capital pool discovery and APY tracking
-- Automated supply to highest-yield opportunities
-- Multi-pool position management
-- Real-time on-chain data
-
-**Future (Vault Model):**
-
-- Multiple vault strategies (Conservative, Aggressive, Research)
-- AI-driven rebalancing across protocols
-- Citation-backed decision making with research reports
-- Tradeable performance via vault token prices
-
-### 🛡️ Security Features
-
-- Hardware TEE for key custody
-- Encrypted keys at rest
-- User isolation by default
-- Passkey authentication (no passwords)
-
----
-
-## 🧪 Development
-
-### Run Full Stack Concurrently
-
-```bash
-npm run dev:full
-# Starts both backend (8000) and frontend (5173)
-```
-
-### Test AI Agent
-
-```bash
-cd backend
-python test_agent.py                    # Basic agent functionality
-python test_agent_with_tools.py         # Comprehensive tool testing
-```
-
-### Test Mainnet Integration
-
-```bash
-cd backend
-source .venv/bin/activate
-
-# Test Blend integration (mainnet, read-only)
-python test_blend_integration.py       # Pool discovery, APY queries
-
-# Test user isolation
-python test_user_isolation.py          # Verify cross-user access blocked
-```
-
-### Available Tools
-
-**Account Management:**
-
-- `create` - Generate new testnet account
-- `fund` - Request testnet XLM from Friendbot
-- `get` - Query account balances
-- `list` - Show all user accounts
-- `import` - Import existing wallet
-- `export` - Export private keys
-
-**Trading:**
-
-- `buy` - Create buy order on Stellar DEX
-- `sell` - Create sell order
-- `cancel_order` - Cancel existing order
-- `get_orders` - View active orders
-
-**Market Data:**
-
-- `orderbook` - View liquidity depth
-- `trades` - Recent trade history
-- `ticker` - Current prices
-
-**DeFindex (Yield Farming):**
-
-- `get_strategies` - Available yield strategies
-- `deploy_capital` - Deposit into strategy
-- `withdraw` - Remove capital
-
----
-
-## 📁 Project Structure
+## Project Structure
 
 ```
-tuxedo/
+choir/
 ├── backend/
-│   ├── main.py                    # FastAPI app + agent orchestration
-│   ├── app.py                     # App factory pattern
+│   ├── main.py                    # FastAPI app + AI orchestration
+│   ├── agent/
+│   │   ├── core.py                # LangChain agent (blockchain tools)
+│   │   └── claude_sdk_wrapper.py  # Claude SDK (research tools)
 │   ├── stellar_tools.py           # 6 Stellar blockchain tools
-│   ├── defindex_tools.py          # DeFindex yield farming tools
-│   ├── account_manager.py         # Multi-chain account management
-│   ├── encryption.py              # Private key encryption
-│   ├── database_passkeys.py       # User authentication & storage
-│   ├── chains/                    # Chain-specific adapters
-│   │   ├── base.py                # Abstract chain interface
-│   │   └── stellar.py             # Stellar implementation
-│   └── .env                       # Configuration (not in git)
+│   ├── vault_tools.py             # 7 non-custodial vault operations
+│   ├── blend_pool_tools.py        # 6 Blend Capital yield farming tools
+│   └── vault_manager.py           # Complete vault contract interface
 │
 ├── src/
 │   ├── components/
-│   │   ├── ChatInterface.tsx      # Main AI chat UI
-│   │   ├── TuxFarmingDashboard.tsx # DeFindex interface
+│   │   ├── ChatInterface.tsx      # Ghostwriter UI
+│   │   ├── VaultDashboard.tsx     # Optional: Vault interface
 │   │   └── dashboard/
-│   │       └── PoolsDashboard.tsx # Blend Protocol pools
+│   │       └── PoolsDashboard.tsx # Optional: Blend pools
 │   ├── lib/
 │   │   └── api.ts                 # Backend API client
-│   ├── hooks/
-│   │   ├── useWallet.ts           # Wallet connection
-│   │   └── useBlendPools.ts       # Pool data fetching
-│   └── contracts/
-│       └── blend.ts               # Contract addresses (testnet)
+│   └── hooks/
+│       ├── useWallet.ts           # Wallet connection (optional)
+│       └── useVaultStats.ts       # Vault statistics (optional)
 │
 ├── docs/
-│   ├── VAULT_COLLATERAL_ARCHITECTURE.md  # Future vault system design
-│   ├── VAULT_IMPLEMENTATION_PLAN.md      # 16-week roadmap to vaults
-│   └── DEFINDEX_RESTORATION_GUIDE.md     # DeFindex integration guide
-├── CHOIR_WHITEPAPER.md                   # Vision & tokenomics
-├── AGENT_ACCOUNT_SECURITY_PLAN.md        # Security architecture
-└── CLAUDE.md                             # Development guide
+│   ├── CLAUDE_SDK_INTEGRATION.md  # Hybrid agent architecture
+│   └── VAULT_DEPLOYMENT_COMPLETE.md  # Vault implementation
+│
+├── UNIFIED_VISION.md              # This vision document
+└── CLAUDE.md                      # Development guide
 ```
 
-### Key Implementation Files
+---
 
-**Security Architecture:**
+## Technology Stack
 
-- `backend/account_manager.py:549-833` - Core user isolation logic
-- `backend/encryption.py:474-528` - Key encryption/decryption
-- `backend/database_passkeys.py` - User database schema
+**AI & Research:**
+- FastAPI + Pydantic (Python backend)
+- LangChain (blockchain tool orchestration)
+- Claude SDK (advanced research and reasoning)
+- OpenAI gpt-oss 120b (general reasoning)
+- Multi-model routing (o1, Opus, Sonnet, Kimi K2)
 
-**AI Agent:**
-
-- `backend/main.py:20-65` - Agent initialization & tool registration
-- `backend/stellar_tools.py:1-100` - Tool implementations
+**Optional Finance:**
+- Stellar SDK 13.1.0+ (blockchain operations)
+- Blend SDK 3.2.1 (yield farming)
+- Soroban smart contracts (non-custodial vaults)
 
 **Frontend:**
-
-- `src/components/ChatInterface.tsx` - Conversational UI
-- `src/lib/api.ts` - HTTP client with auth
-
----
-
-## 🔬 Research Directions (Post-Hackathon)
-
-### Code Mode Paradigm (Cloudflare/Anthropic)
-
-Instead of JSON tool calling, give agents code execution environments:
-
-```typescript
-// Agent writes TypeScript code that executes in sandbox
-const account = await stellar.accounts.create();
-await stellar.accounts.fund(account.id);
-const balance = await stellar.accounts.getBalance(account.id);
-const offers = await stellar.market.getOrderbook("USDC", "XLM");
-return { account, balance, offers };
-```
-
-**Benefits:**
-
-- 98.7% token reduction (150K → 2K tokens)
-- Intermediate results stay in sandbox
-- LLMs are trained on real code, not synthetic tool formats
-
-**Status:** Research phase, POC planned
-
-### Extended Thinking (Anthropic Claude 4)
-
-Platform agent with deep reasoning capabilities:
-
-- Budget control: `"thinking": {"type": "enabled", "budget_tokens": 16000}`
-- Interleaved reasoning between tool calls
-- Dynamic workflow adjustment based on intermediate results
-
-**Use Case:** Multi-step DeFi research with citation generation
-
-### Live Data Streams (Somnia)
-
-Real-time event subscriptions for platform agent:
-
-- Subscribe to Blend pool APY changes
-- Monitor DeFindex rebalancing events
-- Track cross-chain arbitrage opportunities
-- Generate research reports on market movements
-
-**Status:** Evaluating Somnia Data Streams hackathon (Nov 4-15)
+- Vite 7.1 + React 19 + TypeScript 5.9
+- TanStack React Query (data fetching)
+- Carbon fiber kintsugi aesthetics
 
 ---
 
-## 🎓 Documentation
+## Roadmap
 
-### For Developers
+### Phase 1: MVP (Q4 2025) - 90% Complete
+- ✅ Ghostwriter foundation
+- ✅ Passkey authentication
+- 🚧 Multi-step workflow (research → draft → critique → refine)
+- 🚧 Citation engine
+- ✅ Optional: Non-custodial vaults
 
-- [CLAUDE.md](./CLAUDE.md) - Complete development guide
-- [docs/playful_path_to_vaults.md](./docs/playful_path_to_vaults.md) - 🚀 **1.6-hour vault sprint guide** (START HERE)
-- [docs/VAULT_COLLATERAL_ARCHITECTURE.md](./docs/VAULT_COLLATERAL_ARCHITECTURE.md) - Full vault system design
-- [docs/VAULT_IMPLEMENTATION_PLAN.md](./docs/VAULT_IMPLEMENTATION_PLAN.md) - Detailed 16-week roadmap
-- [AGENT_ACCOUNT_SECURITY_PLAN.md](./AGENT_ACCOUNT_SECURITY_PLAN.md) - Current security architecture
+### Phase 2: Learning Economy (Q1-Q2 2026)
+- [ ] Citation rewards from performance fees (stablecoins)
+- [ ] Novelty rewards system (decaying CHOIR emissions)
+- [ ] Revision markets (collaborative improvement)
+- [ ] Multi-chain expansion (Base, Arbitrum, Mainnet)
+- [ ] Token buyback program (deflationary)
+
+### Phase 3: Advanced Features (Q3-Q4 2026)
+- [ ] TEE deployment (Phala Network)
+- [ ] Homomorphic encryption (XTrace migration)
+- [ ] Premium features (tax optimization, custom strategies)
+- [ ] Mobile excellence (iOS refinement, Android)
+
+### Phase 4: Decentralization (2027+)
+- [ ] Community treasury control
+- [ ] Protocol parameter voting
+- [ ] Ecosystem investments
+- [ ] Governance transition
+
+---
+
+## The Economic Model: Three Currencies
+
+### Credits (Fiat/IAP)
+**Purpose**: Accessible entry, no crypto knowledge
+- Purchase with Apple/Google IAP or credit card
+- Pay for Ghostwriter calls (1, 5, 20, 100 packs)
+- Try-before-you-buy pricing ($2-5 per call)
+
+### Stablecoins (USDC)
+**Purpose**: Stable income, real value exchange
+- **Earn**: Citation rewards when research gets cited
+- **Deploy** (optional): Yield farming deposits
+- Immediately convertible to local fiat
+
+### CHOIR Tokens (Sui)
+**Purpose**: Governance, speculation, long-term alignment
+- **Earn**: Novelty rewards (decaying emissions), yield farming rewards
+- **Use**: Publishing stakes, governance votes, revision proposals
+- Decreasing emissions (deflationary)
+
+**Revenue Model:**
+- Primary: Performance fees (20% of DeFi yields)
+  - 70% → Citation reward pool
+  - 20% → Operations
+  - 10% → Token buyback & burn
+
+---
+
+## Why This Works When Academic Publishing Fails
+
+**Academic timeline:** 18-24 months (research → peer review → publication)
+**AI timeline:** Daily breakthroughs, immediate obsolescence
+
+**Choir's advantages:**
+- Rapid publication (instant)
+- Merit over credentials (anonymous submission)
+- Economic rewards (citation income replaces prestige)
+- Collaborative improvement (revision markets)
+- Cross-disciplinary (no journal boundaries)
+- AI-native (built for superhuman research velocity)
+
+**The result**: Infrastructure suited for the research velocity AI enables, not the 20th-century institutional model.
+
+---
+
+## Competitive Moats
+
+### Why Big Tech Can't Replicate This
+
+**Economic Model Inversion**: OpenAI/Anthropic extract via subscriptions. Choir pays users for contributions. Switching their model would invalidate current valuations.
+
+**Privacy Architecture**: Google/Apple/Meta require data access for ads. Choir's entire model requires privacy (TEE, homomorphic encryption).
+
+**Multi-Chain Requirement**: Coinbase builds on Base. Choir requires chain agnosticism for yield optimization.
+
+**Academic Disruption**: Elsevier/Springer extract billions from paywalls. Choir offers immediate publication with economic rewards.
+
+---
+
+## Contributing
+
+We welcome contributions to the learning economy:
+
+**Research & Writing:**
+- Use Ghostwriter to produce quality research
+- Publish to knowledge base (coming soon)
+- Get cited, earn rewards
+
+**Security:**
+- Test user isolation
+- Report vulnerabilities via security@choir.chat
+- Review smart contracts
+- Suggest architectural improvements
+
+**Development:**
+- Fork repository
+- Create feature branch
+- Add tests
+- Submit pull request
+
+**All contributors eligible for CHOIR token rewards.**
+
+---
+
+## Documentation
 
 ### For Users
+- [UNIFIED_VISION.md](./UNIFIED_VISION.md) - Complete vision & economics
 
-- [CHOIR_WHITEPAPER.md](./CHOIR_WHITEPAPER.md) - Vision, tokenomics, roadmap
-- **Vault FAQ** (coming soon) - Understanding vault-based collateral
+### For Developers
+- [CLAUDE.md](./CLAUDE.md) - Development guide
+- [docs/CLAUDE_SDK_INTEGRATION.md](./docs/CLAUDE_SDK_INTEGRATION.md) - Hybrid agent architecture
+- [docs/VAULT_DEPLOYMENT_COMPLETE.md](./docs/VAULT_DEPLOYMENT_COMPLETE.md) - Vault implementation
 
 ### API Documentation
-
-- Backend API: http://localhost:8000/docs (when running)
+- Backend API: http://localhost:8000/docs
 - OpenAPI spec: http://localhost:8000/openapi.json
 
 ---
 
-## 🛣️ Roadmap
+## License
 
-### Q4 2024: Mainnet Launch ✅
-
-- [x] Core agent functionality on mainnet
-- [x] Passkey authentication
-- [x] Blend Protocol integration (Comet, Fixed, YieldBlox)
-- [x] Wallet import/export
-- [x] Multi-user isolation with AccountManager
-- [x] Real-time APY data from mainnet
-
-### Q1 2025: Vault Architecture Transition
-
-**Phase 1: Smart Contracts (Weeks 1-3)**
-
-- [ ] TuxedoVault smart contract development
-- [ ] Deposit/withdraw functions
-- [ ] Share token minting/burning
-- [ ] Risk limit enforcement
-- [ ] Testnet deployment and testing
-
-**Phase 2: Backend Integration (Weeks 4-5)**
-
-- [ ] Vault state management
-- [ ] Agent vault manager
-- [ ] Database schema for vault tracking
-- [ ] API endpoints for vault operations
-
-**Phase 3: Frontend (Weeks 6-7)**
-
-- [ ] Vault dashboard UI
-- [ ] Deposit/withdraw modals
-- [ ] Performance charts
-- [ ] Activity feed for agent operations
-
-**Phase 4: Multi-Vault Launch (Week 8)**
-
-- [ ] Deploy TUX-CORE (conservative)
-- [ ] Deploy TUX-AGGRESSIVE (high-yield)
-- [ ] Deploy TUX-STABLE (stablecoin only)
-- [ ] Deploy TUX-RESEARCH (citation-backed)
-
-### Q2 2025: Migration & Growth
-
-**Phase 5: User Migration (Weeks 9-10)**
-
-- [ ] Migration tool from wallet import to vaults
-- [ ] Incentive program (TUX token bonuses)
-- [ ] User education campaign
-- [ ] Graceful deprecation of wallet import
-
-**Phase 6: DEX Integration (Week 11)**
-
-- [ ] Vault token liquidity pools
-- [ ] Market making bots
-- [ ] Price discovery mechanisms
-- [ ] Trading interface for vault tokens
-
-**Phase 7: Governance (Weeks 12-13)**
-
-- [ ] TUX governance token launch
-- [ ] Staking and tier system
-- [ ] Vault parameter voting
-- [ ] Revenue sharing for stakers
-
-### Q3 2025: Mainnet Vault Launch
-
-**Phase 8: Security & Launch (Weeks 14-16)**
-
-- [ ] Professional smart contract audit
-- [ ] Bug bounty program
-- [ ] Mainnet vault deployment
-- [ ] Marketing and community growth
-
-### Q4 2025: Ecosystem Expansion
-
-- [ ] Cross-chain vaults (Solana, EVM)
-- [ ] Personal agent vault creation
-- [ ] Research vault with CHOIR integration
-- [ ] Advanced analytics and reporting
-
-**See:** `docs/VAULT_IMPLEMENTATION_PLAN.md` for detailed 16-week roadmap
+MIT License - See [LICENSE](./LICENSE)
 
 ---
 
-## 🤝 Contributing
-
-We welcome contributions, especially in security:
-
-**Security Research:**
-
-1. Test user isolation on testnet
-2. Report vulnerabilities via security@choir.chat
-3. Review code for potential exploits
-4. Suggest architectural improvements
-
-**Development:**
-
-1. Fork the repository
-2. Create feature branch
-3. Add tests for new functionality
-4. Submit pull request
-
-**Documentation:**
-
-1. Improve setup instructions
-2. Add architecture diagrams
-3. Write tutorials for common tasks
-4. Translate documentation
-
-**Community:**
-
-1. Help other users in Discord
-2. Share testnet experiences
-3. Provide UX feedback
-4. Test on different platforms
-
-**All contributors are eligible for TUX token rewards.**
-
-
----
-
-## ⚖️ License
-
-MIT License - See [LICENSE](./LICENSE) for details
-
----
-
-## 🙏 Acknowledgments
+## Acknowledgments
 
 **Built with:**
-
+- [Anthropic Claude](https://anthropic.com) - AI reasoning
+- [OpenAI](https://openai.com) - GPT models
+- [LangChain](https://langchain.com) - Agent framework
 - [Stellar](https://stellar.org) - Blockchain infrastructure
 - [Blend Protocol](https://blend.capital) - Lending protocol
-- [DeFindex](https://defindex.io) - Yield optimization
-- [Anthropic Claude](https://anthropic.com) - AI reasoning
 - [Phala Network](https://phala.network) - TEE infrastructure
-- [LangChain](https://langchain.com) - Agent framework
-
 
 ---
 
-## ⚠️ Disclaimer
+## Disclaimer
 
-**Mainnet Software - Use at Your Own Risk**
+**Experimental Software - Research Phase**
 
-Tuxedo is experimental software operating on Stellar mainnet with real funds. While functional, it is in active development and security improvements are ongoing.
+Choir is experimental software in active development.
 
-**Current Architecture (Wallet Import):**
+**Current Status:**
+- Ghostwriter: Functional for research and analysis
+- Finance features: Optional, experimental
+- Smart contracts: Built but not yet deployed
+- No guarantees of any kind
 
-- Agent holds encrypted user keys during operations
-- Custodial model during active management
-- User can export keys and exit anytime
-- Transitioning to non-custodial vault architecture
-
-**Understand the Risks:**
-
-- **Smart contracts can have bugs** - DeFi protocols may fail
-- **Agent operations can fail** - AI is not infallible
-- **Key custody matters** - Current model requires trust in agent
-- **Mainnet means real money** - Start small, test carefully
-- **No guarantees** - Software provided "as is"
-
-**Before Using:**
-
-1. Review the code (open source)
-2. Understand wallet import implications
-3. Start with small amounts
-4. Know that vault architecture (non-custodial) is coming
-5. Accept full responsibility for your funds
-
-**Legal:**
-
-- No warranties of any kind
+**If Using Finance Features:**
+- Understand you're operating with real funds on Stellar mainnet
+- Smart contracts can have bugs
+- AI agents are not infallible
+- Start small, test carefully
 - You are responsible for your own funds
-- Not financial advice
-- Review security documentation thoroughly
 
-**The vault architecture transition will eliminate key custody concerns. Until then, use with appropriate caution.**
+**No warranties of any kind. Not financial advice. Not investment advice.**
 
-**DeFi is risky. AI agents are experimental. Mainnet operations are irreversible. Proceed carefully.**
+**For Most Users**: You don't need finance features. Use Ghostwriter for research, publish articles, earn citation rewards. The pathway from zero to income exists entirely through intellectual contribution.
 
 ---
 
-**Built for the future of agentic finance. Secured by the community.**
+**Intelligence that creates value should share in that value.**
 
-🎩 **Tuxedo** | Making yield farming look good
+🎩 **Choir: The Thought Bank** | Where your ideas make AI smarter—and you richer
