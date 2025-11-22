@@ -142,6 +142,8 @@ User Deposit → Vault Contract → TUX0 Shares → Agent Strategies → Blend P
 
 - `OPENAI_API_KEY=your_api_key` (required)
 - `OPENAI_BASE_URL=https://api.redpill.ai/v1` (or https://api.openai.com/v1)
+- `ANTHROPIC_API_KEY=your_anthropic_key` (optional - for Claude SDK research features)
+- `ENABLE_CLAUDE_SDK=true` (optional - default: true)
 - `STELLAR_NETWORK=mainnet`
 - `ANKR_STELLER_RPC=https://rpc.ankr.com/stellar_soroban` (mainnet RPC)
 - `MAINNET_HORIZON_URL=https://horizon.stellar.org`
@@ -163,10 +165,32 @@ This system operates **exclusively on mainnet** with a **non-custodial vault mod
 
 ## AI Agent System
 
+### Hybrid Architecture (LangChain + Claude SDK)
+
+Tuxedo now features a **hybrid agent system**:
+
+- **LangChain** (`backend/agent/core.py`) - Blockchain tool execution (19 tools)
+- **Claude SDK** (`backend/agent/claude_sdk_wrapper.py`) - Research & analysis
+
+**LangChain** for:
+- Stellar blockchain operations
+- Blend Capital yield farming
+- Vault management
+- Real-time DeFi execution
+
+**Claude SDK** for:
+- Strategy research and analysis
+- Yield opportunity research
+- Performance report generation
+- Market insights and trends
+
+See [docs/CLAUDE_SDK_INTEGRATION.md](docs/CLAUDE_SDK_INTEGRATION.md) for complete documentation.
+
 ### Core Implementation
 
-- **Multi-step reasoning**: Up to 10 iterations with tool selection
+- **Multi-step reasoning**: Up to 25 iterations with tool selection
 - **LangChain v2+ compatible**: Uses new `tools` format
+- **Claude SDK v0.1.8**: Advanced research and reasoning
 - **Context management**: Conversation history + wallet address injection
 - **Error handling**: Graceful failures with user feedback
 
