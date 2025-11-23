@@ -1106,6 +1106,211 @@ spec:
 
 ---
 
+## Integration with Tuxedo Agent
+
+**Architecture Decision**: Ghostwriter is **not a standalone API endpoint**, but rather a **tool** that can be invoked by the Tuxedo conversational agent.
+
+### Integration Pattern
+
+```
+User → Tuxedo Agent (LangChain) → Ghostwriter Tool (OpenHands SDK) → Research Report
+```
+
+When a user asks Tuxedo to "research X and write a report", the agent:
+1. Recognizes this as a Ghostwriter task
+2. Invokes the Ghostwriter tool
+3. Ghostwriter runs full 8-stage pipeline in isolated container
+4. Returns final report to Tuxedo agent
+5. Tuxedo presents report to user
+
+### Current Implementation: LangChain Tool Wrapper
+
+**Tuxedo's current architecture** uses LangChain, so Ghostwriter must be wrapped as a LangChain tool:
+
+```python
+# backend/ghostwriter_tool.py
+from langchain.tools import BaseTool
+from pydantic import BaseModel, Field
+from typing import Type
+import asyncio
+
+class GhostwriterInput(BaseModel):
+    """Input schema for Ghostwriter tool."""
+    topic: str = Field(description="Research topic or question to investigate")
+    style: str = Field(
+        default="technical",
+        description="Style guide: technical, conversational, academic, or defi_report"
+    )
+    num_researchers: int = Field(
+        default=5,
+        description="Number of parallel research agents (3-10)"
+    )
+
+class GhostwriterTool(BaseTool):
+    """
+    Generate comprehensive research reports with 90%+ verified claims.
+
+    Uses OpenHands SDK to run 8-stage pipeline:
+    Research → Draft → Extract → Verify → Critique → Revise → Re-verify → Style
+    """
+    name = "ghostwriter"
+    description = (
+        "Generate a comprehensive, fact-checked research report on any topic. "
+        "Automatically researches sources, writes draft, verifies all claims, "
+        "and applies professional styling. Returns a 1000-2000 word report with "
+        "citations and 90%+ verification rate. Use for: market research, "
+        "competitive analysis, DeFi protocol reviews, technical deep-dives."
+    )
+    args_schema: Type[BaseModel] = GhostwriterInput
+
+    def _run(self, topic: str, style: str = "technical", num_researchers: int = 5) -> str:
+        """Synchronous execution (not recommended - use async)."""
+        return asyncio.run(self._arun(topic, style, num_researchers))
+
+    async def _arun(self, topic: str, style: str = "technical", num_researchers: int = 5) -> str:
+        """
+        Asynchronous execution of Ghostwriter pipeline.
+
+        Returns:
+            str: Markdown-formatted research report with citations
+        """
+        from ghostwriter.pipeline import GhostwriterPipeline
+
+        pipeline = GhostwriterPipeline(
+            workspace_root="/workspace/ghostwriter_sessions",
+            num_researchers=num_researchers,
+            max_revision_iterations=3
+        )
+
+        try:
+            result = await pipeline.run_full_pipeline(
+                topic=topic,
+                style_guide=style
+            )
+
+            # Read final report
+            final_report_path = result['final_report']
+            with open(final_report_path, 'r') as f:
+                report = f.read()
+
+            # Add metadata footer
+            verification_rate = result['verification_rate']
+            session_id = result['session_id']
+
+            footer = f"""
+
+---
+
+**Report Metadata:**
+- Verification Rate: {verification_rate:.1%}
+- Session ID: {session_id}
+- Style: {style}
+- Researchers: {num_researchers}
+"""
+
+            return report + footer
+
+        except Exception as e:
+            return f"Error generating report: {str(e)}\n\nPlease try with a simpler topic or contact support."
+
+# Register with Tuxedo agent
+# In backend/stellar_tools.py or backend/main.py
+def get_tuxedo_tools():
+    """Get all tools available to Tuxedo agent."""
+    from ghostwriter_tool import GhostwriterTool
+
+    return [
+        # Existing Stellar tools (19 tools)
+        AccountTool(),
+        MarketDataTool(),
+        TradingTool(),
+        # ... all existing tools
+
+        # Add Ghostwriter
+        GhostwriterTool(),  # Makes 20 tools total
+    ]
+```
+
+### Usage Example
+
+**User conversation with Tuxedo:**
+
+```
+User: "Can you research the best DeFi yield opportunities on Stellar
+       and write me a detailed report?"
+
+Tuxedo: I'll generate a comprehensive research report on Stellar DeFi yields
+        for you. This will take 3-4 minutes.
+
+[Tuxedo invokes Ghostwriter tool internally]
+
+Tuxedo: Here's your research report:
+
+# DeFi Yield Opportunities on Stellar in 2025
+
+## Executive Summary
+The Stellar blockchain offers competitive DeFi yield opportunities
+primarily through Blend Capital, which provides 6-12% APY on USDC
+deposits [1][2]...
+
+[Full report follows]
+
+---
+
+**Report Metadata:**
+- Verification Rate: 94%
+- Session ID: session_20251123_143022
+- Style: defi_report
+- Researchers: 5
+```
+
+### Future: Full OpenHands SDK Migration
+
+**TODO**: Once Ghostwriter is proven stable, consider migrating Tuxedo agent itself to OpenHands SDK:
+
+```python
+# Future architecture (all OpenHands SDK)
+from openhands.sdk import Agent, LLM, Conversation
+from openhands.tools import DelegateTool
+
+# Tuxedo agent with Ghostwriter as sub-agent
+tuxedo_agent = Agent(
+    llm=LLM(provider="bedrock", model="claude-sonnet-4-5"),
+    tools=[
+        StellarTool(),      # Blockchain operations
+        BlendTool(),        # DeFi operations
+        VaultTool(),        # Vault management
+        DelegateTool(),     # Can spawn Ghostwriter as sub-agent
+    ]
+)
+
+# User asks for research report
+conversation.send_message("""
+Research Stellar DeFi yields and generate a report.
+
+Use DelegateTool to spawn a Ghostwriter sub-agent with full pipeline.
+""")
+
+# DelegateTool spawns Ghostwriter pipeline as sub-agent
+# Result is returned to Tuxedo, which presents to user
+```
+
+**Benefits of full OpenHands migration:**
+- Unified event-sourcing across all agents
+- Better multi-agent coordination
+- Simpler architecture (no LangChain/OpenHands bridge)
+- Full event replay for entire conversation
+
+**Migration TODO** (create after Ghostwriter validation):
+- [ ] Evaluate OpenHands SDK for conversational agent use cases
+- [ ] Design Stellar/Blend/Vault tools for OpenHands
+- [ ] Implement Tuxedo agent in OpenHands SDK
+- [ ] Test DelegateTool for Ghostwriter integration
+- [ ] Performance comparison with LangChain version
+- [ ] Production migration plan
+
+---
+
 ## Recommendations
 
 ### Architecture Benefits
