@@ -122,16 +122,49 @@ class GhostwriterPipeline:
         Create LLM instance with Bedrock configuration.
 
         Args:
-            model: Model ID (HAIKU or SONNET)
+            model: Model ID (HAIKU or SONNET constant - without bedrock/ prefix)
 
         Returns:
             Configured LLM instance
+
+        Note:
+            OpenHands SDK uses LiteLLM under the hood. Bedrock models require:
+            - Model name with "bedrock/" prefix
+            - AWS credentials as direct parameters (not via provider field)
+            - Parameter name is "aws_region_name" not "aws_region"
         """
-        return LLM(
-            provider="bedrock",
-            model=model,
-            aws_region=self.aws_region
-        )
+        import os
+
+        # Get AWS credentials from environment
+        bearer_token = os.getenv("AWS_BEARER_TOKEN_BEDROCK")
+        access_key = os.getenv("AWS_ACCESS_KEY_ID")
+        secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+
+        # Construct full model name with bedrock/ prefix
+        full_model_name = f"bedrock/{model}"
+
+        if bearer_token:
+            # Bearer token auth (simpler, recommended)
+            return LLM(
+                model=full_model_name,
+                api_key=bearer_token,
+                aws_region_name=self.aws_region
+            )
+        elif access_key and secret_key:
+            # IAM credentials auth (traditional)
+            return LLM(
+                model=full_model_name,
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key,
+                aws_region_name=self.aws_region
+            )
+        else:
+            raise ValueError(
+                "AWS Bedrock credentials not configured. Set either:\n"
+                "  1. AWS_BEARER_TOKEN_BEDROCK (recommended)\n"
+                "  2. AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY\n"
+                "See: backend/agent/ghostwriter/OPENHANDS_SDK_BEDROCK_CONFIGURATION.md"
+            )
 
     def load_prompt(self, prompt_name: str, **kwargs) -> str:
         """
@@ -200,8 +233,7 @@ class GhostwriterPipeline:
         # Research conversation
         conv = Conversation(
             agent=coordinator,
-            workspace=str(self.workspace / "00_research"),
-            metadata={"stage": "research", "topic": topic}
+            workspace=str(self.workspace / "00_research")
         )
 
         # Researcher prompt configuration
@@ -260,8 +292,7 @@ After all complete, report the number of sources gathered.
 
         conv = Conversation(
             agent=drafter,
-            workspace=str(self.workspace),
-            metadata={"stage": "draft"}
+            workspace=str(self.workspace)
         )
 
         # Read research sources
@@ -309,8 +340,7 @@ After all complete, report the number of sources gathered.
 
         conv = Conversation(
             agent=extractor,
-            workspace=str(self.workspace),
-            metadata={"stage": "extraction"}
+            workspace=str(self.workspace)
         )
 
         extractor_prompt = self.load_prompt("extractor.txt")
@@ -362,8 +392,7 @@ After all complete, report the number of sources gathered.
 
         conv = Conversation(
             agent=verifier_coord,
-            workspace=str(self.workspace),
-            metadata={"stage": "verification"}
+            workspace=str(self.workspace)
         )
 
         verifier_prompt = self.load_prompt("verifier.txt")
@@ -429,8 +458,7 @@ Aggregate all results to 03_verification/verification_report.json with:
 
         conv = Conversation(
             agent=critic,
-            workspace=str(self.workspace),
-            metadata={"stage": "critique"}
+            workspace=str(self.workspace)
         )
 
         critic_prompt = self.load_prompt("critic.txt")
@@ -467,8 +495,7 @@ Aggregate all results to 03_verification/verification_report.json with:
 
         conv = Conversation(
             agent=reviser,
-            workspace=str(self.workspace),
-            metadata={"stage": "revision"}
+            workspace=str(self.workspace)
         )
 
         reviser_prompt = self.load_prompt("reviser.txt")
@@ -522,8 +549,7 @@ Aggregate all results to 03_verification/verification_report.json with:
 
         conv = Conversation(
             agent=stylist,
-            workspace=str(self.workspace),
-            metadata={"stage": "style", "style_guide": style_guide}
+            workspace=str(self.workspace)
         )
 
         # Load style guide
