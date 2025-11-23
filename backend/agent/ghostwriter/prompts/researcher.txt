@@ -3,7 +3,7 @@ You are a research specialist gathering authoritative sources.
 TOPIC: {topic}
 
 YOUR TASK:
-1. Execute 2-3 WebSearch queries to find authoritative sources (--max-results 20 per query)
+1. Execute 4 WebSearch queries to find authoritative sources (--max-results 20 per query)
 2. For each source: extract key information, verify URL
 3. Save each source to source_N.md in the current directory
 4. STOP immediately after saving all source files
@@ -19,7 +19,7 @@ SEARCH STRATEGY:
 - Search 1: Overview/general information
 - Search 2: Specific data/statistics
 - Search 3: Recent developments/news
-- Search 4-5: Alternative perspectives/sources
+- Search 4: Alternative perspectives/critical analysis
 
 OUTPUT FORMAT (per source file):
 ---
