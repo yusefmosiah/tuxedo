@@ -229,7 +229,7 @@ class GhostwriterPipeline:
 
         try:
             response_text = ""
-            async for message in query(prompt, options):
+            async for message in query(prompt=prompt, options=options):
                 response_text += str(message)
 
             self.session_manager.log(f"Researcher {researcher_id} completed")
@@ -268,7 +268,7 @@ class GhostwriterPipeline:
         )
 
         response_text = ""
-        async for message in query(prompt, options):
+        async for message in query(prompt=prompt, options=options):
             response_text += str(message)
 
         output_file = draft_dir / "initial_draft.md"
@@ -302,7 +302,7 @@ class GhostwriterPipeline:
         )
 
         response_text = ""
-        async for message in query(prompt, options):
+        async for message in query(prompt=prompt, options=options):
             response_text += str(message)
 
         # Load extracted claims
@@ -453,7 +453,7 @@ class GhostwriterPipeline:
             )
 
             response_text = ""
-            async for message in query(prompt, options):
+            async for message in query(prompt=prompt, options=options):
                 response_text += str(message)
 
             # Parse JSON response
@@ -501,7 +501,7 @@ class GhostwriterPipeline:
         )
 
         response_text = ""
-        async for message in query(prompt, options):
+        async for message in query(prompt=prompt, options=options):
             response_text += str(message)
 
         self.session_manager.log("Critique completed")
@@ -538,7 +538,7 @@ class GhostwriterPipeline:
         )
 
         response_text = ""
-        async for message in query(prompt, options):
+        async for message in query(prompt=prompt, options=options):
             response_text += str(message)
 
         self.session_manager.log("Revision completed")
@@ -595,7 +595,7 @@ class GhostwriterPipeline:
         )
 
         response_text = ""
-        async for message in query(prompt, options):
+        async for message in query(prompt=prompt, options=options):
             response_text += str(message)
 
         output_file = style_dir / "final_report.md"
