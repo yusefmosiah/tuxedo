@@ -43,8 +43,8 @@ async def main():
     parser.add_argument(
         "--max-results",
         type=int,
-        default=5,
-        help="Maximum number of results (default: 5)"
+        default=20,
+        help="Maximum number of results (default: 20)"
     )
     parser.add_argument(
         "--search-depth",

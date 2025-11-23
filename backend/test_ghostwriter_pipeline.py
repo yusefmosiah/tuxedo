@@ -19,10 +19,10 @@ import logging
 from pathlib import Path
 from datetime import datetime
 
-# Setup logging
+# Setup logging - only show warnings and errors
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.WARNING,
+    format='%(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ async def test_pipeline():
 
     # Configuration
     test_topic = "DeFi yield farming strategies on Stellar blockchain"
-    workspace_root = "/tmp/ghostwriter_test"
+    workspace_root = "/home/user/tuxedo/ghostwriter_sessions"
 
     print(f"Topic: {test_topic}")
     print(f"Workspace: {workspace_root}")

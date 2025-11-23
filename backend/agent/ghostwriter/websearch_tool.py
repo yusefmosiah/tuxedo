@@ -44,7 +44,7 @@ class WebSearchTool:
     async def search(
         self,
         query: str,
-        max_results: int = 5,
+        max_results: int = 20,
         search_depth: str = "advanced",
         include_raw_content: bool = True
     ) -> Dict[str, Any]:
@@ -53,7 +53,7 @@ class WebSearchTool:
 
         Args:
             query: Search query
-            max_results: Maximum number of results (1-10, default: 5)
+            max_results: Maximum number of results (1-20, default: 20)
             search_depth: "basic" or "advanced" (default: "advanced")
             include_raw_content: Include full page content (default: True)
 
@@ -162,7 +162,7 @@ class OpenHandsWebSearchTool:
     def __init__(self, api_key: Optional[str] = None):
         self.search_tool = WebSearchTool(api_key)
 
-    async def execute(self, query: str, max_results: int = 5) -> str:
+    async def execute(self, query: str, max_results: int = 20) -> str:
         """
         Execute web search and return formatted results.
 
