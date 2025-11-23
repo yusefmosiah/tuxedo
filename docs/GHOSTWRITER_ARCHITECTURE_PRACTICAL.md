@@ -58,7 +58,7 @@ import asyncio
 async def run_research_stage(topic: str):
     """Stage 1: Research with parallel Haiku subagents"""
     options = ClaudeAgentOptions(
-        model="claude-3-5-haiku-20241022",  # Haiku for speed/cost
+        model="claude-haiku-4-5-20251001",  # Haiku 4.5 for speed/cost
         allowed_tools=["WebSearch", "Write"],
         cwd="/workspace/sessions/session_001/00_research"
     )
@@ -285,7 +285,7 @@ asyncio.run(run_research_stage("DeFi yields on Stellar"))
 
 ### Use Haiku 4.5 For:
 
-**Model ID**: `claude-3-5-haiku-20241022`
+**Model ID**: `claude-haiku-4-5-20251001`
 **Characteristics**: Fast, cheap, good at structured tasks
 **Cost**: ~$0.25 per 1M input tokens, ~$1.25 per 1M output tokens
 
@@ -668,7 +668,7 @@ async def fetch_content(url: str) -> str:
     from claude_agent_sdk import query, ClaudeAgentOptions
 
     options = ClaudeAgentOptions(
-        model="claude-3-5-haiku-20241022",
+        model="claude-haiku-4-5-20251001",
         allowed_tools=["WebFetch"]
     )
 
@@ -704,7 +704,7 @@ async def verify_claim(
     import json
 
     options = ClaudeAgentOptions(
-        model="claude-3-5-haiku-20241022",
+        model="claude-haiku-4-5-20251001",
         allowed_tools=[]  # No tools needed for verification
     )
 
@@ -915,7 +915,7 @@ import asyncio
 class GhostwriterPipeline:
     async def run_stage_1_research(self, topic: str):
         options = ClaudeAgentOptions(
-            model="claude-3-5-haiku-20241022",
+            model="claude-haiku-4-5-20251001",
             allowed_tools=["WebSearch", "Write"],
             cwd=self.research_dir
         )
@@ -1220,7 +1220,7 @@ If all checked, you're ready to implement!
 
 **Recommendation**: Start with Phase 1 (Week 1)
 - Build core pipeline using `claude_agent_sdk.query()`
-- Use `ClaudeAgentOptions(model="claude-3-5-haiku-20241022")` for research and extraction
+- Use `ClaudeAgentOptions(model="claude-haiku-4-5-20251001")` for research and extraction
 - Use `ClaudeAgentOptions(model="claude-sonnet-4-5-20250929")` for drafting
 - Test with real DeFi content
 
