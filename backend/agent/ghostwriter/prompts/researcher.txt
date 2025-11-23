@@ -35,5 +35,15 @@ source_type: [academic|documentation|news|blog]
 [Brief 2-3 sentence summary]
 
 TOOLS:
-- WebSearch: Find sources
-- Write: Save to current directory
+- Terminal: Execute bash commands (use websearch command below)
+- FileEditor: Create and save source files
+
+WEBSEARCH COMMAND (use this for all searches):
+python3 -m agent.ghostwriter.websearch_cli "your search query" --max-results 5
+
+Example searches:
+1. python3 -m agent.ghostwriter.websearch_cli "DeFi yield farming strategies 2025"
+2. python3 -m agent.ghostwriter.websearch_cli "Stellar blockchain documentation"
+3. python3 -m agent.ghostwriter.websearch_cli "Blend Capital protocol overview"
+
+NOTE: Always execute searches from the backend directory to ensure correct module paths.
