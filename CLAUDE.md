@@ -4,24 +4,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Tuxedo** is a conversational AI agent featuring a **non-custodial vault system** for automated yield farming on Stellar **mainnet**. It's a full-stack application with React + TypeScript frontend and FastAPI Python backend, featuring a fully operational AI agent with 6 Stellar tools + 6 Blend Capital yield farming tools + 7 vault management tools.
+**Choir** (formerly Tuxedo) is AI research infrastructure for the learning economy.
 
-**Current State**: Functionally complete with non-custodial TUX0 vault implementation (95% complete, deployment pending)
+**Core Product**: Ghostwriter - An AI agent that helps you research, write, and publish—then pays you in stablecoins when your work gets cited.
 
-**🏛️ Non-Custodial Vault Architecture**:
+**Current Phase**: Ghostwriter Foundation (Q4 2025 - 90% Complete)
+**Status**: Research infrastructure implemented, citation economics in development
+**Architecture**: Multi-model orchestration + optional yield farming (future)
 
-- **TUX0 Vault**: Users deposit assets, receive tradeable vault shares
-- **Agent Management**: AI autonomously manages vault funds across Blend pools
-- **Fee Distribution**: 2% platform fee, 98% distributed to vault users
-- **Real Yields**: All operations on Stellar mainnet with real funds
-- **Dual-Authority Security**: Agent can execute strategies, only users can withdraw
+### What Works Today ✅
 
-**⚠️ Important**:
+1. **Ghostwriter Pipeline** - 8-stage research and writing system
+2. **Passkey Authentication** - WebAuthn biometric login (production-proven)
+3. **Multi-user Isolation** - Separate accounts and sessions per user
+4. **Chat Interface** - Conversational AI with tool execution
+5. **WebSearch Integration** - Tavily API for real-time web research
 
-- ALWAYS use web-search-prime to search the web. NEVER use built in web search
-- **Non-Custodial Model**: No wallet imports - users deposit into vaults and receive shares
-- **Mainnet Only**: This system operates exclusively on Stellar mainnet with real funds
-- **Python Development**: Use UV for virtual environment management. See backend commands below.
+### What's Planned 📋
+
+1. **Citation Economics** - Earn stablecoins when your work gets cited
+2. **Multichain Vaults** - Optional DeFi yield farming (Base → EVM chains)
+3. **Knowledge Base** - Semantic search and citation graph
+4. **Anonymous Publishing** - Merit-based discovery without identity
+
+**Important**: No smart contracts are deployed. Vault system and citation rewards are planned but not yet implemented.
+
+---
 
 ## Development Commands
 
@@ -49,7 +57,6 @@ npm install
 cd backend
 
 # Use UV for environment management
-# UV creates and manages the virtual environment automatically
 uv sync  # Creates .venv and installs all dependencies
 
 # Always activate environment before working
@@ -58,12 +65,11 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 # Start backend server
 python main.py
 
-# Test AI agent functionality
-python3 test_agent.py
-python3 test_agent_with_tools.py
+# Test Ghostwriter pipeline
+python test_ghostwriter.py
 
-# Reinstall dependencies if needed
-uv sync  # Updates and installs all packages from pyproject.toml + uv.lock
+# Test WebSearch integration
+python test_websearch.py
 ```
 
 ### Starting Both Services
@@ -102,431 +108,494 @@ uv sync  # Recreates environment with correct dependencies
 - Health Check: http://localhost:8000/health
 - API Documentation: http://localhost:8000/docs
 
+---
+
 ## High-Level Architecture
 
 ### System Components
 
-1. **AI Agent Backend** (`backend/main.py`) - FastAPI with LangChain integration and multi-step reasoning
-2. **TUX0 Vault System** (`backend/vault_manager.py`) - Non-custodial vault management with contract interface
-3. **Stellar Tools** (`backend/stellar_tools.py`) - 6 tools for blockchain operations
-4. **Vault Tools** (`backend/vault_tools.py`) - 7 tools for vault operations (deposit, withdraw, agent strategies)
+1. **Ghostwriter Pipeline** (`backend/agent/ghostwriter/`) - 8-stage research and writing system
+2. **AI Agent Backend** (`backend/agent/core.py`) - LangChain integration and multi-step reasoning
+3. **Passkey Auth** (`backend/database_passkeys.py`) - WebAuthn authentication
+4. **Account Manager** (`backend/account_manager.py`) - Multi-user isolation
 5. **Chat Interface** (`src/components/ChatInterface.tsx`) - Real-time conversational UI
-6. **Vault Dashboard** (`src/components/vault/VaultDashboard.tsx`) - Non-custodial vault interface
-7. **Pool Dashboard** (`src/components/dashboard/`) - Blend protocol visualization
-8. **API Layer** (`src/lib/api.ts`) - HTTP client with wallet integration
+6. **API Layer** (`src/lib/api.ts`) - HTTP client with session management
 
-### Data Flow
+### Ghostwriter Pipeline Flow
 
 ```
-User Chat → Frontend → API → AI Agent → LLM → Tool Selection → Vault/Blend Operations → Stellar Blockchain → Response → UI
+User Request → Conductor → Ghostwriter Agent
+    ↓
+1. RESEARCH (Multi-model web search + knowledge base)
+2. DRAFT (Synthesize into narrative)
+3. EXTRACT (Atomic claims + citations)
+4. VERIFY (3-layer citation verification)
+5. CRITIQUE (Critical analysis)
+6. REVISE (Fix unsupported claims)
+7. RE-VERIFY (Confirm improvements)
+8. STYLE (Apply style guide)
+    ↓
+Published Article → Citation Graph → Rewards (future)
 ```
 
-**Vault Flow:**
-
-```
-User Deposit → Vault Contract → TUX0 Shares → Agent Strategies → Blend Pools → Yield Generation → Fee Distribution → Share Value Increase
-```
+---
 
 ## Key Configuration
 
 ### Environment Variables
 
 **Frontend (.env.local)**:
-
-- `PUBLIC_STELLAR_NETWORK=PUBLIC` (mainnet)
-- `PUBLIC_STELLAR_HORIZON_URL=https://horizon.stellar.org`
-- `PUBLIC_STELLAR_RPC_URL=https://rpc.ankr.com/stellar_soroban` (or your RPC provider)
-- `PUBLIC_API_URL=http://localhost:8000`
+```bash
+PUBLIC_API_URL=http://localhost:8000
+```
 
 **Backend (.env)**:
+```bash
+# Required for Ghostwriter
+AWS_ACCESS_KEY_ID=your_aws_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret
+AWS_REGION=us-east-1
+TAVILY_API_KEY=your_tavily_key
 
-- `OPENAI_API_KEY=your_api_key` (required)
-- `OPENAI_BASE_URL=https://api.redpill.ai/v1` (or https://api.openai.com/v1)
-- `ANTHROPIC_API_KEY=your_anthropic_key` (optional - for Claude SDK research features)
-- `ENABLE_CLAUDE_SDK=true` (optional - default: true)
-- `STELLAR_NETWORK=mainnet`
-- `ANKR_STELLER_RPC=https://rpc.ankr.com/stellar_soroban` (mainnet RPC)
-- `MAINNET_HORIZON_URL=https://horizon.stellar.org`
-- `VAULT_CONTRACT_ID=<deployed_vault_contract>` (pending deployment)
-- `TUX_TOKEN_ID=<deployed_tux_token>` (pending deployment)
-- `PLATFORM_FEE_ADDRESS=<platform_fee_collection_address>`
-- `AGENT_ADDRESS=<authorized_agent_address>`
+# Optional - for legacy Stellar features
+OPENAI_API_KEY=your_api_key  # For basic chat agent
+OPENAI_BASE_URL=https://api.redpill.ai/v1  # Or https://api.openai.com/v1
 
-### Critical Architecture Note
+# Database
+DATABASE_URL=sqlite:///./choir.db
 
-This system operates **exclusively on mainnet** with a **non-custodial vault model**:
+# Authentication
+SESSION_SECRET_KEY=your_random_secret_key_here
+```
 
-- **No Wallet Imports**: Users maintain control of their assets through vault shares
-- **TUX0 Shares**: Users deposit into vault, receive tradeable shares that appreciate with yield
-- **Agent Autonomy**: AI can execute Blend strategies but cannot withdraw user funds
-- **Dual-Authority**: Agent for strategy execution, users for withdrawals only
-- **Mainnet Operations**: All vault operations execute on Stellar mainnet with real funds
-- **Contract Deployment**: Vault system built but contracts not yet deployed (implementation complete)
+### Critical Architecture Notes
 
-## AI Agent System
+**What's Implemented**:
+- ✅ Ghostwriter 8-stage pipeline (~2000 lines)
+- ✅ Passkey authentication (WebAuthn)
+- ✅ Multi-user account system
+- ✅ Chat interface with AI agent
+- ✅ WebSearch integration (Tavily API)
+- ✅ Tool execution framework
 
-### Hybrid Architecture (LangChain + Claude SDK)
+**What's NOT Implemented (Yet)**:
+- ❌ Smart contracts (no deployments)
+- ❌ Citation reward system
+- ❌ Knowledge base / vector search
+- ❌ Vault system
+- ❌ DeFi integrations
+- ❌ Multichain support
 
-Tuxedo now features a **hybrid agent system**:
+**Legacy Code** (from Stellar hackathon, still present but not core):
+- `backend/stellar_tools.py` - Stellar blockchain tools
+- `backend/blend_pool_tools.py` - Blend Capital (Stellar DeFi)
+- `backend/vault_tools.py` - References undeployed vault contracts
 
-- **LangChain** (`backend/agent/core.py`) - Blockchain tool execution (19 tools)
-- **Claude SDK** (`backend/agent/claude_sdk_wrapper.py`) - Research & analysis
+These files exist for reference but are not part of the current Choir vision. See `docs/MULTICHAIN_EVM_MIGRATION_PLAN.md` for future multichain architecture.
 
-**LangChain** for:
-- Stellar blockchain operations
-- Blend Capital yield farming
-- Vault management
-- Real-time DeFi execution
+---
 
-**Claude SDK** for:
-- Strategy research and analysis
-- Yield opportunity research
-- Performance report generation
-- Market insights and trends
+## Ghostwriter Implementation
 
-See [docs/CLAUDE_SDK_INTEGRATION.md](docs/CLAUDE_SDK_INTEGRATION.md) for complete documentation.
+### Core Pipeline
 
-### Core Implementation
+**Location**: `backend/agent/ghostwriter/pipeline.py` (708 lines)
 
-- **Multi-step reasoning**: Up to 25 iterations with tool selection
-- **LangChain v2+ compatible**: Uses new `tools` format
-- **Claude SDK v0.1.8**: Advanced research and reasoning
-- **Context management**: Conversation history + wallet address injection
-- **Error handling**: Graceful failures with user feedback
+**8 Stages**:
 
-### Integrated AI Agent Tools
+1. **Research** - Parallel subagents gather 3-5 sources using Tavily websearch
+2. **Draft** - Synthesize research into coherent document
+3. **Extract** - Extract atomic claims with citations
+4. **Verify** - 3-layer verification (URL → content → Claude validation)
+5. **Critique** - Critical analysis of weak arguments
+6. **Revise** - Fix unsupported claims and incorporate critique
+7. **Re-verify** - Confirm revised claims are properly supported
+8. **Style** - Apply user's style guide (technical, academic, conversational, etc.)
 
-**Core Stellar Tools (6 tools):**
+**Models Used**:
+- **AWS Bedrock Claude 4.5 Haiku** - Fast research and extraction
+- **AWS Bedrock Claude 4.5 Sonnet** - Deep reasoning and synthesis
 
-1. **Account Manager**: `create`, `fund`, `get`, `transactions`, `list`, `export`, `import`
-2. **Market Data**: `orderbook`, `trades`, `ticker`, `pairs`
-3. **Trading**: `create_offer`, `manage_offer`, `delete_offer`, `offers`
-4. **Trustline Manager**: `create`, `delete`, `allow_trust`, `trustlines`
-5. **Utilities**: `status`, `fees`, `ledgers`, `network`
-6. **Soroban**: `get_data`, `simulate`, `invoke`, `get_events`, `get_ledger_entries`
+### Configuration
 
-**TUX0 Vault Tools (7 tools) - NON-CUSTODIAL:**
+**Setup Guide**: `backend/agent/ghostwriter/OPENHANDS_SDK_BEDROCK_CONFIGURATION.md`
 
-1. **deposit_to_vault**: Deposit USDC, receive TUX0 shares (non-custodial)
-2. **withdraw_from_vault**: Burn TUX0 shares, receive proportional USDC
-3. **get_vault_performance**: Check vault TVL, APY, and share value
-4. **get_my_vault_position**: View user's shares and earned yield
-5. **vault_agent_supply_to_blend**: Agent supplies vault funds to Blend pools
-6. **vault_agent_withdraw_from_blend**: Agent withdraws from Blend pools back to vault
-7. **vault_distribute_yield**: Distribute 2% platform fee, 98% to vault users
+**Key Details**:
+- Uses OpenHands SDK (built on LiteLLM)
+- Requires AWS Bedrock access (IAM permissions for Claude models)
+- Tavily API for web search
+- Session-based file management
 
-**Blend Capital Yield Farming Tools (6 tools) - MAINNET:**
+### Style Guides
 
-1. **blend_find_best_yield**: Find highest APY opportunities across all mainnet pools for an asset
-2. **blend_discover_pools**: Discover all active Blend pools on mainnet (Comet, Fixed, YieldBlox)
-3. **blend_supply_to_pool**: Supply assets to earn yield (autonomous execution, real funds)
-4. **blend_withdraw_from_pool**: Withdraw assets from pools (real funds)
-5. **blend_check_my_positions**: Check current positions in a pool
-6. **blend_get_pool_apy**: Get real-time APY data for specific assets from on-chain sources
+**Location**: `backend/agent/ghostwriter/style_guides/`
 
-**Total: 19 AI Agent Tools**
+Available styles:
+- `technical.md` - Technical documentation style
+- `academic.md` - Academic paper style
+- `conversational.md` - Blog/essay style
+- `defi_report.md` - DeFi research report style
+
+### Testing Ghostwriter
+
+```bash
+# From backend directory
+source .venv/bin/activate
+
+# Run full pipeline test
+python test_ghostwriter.py
+
+# Test websearch only
+python test_websearch.py
+```
+
+Expected output:
+- Session created in `/tmp/ghostwriter_test_sessions/`
+- 8 stages execute sequentially
+- Final report generated with verification metrics
+- Citations validated and included
+
+---
+
+## Passkey Authentication
+
+### Implementation
+
+**Database**: `backend/database_passkeys.py`
+**API Routes**: `backend/api/routes/passkey_auth.py`
+**Frontend**: `src/services/passkeyAuth.ts`, `src/contexts/AuthContext.tsx`
+
+### Features
+
+- ✅ WebAuthn biometric authentication (fingerprint, Face ID)
+- ✅ Session-based authorization
+- ✅ Recovery codes (backup authentication)
+- ✅ Email recovery (via SendGrid)
+- ✅ Multi-device support
+- ✅ Production-tested and working
+
+### Flow
+
+```
+User → Register with Passkey → Store credential
+    ↓
+Login → Biometric challenge → Session token
+    ↓
+API requests → Bearer token → Authenticated
+```
+
+**Security**: Passkeys use public-key cryptography (FIDO2/WebAuthn standard). Private keys never leave the device.
+
+---
 
 ## Frontend Architecture
 
 ### Key Components
 
-- `ChatInterface.tsx` - Main AI chat interface with tool indicators
-- `VaultDashboard.tsx` - Non-custodial TUX0 vault interface with deposit/withdraw
-- `PoolsDashboard.tsx` - Blend pool visualization
-- `api.ts` - HTTP client with wallet address integration
-- `useBlendPools.ts` - Pool data fetching hook
-- `useVaultStats.ts` - Real-time vault statistics hook
-- `useWallet.ts` - Stellar wallet connection
-- `WalletContext.tsx` - Dual-mode wallet management (agent/external)
+- `ChatInterface.tsx` - Main AI chat interface with Ghostwriter
+- `WalletContext.tsx` - Authentication and session management
+- `api.ts` - HTTP client with session token injection
 
 ### Tech Stack
 
 - Vite 7.1 + React 19 + TypeScript 5.9
-- Stellar Design System + Stellar Wallets Kit
-- TanStack React Query for data fetching
-- Blend SDK 3.2.1 for protocol integration
-- Axios for HTTP communication with backend
+- TanStack React Query for server state
+- Axios for HTTP communication
+
+### State Management
+
+- React Context for auth state
+- TanStack Query for server data
+- Local state for UI
+
+---
 
 ## Backend Architecture
 
 ### Key Files
 
-**Core Infrastructure:**
-
-- `main.py` - FastAPI app with AI agent loop
-- `stellar_tools.py` - All 6 Stellar tools implementation
-- `stellar_soroban.py` - Smart contract support with async operations
-- `account_manager.py` - Multi-user account management (Quantum Leap)
+**Core Infrastructure**:
+- `main.py` - FastAPI app entry point
+- `app.py` - Application factory pattern
+- `agent/core.py` - LangChain agent orchestration
 - `agent/tool_factory.py` - Per-request tool creation with user isolation
+- `account_manager.py` - Multi-user account management
 
-**TUX0 Vault Integration (NON-CUSTODIAL):**
+**Ghostwriter**:
+- `agent/ghostwriter/pipeline.py` - 8-stage research pipeline
+- `agent/ghostwriter/tool.py` - LangChain tool wrapper
+- `agent/ghostwriter/verify.py` - Citation verification engine
+- `agent/ghostwriter/websearch_tool.py` - Tavily integration
 
-- `vault_manager.py` - Complete vault contract interface (404 lines)
-- `vault_tools.py` - 7 LangChain tools for AI agent vault operations
-- `VaultDashboard.tsx` - Full vault interface (627 lines)
-- `useVaultStats.ts` - Real-time vault statistics hook
-- Smart contracts: Vault, TUX token, Farming (built, deployment pending)
-- Dual-authority security: agent strategies, user-only withdrawals
+**Authentication**:
+- `database_passkeys.py` - Passkey database schema
+- `api/routes/passkey_auth.py` - Auth endpoints
+- `services/email.py` - SendGrid email service
 
-**Blend Capital Integration (MAINNET-ONLY):**
-
-- `blend_pool_tools.py` - Core Blend pool operations (discovery, APY, supply, withdraw, positions)
-- `blend_account_tools.py` - LangChain tool wrappers for AI agent (mainnet defaults)
-- Supports 3 mainnet pools: Comet, Fixed, YieldBlox
-- Real-time on-chain APY calculation
+**Legacy** (from Stellar hackathon):
+- `stellar_tools.py` - Stellar blockchain operations
+- `blend_pool_tools.py` - Blend Capital DeFi
+- `vault_tools.py` - Undeployed vault contracts
 
 ### Tech Stack
 
 - FastAPI + Pydantic
-- LangChain + OpenAI gpt-oss 120b (via Redpill AI or openrouter exacto)
-- Stellar SDK 13.1.0+ with async support
+- LangChain + OpenAI (for basic chat agent)
+- OpenHands SDK + AWS Bedrock (for Ghostwriter)
+- SQLite database
 - uvicorn ASGI server
-- python-dotenv for environment management
+
+---
 
 ## Testing
 
-### AI Agent Testing
-
-```bash
-# From project root
-python3 test_agent.py                    # Basic agent functionality
-python3 test_agent_with_tools.py         # Comprehensive tool testing
-
-# Frontend: Test chat interface in browser
-# 1. Connect wallet
-# 2. Try queries like:
-#    - "What is the network status?"
-#    - "Create a new account and fund it"
-#    - "Show me the XLM/USDC orderbook"
-#    - "What's in my wallet?" (requires connected wallet)
-```
-
-### Test Files Available
-
-- `test_agent.py` - Basic AI agent functionality tests
-- `test_agent_with_tools.py` - Comprehensive Stellar tools validation
-- `test_wallet_fix.py` - Wallet integration testing
-- `test_blend_integration.py` - Blend protocol integration tests
-
-### TUX0 Vault Integration Testing
+### Ghostwriter Testing
 
 ```bash
 # From backend directory
 cd backend
 source .venv/bin/activate
 
-# Run vault manager tests (requires deployed contracts)
-python3 test_vault_integration.py
+# Full pipeline test
+python test_ghostwriter.py
 
-# Test vault tools
-python3 test_vault_tools.py
+# WebSearch integration test
+python test_websearch.py
 ```
 
-**Note:** Vault testing requires deployed contracts (pending deployment).
+**Test Output**:
+- Session directory created
+- 8 stages execute with progress logging
+- Verification metrics displayed
+- Final report saved to session directory
 
-### Blend Capital Integration Testing
+### Frontend Testing
 
 ```bash
-# From backend directory
-cd backend
-source .venv/bin/activate
+# Start both services
+# Terminal 1: npm run dev
+# Terminal 2: cd backend && source .venv/bin/activate && python main.py
 
-# Run Blend integration tests (read-only, no accounts needed)
-python3 test_blend_integration.py
+# Test in browser
+# 1. Register with passkey
+# 2. Try Ghostwriter: "Research yield farming on Base"
+# 3. Watch 8-stage pipeline execute
+# 4. See final report with citations
 ```
-
-**Tests included:**
-
-1. Pool discovery from Backstop contract
-2. Real-time APY query for USDC in Comet pool
-3. Best yield finder across all pools
-
-**Expected results:** All 3 tests should pass, demonstrating:
-
-- Connection to Blend protocol contracts
-- On-chain data retrieval via Soroban RPC
-- APY calculation from reserve data
 
 ### Common Test Scenarios
 
-**Stellar Operations (Mainnet):**
+**Ghostwriter**:
+- "Research DeFi yield opportunities on Base blockchain"
+- "Write a technical analysis of Aave V3 vs Compound V3"
+- "Compare Stellar and Ethereum L2s for DeFi applications"
 
-- Network status queries: "What is the current Stellar network status?"
-- Account creation: "Create a new account" (user must fund with real XLM)
-- Balance queries: "Check the balance for account [ADDRESS]"
-- Market data: "Show me the XLM/USDC orderbook"
-- Trading operations: "Create an offer to buy 100 XLM for USDC" ⚠️ REAL FUNDS
-- Trustline management: "Create a USDC trustline" ⚠️ REAL FUNDS
-- Soroban contracts: "Get contract data for [CONTRACT_ID]"
+**Authentication**:
+- Register with biometric passkey
+- Login with passkey
+- Test recovery codes
+- Multi-device registration
 
-**TUX0 Vault Operations (Non-Custodial - Mainnet):**
-
-- Deposit: "Deposit 100 USDC to the vault" ⚠️ REAL FUNDS, receive TUX0 shares
-- Withdraw: "Withdraw 50 shares from the vault" ⚠️ REAL FUNDS, burn shares
-- Check performance: "What's the vault's current APY and TVL?"
-- Position tracking: "How much yield have I earned on my vault shares?"
-- Agent strategies: "Have the agent supply vault funds to the best Blend pool"
-- Yield distribution: "Distribute accumulated yield to vault users"
-
-**Blend Capital Yield Farming (Mainnet - Real Funds):**
-
-- Find yield: "What's the best APY for USDC on mainnet?"
-- Pool discovery: "Show me all Blend pools" (returns Comet, Fixed, YieldBlox)
-- Supply assets: "Supply 100 USDC to the Comet pool" ⚠️ REAL FUNDS
-- Check positions: "What are my positions in the Comet pool?"
-- Withdraw: "Withdraw 50 USDC from the Comet pool" ⚠️ REAL FUNDS
-- APY queries: "What's the current APY for USDC in Comet pool?" (live on-chain data)
+---
 
 ## Important Patterns
 
-### Tool Integration Pattern
+### Ghostwriter Tool Integration
 
-All Stellar tools follow consistent patterns:
+**Location**: `backend/agent/tool_factory.py`
 
-- Async function definitions
-- Proper error handling with user-friendly messages
-- Type-safe input/output validation
-- Consistent response formatting
+Ghostwriter is exposed as a LangChain tool that agents can invoke:
 
-### Frontend Data Flow
+```python
+from agent.ghostwriter.tool import get_ghostwriter_tool
 
-- React hooks for state management
-- TanStack Query for server state
-- Wallet address passed to all AI calls
-- Visual indicators for tool execution
+# Create tool for specific user
+ghostwriter_tool = get_ghostwriter_tool(user_id="user_123")
+
+# Agent can now call Ghostwriter
+result = await ghostwriter_tool.ainvoke({
+    "topic": "DeFi yield farming",
+    "style_guide": "defi_report"
+})
+```
+
+### User Isolation
+
+All tools are created per-request with user context:
+
+```python
+# backend/agent/tool_factory.py
+def create_user_tools(user_id: str) -> List[Tool]:
+    """Create tools with user_id injected for isolation"""
+    return [
+        get_ghostwriter_tool(user_id),
+        # Future: other tools here
+    ]
+```
 
 ### Error Handling
 
 - Frontend: Graceful degradation with user notifications
 - Backend: Try/catch blocks with structured error responses
-- AI Agent: Error context preservation for recovery
+- Ghostwriter: Stage-level error recovery with fallbacks
+
+---
 
 ## Development Notes
 
 ### Virtual Environment Management
 
-**UV Environment Best Practices**:
-
+**UV Best Practices**:
 ```bash
 # ✅ RECOMMENDED - Let UV manage everything
 uv sync       # UV creates proper .venv with correct structure
 source .venv/bin/activate
 ```
 
-**Why UV works well**:
-
-- UV creates virtual environments with optimized structure
-- UV handles both environment creation AND package management consistently
-- Automatic dependency resolution from pyproject.toml and uv.lock
-- Faster installation and better caching than standard pip
+**Why UV**:
+- Creates virtual environments with optimized structure
+- Handles both environment creation AND package management
+- Automatic dependency resolution from pyproject.toml
+- Faster than pip, better caching
 
 ### Port Configuration
 
-- Frontend: 5173 (configurable via Vite)
-- Backend: 8000 (standardized port)
-- API fallback: Attempts 8001, 8002 if 8000 unavailable
-
-### Network Configuration
-
-- **Mainnet only** - All operations use Stellar mainnet
-- Contract addresses: `src/contracts/blend.ts` (mainnet values)
-- Network URLs: Centralized in `backend/config/settings.py`
-- RPC provider: Ankr (configurable via environment variables)
-
-### Wallet Integration
-
-- Uses Stellar Wallets Kit (`@creit.tech/stellar-wallets-kit`)
-- Supports Freighter and other compatible wallets
-- Dual-mode operation: Agent accounts or external wallet connection
-- Wallet address automatically passed to AI agent in `wallet_address` parameter
-- Transaction signing support for vault operations (user signs deposits/withdrawals)
-- Non-custodial model: users control vault shares, not agent keys
+- Frontend: 5173 (Vite default)
+- Backend: 8000 (FastAPI)
 
 ### API Communication
 
 - Frontend → Backend: HTTP POST to `/chat` endpoint
-- Request format: `{ message, history, wallet_address? }`
+- Request format: `{ message, history, session_token }`
 - Response format: `{ response, success, error? }`
-- Health checks: GET `/health` endpoint every 30 seconds
+- Health checks: GET `/health` endpoint
+
+---
 
 ## Production Status
 
-**Implementation Complete (95%)**:
+**Implemented (90%)**:
+1. ✅ Ghostwriter 8-stage pipeline
+2. ✅ Passkey authentication system
+3. ✅ Multi-user isolation
+4. ✅ Chat interface with AI agent
+5. ✅ WebSearch integration (Tavily)
+6. ✅ Session management
 
-1. ✅ **Non-custodial vault system**: TUX0 shares with dual-authority security
-2. ✅ **Complete smart contracts**: Vault (627 lines), TUX token, farming contracts
-3. ✅ **Full AI integration**: 19 tools including 7 vault operations
-4. ✅ **Mainnet-only configuration**: All operations default to mainnet
-5. ✅ **Centralized configuration**: `backend/config/settings.py` + environment variables
-6. ✅ **Real yield data**: On-chain APY from Blend Capital mainnet pools
-7. ✅ **Multi-pool support**: Comet, Fixed, and YieldBlox pools
-8. ✅ **User isolation**: Non-custodial shares with agent management
+**In Development (10%)**:
+1. 🚧 Citation economics system
+2. 🚧 Knowledge base / vector search
+3. 🚧 Semantic citation detection
 
-**Deployment Gap (5%)**:
-
-- ❌ **Contract deployment**: Smart contracts built but not deployed
-- ❌ **Environment variables**: Missing deployed contract addresses
-- ❌ **Integration testing**: Requires deployed contracts for e2e testing
+**Planned (Not Started)**:
+1. ❌ Smart contract deployment
+2. ❌ Multichain vault system
+3. ❌ DeFi yield farming
+4. ❌ Cross-chain operations
 
 **Current Scope**:
+- Research and writing infrastructure (Ghostwriter)
+- Passkey authentication for web apps
+- Multi-user AI agent system
+- Foundation for future citation economics
 
-- Non-custodial vault system with automated yield farming
-- Blend Capital focused (no other DeFi protocols)
-- Supports mainnet pools: Comet, Fixed, and YieldBlox
-- Requires Ankr RPC or compatible mainnet RPC provider
-- Mainnet-only by design (no testnet fallback)
-
-**Implementation Status**:
-
-- **Smart Contracts**: ✅ Complete (vault, token, farming)
-- **Backend Integration**: ✅ Complete (vault_manager, vault_tools, API routes)
-- **Frontend Interface**: ✅ Complete (VaultDashboard, hooks, wallet integration)
-- **Blend Integration**: ✅ Complete (6 tools, mainnet pools)
-- **Security Model**: ✅ Complete (dual-authority, non-custodial)
-- **Deployment**: ❌ Pending (contracts not yet deployed)
+---
 
 ## File Locations for Common Tasks
 
+### Ghostwriter Modifications
+
+- **Core pipeline**: `backend/agent/ghostwriter/pipeline.py`
+- **Verification**: `backend/agent/ghostwriter/verify.py`
+- **WebSearch**: `backend/agent/ghostwriter/websearch_tool.py`
+- **Tool wrapper**: `backend/agent/ghostwriter/tool.py`
+- **Prompts**: `backend/agent/ghostwriter/prompts/`
+- **Style guides**: `backend/agent/ghostwriter/style_guides/`
+
 ### AI Agent Modifications
 
-- **Core logic**: `backend/main.py` - Agent loop, LangChain integration
-- **Stellar tools**: `backend/stellar_tools.py` - All 6 Stellar tools
-- **Vault tools**: `backend/vault_tools.py` - 7 non-custodial vault operations
-- **Vault manager**: `backend/vault_manager.py` - Complete vault contract interface
-- **Smart contracts**: `backend/stellar_soroban.py` - Soroban operations
-- **Key management**: `backend/key_manager.py` - Stellar key operations
-- **Tool testing**: `test_agent_with_tools.py` - Comprehensive validation
+- **Core logic**: `backend/agent/core.py`
+- **Tool factory**: `backend/agent/tool_factory.py`
+- **Tool definitions**: `backend/agent/tools.py`
 
 ### Frontend Changes
 
-- **Chat interface**: `src/components/ChatInterface.tsx` - Main AI UI component
-- **Vault dashboard**: `src/components/vault/VaultDashboard.tsx` - Non-custodial vault UI
-- **Pool dashboard**: `src/components/dashboard/PoolsDashboard.tsx` - Blend UI
-- **API client**: `src/lib/api.ts` - HTTP communication with wallet support
-- **Wallet context**: `src/contexts/WalletContext.tsx` - Dual-mode wallet management
-- **Vault stats**: `src/hooks/useVaultStats.ts` - Real-time vault data
-- **Wallet integration**: `src/hooks/useWallet.ts` - Wallet connection logic
-- **Pool data**: `src/hooks/useBlendPools.ts` - Pool fetching logic
+- **Chat interface**: `src/components/ChatInterface.tsx`
+- **Auth context**: `src/contexts/AuthContext.tsx`
+- **API client**: `src/lib/api.ts`
+- **Passkey service**: `src/services/passkeyAuth.ts`
 
 ### Configuration Updates
 
-- **Contract addresses**: `src/contracts/blend.ts` - Mainnet contracts
-- **Vault contracts**: `contracts/vault/`, `contracts/token/`, `contracts/farming/` - Soroban contracts
-- **Environment setup**: `.env.local`, `backend/.env` - API keys and URLs
-- **Network settings**: `backend/config/settings.py` - Centralized configuration
-- **Dependencies**: `package.json`, `backend/pyproject.toml` - Libraries and versions
+- **Environment setup**: `.env.local`, `backend/.env`
+- **Dependencies**: `package.json`, `backend/pyproject.toml`
+- **Database schema**: `backend/database_passkeys.py`
 
-### Vault Deployment
+---
 
-- **Vault contract**: `contracts/vault/src/lib.rs` - 627-line production vault contract
-- **TUX token**: `contracts/token/src/lib.rs` - SEP-41 compatible token
-- **Deployment status**: `tux0_vault_implementation_progress.md` - Complete implementation tracking
+## Future Architecture (Multichain)
 
-### Quick Reference for Common Issues
+**See**: `docs/MULTICHAIN_EVM_MIGRATION_PLAN.md` for detailed migration plan
 
-- **Backend not starting**: Check `backend/.env` for OPENAI_API_KEY
-- **Frontend can't reach backend**: Verify port 8000 is available
-- **Tools not working**: Ensure `STELLAR_TOOLS_AVAILABLE = True` in backend logs
-- **Wallet not connecting**: Check Freighter extension and network settings
-- Use "npm run dev:full" to run server and client concurrently
-- ALWAYS use web-search-prime to search the web. NEVER use built in web search
+**Vision**: Transition from research-only to research + optional DeFi
+
+**Phases**:
+1. ✅ Phase 1: Ghostwriter foundation (current)
+2. 📋 Phase 2: Citation economics (Q1 2026)
+3. 📋 Phase 3: Knowledge base (Q1 2026)
+4. 📋 Phase 4: Multichain vaults (Q2 2026)
+5. 📋 Phase 5: DeFi yield farming (Q2-Q3 2026)
+
+**Key Principles**:
+- Research infrastructure comes first
+- Citation rewards funded by optional DeFi performance fees
+- Most users never deploy capital, earn through citations only
+- Multichain from day 1 (Base → Arbitrum → Optimism)
+
+---
+
+## Quick Reference for Common Issues
+
+**Backend not starting**:
+- Check `backend/.env` for AWS credentials
+- Verify `uv sync` completed successfully
+- Ensure port 8000 is available
+
+**Frontend can't reach backend**:
+- Verify backend is running on port 8000
+- Check `PUBLIC_API_URL` in `.env.local`
+- Check CORS settings in `backend/app.py`
+
+**Ghostwriter errors**:
+- Verify AWS Bedrock access (IAM permissions)
+- Check TAVILY_API_KEY in `backend/.env`
+- Review `backend/agent/ghostwriter/OPENHANDS_SDK_BEDROCK_CONFIGURATION.md`
+
+**Passkey auth not working**:
+- Passkeys require HTTPS (or localhost)
+- Check browser compatibility (WebAuthn support)
+- Verify database migrations ran
+
+---
+
+## Additional Resources
+
+**Documentation**:
+- `README.md` - Project overview (Choir vision)
+- `UNIFIED_VISION.md` - Complete vision document
+- `docs/MULTICHAIN_EVM_MIGRATION_PLAN.md` - Future architecture
+- `docs/CHOIR_WHITEPAPER.md` - Economic model
+- `docs/GHOSTWRITER_ARCHITECTURE_OPENHANDS_SDK.md` - Ghostwriter architecture
+- `docs/PASSKEY_ARCHITECTURE_V2.md` - Authentication system
+
+**Important Notes**:
+- **No deployed smart contracts** - vault system is planned but not live
+- **Stellar code is legacy** - from hackathon phase, not core to Choir
+- **Ghostwriter is the focus** - research infrastructure, not DeFi (yet)
+- **Multichain is planned** - see migration plan for timeline
+
+**Development Philosophy**:
+- Research infrastructure first, DeFi second
+- Citation economics over attention economics
+- Merit-based discovery over identity-based distribution
+- Intellectual contribution as productive capital
