@@ -13,8 +13,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from claude_agent_sdk import query, ClaudeAgentOptions
-
+from .bedrock_client import BedrockClient, BEDROCK_MODEL_HAIKU, BEDROCK_MODEL_SONNET
 from .utils import SessionManager, format_source_markdown, parse_source_markdown
 
 logger = logging.getLogger(__name__)
@@ -35,9 +34,9 @@ class GhostwriterPipeline:
     8. Style: Sonnet applies style guide
     """
 
-    # Model configurations
-    HAIKU_MODEL = "claude-haiku-4-5-20251001"
-    SONNET_MODEL = "claude-sonnet-4-5-20250929"
+    # Model configurations (Bedrock format)
+    HAIKU_MODEL = BEDROCK_MODEL_HAIKU
+    SONNET_MODEL = BEDROCK_MODEL_SONNET
 
     # Verification threshold
     VERIFICATION_THRESHOLD = 0.90  # 90% of claims must be supported
@@ -60,6 +59,7 @@ class GhostwriterPipeline:
         self.num_researchers = num_researchers
         self.max_revision_iterations = max_revision_iterations
         self.prompts_dir = Path(__file__).parent / "prompts"
+        self.bedrock_client = BedrockClient()  # Direct Bedrock HTTP client
 
     def _load_prompt(self, prompt_file: str, **kwargs) -> str:
         """Load and format prompt template."""
