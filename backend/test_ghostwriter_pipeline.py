@@ -40,7 +40,7 @@ async def test_pipeline():
 
     # Configuration
     test_topic = "DeFi yield farming strategies on Stellar blockchain"
-    workspace_root = "/home/user/tuxedo/ghostwriter_sessions"
+    workspace_root = Path("ghostwriter_sessions").resolve()
 
     print(f"Topic: {test_topic}")
     print(f"Workspace: {workspace_root}")

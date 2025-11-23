@@ -12,6 +12,7 @@ import os
 import sys
 import asyncio
 from dotenv import load_dotenv
+from pathlib import Path
 
 # Load environment variables
 load_dotenv()
@@ -95,7 +96,7 @@ async def test_cli_tool():
                 "--max-results",
                 "2"
             ],
-            cwd="/home/user/tuxedo/backend",
+            cwd=str(Path(__file__).parent),
             capture_output=True,
             text=True,
             timeout=30

@@ -45,7 +45,7 @@ class GhostwriterPipeline:
 
     def __init__(
         self,
-        workspace_root: str = "/workspace/ghostwriter_sessions",
+        workspace_root: str = str(Path("ghostwriter_sessions").resolve()),
         aws_region: str = "us-east-1",
         num_researchers: int = 5,
         max_revision_iterations: int = 3,
@@ -371,9 +371,18 @@ class GhostwriterPipeline:
 
         conv.send_message(researcher_prompt)
 
-        # Run in thread pool
+        # Run in thread pool with timeout
         loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, conv.run)
+        try:
+            # Set a timeout of 5 minutes (300 seconds) per researcher
+            # This prevents infinite hangs if the agent doesn't stop itself
+            await asyncio.wait_for(
+                loop.run_in_executor(None, conv.run),
+                timeout=300.0
+            )
+        except asyncio.TimeoutError:
+            logger.warning(f"Researcher {researcher_id} (Hypothesis {hypothesis_id}) timed out after 300s")
+            # We continue anyway, hoping the evidence file was saved
 
         evidence_path = self.workspace / "02_evidence" / f"evidence_hypothesis_{hypothesis_id}.md"
         return str(evidence_path)

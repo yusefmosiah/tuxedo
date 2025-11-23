@@ -97,6 +97,9 @@ CRITICAL CONSTRAINTS:
 - Extract KEY QUOTES, don't just summarize
 - STOP immediately after saving evidence_hypothesis_{hypothesis_id}.md
 - DO NOT re-verify, re-search, or loop
+- DO NOT ask for feedback
+- DO NOT output anything else after saving the file
+- TERMINATE the conversation immediately
 
 SUCCESS CRITERIA:
 - File 02_evidence/evidence_hypothesis_{hypothesis_id}.md exists
