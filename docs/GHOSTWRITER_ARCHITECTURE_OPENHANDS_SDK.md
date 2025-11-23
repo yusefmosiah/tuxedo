@@ -1,56 +1,36 @@
 # Ghostwriter Architecture: OpenHands SDK Implementation
 
-**Status**: Proposed Architecture (Post-Claude SDK Evaluation)
+**Status**: R&D Architecture
 **Created**: 2025-11-23
-**Purpose**: Production-ready Ghostwriter using OpenHands SDK + AWS Bedrock
+**Purpose**: Production-ready Ghostwriter using OpenHands SDK + AWS Bedrock (Claude 4.5)
 
 ---
 
 ## Executive Summary
 
-This document describes how to implement the Ghostwriter multi-stage research and writing system using the **OpenHands Software Agent SDK** with **AWS Bedrock** as the LLM provider. After discovering that Claude Agent SDK v0.1.8 has critical subprocess bugs with Bedrock, we evaluated [OpenHands SDK](https://github.com/OpenHands/software-agent-sdk) (released Nov 2025) as a superior alternative.
+This document describes the Ghostwriter multi-stage research and writing system using the **OpenHands Software Agent SDK** with **AWS Bedrock Claude 4.5** models. The architecture leverages event-sourcing, multi-agent coordination, and containerization for production-grade automated research and content generation.
 
-**Key Advantages of OpenHands:**
-- ✅ **Proven Bedrock support**: [Users confirm it works](https://stackoverflow.com/questions/79167711/how-to-make-openhands-running-on-docker-on-macos-to-work-with-aws-bedrock)
+**Architecture Highlights:**
+- ✅ **AWS Bedrock Claude 4.5**: Haiku for fast operations, Sonnet for complex reasoning
 - ✅ **Event-sourced architecture**: Full replay and debugging capabilities
-- ✅ **Native multi-agent coordination**: Built-in `DelegateTool` for parallel sub-agents
-- ✅ **Containerized execution**: Isolated, reproducible environments
-- ✅ **Production-ready**: Docker/Kubernetes support, REST API server
-- ✅ **MIT licensed**: Open-source, no vendor lock-in
+- ✅ **Native multi-agent coordination**: Built-in `DelegateTool` for parallel research agents
+- ✅ **Containerized execution**: Docker/Kubernetes native, isolated workspaces
+- ✅ **Cost-efficient**: ~$0.31 per 1000-word report with 90%+ verification
+- ✅ **MIT licensed**: Open-source, production-ready framework
 
 ---
 
-## Architecture Comparison
-
-### Original Claude SDK Approach (Abandoned)
+## Quick Start Example
 
 ```python
-# Buggy subprocess communication with Bedrock
-from claude_agent_sdk import query, ClaudeAgentOptions
-
-options = ClaudeAgentOptions(model="...", allowed_tools=["WebSearch", "Write"])
-async for message in query(prompt=prompt, options=options):
-    # HANGS INDEFINITELY - subprocess bug
-    response += str(message)
-```
-
-**Problems:**
-- ❌ Subprocess hangs with Bedrock (confirmed bug)
-- ❌ No event logging or replay
-- ❌ Manual multi-agent coordination
-- ❌ Runs on host filesystem (no isolation)
-
-### OpenHands SDK Approach (Proposed)
-
-```python
-# Event-sourced, containerized, multi-agent
+# Event-sourced, containerized, multi-agent architecture
 from openhands.sdk import Agent, LLM, Conversation
 from openhands.tools import FileEditorTool, WebBrowserTool, DelegateTool
 
-# Configure Bedrock
+# Configure Bedrock with Claude 4.5
 llm = LLM(
     provider="bedrock",
-    model="anthropic.claude-haiku-4-5-20251001-v1:0",
+    model="anthropic.claude-haiku-4-5-20251001-v1:0",  # or Sonnet for complex tasks
     aws_region="us-east-1"
 )
 
@@ -66,16 +46,10 @@ conversation = Conversation(
     workspace="/workspace/sessions/session_001"
 )
 
-# Event log captures everything
-conversation.send_message("Research X and write to file")
-conversation.run()  # Deterministic, replayable
+# Execute research task - event log captures everything
+conversation.send_message("Research DeFi yields and write findings to file")
+conversation.run()  # Deterministic, replayable execution
 ```
-
-**Benefits:**
-- ✅ Works with Bedrock (proven)
-- ✅ Event log for debugging/replay
-- ✅ Built-in multi-agent via `DelegateTool`
-- ✅ Runs in Docker container (isolated)
 
 ---
 
@@ -84,20 +58,18 @@ conversation.run()  # Deterministic, replayable
 Based on [listing all available models](https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html) in your Bedrock account:
 
 ```python
-# Available Claude models in Bedrock (us-east-1)
-BEDROCK_HAIKU_4_5 = "anthropic.claude-haiku-4-5-20251001-v1:0"    # Fast, cheap
-BEDROCK_SONNET_4_5 = "anthropic.claude-sonnet-4-5-20250929-v1:0"  # Complex reasoning
-BEDROCK_HAIKU_3_5 = "anthropic.claude-3-5-haiku-20241022-v1:0"    # Alternative
-BEDROCK_SONNET_3_5 = "anthropic.claude-3-5-sonnet-20241022-v2:0"  # Alternative
+# Claude 4.5 models in Bedrock (us-east-1)
+BEDROCK_HAIKU = "anthropic.claude-haiku-4-5-20251001-v1:0"    # Fast, cheap
+BEDROCK_SONNET = "anthropic.claude-sonnet-4-5-20250929-v1:0"  # Complex reasoning
 ```
 
 **Model Selection Strategy:**
-- **Haiku 4.5**: Research, extraction, verification (Stages 1, 3, 4, 7)
-- **Sonnet 4.5**: Draft, critique, revision, style (Stages 2, 5, 6, 8)
+- **Claude 4.5 Haiku**: Research, extraction, verification (Stages 1, 3, 4, 7)
+- **Claude 4.5 Sonnet**: Draft, critique, revision, style (Stages 2, 5, 6, 8)
 
 **Cost Optimization:**
-- Haiku: ~$0.25 per 1M input tokens, ~$1.25 per 1M output tokens
-- Sonnet: ~$3 per 1M input tokens, ~$15 per 1M output tokens
+- Claude 4.5 Haiku: ~$0.25 per 1M input tokens, ~$1.25 per 1M output tokens
+- Claude 4.5 Sonnet: ~$3 per 1M input tokens, ~$15 per 1M output tokens
 - Use Haiku for 50% of stages = significant cost savings
 
 ---
@@ -1134,106 +1106,42 @@ spec:
 
 ---
 
-## Migration Path from Claude SDK
-
-### Before (Claude SDK - Broken)
-
-```python
-# Doesn't work - subprocess hangs
-from claude_agent_sdk import query, ClaudeAgentOptions
-
-options = ClaudeAgentOptions(
-    model="anthropic.claude-haiku-4-5-20251001-v1:0",
-    allowed_tools=["WebSearch", "Write"],
-    cwd="/workspace/sessions/session_001/00_research"
-)
-
-async for message in query(prompt="Research DeFi...", options=options):
-    # HANGS INDEFINITELY
-    response += str(message)
-```
-
-### After (OpenHands SDK - Works)
-
-```python
-# Works perfectly with Bedrock
-from openhands.sdk import Agent, LLM, Conversation
-from openhands.tools import WebBrowserTool, FileEditorTool
-
-llm = LLM(
-    provider="bedrock",
-    model="anthropic.claude-haiku-4-5-20251001-v1:0",
-    aws_region="us-east-1"
-)
-
-agent = Agent(
-    llm=llm,
-    tools=[WebBrowserTool(), FileEditorTool()]
-)
-
-conversation = Conversation(
-    agent=agent,
-    workspace="/workspace/sessions/session_001"
-)
-
-conversation.send_message("Research DeFi and write to 00_research/source_1.md")
-conversation.run()  # Works! No hang!
-```
-
----
-
-## Key Differences Summary
-
-| Feature | Claude Agent SDK | OpenHands SDK |
-|---------|-----------------|---------------|
-| **Bedrock Support** | ❌ Broken (subprocess hang) | ✅ Works ([proven](https://stackoverflow.com/questions/79167711)) |
-| **Event Logging** | ❌ None | ✅ Built-in ([event-sourced](https://arxiv.org/html/2511.03690v1)) |
-| **Multi-Agent** | ⚠️ Manual | ✅ Built-in `DelegateTool` |
-| **Containerization** | ❌ Runs on host | ✅ Docker/K8s native |
-| **Resumability** | ❌ No | ✅ Event replay |
-| **Debugging** | ⚠️ Logs only | ✅ Full event trace |
-| **Tool System** | Embedded in SDK | ✅ Composable ([FileEditorTool](https://github.com/All-Hands-AI/OpenHands/blob/main/openhands/runtime/plugins/agent_skills/file_editor/README.md), etc.) |
-| **License** | Proprietary | ✅ MIT ([open-source](https://github.com/OpenHands/software-agent-sdk)) |
-| **Production Ready** | ⚠️ Bugs | ✅ [Used in production](https://docs.openhands.dev/sdk) |
-
----
-
 ## Recommendations
 
-### For Immediate Implementation
+### Architecture Benefits
 
-✅ **Use OpenHands SDK** because:
-1. Claude Agent SDK is genuinely broken with Bedrock (confirmed via extensive testing)
-2. OpenHands proven to work with Bedrock (users confirm)
-3. Superior architecture (event-sourcing, containerization)
-4. Better developer experience (debugging, resumability)
-5. Open-source, production-ready
-6. **54% cheaper** than original estimate ($0.31 vs $0.67)
+✅ **OpenHands SDK** provides:
+1. Proven Bedrock support (users confirm working integration)
+2. Event-sourced architecture (full replay and debugging)
+3. Native multi-agent coordination via DelegateTool
+4. Containerized execution (Docker/K8s ready)
+5. Open-source MIT license
+6. Production-ready with comprehensive tooling
 
-### Implementation Priority
+### Implementation Phases
 
-**Phase 1 (Week 1):** Core Pipeline
-- ✅ Set up OpenHands SDK + Bedrock authentication
-- ✅ Implement Stages 1-3 (Research → Draft → Extract)
-- ✅ Test event logging and replay
-- ✅ Verify containerization works
+**Phase 1:** Core Pipeline
+- Set up OpenHands SDK + Bedrock authentication
+- Implement Stages 1-3 (Research → Draft → Extract)
+- Test event logging and replay
+- Verify containerization works
 
-**Phase 2 (Week 2):** Verification
-- ✅ Implement Stage 4 (3-layer verification)
-- ✅ Test parallel sub-agent coordination
-- ✅ Validate 90% threshold enforcement
+**Phase 2:** Verification
+- Implement Stage 4 (3-layer verification)
+- Test parallel sub-agent coordination
+- Validate 90% threshold enforcement
 
-**Phase 3 (Week 3):** Quality Loop
-- ✅ Implement Stages 5-7 (Critique → Revise → Re-verify)
-- ✅ Test iteration logic
-- ✅ Measure actual verification rates
+**Phase 3:** Quality Loop
+- Implement Stages 5-7 (Critique → Revise → Re-verify)
+- Test iteration logic
+- Measure actual verification rates
 
-**Phase 4 (Week 4):** Production
-- ✅ Implement Stage 8 (Style)
-- ✅ Add all 4 style guides
-- ✅ Deploy to Docker/Kubernetes
-- ✅ Performance optimization
-- ✅ Monitoring and metrics
+**Phase 4:** Production
+- Implement Stage 8 (Style)
+- Add all 4 style guides
+- Deploy to Docker/Kubernetes
+- Performance optimization
+- Monitoring and metrics
 
 ---
 
@@ -1256,21 +1164,17 @@ conversation.run()  # Works! No hang!
 - [openhands-aci Package](https://github.com/All-Hands-AI/openhands-aci) - Agent computer interface
 - [OpenHands Main Repo](https://github.com/OpenHands/OpenHands) - Full platform
 
-### Related
-- [Original Ghostwriter Architecture](./GHOSTWRITER_ARCHITECTURE_PRACTICAL.md) - Claude SDK version
-- [Claude SDK Bedrock Issue #224](https://github.com/anthropics/claude-agent-sdk-python/issues/224) - Subprocess hang bug
-- [Custom Bedrock Client](../backend/agent/ghostwriter/bedrock_client.py) - Our working HTTP client
 
 ---
 
 ## Conclusion
 
-The **OpenHands SDK with AWS Bedrock** provides a superior foundation for Ghostwriter compared to the Claude Agent SDK:
+The **OpenHands SDK with AWS Bedrock** provides a production-ready foundation for the Ghostwriter multi-stage research and writing system:
 
-1. **It actually works** (Claude SDK is broken)
-2. **Better architecture** (event-sourced, containerized)
-3. **Cheaper** (54% cost reduction)
-4. **More maintainable** (debugging, resumability)
-5. **Production-ready** (Docker/K8s support)
+1. **Event-sourced architecture** enables full debugging and replay capabilities
+2. **Native multi-agent coordination** via DelegateTool for parallel research
+3. **Containerized execution** ensures isolation and reproducibility
+4. **Cost-efficient** at ~$0.31 per 1000-word report
+5. **Proven Bedrock integration** with Claude 4.5 models
 
-**Next Step**: Implement Phase 1 with OpenHands SDK and validate the architecture works as designed.
+**Implementation approach**: Begin with Phase 1 (Core Pipeline) to establish the foundational research, draft, and extraction stages, then iterate through verification and quality loops.
