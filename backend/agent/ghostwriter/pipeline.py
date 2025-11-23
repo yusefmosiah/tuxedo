@@ -205,11 +205,64 @@ class GhostwriterPipeline:
         with open(style_path, "r") as f:
             return f.read()
 
+    async def _run_single_researcher(self, topic: str, researcher_id: int) -> str:
+        """
+        Run a single researcher agent.
+
+        Args:
+            topic: Research topic
+            researcher_id: ID of this researcher (for file naming)
+
+        Returns:
+            Path to created source file
+        """
+        import asyncio
+
+        # Create Haiku researcher
+        researcher_llm = self.create_llm(self.HAIKU)
+        researcher = Agent(
+            llm=researcher_llm,
+            tools=[Tool(name="FileEditorTool")]
+        )
+
+        # Create dedicated workspace for this researcher
+        researcher_workspace = self.workspace / "00_research"
+        researcher_workspace.mkdir(parents=True, exist_ok=True)
+
+        # Create conversation
+        conv = Conversation(
+            agent=researcher,
+            workspace=str(researcher_workspace)
+        )
+
+        # Load researcher prompt
+        researcher_prompt = self.load_prompt(
+            "researcher.txt",
+            topic=topic,
+            date_accessed=datetime.now().strftime("%Y-%m-%d")
+        )
+
+        # Send research message
+        message = f"""
+{researcher_prompt}
+
+Please save your research findings to a file named "source_{researcher_id}.md" in the current workspace.
+"""
+
+        conv.send_message(message)
+
+        # Run in thread pool to avoid blocking
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, conv.run)
+
+        source_path = researcher_workspace / f"source_{researcher_id}.md"
+        return str(source_path)
+
     async def run_stage_1_research(self, topic: str) -> Dict[str, Any]:
         """
         Stage 1: Parallel research with Haiku subagents.
 
-        Spawns multiple Haiku research agents in parallel using DelegateTool.
+        Spawns multiple Haiku research agents in parallel.
         Each agent performs web research and saves findings to source_N.md.
 
         Args:
@@ -218,50 +271,23 @@ class GhostwriterPipeline:
         Returns:
             Stage results
         """
+        import asyncio
+
         logger.info(f"[Stage 1/8] Research (parallel Haiku × {self.num_researchers})")
 
-        # Coordinator agent (Sonnet for orchestration)
-        coordinator_llm = self.create_llm(self.SONNET)
-        coordinator = Agent(
-            llm=coordinator_llm,
-            tools=[
-                Tool(name="DelegateTool"),
-                Tool(name="FileEditorTool")
-            ]
-        )
+        # Create research directory
+        research_dir = self.workspace / "00_research"
+        research_dir.mkdir(parents=True, exist_ok=True)
 
-        # Research conversation
-        conv = Conversation(
-            agent=coordinator,
-            workspace=str(self.workspace / "00_research")
-        )
+        # Run researchers in parallel
+        tasks = [
+            self._run_single_researcher(topic, i + 1)
+            for i in range(self.num_researchers)
+        ]
 
-        # Researcher prompt configuration
-        researcher_prompt = self.load_prompt(
-            "researcher.txt",
-            topic=topic,
-            date_accessed=datetime.now().strftime("%Y-%m-%d")
-        )
-
-        # Delegate to parallel researchers
-        coordinator_message = f"""
-You are coordinating a research project on: "{topic}"
-
-Use DelegateTool to spawn {self.num_researchers} parallel research sub-agents.
-Configure each with Haiku model (claude-haiku-4-5-20251001-v1:0) for speed.
-
-Each sub-agent should:
-{researcher_prompt}
-
-Save findings to source_1.md, source_2.md, etc. in the current workspace.
-After all complete, report the number of sources gathered.
-"""
-
-        conv.send_message(coordinator_message)
-        conv.run()
+        source_paths = await asyncio.gather(*tasks)
 
         # Check how many sources were created
-        research_dir = self.workspace / "00_research"
         sources = list(research_dir.glob("source_*.md"))
 
         logger.info(f"Research complete: {len(sources)} sources gathered")
