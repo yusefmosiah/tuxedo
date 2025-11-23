@@ -5,7 +5,7 @@
 name = "tuxedo-backend"
 version = "0.1.0"
 description = "FastAPI backend for Tuxedo AI"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.104.0",
     "uvicorn[standard]>=0.24.0",
@@ -23,5 +23,8 @@ dependencies = [
     "webauthn>=2.0.0",
     "cryptography>=42.0.0",
     "aiodns>=3.5.0",
-    "claude-agent-sdk>=0.1.8",
+    "openhands-sdk>=0.1.0",
+    "openhands-aci>=0.3.2",
+    "openhands-tools>=1.2.0",
+    "boto3>=1.41.2",
 ]
