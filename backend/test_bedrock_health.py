@@ -37,7 +37,7 @@ async def health_check():
     print("\n2. Testing Haiku query...")
     try:
         options = ClaudeAgentOptions(
-            model="us.anthropic.claude-haiku-4-5-20251001-v1:0",  # Bedrock-specific format
+            model="anthropic.claude-haiku-4-5-20251001-v1:0",  # Correct Bedrock model ID
             allowed_tools=[]  # No tools for speed
         )
 
