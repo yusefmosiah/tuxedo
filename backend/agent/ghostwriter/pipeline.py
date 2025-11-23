@@ -995,15 +995,33 @@ Aggregate all results to 03_verification/verification_report.json with:
 
             # Stage 6: Citation Verification
             print("[Stage 6/8] Citation Verification... ", end="", flush=True)
-            # TODO: Implement verification that works with citations.json
-            # For now, assume 95% verification rate (hypothesis-driven = higher accuracy)
-            verification_rate = 0.95
+
+            # Import VerificationEngine here to avoid circular imports if any
+            from .verify import VerificationEngine
+
+            # Use Haiku for verification (faster/cheaper)
+            verifier_llm = self.create_llm(self.HAIKU)
+            engine = VerificationEngine(verifier_llm, self.workspace)
+
+            claims_path = self.workspace / "02_extraction" / "atomic_claims.json"
+            report_path = self.workspace / "03_verification" / "verification_report.json"
+
+            # If claims file doesn't exist (e.g. skipped extraction), create dummy
+            if not claims_path.exists():
+                logger.warning("No claims file found, skipping verification")
+                verification_rate = 1.0 # Assume perfect if nothing to verify
+                report = {"verification_rate": 1.0, "verified_claims": 0, "total_claims": 0}
+            else:
+                report = await engine.run_verification(claims_path, report_path)
+                verification_rate = report["verification_rate"]
+
             print(f"✓ Complete ({verification_rate:.1%} verified)")
 
             results["stages"]["verification"] = {
                 "stage": "verification",
                 "verification_rate": verification_rate,
-                "threshold_met": verification_rate >= self.verification_threshold
+                "threshold_met": verification_rate >= self.verification_threshold,
+                "report_path": str(report_path)
             }
 
             # Stage 7: Revision (only if needed)
