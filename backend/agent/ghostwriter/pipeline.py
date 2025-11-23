@@ -17,6 +17,8 @@ from pathlib import Path
 
 # OpenHands SDK imports
 from openhands.sdk import Agent, LLM, Conversation, Tool, LocalWorkspace
+from openhands.tools.file_editor import FileEditorTool
+from openhands.tools.terminal import TerminalTool
 
 logger = logging.getLogger(__name__)
 
@@ -222,7 +224,7 @@ class GhostwriterPipeline:
         researcher_llm = self.create_llm(self.HAIKU)
         researcher = Agent(
             llm=researcher_llm,
-            tools=[Tool(name="FileEditorTool")]
+            tools=[Tool(name=FileEditorTool.name)]
         )
 
         # Create dedicated workspace for this researcher
@@ -313,7 +315,7 @@ Please save your research findings to a file named "source_{researcher_id}.md" i
         drafter_llm = self.create_llm(self.SONNET)
         drafter = Agent(
             llm=drafter_llm,
-            tools=[Tool(name="FileEditorTool")]
+            tools=[Tool(name=FileEditorTool.name)]
         )
 
         conv = Conversation(
@@ -361,7 +363,7 @@ Please save your research findings to a file named "source_{researcher_id}.md" i
         extractor_llm = self.create_llm(self.HAIKU)
         extractor = Agent(
             llm=extractor_llm,
-            tools=[Tool(name="FileEditorTool")]
+            tools=[Tool(name=FileEditorTool.name)]
         )
 
         conv = Conversation(
@@ -409,10 +411,8 @@ Please save your research findings to a file named "source_{researcher_id}.md" i
         verifier_coord = Agent(
             llm=verifier_coord_llm,
             tools=[
-                Tool(name="DelegateTool"),
-                Tool(name="FileEditorTool"),
-                Tool(name="TerminalTool"),
-                Tool(name="WebBrowserTool")
+                Tool(name=FileEditorTool.name),
+                Tool(name=TerminalTool.name)
             ]
         )
 
@@ -480,7 +480,7 @@ Aggregate all results to 03_verification/verification_report.json with:
 
         # Critic agent (Sonnet)
         critic_llm = self.create_llm(self.SONNET)
-        critic = Agent(llm=critic_llm, tools=[Tool(name="FileEditorTool")])
+        critic = Agent(llm=critic_llm, tools=[Tool(name=FileEditorTool.name)])
 
         conv = Conversation(
             agent=critic,
@@ -516,7 +516,7 @@ Aggregate all results to 03_verification/verification_report.json with:
         reviser_llm = self.create_llm(self.SONNET)
         reviser = Agent(
             llm=reviser_llm,
-            tools=[Tool(name="FileEditorTool"), Tool(name="WebBrowserTool")]
+            tools=[Tool(name=FileEditorTool.name)]
         )
 
         conv = Conversation(
@@ -571,7 +571,7 @@ Aggregate all results to 03_verification/verification_report.json with:
 
         # Style agent (Sonnet)
         stylist_llm = self.create_llm(self.SONNET)
-        stylist = Agent(llm=stylist_llm, tools=[Tool(name="FileEditorTool")])
+        stylist = Agent(llm=stylist_llm, tools=[Tool(name=FileEditorTool.name)])
 
         conv = Conversation(
             agent=stylist,

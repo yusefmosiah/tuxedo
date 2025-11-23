@@ -24,4 +24,6 @@ dependencies = [
     "cryptography>=42.0.0",
     "aiodns>=3.5.0",
     "openhands-sdk>=0.1.0",
+    "openhands-aci>=0.3.2",
+    "openhands-tools>=1.2.0",
 ]
