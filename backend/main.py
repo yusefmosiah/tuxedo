@@ -12,6 +12,13 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# Configure cache directories for LiteLLM/OpenHands before any imports
+# This prevents permission errors when writing to package directories
+CACHE_DIR = os.getenv("CACHE_DIR", "/tmp/tuxedo_cache")
+os.makedirs(CACHE_DIR, exist_ok=True)
+os.environ.setdefault("XDG_CACHE_HOME", CACHE_DIR)
+os.environ.setdefault("LITELLM_CACHE_DIR", CACHE_DIR)
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
