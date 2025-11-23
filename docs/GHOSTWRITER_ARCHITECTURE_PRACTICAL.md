@@ -6,11 +6,35 @@
 
 ---
 
+## Prerequisites ✅
+
+**Claude Agent SDK is ALREADY configured and ready to use:**
+
+- ✅ **Integration**: Complete (see [CLAUDE_SDK_INTEGRATION.md](./CLAUDE_SDK_INTEGRATION.md))
+- ✅ **Authentication**: AWS Bedrock with API key (configured in `.env`)
+- ✅ **Tools Available**: Read, Write, WebSearch, Bash, Glob, Grep, Task
+- ✅ **Dependencies**: Installed via UV (`uv add claude-agent-sdk`)
+- ✅ **Status**: Production ready (v1.0, 2025-11-20)
+
+**Environment variables already set:**
+```bash
+CLAUDE_SDK_USE_BEDROCK=true
+AWS_BEARER_TOKEN_BEDROCK=<configured>
+AWS_REGION=us-east-1
+ENABLE_CLAUDE_SDK=true
+```
+
+**👉 This document describes how to BUILD the ghostwriter system using our existing Claude SDK infrastructure.**
+
+**No setup required - start implementing immediately.**
+
+---
+
 ## Executive Summary
 
-This document describes the **practical implementation** of Tuxedo's ghostwriter system - stripped of academic complexity, focused on what we can build with Claude SDK tools we already have.
+This document describes how to **implement** Tuxedo's ghostwriter system using our **existing Claude Agent SDK integration**. The SDK is already configured with AWS Bedrock authentication and provides all tools needed (Read, Write, WebSearch, Bash, etc.).
 
-**Key Simplifications**:
+**Key Design Principles**:
 - ❌ No vector databases (Claude handles relevance)
 - ❌ No special NLI models (Claude does reasoning)
 - ❌ No embeddings (simple keyword matching if needed)
@@ -18,6 +42,42 @@ This document describes the **practical implementation** of Tuxedo's ghostwriter
 - ✅ Haiku for simple tasks (speed + cost)
 - ✅ Sonnet for complex reasoning
 - ✅ Prompt caching for iteration
+- ✅ **Uses existing Claude SDK infrastructure** (no new setup needed)
+
+---
+
+## Quick Start 🚀
+
+Since Claude Agent SDK is already configured, you can start implementing immediately:
+
+```python
+# backend/agent/ghostwriter/pipeline.py
+from claude_agent_sdk import query, ClaudeAgentOptions
+import asyncio
+
+async def run_research_stage(topic: str):
+    """Stage 1: Research with parallel Haiku subagents"""
+    options = ClaudeAgentOptions(
+        model="claude-3-5-haiku-20241022",  # Haiku for speed/cost
+        allowed_tools=["WebSearch", "Write"],
+        cwd="/workspace/sessions/session_001/00_research"
+    )
+
+    prompt = f"""You are a research specialist.
+
+    TOPIC: {topic}
+
+    Execute 3-5 WebSearch queries and save each source to source_N.md
+    """
+
+    async for message in query(prompt, options):
+        print(message)
+
+# Run it
+asyncio.run(run_research_stage("DeFi yields on Stellar"))
+```
+
+**That's it!** The Claude SDK handles authentication, model selection, tool execution, and file operations.
 
 ---
 
@@ -63,7 +123,7 @@ This document describes the **practical implementation** of Tuxedo's ghostwriter
 │  │ No history needed                                           │  │
 │  │ Cost: $0.08                                                  │  │
 │  │                                                              │  │
-│  │ Tools: Read (research files), Write (draft)                 │  │
+│  │ Tools: Read, Write (via Claude SDK)                         │  │
 │  └──────────────────────────────────────────────────────────────┘  │
 │                                                                     │
 │  Output: 01_draft/initial_draft.md                                 │
@@ -81,7 +141,7 @@ This document describes the **practical implementation** of Tuxedo's ghostwriter
 │  │ No history needed                                           │  │
 │  │ Cost: $0.01                                                  │  │
 │  │                                                              │  │
-│  │ Tools: Read (draft), Write (JSON files)                     │  │
+│  │ Tools: Read, Write (via Claude SDK)                         │  │
 │  └──────────────────────────────────────────────────────────────┘  │
 │                                                                     │
 │  Output: 02_extraction/atomic_claims.json                          │
@@ -92,14 +152,14 @@ This document describes the **practical implementation** of Tuxedo's ghostwriter
 ┌─────────────────────────────────────────────────────────────────────┐
 │ STAGE 4: VERIFY (CRITICAL - Parallel Haiku Per Claim)              │
 │                                                                     │
-│  Layer 1: URL Check (Bash - curl)                                  │
+│  Layer 1: URL Check (Bash tool via Claude SDK)                     │
 │  ┌────────┐  ┌────────┐  ┌────────┐                                │
 │  │ curl   │  │ curl   │  │ curl   │  (parallel, instant)           │
 │  │ cite_1 │  │ cite_2 │  │ cite_3 │                                │
 │  └────────┘  └────────┘  └────────┘                                │
 │  Cost: $0.00                                                        │
 │                                                                     │
-│  Layer 2: Content Fetch (WebFetch tool)                            │
+│  Layer 2: Content Fetch (WebFetch tool via Claude SDK)             │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                │
 │  │ WebFetch    │  │ WebFetch    │  │ WebFetch    │  (parallel)    │
 │  │ source_1    │  │ source_2    │  │ source_3    │                │
@@ -130,7 +190,7 @@ This document describes the **practical implementation** of Tuxedo's ghostwriter
 │ STAGE 5: CRITIQUE (Sonnet - Analysis)                              │
 │                                                                     │
 │  ┌──────────────────────────────────────────────────────────────┐  │
-│  │ Critic Agent (Sonnet 4.5)                                    │  │
+│  │ Critic Agent (Sonnet 4.5 via Claude SDK)                    │  │
 │  │                                                              │  │
 │  │ Input: ~5k tokens (draft + verification report + prompt)    │  │
 │  │ Output: ~1.5k tokens (structured critique)                  │  │
@@ -146,14 +206,14 @@ This document describes the **practical implementation** of Tuxedo's ghostwriter
 │ STAGE 6: REVISE (Sonnet - Complex Reasoning + WebSearch)           │
 │                                                                     │
 │  ┌──────────────────────────────────────────────────────────────┐  │
-│  │ Reviser Agent (Sonnet 4.5)                                   │  │
+│  │ Reviser Agent (Sonnet 4.5 via Claude SDK)                   │  │
 │  │                                                              │  │
 │  │ Input: ~7k tokens (draft + critique + verification)         │  │
 │  │ Output: ~3.5k tokens (revised draft)                        │  │
 │  │ USES HISTORY for iteration (prompt caching eligible)        │  │
 │  │ Cost: $0.10 (first), $0.03 (cached iterations)              │  │
 │  │                                                              │  │
-│  │ Tools: Read, WebSearch (find better sources), Write         │  │
+│  │ Tools: Read, WebSearch, Write (via Claude SDK)              │  │
 │  └──────────────────────────────────────────────────────────────┘  │
 │                                                                     │
 │  Output: 05_revision/revised_draft.md                              │
@@ -180,7 +240,7 @@ This document describes the **practical implementation** of Tuxedo's ghostwriter
 │ STAGE 8: STYLE (Sonnet - Final Polish)                             │
 │                                                                     │
 │  ┌──────────────────────────────────────────────────────────────┐  │
-│  │ Style Agent (Sonnet 4.5)                                     │  │
+│  │ Style Agent (Sonnet 4.5 via Claude SDK)                     │  │
 │  │                                                              │  │
 │  │ Input: ~5k tokens (draft + style guide + prompt)            │  │
 │  │ Output: ~3.5k tokens (styled report)                        │  │
@@ -221,8 +281,11 @@ This document describes the **practical implementation** of Tuxedo's ghostwriter
 
 ## Model Selection Strategy
 
+**Note**: Model selection is handled via `ClaudeAgentOptions(model="...")` parameter when using the Claude SDK.
+
 ### Use Haiku 4.5 For:
 
+**Model ID**: `claude-3-5-haiku-20241022`
 **Characteristics**: Fast, cheap, good at structured tasks
 **Cost**: ~$0.25 per 1M input tokens, ~$1.25 per 1M output tokens
 
@@ -246,6 +309,7 @@ This document describes the **practical implementation** of Tuxedo's ghostwriter
 
 ### Use Sonnet 4.5 For:
 
+**Model ID**: `claude-sonnet-4-5-20250929`
 **Characteristics**: Strong reasoning, complex tasks, quality output
 **Cost**: ~$3 per 1M input tokens, ~$15 per 1M output tokens
 
@@ -598,18 +662,21 @@ async def check_url(url: str) -> dict:
 ```python
 async def fetch_content(url: str) -> str:
     """
-    Fetch source content.
-    Use Claude SDK's WebFetch tool or simple HTTP request.
+    Fetch source content using Claude SDK's WebFetch tool.
+    Claude SDK handles the HTTP request and content extraction.
     """
-    # Option 1: Use Claude SDK WebFetch tool
-    content = await web_fetch_tool(
-        url=url,
-        prompt="Extract the main text content from this page"
+    from claude_agent_sdk import query, ClaudeAgentOptions
+
+    options = ClaudeAgentOptions(
+        model="claude-3-5-haiku-20241022",
+        allowed_tools=["WebFetch"]
     )
 
-    # Option 2: Simple HTTP + text extraction (for static pages)
-    # response = await http_client.get(url)
-    # content = extract_text(response.text)  # trafilatura, BeautifulSoup, etc.
+    prompt = f"Fetch content from {url} and extract the main text"
+
+    content = ""
+    async for message in query(prompt, options):
+        content += message
 
     return content[:4000]  # Limit to 4000 chars (~1000 tokens)
 ```
@@ -617,10 +684,11 @@ async def fetch_content(url: str) -> str:
 **Cost**: Minimal (included in verification)
 **Time**: ~500ms per URL
 **Parallelization**: Fetch all sources simultaneously
+**Note**: Claude SDK's WebFetch tool handles all HTTP/HTML complexity
 
 ### Layer 3: Claim Verification (Claude Haiku)
 
-**This is where the magic happens** - Claude does NLI entailment + semantic search in one call:
+**This is where the magic happens** - Claude does NLI entailment + semantic search in one call using the Claude SDK:
 
 ```python
 async def verify_claim(
@@ -629,9 +697,17 @@ async def verify_claim(
     source_content: str
 ) -> dict:
     """
-    Verify if source supports claim.
+    Verify if source supports claim using Claude SDK.
     Claude handles both finding relevant parts AND checking logical support.
     """
+    from claude_agent_sdk import query, ClaudeAgentOptions
+    import json
+
+    options = ClaudeAgentOptions(
+        model="claude-3-5-haiku-20241022",
+        allowed_tools=[]  # No tools needed for verification
+    )
+
     prompt = f"""You are a fact-checker verifying citations.
 
 SOURCE: {source_url}
@@ -656,8 +732,11 @@ Respond with JSON only:
 }}
 """
 
-    response = await claude_haiku.query(prompt)
-    result = json.loads(response)
+    response_text = ""
+    async for message in query(prompt, options):
+        response_text += message
+
+    result = json.loads(response_text)
 
     return {
         "claim": claim,
@@ -804,24 +883,46 @@ workspace/
 
 **Goal**: Get basic research → draft → verify working
 
+**Prerequisites**: ✅ Claude SDK already configured (see [Prerequisites](#prerequisites-) section)
+
 **Tasks**:
 1. Create `backend/agent/ghostwriter/` module
-2. Implement `GhostwriterPipeline` class
+2. Implement `GhostwriterPipeline` class using Claude SDK
 3. Create filesystem checkpoint system
-4. Build Stage 1 (Research with Haiku)
-5. Build Stage 2 (Draft with Sonnet)
-6. Build Stage 3 (Extract with Haiku)
-7. Build Stage 4 Layer 1-2 (URL check, content fetch)
+4. Build Stage 1 (Research with Haiku via `ClaudeAgentOptions`)
+5. Build Stage 2 (Draft with Sonnet via `ClaudeAgentOptions`)
+6. Build Stage 3 (Extract with Haiku via `ClaudeAgentOptions`)
+7. Build Stage 4 Layer 1-2 (URL check with Bash tool, content fetch with WebFetch tool)
 8. Test basic flow (no verification yet)
 
+**Key Implementation Detail**: All stages use `claude_agent_sdk.query()` with appropriate `ClaudeAgentOptions` for model and tool selection.
+
 **Deliverables**:
-- ✅ Research agent spawns 5 parallel Haiku subagents
-- ✅ Drafter synthesizes research into coherent document
-- ✅ Extractor produces atomic_claims.json
-- ✅ URL checking works
-- ✅ Content fetching works
+- ✅ Research agent spawns 5 parallel Haiku subagents (using Claude SDK)
+- ✅ Drafter synthesizes research into coherent document (using Claude SDK)
+- ✅ Extractor produces atomic_claims.json (using Claude SDK)
+- ✅ URL checking works (using Bash tool via Claude SDK)
+- ✅ Content fetching works (using WebFetch tool via Claude SDK)
 
 **Not included**: Verification, critique, revision (Phase 2)
+
+**Example code structure**:
+```python
+# backend/agent/ghostwriter/pipeline.py
+from claude_agent_sdk import query, ClaudeAgentOptions
+import asyncio
+
+class GhostwriterPipeline:
+    async def run_stage_1_research(self, topic: str):
+        options = ClaudeAgentOptions(
+            model="claude-3-5-haiku-20241022",
+            allowed_tools=["WebSearch", "Write"],
+            cwd=self.research_dir
+        )
+        prompt = self._load_prompt("researcher.txt", topic=topic)
+        async for msg in query(prompt, options):
+            print(msg)
+```
 
 ---
 
@@ -1100,16 +1201,42 @@ OUTPUT: Revised draft with all unsupported claims fixed
 
 ---
 
+## Implementation Checklist
+
+Before starting, verify:
+
+- [x] **Claude SDK installed**: `uv list | grep claude-agent-sdk` shows v0.1.8+
+- [x] **AWS Bedrock configured**: `.env` has `CLAUDE_SDK_USE_BEDROCK=true` and `AWS_BEARER_TOKEN_BEDROCK`
+- [x] **Environment loaded**: `python -c "from config.settings import settings; print(settings.enable_claude_sdk)"` prints `True`
+- [x] **Integration tested**: `python test_claude_sdk_integration.py` passes
+
+If all checked, you're ready to implement!
+
+---
+
 ## Next Steps
 
-**Architecture is practical and ready** ✅
+**Infrastructure is ready** ✅ **Architecture is designed** ✅ **Start building now** 🚀
 
 **Recommendation**: Start with Phase 1 (Week 1)
-- Build core pipeline (research → draft → extract)
-- Use Haiku for research and extraction (cheap + fast)
-- Use Sonnet for drafting (quality)
+- Build core pipeline using `claude_agent_sdk.query()`
+- Use `ClaudeAgentOptions(model="claude-3-5-haiku-20241022")` for research and extraction
+- Use `ClaudeAgentOptions(model="claude-sonnet-4-5-20250929")` for drafting
 - Test with real DeFi content
 
-**After Phase 1**, we'll have a working research + draft system. Then add verification in Phase 2.
+**Key files to create**:
+```
+backend/agent/ghostwriter/
+├── __init__.py
+├── pipeline.py          # Main GhostwriterPipeline class
+├── stages.py            # Individual stage implementations
+├── prompts/
+│   ├── researcher.txt
+│   ├── drafter.txt
+│   └── extractor.txt
+└── utils.py             # Filesystem, checkpointing utilities
+```
 
-Ready to start implementation?
+**First commit**: Core pipeline skeleton with Stage 1 (Research) working.
+
+Ready to start implementation!
