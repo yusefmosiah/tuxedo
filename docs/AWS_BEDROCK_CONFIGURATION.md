@@ -2,10 +2,17 @@
 
 This file provides a template for configuring Claude SDK to use AWS Bedrock.
 
+## Authentication Methods
+
+AWS Bedrock supports **two authentication methods**:
+
+1. **API Key (Recommended)** - Single-key authentication (available July 2025+)
+2. **IAM Credentials (Traditional)** - Access key + secret key pair
+
 ## Prerequisites
 
 1. AWS Account with Bedrock access
-2. IAM user with Bedrock permissions
+2. API Key OR IAM user with Bedrock permissions
 3. Claude models enabled in your AWS region
 
 ## Required IAM Permissions
@@ -30,6 +37,8 @@ Your IAM user needs these permissions:
 
 ## Configuration
 
+### Method 1: API Key Authentication (Recommended)
+
 Add these to your `backend/.env` file:
 
 ```bash
@@ -37,7 +46,29 @@ Add these to your `backend/.env` file:
 CLAUDE_SDK_USE_BEDROCK=true
 ENABLE_CLAUDE_SDK=true
 
-# AWS Credentials
+# AWS Bedrock API Key (simpler method)
+AWS_BEARER_TOKEN_BEDROCK=your_bedrock_api_key_here
+AWS_REGION=us-east-1
+```
+
+**How to get an API Key:**
+
+1. Go to AWS Console → Amazon Bedrock
+2. Navigate to "API Keys" section (available July 2025+)
+3. Click "Create API Key"
+4. Copy your Bedrock API key
+5. Paste it in your `.env` file
+
+### Method 2: IAM Credentials (Traditional)
+
+Add these to your `backend/.env` file:
+
+```bash
+# Claude SDK Configuration - AWS Bedrock
+CLAUDE_SDK_USE_BEDROCK=true
+ENABLE_CLAUDE_SDK=true
+
+# AWS IAM Credentials
 AWS_REGION=us-east-1
 AWS_ACCESS_KEY_ID=your_aws_access_key_id_here
 AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key_here
@@ -49,6 +80,7 @@ AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key_here
 ## Available Regions
 
 Claude models are available in these AWS regions:
+
 - `us-east-1` (US East - N. Virginia)
 - `us-west-2` (US West - Oregon)
 - `ap-southeast-1` (Asia Pacific - Singapore)
@@ -60,6 +92,7 @@ Check the latest list at: https://docs.aws.amazon.com/bedrock/latest/userguide/m
 ## Available Models
 
 Bedrock Claude models (as of 2025):
+
 - `anthropic.claude-3-opus-20240229-v1:0` - Most capable
 - `anthropic.claude-3-sonnet-20240229-v1:0` - Balanced
 - `anthropic.claude-3-haiku-20240307-v1:0` - Fast and efficient
@@ -80,6 +113,7 @@ python3 test_claude_sdk_integration.py
 ```
 
 Expected output:
+
 ```
 ✅ Using AWS Bedrock in region: us-east-1
 ✅ Claude SDK initialized successfully
@@ -89,16 +123,19 @@ Expected output:
 ## Troubleshooting
 
 ### Error: "AWS credentials not found"
+
 - Verify `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are set
 - Check for typos in your `.env` file
 - Ensure `.env` is in the `backend/` directory
 
 ### Error: "Access Denied" or 403
+
 - Verify IAM user has Bedrock permissions (see above)
 - Check that you've requested Bedrock access in AWS Console
 - Verify Claude models are enabled in your region
 
 ### Error: "Model not found"
+
 - Check Claude models are available in your region
 - Verify model access is enabled in Bedrock console
 - Try a different region (e.g., `us-east-1`)
@@ -106,11 +143,13 @@ Expected output:
 ### Cost Tracking
 
 Monitor Bedrock usage in AWS Cost Explorer:
+
 1. Go to AWS Console → Cost Explorer
 2. Filter by Service: "Bedrock"
 3. Group by: "Usage Type"
 
 Typical costs (as of 2025):
+
 - Input: ~$3 per million tokens
 - Output: ~$15 per million tokens
 
@@ -128,12 +167,14 @@ Typical costs (as of 2025):
 For production deployments, use IAM roles instead of access keys:
 
 ### On EC2/ECS:
+
 1. Create IAM role with Bedrock permissions
 2. Attach role to EC2 instance or ECS task
 3. Remove `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` from `.env`
 4. AWS SDK will automatically use instance credentials
 
 ### Configuration for IAM Roles:
+
 ```bash
 # backend/.env - No AWS credentials needed!
 CLAUDE_SDK_USE_BEDROCK=true
@@ -154,12 +195,14 @@ AWS_REGION=us-east-1
 To switch authentication methods, just change one variable:
 
 ### Use Direct Anthropic API:
+
 ```bash
 CLAUDE_SDK_USE_BEDROCK=false
 ANTHROPIC_API_KEY=sk-ant-your-key-here
 ```
 
 ### Use AWS Bedrock:
+
 ```bash
 CLAUDE_SDK_USE_BEDROCK=true
 AWS_ACCESS_KEY_ID=your-access-key
@@ -176,6 +219,7 @@ AWS_REGION=us-east-1
 ---
 
 **Ready to configure?**
+
 1. Copy this template to your notes
 2. Fill in your AWS credentials
 3. Add to `backend/.env`

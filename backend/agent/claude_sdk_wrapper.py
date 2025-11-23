@@ -64,18 +64,27 @@ class ClaudeSDKAgent:
         # Authentication setup
         if self.use_bedrock:
             # AWS Bedrock authentication via environment variables
-            # Claude SDK will automatically use AWS credentials from environment
+            # Supports two methods:
+            # 1. Single-key: AWS_BEARER_TOKEN_BEDROCK (recommended, simpler)
+            # 2. Traditional: AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY
             self.aws_region = os.getenv("AWS_REGION", "us-east-1")
+            self.aws_bearer_token = os.getenv("AWS_BEARER_TOKEN_BEDROCK")
             self.aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
             self.aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
 
-            if not (self.aws_access_key_id and self.aws_secret_access_key):
+            if self.aws_bearer_token:
+                # New single-key authentication method (July 2025+)
+                logger.info(f"✅ Using AWS Bedrock API Key authentication (region: {self.aws_region})")
+            elif self.aws_access_key_id and self.aws_secret_access_key:
+                # Traditional access key + secret key method
+                logger.info(f"✅ Using AWS Bedrock IAM credentials (region: {self.aws_region})")
+            else:
                 logger.warning(
                     "AWS Bedrock enabled but credentials not found. "
-                    "Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables."
+                    "Set either:\n"
+                    "  1. AWS_BEARER_TOKEN_BEDROCK (single API key, recommended)\n"
+                    "  2. AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY (traditional method)"
                 )
-            else:
-                logger.info(f"Using AWS Bedrock in region: {self.aws_region}")
 
             self.api_key = None  # Not used for Bedrock
         else:
@@ -352,18 +361,26 @@ async def initialize_claude_sdk():
         # Check authentication method and credentials
         if use_bedrock:
             # AWS Bedrock authentication
+            # Supports two methods:
+            # 1. Single-key: AWS_BEARER_TOKEN_BEDROCK (recommended, simpler)
+            # 2. Traditional: AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY
+            aws_bearer_token = os.getenv("AWS_BEARER_TOKEN_BEDROCK")
             aws_access_key = os.getenv("AWS_ACCESS_KEY_ID")
             aws_secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
             aws_region = os.getenv("AWS_REGION", "us-east-1")
 
-            if not (aws_access_key and aws_secret_key):
+            if aws_bearer_token:
+                logger.info(f"Initializing Claude SDK with AWS Bedrock API Key (region: {aws_region})")
+            elif aws_access_key and aws_secret_key:
+                logger.info(f"Initializing Claude SDK with AWS Bedrock IAM credentials (region: {aws_region})")
+            else:
                 logger.warning(
                     "CLAUDE_SDK_USE_BEDROCK=true but AWS credentials not found. "
-                    "Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY to enable AWS Bedrock."
+                    "Set either:\n"
+                    "  1. AWS_BEARER_TOKEN_BEDROCK (single API key, recommended)\n"
+                    "  2. AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY (traditional method)"
                 )
                 return
-
-            logger.info(f"Initializing Claude SDK with AWS Bedrock (region: {aws_region})")
         else:
             # Direct Anthropic API authentication
             api_key = os.getenv("ANTHROPIC_API_KEY")

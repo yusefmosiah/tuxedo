@@ -6,12 +6,26 @@
 
 Open `backend/.env` and add:
 
+**Option A: Single API Key (Recommended, simpler)**
+
 ```bash
 # Enable AWS Bedrock
 CLAUDE_SDK_USE_BEDROCK=true
 ENABLE_CLAUDE_SDK=true
 
-# Your AWS Credentials (add your actual keys here)
+# Your Bedrock API Key (add your actual key here)
+AWS_BEARER_TOKEN_BEDROCK=your-bedrock-api-key-here
+AWS_REGION=us-east-1
+```
+
+**Option B: Traditional IAM Credentials**
+
+```bash
+# Enable AWS Bedrock
+CLAUDE_SDK_USE_BEDROCK=true
+ENABLE_CLAUDE_SDK=true
+
+# Your AWS IAM Credentials (add your actual keys here)
 AWS_REGION=us-east-1
 AWS_ACCESS_KEY_ID=your-access-key-here
 AWS_SECRET_ACCESS_KEY=your-secret-key-here
@@ -32,6 +46,7 @@ python3 main.py
 ```
 
 Look for:
+
 ```
 ✅ Claude SDK initialized successfully
    Authentication: AWS Bedrock
@@ -50,6 +65,15 @@ Your Claude SDK is now using AWS Bedrock for all research and analysis features.
 
 ## 🔑 Getting AWS Credentials
 
+**Method 1: API Key (Simpler)**
+
+1. Go to AWS Console → Amazon Bedrock
+2. Navigate to "API Keys" section
+3. Click "Create API Key"
+4. Copy key to `.env` as `AWS_BEARER_TOKEN_BEDROCK`
+
+**Method 2: IAM Credentials (Traditional)**
+
 1. Go to AWS Console → IAM
 2. Create new user or use existing
 3. Add Bedrock permissions (see docs)
@@ -65,16 +89,27 @@ Typical costs: ~$3-15 per million tokens
 ## ⚡ Quick Switch Between Methods
 
 **Use Anthropic API:**
+
 ```bash
 CLAUDE_SDK_USE_BEDROCK=false
 ANTHROPIC_API_KEY=sk-ant-your-key
 ```
 
-**Use AWS Bedrock:**
+**Use AWS Bedrock (API Key):**
+
+```bash
+CLAUDE_SDK_USE_BEDROCK=true
+AWS_BEARER_TOKEN_BEDROCK=your-api-key
+AWS_REGION=us-east-1
+```
+
+**Use AWS Bedrock (IAM):**
+
 ```bash
 CLAUDE_SDK_USE_BEDROCK=true
 AWS_ACCESS_KEY_ID=your-key
 AWS_SECRET_ACCESS_KEY=your-secret
+AWS_REGION=us-east-1
 ```
 
 Restart backend after changing.

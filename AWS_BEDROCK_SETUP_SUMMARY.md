@@ -19,19 +19,39 @@ Add these to your `backend/.env` file:
 CLAUDE_SDK_USE_BEDROCK=true
 ENABLE_CLAUDE_SDK=true
 
-# Your AWS Credentials (edit with your actual keys)
+# AWS Bedrock API Key (recommended - simpler method, July 2025+)
+AWS_BEARER_TOKEN_BEDROCK=<your-bedrock-api-key>
 AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=<your-access-key-here>
-AWS_SECRET_ACCESS_KEY=<your-secret-key-here>
 ```
 
-**That's it!** Just replace the placeholder values with your actual AWS credentials.
+**That's it!** Just replace the placeholder with your actual Bedrock API key.
+
+**Alternative (Traditional IAM Credentials):**
+
+```bash
+# Claude SDK Configuration - AWS Bedrock
+CLAUDE_SDK_USE_BEDROCK=true
+ENABLE_CLAUDE_SDK=true
+
+# Traditional IAM credentials
+AWS_ACCESS_KEY_ID=<your-access-key>
+AWS_SECRET_ACCESS_KEY=<your-secret-key>
+AWS_REGION=us-east-1
+```
 
 ## 🚀 Quick Start
 
-### 1. Get Your AWS Credentials
+### 1. Get Your AWS Bedrock API Key
 
-If you don't have them yet:
+**Recommended Method (Simpler):**
+
+1. Go to AWS Console → Amazon Bedrock
+2. Navigate to "API Keys" section (available July 2025+)
+3. Click "Create API Key"
+4. Copy your Bedrock API key
+
+**Alternative (Traditional IAM):**
+
 1. Go to AWS Console → IAM
 2. Create or select a user
 3. Attach Bedrock permissions (see docs for IAM policy)
@@ -56,8 +76,9 @@ python3 test_claude_sdk_integration.py
 ```
 
 Expected output:
+
 ```
-✅ Using AWS Bedrock in region: us-east-1
+✅ Using AWS Bedrock API Key authentication (region: us-east-1)
 ✅ Claude SDK initialized successfully
    Authentication: AWS Bedrock
 ```
@@ -69,6 +90,7 @@ python3 main.py
 ```
 
 Look for this in the logs:
+
 ```
 Initializing Claude SDK with AWS Bedrock (region: us-east-1)
 ✅ Claude SDK initialized successfully
@@ -78,9 +100,11 @@ Initializing Claude SDK with AWS Bedrock (region: us-east-1)
 ## 📚 Documentation Created
 
 ### Quick Reference
+
 - **backend/BEDROCK_QUICKSTART.md** - 3-minute setup guide
 
 ### Detailed Guide
+
 - **docs/AWS_BEDROCK_CONFIGURATION.md** - Complete configuration guide with:
   - IAM permissions template
   - Available regions and models
@@ -90,6 +114,7 @@ Initializing Claude SDK with AWS Bedrock (region: us-east-1)
   - Production IAM role setup
 
 ### Integration Docs
+
 - **docs/CLAUDE_SDK_INTEGRATION.md** - Updated with dual authentication options
 
 ## 🔄 Switching Between Authentication Methods
@@ -97,6 +122,7 @@ Initializing Claude SDK with AWS Bedrock (region: us-east-1)
 You can easily switch between Anthropic API and AWS Bedrock:
 
 ### Use Anthropic API:
+
 ```bash
 CLAUDE_SDK_USE_BEDROCK=false
 ANTHROPIC_API_KEY=sk-ant-your-key
@@ -104,6 +130,7 @@ ENABLE_CLAUDE_SDK=true
 ```
 
 ### Use AWS Bedrock:
+
 ```bash
 CLAUDE_SDK_USE_BEDROCK=true
 AWS_REGION=us-east-1
@@ -117,11 +144,13 @@ Just change the config and restart the backend.
 ## ✨ New Features
 
 ### Automatic Detection
+
 - System automatically reads `CLAUDE_SDK_USE_BEDROCK` from environment
 - Falls back to Anthropic API if Bedrock not configured
 - Clear logging shows which authentication method is active
 
 ### Dual Mode Support
+
 ```python
 # In claude_sdk_wrapper.py
 agent = ClaudeSDKAgent(use_bedrock=True)  # AWS Bedrock
@@ -129,6 +158,7 @@ agent = ClaudeSDKAgent(use_bedrock=False) # Anthropic API
 ```
 
 ### Production Ready
+
 - IAM role support for EC2/ECS
 - Regional deployment options
 - CloudTrail audit logging
@@ -145,10 +175,12 @@ agent = ClaudeSDKAgent(use_bedrock=False) # Anthropic API
 ## 💰 Cost Information
 
 AWS Bedrock pricing (approximate, as of 2025):
+
 - **Input tokens**: ~$3 per million
 - **Output tokens**: ~$15 per million
 
 Monitor usage in AWS Cost Explorer:
+
 - AWS Console → Cost Explorer
 - Filter by Service: "Bedrock"
 - Set up billing alerts
@@ -156,6 +188,7 @@ Monitor usage in AWS Cost Explorer:
 ## 🎯 Next Steps
 
 ### Immediate:
+
 1. ✅ Review this summary
 2. ⏭️ **Add your AWS credentials to `backend/.env`**
 3. ⏭️ Run `python3 test_claude_sdk_integration.py`
@@ -163,6 +196,7 @@ Monitor usage in AWS Cost Explorer:
 5. ⏭️ Test endpoints via http://localhost:8000/docs
 
 ### Optional:
+
 - Set up IAM role for production
 - Configure billing alerts in AWS
 - Enable CloudTrail logging
@@ -205,6 +239,7 @@ Your AWS user needs this policy:
 ## 🌍 Available Regions
 
 Claude models available in:
+
 - `us-east-1` (N. Virginia) ✅ Recommended
 - `us-west-2` (Oregon)
 - `ap-southeast-1` (Singapore)
@@ -214,21 +249,25 @@ Claude models available in:
 ## 🆘 Troubleshooting
 
 ### Can't find AWS credentials
+
 - Check `.env` file exists in `backend/` directory
 - Verify no typos in variable names
 - Ensure credentials are not commented out
 
 ### Access Denied (403)
+
 - Verify IAM permissions (see policy above)
 - Check Bedrock is enabled in your AWS region
 - Request model access in Bedrock console
 
 ### Wrong region
+
 - Claude might not be available in your region
 - Try `us-east-1` (most reliable)
 - Check available regions in docs
 
 ### Need help?
+
 - See `docs/AWS_BEDROCK_CONFIGURATION.md` for detailed troubleshooting
 - Check backend logs for specific error messages
 - Verify credentials work with AWS CLI: `aws bedrock list-foundation-models`
@@ -236,6 +275,7 @@ Claude models available in:
 ## ✅ Verification Checklist
 
 Before starting the backend:
+
 - [ ] AWS credentials added to `backend/.env`
 - [ ] `CLAUDE_SDK_USE_BEDROCK=true` is set
 - [ ] Region is set (default: `us-east-1`)
@@ -243,6 +283,7 @@ Before starting the backend:
 - [ ] Integration test passes
 
 After starting:
+
 - [ ] Backend logs show "AWS Bedrock" authentication
 - [ ] No error messages in logs
 - [ ] `/api/claude-sdk/status` returns `"status": "ready"`
@@ -257,6 +298,7 @@ The configuration is complete on the code side. Now you just need to:
 3. **Start using Claude SDK with AWS Bedrock!**
 
 All the code changes are committed and pushed:
+
 - Branch: `claude/setup-agents-sdk-01YZNisosPQ3k6Lm17z2jd2A`
 - Commit: 52a786e
 

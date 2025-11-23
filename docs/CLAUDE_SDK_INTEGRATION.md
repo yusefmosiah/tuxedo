@@ -12,6 +12,7 @@ Tuxedo now features a **hybrid agent system** that combines:
 2. **Claude Agent SDK** - For advanced research, analysis, and reasoning
 
 This approach provides the best of both worlds:
+
 - Proven blockchain integrations remain intact
 - New research and analysis capabilities added
 - Gradual migration path available if desired
@@ -50,6 +51,7 @@ This approach provides the best of both worlds:
 ### When to Use Which System
 
 **Use LangChain (`/chat` endpoint):**
+
 - Executing blockchain transactions
 - Checking balances and positions
 - Managing vault deposits/withdrawals
@@ -57,6 +59,7 @@ This approach provides the best of both worlds:
 - Multi-step blockchain workflows
 
 **Use Claude SDK (`/api/claude-sdk/*` endpoints):**
+
 - Strategy research and brainstorming
 - Market analysis and insights
 - Performance report generation
@@ -76,7 +79,7 @@ uv add claude-agent-sdk
 
 ### 2. Configure Authentication
 
-Claude SDK supports **two authentication methods**:
+Claude SDK supports **three authentication methods**:
 
 #### Option A: Direct Anthropic API (Recommended for Getting Started)
 
@@ -90,7 +93,7 @@ ENABLE_CLAUDE_SDK=true
 
 Get your API key from: https://console.anthropic.com/
 
-#### Option B: AWS Bedrock (Recommended for Production/Enterprise)
+#### Option B: AWS Bedrock with API Key (Recommended for Production)
 
 Add to your `backend/.env` file:
 
@@ -99,15 +102,37 @@ Add to your `backend/.env` file:
 CLAUDE_SDK_USE_BEDROCK=true
 ENABLE_CLAUDE_SDK=true
 
-# AWS Credentials
+# AWS Bedrock API Key (simpler method, July 2025+)
+AWS_BEARER_TOKEN_BEDROCK=your_bedrock_api_key
+AWS_REGION=us-east-1
+```
+
+**Benefits of this method:**
+
+- Single-key authentication (no IAM complexity)
+- Simpler setup than traditional IAM
+- Enterprise billing and governance
+- Regional data residency
+
+#### Option C: AWS Bedrock with IAM Credentials (Traditional)
+
+Add to your `backend/.env` file:
+
+```bash
+# Claude SDK Configuration - AWS Bedrock
+CLAUDE_SDK_USE_BEDROCK=true
+ENABLE_CLAUDE_SDK=true
+
+# AWS IAM Credentials
 AWS_REGION=us-east-1
 AWS_ACCESS_KEY_ID=your_aws_access_key_id
 AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
 ```
 
 **Benefits of AWS Bedrock:**
+
 - Enterprise billing and governance
-- IAM role-based authentication
+- IAM role-based authentication (for production)
 - Integrated with AWS services
 - Regional data residency
 - Reserved capacity options
@@ -126,6 +151,7 @@ cd backend
 ```
 
 Expected output:
+
 ```
 ✅ Integration test completed!
 ```
@@ -135,11 +161,13 @@ Expected output:
 All Claude SDK endpoints are available at `/api/claude-sdk/*`:
 
 ### 1. Simple Query
+
 **POST** `/api/claude-sdk/query`
 
 General-purpose query endpoint for research and analysis.
 
 **Request:**
+
 ```json
 {
   "prompt": "What are the risks of yield farming on Stellar?"
@@ -147,6 +175,7 @@ General-purpose query endpoint for research and analysis.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -157,11 +186,13 @@ General-purpose query endpoint for research and analysis.
 ```
 
 ### 2. Strategy Analysis
+
 **POST** `/api/claude-sdk/analyze-strategy`
 
 Comprehensive DeFi strategy analysis with risk assessment.
 
 **Request:**
+
 ```json
 {
   "strategy_description": "Supply USDC to Blend Capital and stake BLND tokens",
@@ -173,6 +204,7 @@ Comprehensive DeFi strategy analysis with risk assessment.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -185,11 +217,13 @@ Comprehensive DeFi strategy analysis with risk assessment.
 ```
 
 ### 3. Yield Research
+
 **POST** `/api/claude-sdk/research-yield`
 
 Research current yield opportunities across Stellar DeFi.
 
 **Request:**
+
 ```json
 {
   "asset": "USDC",
@@ -198,6 +232,7 @@ Research current yield opportunities across Stellar DeFi.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -210,11 +245,13 @@ Research current yield opportunities across Stellar DeFi.
 ```
 
 ### 4. Generate Report
+
 **POST** `/api/claude-sdk/generate-report`
 
 Create comprehensive performance reports.
 
 **Request:**
+
 ```json
 {
   "user_positions": [
@@ -234,6 +271,7 @@ Create comprehensive performance reports.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -245,11 +283,13 @@ Create comprehensive performance reports.
 ```
 
 ### 5. Status Check
+
 **GET** `/api/claude-sdk/status`
 
 Check Claude SDK integration status.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -325,8 +365,8 @@ async with httpx.AsyncClient() as client:
 
 ```typescript
 // hooks/useClaudeSDK.ts
-import { useState } from 'react';
-import axios from 'axios';
+import { useState } from "react";
+import axios from "axios";
 
 export function useClaudeSDK() {
   const [loading, setLoading] = useState(false);
@@ -334,19 +374,16 @@ export function useClaudeSDK() {
 
   const analyzeStrategy = async (
     description: string,
-    context?: Record<string, any>
+    context?: Record<string, any>,
   ) => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await axios.post(
-        '/api/claude-sdk/analyze-strategy',
-        {
-          strategy_description: description,
-          market_context: context
-        }
-      );
+      const response = await axios.post("/api/claude-sdk/analyze-strategy", {
+        strategy_description: description,
+        market_context: context,
+      });
       return response.data.data;
     } catch (err) {
       setError(err.message);
@@ -361,10 +398,10 @@ export function useClaudeSDK() {
     setError(null);
 
     try {
-      const response = await axios.post(
-        '/api/claude-sdk/research-yield',
-        { asset, min_apy: minApy }
-      );
+      const response = await axios.post("/api/claude-sdk/research-yield", {
+        asset,
+        min_apy: minApy,
+      });
       return response.data.data;
     } catch (err) {
       setError(err.message);
@@ -378,7 +415,7 @@ export function useClaudeSDK() {
     analyzeStrategy,
     researchYield,
     loading,
-    error
+    error,
   };
 }
 ```
@@ -539,6 +576,7 @@ If you want to gradually migrate from LangChain to Claude SDK:
 
 **Problem**: "ANTHROPIC_API_KEY not set"
 **Solution**: Add API key to `.env` file:
+
 ```bash
 ANTHROPIC_API_KEY=sk-ant-your-key-here
 ```
@@ -547,6 +585,7 @@ ANTHROPIC_API_KEY=sk-ant-your-key-here
 
 **Problem**: "ModuleNotFoundError: No module named 'claude_agent_sdk'"
 **Solution**: Reinstall dependencies:
+
 ```bash
 cd backend
 uv sync
@@ -556,6 +595,7 @@ uv sync
 
 **Problem**: File operations failing
 **Solution**: Check working directory permissions:
+
 ```python
 agent = ClaudeSDKAgent(working_directory="/writable/path")
 ```
@@ -588,6 +628,7 @@ Claude SDK API calls incur costs:
 - **Reports**: ~$0.05-0.10 per report
 
 **Optimization strategies**:
+
 1. Cache responses for common queries
 2. Use LangChain for simple operations
 3. Reserve Claude SDK for complex reasoning
@@ -622,6 +663,7 @@ For issues or questions:
 ## Changelog
 
 ### v1.0 (2025-11-20)
+
 - ✅ Initial Claude SDK integration
 - ✅ Hybrid architecture with LangChain
 - ✅ 5 API endpoints added
