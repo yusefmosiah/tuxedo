@@ -221,11 +221,14 @@ class GhostwriterPipeline:
         """
         import asyncio
 
-        # Create Haiku researcher
+        # Create Haiku researcher with Terminal and FileEditor tools
         researcher_llm = self.create_llm(self.HAIKU)
         researcher = Agent(
             llm=researcher_llm,
-            tools=[Tool(name=FileEditorTool.name)]
+            tools=[
+                Tool(name=TerminalTool.name),  # For WebSearch CLI
+                Tool(name=FileEditorTool.name)  # For saving research
+            ]
         )
 
         # Create dedicated workspace for this researcher
