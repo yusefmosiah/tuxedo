@@ -18,13 +18,13 @@ from api.routes.agent import router as agent_router
 from api.routes.threads import router as threads_router
 from api.routes.accounts import router as accounts_router
 from api.routes.vault import router as vault_router
-from api.routes.claude_sdk import router as claude_sdk_router
+
 # Use refactored passkey auth routes (reduced from 1148 to ~450 lines)
 from api.routes.passkey_auth_refactored import router as passkey_auth_router
 
 # Import agent system
 from agent.core import initialize_agent, cleanup_agent
-from agent.claude_sdk_wrapper import initialize_claude_sdk, cleanup_claude_sdk
+
 
 # Import configuration
 try:
@@ -42,11 +42,7 @@ async def lifespan(app: FastAPI):
     # Initialize agent system
     await initialize_agent()
 
-    # Initialize Claude SDK (for research and analysis features)
-    if CONFIG_AVAILABLE and settings.enable_claude_sdk:
-        await initialize_claude_sdk()
-    else:
-        logger.info("Claude SDK integration disabled")
+
 
     yield
 
@@ -55,9 +51,7 @@ async def lifespan(app: FastAPI):
     # Cleanup agent system
     await cleanup_agent()
 
-    # Cleanup Claude SDK
-    if CONFIG_AVAILABLE and settings.enable_claude_sdk:
-        await cleanup_claude_sdk()
+
 
 def create_app() -> FastAPI:
     """Create and configure FastAPI application"""
@@ -89,7 +83,7 @@ def create_app() -> FastAPI:
     app.include_router(chat_router, tags=["chat"])
     app.include_router(agent_router, prefix="/api/agent", tags=["agent"])
     app.include_router(threads_router, tags=["threads"])
-    app.include_router(claude_sdk_router, prefix="/api/claude-sdk", tags=["claude-sdk"])
+
 
     # Health check endpoint
     @app.get("/")

@@ -811,6 +811,50 @@ def create_user_tools(agent_context: AgentContext) -> List:
                 )
             )
 
+    # ========================================================================
+    # GHOSTWRITER TOOLS - Deep Research and Report Generation
+    # ========================================================================
+
+    @tool
+    def ghostwriter_tool_wrapper(
+        topic: str,
+        style_guide: str = "general_report",
+        verification_threshold: float = 0.8,
+        max_iterations: int = 3
+    ):
+        """
+        Conduct deep research and generate a comprehensive report.
+
+        Args:
+            topic: Research topic
+            style_guide: Report style ("general_report", "defi_report", "technical_brief")
+            verification_threshold: Confidence threshold (0.0-1.0)
+            max_iterations: Max refinement iterations
+        """
+        import asyncio
+        from agent.ghostwriter.tool import _run_ghostwriter_async
+
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, _run_ghostwriter_async(
+                    topic=topic,
+                    style_guide=style_guide,
+                    verification_threshold=verification_threshold,
+                    max_iterations=max_iterations
+                ))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(
+                _run_ghostwriter_async(
+                    topic=topic,
+                    style_guide=style_guide,
+                    verification_threshold=verification_threshold,
+                    max_iterations=max_iterations
+                )
+            )
+
     # Return list of tools with agent_context injected
     tools = [
         get_my_wallet,  # User's external wallet ONLY
@@ -831,8 +875,10 @@ def create_user_tools(agent_context: AgentContext) -> List:
         blend_check_my_positions,
         blend_get_pool_apy,
         # Soroswap DEX tools
-        soroswap_dex
+        soroswap_dex,
+        # Ghostwriter research tool
+        ghostwriter_tool_wrapper
     ]
 
-    logger.info(f"Created {len(tools)} tools (7 Stellar + 2 DeFindex + 6 Blend Capital + 1 Soroswap) for {agent_context}")
+    logger.info(f"Created {len(tools)} tools (7 Stellar + 2 DeFindex + 6 Blend Capital + 1 Soroswap + 1 Ghostwriter) for {agent_context}")
     return tools
