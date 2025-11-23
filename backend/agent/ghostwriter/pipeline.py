@@ -38,9 +38,10 @@ class GhostwriterPipeline:
     8. Style (Sonnet) - apply style guide
     """
 
-    # AWS Bedrock model IDs for Claude 4.5
-    HAIKU = "anthropic.claude-haiku-4-5-20251001-v1:0"
-    SONNET = "anthropic.claude-sonnet-4-5-20250929-v1:0"
+    # AWS Bedrock inference profile IDs for Claude 4.5
+    # Using regional inference profiles for on-demand throughput
+    HAIKU = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    SONNET = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
 
     def __init__(
         self,
