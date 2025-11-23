@@ -24,7 +24,7 @@ class WebSearchAction:
     """
 
     query: str
-    max_results: int = 5
+    max_results: int = 20
     search_depth: str = "advanced"
 
     def __post_init__(self):
