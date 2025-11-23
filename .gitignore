@@ -76,3 +76,6 @@ backend/.venv/
 .venv/
 # Stellar account keystores - contain private keys!
 .stellar_keystore*.json
+
+# Ghostwriter sessions
+ghostwriter_sessions/
