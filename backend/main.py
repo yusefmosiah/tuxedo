@@ -19,6 +19,11 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 os.environ.setdefault("XDG_CACHE_HOME", CACHE_DIR)
 os.environ.setdefault("LITELLM_CACHE_DIR", CACHE_DIR)
 
+# Configure Jinja2 bytecode cache directory
+# Jinja2 uses tempfile.gettempdir() which respects TMPDIR
+# This prevents OpenHands SDK from trying to write to read-only package directories
+os.environ.setdefault("TMPDIR", CACHE_DIR)
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
