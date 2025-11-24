@@ -23,6 +23,10 @@ COPY backend/ ./
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash app
+
+# Create writable cache directory for LiteLLM/OpenHands/Jinja2
+RUN mkdir -p /tmp/tuxedo_cache && chown -R app:app /tmp/tuxedo_cache
+
 RUN chown -R app:app /app
 USER app
 
