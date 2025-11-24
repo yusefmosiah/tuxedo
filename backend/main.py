@@ -18,6 +18,7 @@ CACHE_DIR = os.getenv("CACHE_DIR", "/tmp/tuxedo_cache")
 os.makedirs(CACHE_DIR, exist_ok=True)
 os.environ.setdefault("XDG_CACHE_HOME", CACHE_DIR)
 os.environ.setdefault("LITELLM_CACHE_DIR", CACHE_DIR)
+os.environ.setdefault("JINJA2_CACHE_DIR", CACHE_DIR)
 
 # Configure Jinja2 bytecode cache directory
 # Jinja2 uses tempfile.gettempdir() which respects TMPDIR
@@ -27,6 +28,16 @@ os.environ.setdefault("TMPDIR", CACHE_DIR)
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Log cache configuration for debugging
+logger.info(f"Cache directory configured: {CACHE_DIR}")
+logger.info(f"TMPDIR: {os.environ.get('TMPDIR')}")
+logger.info(f"XDG_CACHE_HOME: {os.environ.get('XDG_CACHE_HOME')}")
+logger.info(f"LITELLM_CACHE_DIR: {os.environ.get('LITELLM_CACHE_DIR')}")
+logger.info(f"JINJA2_CACHE_DIR: {os.environ.get('JINJA2_CACHE_DIR')}")
+
+import tempfile
+logger.info(f"tempfile.gettempdir(): {tempfile.gettempdir()}")
 
 # Create app at module level for Docker/uvicorn compatibility
 from app import create_app
