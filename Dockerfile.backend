@@ -18,6 +18,11 @@ COPY backend/uv.lock ./
 # Install Python dependencies
 RUN uv pip install --system -e .
 
+# Create Jinja2 cache directory in OpenHands package (fallback if hardcoded path)
+# This addresses the specific error: /usr/local/lib/python3.12/site-packages/openhands/sdk/agent/prompts/.jinja_cache
+RUN mkdir -p /usr/local/lib/python3.*/site-packages/openhands/sdk/agent/prompts/.jinja_cache 2>/dev/null || true && \
+    chmod -R 777 /usr/local/lib/python3.*/site-packages/openhands/sdk/agent/prompts/.jinja_cache 2>/dev/null || true
+
 # Copy backend source code (excluding .env and other ignored files via .dockerignore)
 COPY backend/ ./
 
@@ -26,6 +31,12 @@ RUN useradd --create-home --shell /bin/bash app
 
 # Create writable cache directory for LiteLLM/OpenHands/Jinja2
 RUN mkdir -p /tmp/tuxedo_cache && chown -R app:app /tmp/tuxedo_cache
+
+# Set cache environment variables at container level (before app user switch)
+ENV TMPDIR=/tmp/tuxedo_cache
+ENV XDG_CACHE_HOME=/tmp/tuxedo_cache
+ENV LITELLM_CACHE_DIR=/tmp/tuxedo_cache
+ENV JINJA2_CACHE_DIR=/tmp/tuxedo_cache
 
 RUN chown -R app:app /app
 USER app
