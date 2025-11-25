@@ -11,9 +11,9 @@ Choir is AI research infrastructure for the learning economy.
 
 **No capital required to earn.** Chat freely, publish research, get cited by AI agents making decisions, receive citation rewards in real money. The pathway from zero to income exists entirely through intellectual contribution.
 
-**Optional for those with capital**: Automated yield farming across multiple blockchains. AI agents manage DeFi strategies, write research reports citing the knowledge base, and fund citation rewards from performance fees.
+**Optional for those with capital**: Deposit USDC to provide the capital base for the Treasury's operations and lending pool. Your principal is protected, and you earn CHIP ownership based on your intellectual contributions, not the size of your deposit.
 
-**The economic loop**: Capital deployers fund researchers. Researchers make agents smarter. Smarter agents generate better yields. Better yields fund more research.
+**The economic loop (The Flywheel)**: Deposits fund operations. Novelty earns ownership (CHIP). Platform usage builds Treasury assets. Treasury assets are collateralized to fund citation rewards (USDC). Citation rewards attract quality researchers, whose work attracts more users and capital.
 
 This is not social media (no feeds, no followers, no engagement farming). This is not academic publishing (no gatekeeping, no 18-month peer review, no credential requirements). This is infrastructure for the learning economy where genuine insight generates measurable economic value.
 
@@ -67,10 +67,10 @@ Traditional banks let you deposit money and earn interest. Thought banks let you
 1. **Research and write** using Ghostwriter (multi-model AI orchestration)
 2. **Publish articles** to the knowledge base (anonymous, merit-based)
 3. **Get cited** when AI agents or other researchers reference your work
-4. **Earn stablecoins** from citation rewards funded by performance fees
-5. **Compound over time** as foundational research generates ongoing citations
+4. **Earn USDC** from a dynamically priced, exponentially scaling citation rewards pool.
+5. **Compound over time** as foundational research generates ongoing citations.
 
-**The key insight**: When AI agents make profitable decisions citing your research, you receive proportional shares of performance fees. Your intellectual property becomes productive capital generating passive income.
+**The key insight**: The system is designed to reward intellectual contribution sustainably. Your ideas earn you spendable income (USDC) and ownership (CHIP), funded by a self-sustaining Treasury that leverages the network's own growth.
 
 ### The Risk/Trust Gradient
 
@@ -119,11 +119,11 @@ Users enter at their trust level:
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
 │  Year 1+: Capital Deployment (10-20% of users)              │
-│  ├── Deposit stablecoins into vaults                        │
-│  ├── AI agents manage multi-chain DeFi strategies           │
-│  ├── Agents cite knowledge base in research reports         │
-│  ├── Performance fees fund citation rewards                 │
-│  └── Both capital and citations earn                        │
+│  ├── Deposit USDC (principal is protected)                  │
+│  ├── Yield from deposit funds Treasury operations           │
+│  ├── Deposit becomes part of internal lending pool          │
+│  ├── Treasury borrows from pool to fund citation rewards    │
+│  └── User earns CHIP based on novelty, not deposit size     │
 │                                                              │
 │  Risk: Capital at stake | Trust Required: Deep, earned      │
 │                                                              │
@@ -205,7 +205,7 @@ Current AI platforms force analytical reasoning and communicative craft into the
 ┌──────────────────────────────────────────────────────────────┐
 │                  PUBLISHED ARTICLE                            │
 │                                                               │
-│  • Staked with CHOIR tokens (rank by stake)                  │
+│  • Consumed CHIP moves to Treasury (rank by stake)           │
 │  • Enters citation graph                                     │
 │  • Earns rewards when cited                                  │
 │  • Open to revision proposals                                │
@@ -250,7 +250,7 @@ This creates systematic bias against:
 
 1. **Sign in with passkey** (biometric, no seed phrases)
 2. **Publish anonymously** (wallet signature proves authorship without revealing identity)
-3. **Stake CHOIR tokens** on publication (higher stakes = higher visibility)
+3. **Consume CHIP** to publish (staked amount determines visibility)
 4. **Get cited** based on merit (semantic similarity auto-detection)
 5. **Earn stablecoins** when cited (proportional to influence)
 
@@ -347,7 +347,7 @@ Good ideas get published with flaws. Better ideas emerge later. No economic mech
 │                                                               │
 │  1. PROPOSE                                                   │
 │     ├── Submit revised version                               │
-│     ├── Stake CHOIR tokens (non-refundable bid)              │
+│     ├── Stake CHIP tokens (non-refundable bid)              │
 │     └── Higher stakes signal serious improvements            │
 │                                                               │
 │  2. REVIEW (7-day window)                                     │
@@ -370,7 +370,7 @@ Good ideas get published with flaws. Better ideas emerge later. No economic mech
 │     └─► SPLIT DECISION (disagreement among co-authors)       │
 │         ├── Counts as rejection                              │
 │         ├── Stakes go to Choir Treasury                      │
-│         ├── Treasury redistributes as citation rewards       │
+│         ├── Treasury leverages stakes to fund more rewards   │
 │         └── Disputed improvements fund ecosystem             │
 │                                                               │
 └──────────────────────────────────────────────────────────────┘
@@ -391,98 +391,70 @@ Good ideas get published with flaws. Better ideas emerge later. No economic mech
 
 ### Loop 1: Thought Mining (Knowledge → Value)
 
-**No capital required. Pure intellectual contribution.**
+**Intellectual contribution is primary.**
 
 ```
-Chat Freely
-  ├── Earn novelty tokens (CHOIR, decaying emissions)
-  ├── Accumulate toward publishing threshold (100 tokens)
-  └── Build toward monetization without spending
-
-Publish Articles
-  ├── Stake earned tokens (or purchase on market)
-  ├── Enter citation graph
-  └── Economic skin in the game
+Publish Novel Research
+  ├── Earn CHIP tokens based on semantic novelty score
+  └── Build ownership stake through ideas
 
 Get Cited
-  ├── AI agents reference your work in research
-  ├── Other researchers build on your thinking
-  └── Semantic similarity auto-detects influence
+  ├── AI agents reference your work
+  └── Other researchers build on your thinking
 
-Earn Stablecoins
-  ├── Citation rewards from performance fees
-  ├── Proportional to influence
-  ├── Immediately convertible to local fiat
-  └── Passive income from intellectual property
+Earn USDC
+  ├── Citation rewards from the Treasury's rewards pool
+  ├── Meritocratic, flat rate per citation
+  └── Immediately convertible to local fiat
 ```
 
-**Pathway**: Thought → Publication → Citation → Income
-
-**Timeline**: 0-6 months to first earnings, no capital deposit required
+**Pathway**: Thought → Publication → Ownership (CHIP) & Income (USDC)
 
 ### Loop 2: Capital Management (Capital → Intelligence → Yield)
 
-**Optional. For those with capital and deep trust.**
+**Optional. For those who wish to provide capital.**
 
 ```
-Deposit Stablecoins
-  ├── Non-custodial vaults (you own shares, not agent controls)
-  ├── Multi-chain yield strategies
-  └── 10-15% APY (realistic, not hallucinated)
+Deposit USDC
+  ├── Principal is protected and withdrawable
+  └── Deposit enters the Treasury's internal lending pool
 
-AI Agents Research
-  ├── Query Choir knowledge base for insights
-  ├── Analyze on-chain data
-  ├── Identify best risk-adjusted opportunities
-  └── Write research reports (citable IP)
+Yield Funds Operations
+  ├── Yield from all deposits funds the core operational budget
+  └── A portion of yield value is allocated for CHIP distribution
 
-Execute Strategies
-  ├── Supply to Aave, Morpho, Aerodrome on Base/Arbitrum
-  ├── Lend on Blend Capital (Stellar)
-  ├── Cross-chain rebalancing (automated)
-  └── Gas optimization, tax awareness
-
-Performance Fees → Citations
-  ├── 20% of profits go to platform
-  ├── 70% of fees fund citation rewards
-  ├── Researchers whose work was cited earn
-  └── Loop closes: Capital funds intelligence
+Treasury Borrows to Fund Citations
+  ├── Treasury uses its own CHIP as collateral
+  ├── Borrows from the user deposit pool
+  └── Funds the exponentially scaling citation rewards pool
 ```
 
-**Pathway**: Capital → Agent Research → Yields → Citations
-
-**Timeline**: Immediate yields, long-term compounding
-
-**Risk**: Capital at stake (DeFi risks, smart contract risks, agent decision risks)
+**Pathway**: Capital → Sustainable Operations & Exponential Citation Rewards
 
 ### Loop 3: Network Effects (Masses → Token Demand → Governance)
 
-**Free users create the value that makes everything work.**
+**The network's value is self-reinforcing.**
 
 ```
-Free Participation
-  ├── Millions chat, share ideas
-  ├── Novelty rewards distributed
-  ├── Network effects emerge
-  └── Token demand from holdings
+Bootstrap with Free Tier
+  ├── Users get starter CHIP credits
+  ├── Publish first articles & earn USDC citations
+  └── Make first USDC deposit with earnings
 
 Researchers Publish
-  ├── Knowledge base grows
-  ├── Citation quality improves
-  ├── Agents get smarter
-  └── Platform value compounds
+  ├── Earn CHIP for novelty, growing the knowledge base
+  ├── Earn USDC for citations, proving value
+  └── Agents get smarter
 
-Capital Deployers Invest
-  ├── Attracted by network effects
-  ├── Yields improve from better research
-  ├── Earn governance tokens
-  └── Shape protocol evolution
+Capital Providers Deposit USDC
+  ├── Attracted by network effects & quality research
+  ├── Strengthens operational budget
+  └── Expands citation reward pool capacity
 
-Treasury Accumulates
-  ├── Split decisions from revisions
-  ├── Protocol-owned liquidity
-  ├── Ecosystem investments
-  └── Sustainable funding
+Treasury Accumulates CHIP
+  ├── Consumed CHIP returns to Treasury
+  ├── Treasury's collateral base grows
+  └── Borrowing capacity for rewards increases
 ```
 
 **Pathway**: Participation → Tokens → Capital → Governance
@@ -530,97 +502,26 @@ When AI achieves "Move 37" breakthroughs across every field simultaneously, trad
 
 ### Why Three Currencies?
 
-Different users want different things:
-- **Researchers**: Stable income they can spend (stablecoins)
-- **Participants**: Low-friction entry, no crypto knowledge (credits)
-- **Investors**: Governance rights, speculative upside (CHOIR tokens)
+The Choir economy is designed with a clear separation of concerns to perfectly align incentives.
 
-Forcing everyone into a single currency creates misaligned incentives.
+### USDC: For Income and Operations
 
-### Currency 1: Credits (Fiat/IAP)
+*   **For Users**: USDC is for **income**. All citation rewards are paid in USDC, providing a stable, spendable asset. Users also deposit USDC to participate, and this principal is always protected.
+*   **For the Protocol**: The **yield** on user deposits funds the operational budget.
 
-**Purpose**: Accessible entry, no crypto knowledge required
+### CHIP: For Ownership and Contribution
 
-```
-Purchase:
-├── Apple/Google IAP (in-app purchase)
-├── Credit card payment
-└── No wallet, no crypto
-
-Use:
-├── Pay for Ghostwriter calls (1, 5, 20, 100 packs)
-├── Premium features
-└── Try-before-you-buy pricing
-
-Why:
-├── Accessibility (anyone can start)
-├── Predictable pricing ($2-5 per call)
-└── No crypto barrier
-```
-
-### Currency 2: Stablecoins (USDC)
-
-**Purpose**: Stable income, real value exchange
-
-```
-Earn:
-├── Citation rewards (when research gets cited)
-├── Revision payments (collaborative improvement)
-└── Immediately convertible to local fiat
-
-Deploy:
-├── Yield farming deposits (optional)
-├── Multi-chain strategies
-└── 10-15% APY (realistic returns)
-
-Why:
-├── Researchers need spendable income
-├── Not everyone understands crypto
-└── Fiat on/off ramps integrated
-```
-
-### Currency 3: CHOIR Tokens (Sui)
-
-**Purpose**: Governance, speculation, long-term alignment
-
-```
-Earn:
-├── Novelty rewards (decaying emissions for early users)
-├── Yield farming rewards (from capital deployment)
-└── Protocol participation (governance)
-
-Use:
-├── Publishing stakes (pay to publish, rank by stake)
-├── Governance votes (protocol parameters, treasury)
-├── Revision proposals (stake to improve articles)
-└── Compute options (tradeable future AI access)
-
-Why:
-├── Long-term platform alignment
-├── Speculative upside
-├── Governance rights
-└── Decreasing emissions (deflationary)
-```
+*   **For Users**: CHIP represents **ownership**. It is earned through intellectual contribution (novelty), not purchased or distributed based on capital. It's used to power platform actions, for governance, and as a productive asset that can be collateralized for USDC loans.
+*   **For the Protocol**: The Treasury accumulates consumed CHIP, which becomes the collateral base to fund the citation rewards pool.
 
 ### Revenue Model
 
-**Primary: Performance fees** (20% of DeFi yields)
-- 70% → Citation reward pool (stablecoins to researchers)
-- 20% → Operations (infrastructure, development)
-- 10% → Token buyback & burn (deflationary pressure)
+The revenue model is the **dual-stream treasury**.
 
-**Secondary: Protocol balance sheet**
-- Collateralized borrowing (CHOIR as collateral → USDC for operations)
-- Protocol-owned liquidity (trading fee income)
-- Covered call premiums (option income)
-- User lending (interest spreads)
+1.  **Operations**: Funded by the stable, linear yield from user USDC deposits.
+2.  **Citation Rewards**: Funded by borrowing against the Treasury's exponentially growing portfolio of its own CHIP token.
 
-**Future: Ecosystem investments**
-- Incubator/accelerator programs
-- Strategic protocol investments
-- Revenue share agreements
-
-**The key**: Protocol becomes largest CHOIR holder and primary buyer. Free users holding small amounts benefit from protocol's commitment to never selling, only using as productive collateral.
+This is a self-sustaining system that reinvests in its own growth, a stark contrast to extractive performance fees or subscription models. It ensures the protocol's success is directly tied to the value of the network and the quality of the ideas it fosters.
 
 ---
 
@@ -649,7 +550,7 @@ Use Ghostwriter for research
   └── Value prop: "This actually helps me think"
 
 Publish first articles
-  ├── Stake earned novelty tokens
+  ├── Use starter CHIP credits
   ├── No capital deposit required
   └── Enter citation graph
 
@@ -785,7 +686,7 @@ Learn about yield farming
 │  └── Homomorphic encryption (future)                         │
 │                                                               │
 │  Blockchain (Sui):                                            │
-│  ├── CHOIR token (governance, stakes)                        │
+│  ├── CHIP token (governance, stakes)                        │
 │  ├── Citation rewards distribution                           │
 │  ├── Treasury management                                     │
 │  └── Immutable attribution                                   │
@@ -950,7 +851,7 @@ Traditional publishers cannot adopt rapid publication and citation economics wit
 
 **Publishing Infrastructure**:
 - 🚧 Anonymous publishing routes (wallet signatures)
-- 🚧 Stake CHOIR to publish
+- 🚧 Stake CHIP to publish
 - 🚧 Discovery feed (ranked by stake amount)
 - 🚧 Citation graph visualization
 
@@ -963,10 +864,10 @@ Traditional publishers cannot adopt rapid publication and citation economics wit
 ### Phase 2: Learning Economy (Q1-Q2 2026)
 
 **Economic Loops**:
-- [ ] Citation rewards from performance fees (stablecoins)
-- [ ] Novelty rewards system (decaying CHOIR emissions)
+- [ ] Dynamic Citation Rewards (USDC, from Treasury borrowing)
+- [ ] Novelty-based CHIP distribution (emergent decay)
 - [ ] Revision markets (unanimous approval, Treasury capture)
-- [ ] Token buyback program (deflationary)
+- [ ] Consumed CHIP flows to Treasury (not burned)
 
 **Multi-Chain Expansion**:
 - [ ] EVM integration (Base, Arbitrum, Mainnet)

@@ -102,9 +102,11 @@ Tuxedo is evolving from a Stellar-specific DeFi agent to a truly multichain plat
 - **Account abstraction**: Smart contract wallets for users
 
 **Smart Contracts** (Rewrite in Solidity):
-- ERC-4626 Vault contract (industry standard for tokenized vaults)
-- ERC-20 TUX token (standard fungible token)
-- Yield distribution contracts
+- **CHIP Token**: ERC-20 contract for the fixed-supply CHIP token.
+- **Deposit Vault**: A contract to manage user USDC deposits, handle unlocks (time or novelty-based), and serve as the lending pool.
+- **Internal Lending Protocol**: Contracts that allow the Treasury to borrow from the Deposit Vault, using its CHIP holdings as collateral.
+- **CHIP Redemption Contract**: Logic to allow users to redeem their CHIP for a proportional share of the Treasury's Net Asset Value (NAV).
+- **Novelty Oracle**: An interface or contract that can receive off-chain novelty scores to trigger CHIP distribution.
 - **Target**: Solidity 0.8.20+, OpenZeppelin libraries
 
 **Frontend** (Updated):
@@ -634,7 +636,7 @@ CREATE TABLE defi_positions_evm (
 **Risk 1**: Smart contract bugs → Loss of user funds
 - **Mitigation**: Professional audit before mainnet deployment
 - **Mitigation**: Start with small TVL limits ($10k max initially)
-- **Mitigation**: Bug bounty program (TUX token rewards)
+- **Mitigation**: Bug bounty program (CHIP token rewards)
 
 **Risk 2**: Gas price spikes → Expensive operations
 - **Mitigation**: Use Base (L2) for low fees (~$0.01 vs $1-50 on Ethereum mainnet)
@@ -649,7 +651,7 @@ CREATE TABLE defi_positions_evm (
 **Risk 4**: User migration issues → Confusion, lost funds
 - **Mitigation**: Clear migration wizard with step-by-step instructions
 - **Mitigation**: Keep Stellar system running in parallel (6-12 months)
-- **Mitigation**: Migration incentives (TUX bonuses for early movers)
+- **Mitigation**: Migration incentives (CHIP bonuses for early movers)
 
 ### Business Risks
 
@@ -659,9 +661,9 @@ CREATE TABLE defi_positions_evm (
 - **Mitigation**: Gradual deprecation (6-12 month transition period)
 
 **Risk 2**: EVM competition → Hard to differentiate
-- **Mitigation**: Focus on AI agent + non-custodial vault combo (unique)
-- **Mitigation**: Best-in-class UX with passkey auth (no MetaMask friction)
-- **Mitigation**: Choir integration (citation-backed strategies)
+- **Mitigation**: Focus on the unique "marketplace of ideas" economic model.
+- **Mitigation**: Best-in-class UX with passkey auth and principal protection.
+- **Mitigation**: The Harmonic Intelligence flywheel is a defensible moat.
 
 **Risk 3**: Base chain issues → Network downtime or bugs
 - **Mitigation**: Multi-chain from day 1 (plan for Arbitrum, Optimism fallbacks)

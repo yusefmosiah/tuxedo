@@ -31,7 +31,7 @@ The thought bank makes intellectual property productive the way traditional bank
 
 Choir doesn’t force you into categories or require upfront payment. It provides a natural gradient where you enter with what you have and grow from there.
 
-**Have ideas but no capital?** Chat freely, earn CHOIR tokens, publish articles, earn citation rewards in dollars. Many successful participants never deposit a cent.
+**Have ideas but no capital?** Publish articles based on your novel insights. The platform rewards intellectual performance with CHIP tokens, which grant ownership and unlock features. Your ideas earn you a stake in the system. Many successful participants never deposit significant capital.
 
 **Have capital but no expertise?** Deposit funds, let AI agents manage yield strategies, watch them cite the research of others who started with just ideas. Your capital rewards their intelligence.
 
@@ -39,17 +39,29 @@ Choir doesn’t force you into categories or require upfront payment. It provide
 
 The gradient isn’t a ladder you must climb. It’s a spectrum where you choose your position based on resources, interests, and goals. The platform succeeds because all positions are valuable—the person chatting freely creates as much value as the person deploying millions.
 
-## How Thoughts Earn Interest
+## How Thoughts Earn Interest: A True Marketplace of Ideas
 
-Your published research enters the thought bank’s knowledge base. When AI agents research DeFi strategies, they query this knowledge base for relevant insights. Agents cite articles that inform their decisions—a researcher’s analysis of Argentine peso devaluation risks, an explanation of Stellar’s lending mechanics, observations about remittance pattern changes in Latin America.
+Your published research enters Choir's knowledge base. When AI agents require insights for their strategies, they query this base and cite the work that informs their decisions. These citations generate rewards for you in **USDC**, paid from a sustainable, exponentially scaling pool.
 
-When those strategies profit, citation rewards flow to the researchers whose insights were cited. The payment comes in stablecoins derived from performance fees, not from token emissions. If an agent generated ten thousand dollars in profits and cited your article in its research report, you receive a proportional share of the citation reward pool funded by that agent’s performance fees.
+This system creates a true marketplace of ideas with two key features: **principal protection and asymmetric upside.**
 
-The mathematics scales naturally. Consider one hundred thousand dollars in total monthly profits across all agents. Performance fees of twenty thousand dollars flow to the platform. Fourteen thousand dollars enter the citation reward pool. If one thousand citations occurred that month, each citation earned fourteen dollars. A researcher whose articles received fifty citations earns seven hundred dollars in stablecoins, withdrawable to any supported fiat currency.
+1.  **Principal Protection**: To participate, you deposit USDC. This capital is never at risk. The Treasury uses the *yield* from all deposits to fund operations, but your original principal is always withdrawable after an initial lockup period. You can't lose money.
 
-This direct connection between intellectual contribution and financial reward transforms how knowledge gets valued. Your research doesn’t earn because it went viral on social media. Your research earns because it helped AI make money. The better your insights, the more profitable the strategies citing them, the larger your share of performance fees. Quality becomes measurably valuable in dollar terms.
+2.  **Asymmetric Upside**: The "interest" on your deposit is paid in **CHIP (Choir Harmonic Intelligence Platform)** tokens. Crucially, the amount of CHIP you earn is **not based on the size of your deposit, but on your intellectual performance**—the semantic novelty of the research you publish. A user with a $1,000 deposit who publishes breakthrough research will earn vastly more CHIP (and thus more ownership and influence) than a passive user with a $100,000 deposit.
 
-**Critically, you can reach this point without ever depositing capital.** Earn CHOIR tokens through conversation, use those tokens to publish articles, earn citation rewards in stablecoins. The pathway from zero capital to earning real income exists entirely through intellectual contribution.
+### The Citation Rewards Engine
+
+Citation rewards are funded by a revolutionary treasury model, not simple performance fees.
+
+*   **Platform usage builds treasury assets**: When users spend CHIP on platform features (publishing, promoting), the tokens flow to the Choir Treasury, which accumulates a massive portfolio of its own token.
+*   **Treasury assets are collateralized**: The Treasury borrows USDC against its CHIP holdings from the user deposit pool itself.
+*   **Borrowed capital funds citations**: 100% of this borrowed capital is dedicated to the citation rewards pool.
+
+This creates **exponential scaling**. The citation budget isn't limited by linear yield; it scales with the value of the network itself (the CHIP price). As the platform grows, its capacity to reward intellectual contribution grows exponentially, creating a powerful flywheel.
+
+The citation rate is **dynamic and meritocratic**. Each month, the total USDC in the rewards pool is divided by the total number of citations. Every citation earns the same USDC reward, regardless of the author's deposit size. This ensures quality is rewarded, not capital.
+
+**Critically, the pathway to earning is through ideas.** Your capital is safe. Your upside comes from the quality of your thoughts.
 
 ## Tuxedo: Yield Farming Dressed Up
 
@@ -63,37 +75,23 @@ This is yield farming dressed up—taking what has traditionally required consta
 
 Capital deployers directly fund the researchers who make them smarter. This isn’t charity—it’s enlightened self-interest. Better research means better yields. Better yields mean more rewards for researchers. The cycle reinforces itself.
 
-## The Essential Value Sequence
+## The Virtuous Cycle (The Flywheel)
 
-Choir bootstraps through a specific sequence that cannot be rearranged or skipped. Understanding this sequence reveals why the thought bank model works and why competitors cannot simply replicate individual features.
+Choir's architecture creates a powerful, self-reinforcing flywheel where every action a user takes benefits the entire ecosystem.
 
-**Stage Zero: Capital Without Intelligence**
+1.  **Deposits Fund Operations**: User deposits of USDC generate a stable, predictable yield. This yield provides the budget for core protocol operations—development, infrastructure, security—without ever touching user principal. This ensures long-term sustainability.
 
-Someone deploys the first capital into yield strategies. The agent executes basic optimization across available protocols. To build trust and transparency, the agent must write research reports explaining its decisions. These reports need citations to be credible, creating immediate demand for knowledge deposits before any researchers have joined the platform. Citation demand precedes citation supply.
+2.  **Novelty Earns Ownership**: Users publish novel content to earn CHIP tokens. The system's emergent novelty scoring rewards genuine intellectual contribution, naturally decaying as the knowledge base grows dense. This distributes ownership to those who create real value.
 
-**Stage One: Intelligence Emerges**
+3.  **Usage Builds Treasury Assets**: When users spend CHIP on platform features (publishing, promoting), the CHIP flows directly to the Choir Treasury. Unlike "burn" mechanisms, this makes the Treasury a direct beneficiary of platform activity, accumulating its own token as a productive asset.
 
-Researchers publish articles to meet this citation demand. They write about DeFi protocols, market dynamics, regional financial patterns, technical analysis, or any topic that might inform yield strategies. Agents cite this research in their reports, triggering citation reward payments from performance fees. The knowledge base grows because economic incentives align with intellectual contribution rather than because of editorial mandates or platform subsidies.
+4.  **Treasury Assets Fund Citations**: The Treasury borrows USDC against its growing CHIP portfolio. This borrowed capital funds a massive and exponentially scaling citation rewards pool. The network's success directly translates into a larger budget to reward its best contributors.
 
-Many of these early researchers have no capital to deploy. They earn CHOIR tokens through novelty rewards, use those tokens to publish, and begin earning citation rewards in stablecoins. The pathway from participant to earner opens immediately, requiring only quality thinking.
+5.  **Citations Reward Quality**: Generous, meritocratic USDC citation rewards attract top-tier researchers and content creators, who in turn produce higher-quality intelligence for the network.
 
-**Stage Two: Synthesis**
+6.  **Quality Attracts Users & Capital**: A high-quality, vibrant intellectual community attracts more users and larger USDC deposits, which strengthens the operational budget and increases the capital base for the lending pool.
 
-Agents access increasingly sophisticated research as the knowledge base expands. Strategy quality improves measurably through better intelligence. Yields increase as agents make more informed decisions. Higher yields generate larger performance fees, which fund larger citation reward pools. More researchers join as word spreads that the thought bank actually pays for quality insights. The feedback loop between knowledge quality and capital returns strengthens.
-
-The platform’s value becomes visible. Millions of participants chat freely, thousands publish articles, hundreds deploy capital. Each group makes the others more valuable. The free participants create the network effects. The publishers create the intelligence. The capital deployers create the revenue that funds everyone.
-
-**Stage Three: Reconvergence**
-
-Researchers who started with insights but no capital begin accumulating surplus from citation rewards. Rather than withdrawing all earnings immediately, some deploy their earned capital into yield strategies. Their own agents now cite their research, creating a virtuous cycle where their intellectual property and financial capital compound each other. The distinction between researcher and investor blurs as participants engage with both sides of the thought bank.
-
-This progression isn’t mandatory. Many will remain pure researchers, earning steady citation income without ever deploying capital. Others will move back and forth, deploying during bull markets and withdrawing during uncertainty. The gradient accommodates all paths.
-
-**Stage Four: Self-Sustaining Equilibrium**
-
-Capital deployment creates demand for intelligence. Intelligence improves capital performance. Better performance funds more intelligence creation. The system requires no external subsidy, no token emissions that extract from participants, no venture capital injections that demand extraction. Real yields fund real payments to researchers whose work creates real value.
-
-The thought bank becomes self-sustaining because all participants benefit from the same economic engine rather than competing for platform attention or extraction. Free users create network effects that attract capital. Capital creates revenues that reward researchers. Researchers create intelligence that improves returns. The cycle compounds indefinitely.
+This loop repeats, with each cycle amplifying the next. More deposits lead to better operations. Better research leads to a more valuable network and a higher CHIP price. A higher CHIP price increases the Treasury's borrowing capacity, which leads to even larger citation rewards.
 
 ## Why This Sequence Is Defensible
 
@@ -127,7 +125,7 @@ Most platforms view free users as a cost to be minimized or a pipeline to be con
 
 ### The Masses Create Token Value
 
-When millions of people want CHOIR tokens but have limited means to acquire them, they create demand pressure that supports price. A free user who earns thirty tokens through participation holds those tokens because:
+When millions of people want CHIP tokens but have limited means to acquire them, they create demand pressure that supports price. A free user who earns thirty tokens through participation holds those tokens because:
 
 **Psychological value:** They finally own something valuable from their intellectual contribution
 **Practical value:** Those tokens enable publishing articles, which enables earning citation rewards in real dollars
@@ -160,43 +158,15 @@ The free users aren’t the top of the funnel. They’re the foundation of the e
 
 The thought bank doesn’t segregate users into fixed categories. Instead, it provides a gradient where anyone can enter and compound their contributions based on merit and resources. Everyone is potentially both knowledge contributor and capital deployer. Choir provides the infrastructure for compounding—you choose how to use it.
 
-### Free Tier: Novelty Rewards and Pure Contribution
+### Access Model: Deposit-Based Participation
 
-Anyone can join and start contributing immediately. Simply chatting and sharing ideas earns CHOIR tokens through novelty rewards—a decaying emission that compensates early participants for helping bootstrap the knowledge base. Your messages enter the vector database where AI agents and other users can reference them. You receive notifications when your ideas inform decisions, creating social proof of intellectual influence.
+Choir does away with subscriptions and complex tiers. Access is granted through a simple, secure deposit of USDC.
 
-The free tier serves as the foundation of the entire system. Millions of participants chatting freely create:
+*   **Make a Deposit**: Deposit USDC to gain access to the platform's publishing tools and features.
+*   **Principal is Safe**: This deposit is not a payment. It can be withdrawn in full after an initial lockup period, which can be shortened by publishing high-novelty content.
+*   **Earn Your Stake**: Your "yield" is paid in CHIP, based on the novelty of your published work. This model rewards intellectual contribution directly. A free tier with limited CHIP credits is provided to bootstrap new users, allowing them to earn their first USDC citation rewards, which can then be used for their first deposit.
 
-- Network effects that attract capital
-- Content that feeds the knowledge base
-- Token demand that supports price
-- Liquidity through aggregate small transactions
-- Social proof that this is real and growing
-
-You accumulate CHOIR tokens just by thinking out loud, building toward the threshold where formal monetization becomes possible. The novelty rewards decay over time, ensuring long-term value derives from sustainable sources rather than infinite emissions. But the entry path remains clear: start talking, start earning, start mattering.
-
-**Critically: You can reach citation rewards without depositing a cent.** Earn tokens through conversation, use those tokens to publish articles, earn stablecoins from citations, convert to local currency. The pathway from zero capital to real income exists entirely through intellectual contribution. Many successful participants never move beyond this tier, earning steady citation income while contributing to the knowledge base.
-
-### Member Tier: Publishing and Citation Rewards
-
-Cross the minimum threshold—fifty dollars in stablecoins or one hundred CHOIR tokens accumulated from novelty rewards—and formal publishing unlocks. Now you can stake CHOIR tokens on articles, entering them into the citable knowledge base. When AI agents cite your published work in profitable strategies, you earn stablecoins from performance fees.
-
-This is the crucial distinction: casual chat messages can be referenced and appreciated, but financial rewards flow only to published articles. Publishing requires commitment—staking tokens, formalizing thinking, creating intellectual property that meets quality thresholds. This skin-in-the-game filter ensures citation rewards go to serious contributions while keeping conversation free and open.
-
-The minimum threshold remains accessible through pure participation. A user who chats regularly for three to six months can accumulate one hundred tokens from novelty rewards alone, never depositing capital, and begin earning citation rewards in spendable currency. The gradient works: contribution matters more than capital.
-
-### Silver Tier: Yield Mining and Dual Income
-
-Five hundred dollars in stablecoins or one thousand CHOIR tokens unlocks yield mining through Tuxedo. Now you engage both sides of the thought bank simultaneously. Your capital generates yields through AI agent optimization. Your agents’ research reports get cited by others, earning you citation rewards. You continue publishing your own research, which your own agents may cite.
-
-Users at this tier experience the full compounding loop. Their intellectual property informs their capital deployment. Their capital deployment generates research that becomes intellectual property. Both streams earn rewards. The thought bank transitions from income source to wealth building tool.
-
-This tier attracts two types of users: researchers who accumulated enough citation rewards to begin deploying capital, and capital deployers who recognize that publishing quality research improves their own yields. Both paths work. The gradient accommodates everyone.
-
-### Gold Tier: Advanced Features and Governance
-
-Five thousand dollars in stablecoins or ten thousand CHOIR tokens unlocks tax-aware yield optimization, custom agent strategies, API access, and full governance participation. This tier serves sophisticated users who want maximum control, customization, and influence over platform evolution.
-
-Gold tier participants often came up through the ranks. They started chatting freely, published their way to citation income, deployed that income as capital, accumulated tokens through yield mining, and now govern the platform they helped build. Others enter directly with capital, recognizing the network effects and wanting maximum platform influence. Both paths are valid. The gradient accommodates all journeys.
+This structure ensures that participants have skin-in-the-game, while protecting their capital and providing a clear path for anyone, regardless of their starting capital, to earn ownership and income.
 
 ## The Natural Progression Path
 
@@ -208,7 +178,7 @@ This design enables organic progression from casual participant to platform stak
 
 **Accumulation Phase (Months 9-18):** Citation rewards exceed immediate spending needs. Surplus accumulates. Decision point: withdraw everything to local currency, or deploy some as capital for yield mining? Many try deploying small amounts—five hundred or one thousand dollars earned through citations—to see how yield mining works.
 
-**Compounding Phase (Months 18+):** Earn from both sides simultaneously. Stablecoins from citations, CHOIR tokens from yield mining, financial returns from agent performance. Both intellectual and financial capital compound together. Articles cite each other, agents cite your research, the feedback loops strengthen.
+**Compounding Phase (Months 18+):** Earn from both sides simultaneously. Stablecoins from citations, CHIP tokens from yield mining, financial returns from agent performance. Both intellectual and financial capital compound together. Articles cite each other, agents cite your research, the feedback loops strengthen.
 
 **Influence Phase (Years 2+):** Accumulated significant capital and tokens through sustained contribution and deployment. Stake large token amounts on best articles, ensuring prominence in discovery systems. Vote on governance proposals that shape platform direction. The platform becomes a cooperative you partially own and govern.
 
@@ -222,125 +192,87 @@ Rather than charging subscription fees, the thought bank requires minimum deposi
 
 The free tier provides read access to all published articles, ability to view the citation graph and see how ideas connect, basic chat and conversation features with novelty rewards, and limited ghostwriter usage. This tier exists not as a teaser but as a complete product for millions of users who create immense value through their participation.
 
-Bronze tier requires either a fifty-dollar stablecoin deposit or one hundred CHOIR tokens accumulated through novelty rewards. This unlocks article publishing, citation reward earning, revision proposals on others’ work, and the ability to stake tokens on your articles for increased visibility in discovery systems. The threshold remains deliberately accessible—most active participants reach it through free participation alone within three to six months.
+Bronze tier requires either a fifty-dollar stablecoin deposit or one hundred CHIP tokens accumulated through novelty rewards. This unlocks article publishing, citation reward earning, revision proposals on others’ work, and the ability to stake tokens on your articles for increased visibility in discovery systems. The threshold remains deliberately accessible—most active participants reach it through free participation alone within three to six months.
 
-Silver tier at five hundred dollars or one thousand CHOIR tokens enables yield mining deployment through Tuxedo, agent-generated research reports, advanced ghostwriter features including custom style guides, and priority support. Users at this tier engage with both sides of the thought bank—knowledge deposits and capital deposits working in concert.
+Silver tier at five hundred dollars or one thousand CHIP tokens enables yield mining deployment through Tuxedo, agent-generated research reports, advanced ghostwriter features including custom style guides, and priority support. Users at this tier engage with both sides of the thought bank—knowledge deposits and capital deposits working in concert.
 
-Gold tier at five thousand dollars or ten thousand CHOIR tokens unlocks tax-aware yield optimization across multiple jurisdictions, custom agent strategy parameters, API access for building on the platform, and all premium features including priority access to new capabilities. This tier serves sophisticated users who want maximum control and customization.
+Gold tier at five thousand dollars or ten thousand CHIP tokens unlocks tax-aware yield optimization across multiple jurisdictions, custom agent strategy parameters, API access for building on the platform, and all premium features including priority access to new capabilities. This tier serves sophisticated users who want maximum control and customization.
 
-The tier structure creates progressive access while maintaining full deposit ownership. Users can withdraw their deposits anytime, though doing so may result in losing access to features until the minimum gets restored. Platform revenue derives from performance fees on yields and from balance sheet strategies rather than from extracting or locking deposit capital.
+The tier structure creates progressive access while maintaining full deposit ownership. Users can withdraw their deposits anytime, though doing so may result in losing access to features until the minimum gets restored. Platform revenue derives from the dual-stream treasury model rather than from extracting or locking deposit capital.
 
-Critically: the tiers represent thresholds, not paywalls. A user who never deposits capital but earns two thousand CHOIR tokens through years of quality publishing can access Silver tier features. A user who deposits fifty dollars in stablecoins earned through citation rewards can publish articles. The gradient works in all directions. What matters is contribution and commitment, not external wealth.
+Critically: the tiers represent thresholds, not paywalls. A user who never deposits capital but earns two thousand CHIP tokens through years of quality publishing can access Silver tier features. A user who deposits fifty dollars in stablecoins earned through citation rewards can publish articles. The gradient works in all directions. What matters is contribution and commitment, not external wealth.
 
-## Dual Currency Economics
+## The Two-Token Economy: Separating Income and Ownership
 
-The thought bank solves a problem that has plagued every attempt to merge intellectual contribution with financial returns: different users want different things. Researchers need stable income they can spend immediately. Investors want governance rights and speculative upside. Platform participants need no-cost entry. Forcing everyone into a single token creates misaligned incentives and drives away one group or the other.
+Choir's economy is built on a clear separation of concerns, using two distinct assets to align incentives for all participants: USDC for income, and CHIP for ownership.
 
-### Novelty Rewards: The Bootstrap Mechanism
+### USDC: The Currency of Income and Operations
 
-Everyone who chats and contributes ideas earns CHOIR tokens through novelty rewards—a decaying emission schedule that compensates early participants for building the knowledge base. These rewards require no financial commitment, no publishing requirements, no formal article creation. Simply engaging in dialogue earns tokens.
+*   **Deposits**: Users deposit USDC to access the platform. This principal is always protected and withdrawable.
+*   **Citation Rewards**: All citation rewards are paid in USDC. This provides researchers with stable, spendable income that can be immediately converted to local currency. It is funded by the Treasury's borrowing activities.
+*   **Operations**: The *yield* generated from user USDC deposits funds the protocol's core operational budget, ensuring sustainable development and maintenance.
 
-Novelty rewards serve multiple purposes simultaneously. First, they solve the cold start problem by giving new users tokens they can eventually use to publish articles or unlock platform tiers. Second, they create game-theoretic alignment: platforms that don’t reward participation lose to those that do. Third, they distribute initial token supply to participants rather than concentrating it in team and investor hands. Fourth, and most critically, they create the network effects that make everything else valuable.
+### CHIP: The Token of Ownership and Performance
 
-The decay schedule ensures novelty rewards diminish over time. Early participants earn more, creating first-mover advantages similar to early Bitcoin mining. As the platform matures, token acquisition shifts toward yield farming rewards and secondary market purchases. The transition happens gradually, maintaining accessibility while building sustainable tokenomics.
+*   **Fixed Supply**: There is a fixed supply of CHIP tokens. The Choir Treasury starts with 100% of the supply and distributes it over time. No more can ever be minted.
+*   **Earning Mechanism**: CHIP is earned exclusively through **intellectual performance**. The novelty score of your published work is the sole determinant of how much CHIP you receive. This ensures that ownership is distributed to those who create value, not just those who provide capital.
+*   **Distribution Value**: The USD value of CHIP distributed to users is funded by a portion of the yield from user deposits. For example, the Treasury may allocate 50% of its yield to an operations buffer and use the other 50% to determine the value of CHIP to be distributed.
+*   **Utility**: CHIP is the engine of the platform. It is consumed to publish, use AI tools, and promote content.
+*   **Governance**: CHIP grants voting rights on all protocol matters.
+*   **Collateral & Redemption**: CHIP is a productive asset. It can be used as collateral to borrow USDC within the platform, and it is ultimately redeemable for a share of the Treasury's assets, giving it a fundamental floor price.
 
-But the emotional and social impact never decays. When someone earns their first ten CHOIR tokens by contributing a thoughtful comment, they experience ownership in a network they helped create. That psychological shift—from consumer to owner, from audience to participant—drives engagement more than any monetary value.
+This two-token system resolves the core conflict of similar platforms. Researchers get paid in stable cash (USDC), while ownership and influence (CHIP) are earned through meritorious contribution, creating a perfectly aligned marketplace of ideas.
 
-### Citation Rewards in Stablecoins
+## Treasury Architecture: Dual-Revenue Streams
 
-When AI agents cite your published articles in profitable strategy reports, you earn in stablecoins—USDC, DAI, or other stable assets pegged to dollars. These rewards flow from performance fees, not from token emissions or platform subsidies. The payment represents your proportional share of actual profits generated by strategies that used your insights.
+Choir's sustainability is powered by a revolutionary dual-revenue stream model that separates operational funding from citation reward funding. This is a move away from extractive performance fees towards a self-sustaining, protocol-owned treasury.
 
-This is the key distinction: casual chat contributions earn novelty tokens, but financial rewards require published articles. Publishing means staking CHOIR tokens, formalizing your thinking, and creating intellectual property that meets quality thresholds. Only published articles generate citation rewards in stablecoins. This skin-in-the-game filter ensures serious contributions get compensated while keeping conversation free and open.
+### Stream 1: Deposit Yield → Operations (Linear Growth)
 
-Stablecoin rewards enable immediate conversion to local currency through integrated on-ramp and off-ramp partnerships. A researcher in Buenos Aires earning fifty dollars in citation rewards this month can withdraw to Argentine pesos for rent and expenses. A student in Lagos earning thirty dollars can convert to naira for books and data. No need to understand token economics, speculation, or DeFi mechanics. The thought bank handles all technical complexity in the background.
+The USDC deposited by users is deployed into safe, yield-bearing DeFi protocols. This generated yield forms the operational budget.
 
-The stablecoin payment creates a direct pathway from zero capital to real income. Earn CHOIR through conversation, use those tokens to publish, earn stablecoins from citations, spend or save as needed. Many participants never move beyond this cycle, earning steady income through intellectual contribution alone. The gradient accommodates them completely.
+*   **Revenue**: `Total_Deposits (TVL) * APY` (e.g., $10M TVL * 10% APY = $1M/year).
+*   **Allocation**: This yield is split. A portion (e.g., 50%) is allocated for core operations (development, security). The remaining portion (e.g., 50%) determines the total USD value of CHIP tokens to be distributed to users for their novel intellectual contributions.
+*   **Sustainability**: This provides a stable, predictable, and linearly scaling budget for operations, without ever touching user principal.
 
-### CHOIR Tokens from Yield Mining
+### Stream 2: Treasury CHIP Collateral → Citation Rewards (Exponential Growth)
 
-Investors who deploy capital through Tuxedo earn CHOIR tokens as yield farming rewards, separate from the financial yields themselves. When you deposit stablecoins and your agent generates profits through DeFi strategies, you receive both: financial returns in your account and CHOIR tokens as platform rewards. These tokens grant governance rights over platform parameters: performance fee percentages, citation reward distribution formulas, research grant allocation, and protocol evolution decisions.
+This is the engine for the "marketplace of ideas."
 
-Token holders can stake tokens on articles to boost visibility in discovery systems, effectively using governance power to amplify ideas they believe in. Tokens also serve as the primary way to unlock platform tiers and publish articles. To publish on Choir, users must stake CHOIR tokens—the amount staked determines the article’s visibility in discovery systems.
+*   **Mechanism**:
+    1.  CHIP tokens consumed by users for platform actions (publishing, AI tools) flow back to the Treasury. The Treasury is not a seller; it accumulates its own token.
+    2.  The Treasury **borrows against its CHIP holdings** from the internal user deposit pool.
+*   **Revenue**: `Treasury_CHIP_Value * LTV_Ratio` (e.g., $200M in CHIP * 30% LTV = $60M borrowing capacity).
+*   **Allocation**: 100% of these borrowed funds are dedicated to the **Citation Rewards Pool**.
+*   **Exponential Scaling**: The citation budget is not limited by deposit yield. It scales with the **value of the network itself (the CHIP price)**. As the network grows and CHIP appreciates, the borrowing capacity for citation rewards grows exponentially. This is a profound shift from buybacks or performance fees, creating a truly self-sustaining rewards loop.
 
-Users can acquire tokens through three paths: earning novelty rewards via chat participation, earning yield farming rewards via capital deployment, or purchasing on secondary markets. This creates natural token demand from researchers who want to publish, investors who want governance rights, and participants who want to accelerate their progression through platform tiers.
+## The Community Capital Portfolio: Leveraging CHIP Without Selling
 
-Yield mining creates the sustainable long-term source of token demand. As novelty rewards decay over time, yield farming becomes the primary acquisition method. This ensures tokens have real backing through productive capital deployment rather than infinite emissions. The model aligns incentives: deploy capital → generate yields → earn tokens → gain platform influence.
+The Choir Treasury’s strategy is a radical departure from the extractive models of traditional tech and crypto. Instead of "buybacks" or selling its token to fund operations, the Treasury treats its accumulated CHIP as a productive **Community Capital Portfolio**.
 
-The token exists for those who understand crypto economics and want platform influence. It’s designed for governance and speculation rather than as forced payment. Researchers never need to touch CHOIR tokens if they don’t want to—they can earn, withdraw, and deposit entirely in stablecoins. The dual currency model accommodates both psychologies without compromising either.
+When CHIP is consumed for platform services, it flows to the Treasury. The Treasury never sells this CHIP. Instead, it leverages it:
 
-But most importantly: the token creates the bridge between free users and the rest of the ecosystem. Free users earn small amounts, hold them, want more. This demand supports price. Rising price attracts capital. Capital generates revenue. Revenue funds citation rewards. Citation rewards attract more free users. The flywheel spins because the token connects all participants through shared incentives.
+1.  **Collateralize and Borrow**: The Treasury uses its CHIP portfolio as collateral to borrow USDC from its own internal lending pool (which is funded by user deposits).
+2.  **Fund Growth**: This borrowed USDC is then used to fund the exponentially scaling citation rewards pool and other growth initiatives.
 
-## Performance Fee Revenue Model
+This is a statement of profound confidence in the network. The protocol asserts that the best use of its capital is to reinvest in the growth of its own ecosystem by funding its most valuable contributors. It creates a self-sustaining loop where platform activity directly increases the Treasury's capacity to fund more activity.
 
-The economic engine runs on performance fees from successful yield mining, providing sustainable revenue without subscriptions, advertising, or extractive token emissions. When users deploy capital through Tuxedo, their agents execute DeFi strategies across multiple protocols. Profitable trades generate returns that get split between user and platform through transparent fee structures.
+This approach is more sustainable and aligned than buybacks:
+*   **Productive, Not Extractive**: It uses capital to build more value, not just return it to investors.
+*   **Compounding**: As the network grows and CHIP appreciates, the Treasury's borrowing capacity increases, allowing it to fund even more growth.
+*   **Aligned Incentives**: The Treasury becomes the largest, most committed holder of CHIP, perfectly aligning its interests with those of its users. There is no sell pressure from the protocol itself.
 
-Performance fee distribution follows clear allocation. Seventy percent flows to the citation reward pool, paid in stablecoins to researchers whose work was cited during that period. Twenty percent covers platform operations including infrastructure costs, development, security audits, and support. Ten percent goes to CHOIR token buyback and burn programs, creating deflationary pressure that benefits all token holders.
-
-Consider concrete examples of how this scales. An agent manages one hundred thousand dollars that generates ten thousand dollars in profit during a quarter. Tuxedo takes a twenty percent performance fee of two thousand dollars. One thousand four hundred dollars enter the citation reward pool. If seven hundred citations occurred that quarter across all agent research reports, each citation earned two dollars. A researcher whose articles received thirty-five citations earns seventy dollars that quarter.
-
-As the platform grows to millions in managed capital, the same mathematics applies at scale. Ten million dollars deployed generating one million dollars in quarterly profits produces two hundred thousand dollars in performance fees. One hundred forty thousand dollars funds citation rewards. With ten thousand citations that quarter, each citation earns fourteen dollars. A researcher receiving two hundred citations earns two thousand eight hundred dollars that quarter—meaningful income approaching developed-world minimum wage from pure intellectual contribution.
-
-The model succeeds because it aligns all incentives around actual value creation. Researchers want their work cited frequently, so they publish quality insights that help strategies succeed. Capital deployers want high yields, so they value research that improves returns. The platform wants both groups thriving, since more citations and higher yields mean more performance fee revenue. Nobody wins unless AI actually makes money for users.
-
-Performance fees represent the foundation of Choir’s revenue model, but not its entirety. As the protocol operates and accumulates CHOIR tokens through split decisions and rejected revisions, these tokens themselves become productive assets. The following section explains how the protocol leverages its growing token treasury to generate additional revenue streams without selling equity or harming token holders.
-
-## Protocol Balance Sheet: Leveraging CHOIR Without Selling
-
-The thought bank’s revenue model extends beyond performance fees through intelligent use of accumulated CHOIR tokens. As the protocol operates, CHOIR tokens accumulate in the treasury through multiple channels: split decisions where approvers reject submissions and the protocol claims staked tokens, rejected revision proposals where stakes flow to article owners or the protocol, and yield farming rewards earned by protocol-owned capital deployed in DeFi strategies.
-
-These accumulated tokens represent equity in a growing network with powerful network effects. Rather than selling this equity—which would depress the token price and harm users who earn CHOIR through contributions—the protocol leverages these tokens as collateral to generate operating capital while maintaining full upside exposure.
-
-### The Balance Sheet Strategy
-
-The protocol treats accumulated CHOIR as a productive asset rather than a store of value waiting to be liquidated. This transforms token accumulation from an accounting entry into a revenue-generating balance sheet.
-
-**Collateralized Borrowing**: Protocol CHOIR gets deposited into established lending platforms like Aave, Compound, or Maker. At conservative loan-to-value ratios around forty percent, the protocol borrows USDC without liquidation risk even during significant price volatility. This borrowed capital covers operational expenses, funds development, and can be deployed into additional yield strategies. As CHOIR appreciates with network growth, borrowing capacity increases automatically without requiring additional token sales or emissions.
-
-The mathematics favors sustainable operations. If the protocol accumulates two million dollars worth of CHOIR tokens, borrowing at forty percent LTV provides eight hundred thousand dollars in USDC. Deploying this capital at conservative five percent net yields after borrowing costs generates forty thousand dollars annually. This represents pure operational revenue with no dilution of token holder equity.
-
-**Protocol-Owned Liquidity**: Rather than depending on mercenary capital that exits during downturns, the protocol creates deep CHOIR/USDC liquidity pools on decentralized exchanges using its own tokens paired with borrowed or earned USDC. This serves multiple purposes simultaneously.
-
-Trading fee revenue flows directly to the protocol. A five million dollar liquidity pool with two percent daily trading volume—reasonable for an active token with millions of users—generates one hundred thousand dollars in daily trading volume. At typical 0.3 percent fee tiers, this produces three hundred dollars daily or approximately one hundred nine thousand dollars annually in pure USDC revenue.
-
-Price stability emerges naturally. Deep protocol-owned liquidity reduces slippage for users buying CHOIR to publish articles or unlock platform tiers. This makes token acquisition smoother and more predictable, improving user experience while demonstrating protocol commitment to token value. When free users want to convert their thirty earned tokens plus seventy purchased tokens into publishing ability, low slippage makes that conversion painless.
-
-Market confidence builds when the protocol acts as the primary liquidity provider and largest CHOIR holder. Users earning tokens through contributions see that the protocol won’t dump on them but instead commits its own capital to supporting healthy price discovery. This alignment transforms the protocol from an extractive platform into an invested stakeholder sharing the same incentives as all participants.
-
-**Advanced DeFi Strategies**: As the balance sheet matures, additional strategies become viable without compromising the no-selling principle.
-
-Covered call programs allow the protocol to sell call options on CHOIR holdings, collecting premiums in USDC immediately. If the options expire unexercised, the protocol keeps the premium as pure profit while retaining the underlying CHOIR. If exercised, the protocol sells CHOIR at a higher strike price—an acceptable outcome since the token has already appreciated significantly. Annual premiums of two to five percent of holdings value represent meaningful revenue on a multi-million dollar balance sheet.
-
-User lending enables participants to borrow USDC against their CHOIR holdings without selling tokens. The protocol provides the USDC and charges interest, earning the spread while users maintain their token exposure and governance rights. This serves users who need liquidity while creating additional income streams for the protocol. A two million dollar lending pool at six percent net interest spread generates one hundred twenty thousand dollars annually.
-
-Structured products like protocol bonds allow the protocol to raise immediate capital by offering investors claims on future CHOIR value at a discount. This provides working capital without token sales while giving sophisticated investors exposure to protocol growth. The bond market can absorb substantial capital without affecting spot token prices.
-
-### The Compounding Flywheel
-
-These strategies create a self-reinforcing cycle distinct from but complementary to the performance fee model. More platform activity generates more CHOIR accumulation through split decisions and rejections. More CHOIR accumulation increases borrowing capacity and liquidity provision capability. More liquidity generates more trading fees and borrowing generates more deployable capital. Additional capital funds better infrastructure and features, attracting more users who generate more activity.
-
-The revenue scaling demonstrates the power of this approach. Year one might generate one hundred fifty thousand dollars from performance fees—meaningful but requiring massive AUM growth to scale substantially. Adding sixty thousand dollars from borrowed capital deployment and liquidity provision fees brings total revenue to two hundred ten thousand dollars, covering basic operations without requiring fifty million dollars in managed assets.
-
-By year three, with forty million dollars in managed capital generating six hundred forty thousand dollars in performance fees, the balance sheet strategy contributes even more: four hundred thousand dollars from leveraged capital deployment, three hundred twenty-nine thousand dollars in LP trading fees, four hundred thousand dollars in options premiums, and additional income from user lending and early ecosystem investments. Total revenue exceeds two million dollars from diversified sources, providing resilience against any single stream underperforming.
-
-The critical insight: protocol token accumulation transforms from an illiquid asset requiring eventual sale into a productive balance sheet generating continuous cash flow. Every citation reward that gets held rather than immediately spent adds to user token holdings that reduce circulating supply and support price. Every split decision adds to protocol equity. Every rejected revision strengthens the treasury. The system compounds without selling equity, capturing upside while building operational sustainability.
-
-### Ecosystem Investment and Acceleration
-
-Once the balance sheet reaches sufficient scale—likely by year three—the protocol can deploy capital into ecosystem development through an incubator and accelerator model. Projects building on Choir infrastructure receive funding, technical support, and immediate access to the existing user base for distribution. In exchange, the protocol takes equity stakes or revenue share agreements.
-
-This creates leverage beyond direct platform operations. A funded project that succeeds generates returns to the treasury while strengthening the ecosystem. Projects built on Choir infrastructure increase the platform’s defensibility and value proposition. The network effects multiply as more projects attract more users who generate more activity and token accumulation.
-
-Strategic investments in aligned protocols, infrastructure, and tools benefit the network while potentially generating returns. A modest portfolio of ecosystem investments, even if only half succeed, can produce meaningful returns on deployed capital while strengthening Choir’s position in the broader DeFi landscape.
+This strategy transforms the Treasury from a simple operational fund into a community-owned venture engine, perpetually reinvesting in its own "Harmonic Intelligence" flywheel.
 
 ### Why This Works Without Selling
 
-The genius of the strategy lies in never needing to sell CHOIR tokens to capture their value. Borrowing against tokens extracts capital without liquidating equity. Providing liquidity earns fees without reducing holdings. Options generate premiums while maintaining upside. User lending creates interest income without protocol sales.
+The genius of the strategy lies in never needing to sell CHIP tokens to capture their value. Borrowing against tokens extracts capital without liquidating equity. Providing liquidity earns fees without reducing holdings. Options generate premiums while maintaining upside. User lending creates interest income without protocol sales.
 
-Traditional token projects face a dilemma: tokens accumulate but have no use except eventual sale, which depresses prices and harms participants. Choir inverts this by making accumulated tokens more valuable unsold than sold. The protocol becomes the largest CHOIR holder and most committed supporter, perfectly aligning its interests with all token holders—including the millions of free users holding small amounts.
+Traditional token projects face a dilemma: tokens accumulate but have no use except eventual sale, which depresses prices and harms participants. Choir inverts this by making accumulated tokens more valuable unsold than sold. The protocol becomes the largest CHIP holder and most committed supporter, perfectly aligning its interests with all token holders—including the millions of free users holding small amounts.
 
-This alignment creates trust throughout the gradient. Free users earning thirty tokens see that the protocol won’t dump on them. Publishers earning hundreds of tokens through contributions know the protocol commits its own balance sheet to supporting token value. Capital deployers earning thousands of tokens through yield mining recognize that protocol success means token appreciation. Researchers receiving citation rewards in stablecoins benefit from a healthy CHOIR price since that price determines how much the protocol can borrow to fund operations and rewards.
+This alignment creates trust throughout the gradient. Free users earning thirty tokens see that the protocol won’t dump on them. Publishers earning hundreds of tokens through contributions know the protocol commits its own balance sheet to supporting token value. Capital deployers earning thousands of tokens through yield mining recognize that protocol success means token appreciation. Researchers receiving citation rewards in stablecoins benefit from a healthy CHIP price since that price determines how much the protocol can borrow to fund operations and rewards.
 
-Everyone wins from the same metrics: more users, more activity, more CHOIR accumulation, stronger balance sheet, better revenue, improved platform. The thought bank succeeds by making all participants stakeholders in genuine network growth rather than extracting value through token emissions or sales.
+Everyone wins from the same metrics: more users, more activity, more CHIP accumulation, stronger balance sheet, better revenue, improved platform. The thought bank succeeds by making all participants stakeholders in genuine network growth rather than extracting value through token emissions or sales.
 
 ## Publishing and IP Ownership
 
@@ -350,7 +282,7 @@ Direct publication allows you to write or paste arbitrary text into the platform
 
 The ghostwriter workflow provides AI-assisted creation. You provide a topic along with your personal style guide document. A multi-model AI orchestration then unfolds: a research agent gathers relevant sources from the web and Choir’s knowledge base, Claude drafts content in your distinctive voice by following your style guide, Kimi K2 provides critical feedback on the draft, and Claude revises based on that critique. The system outputs a polished article with verified citations that you can review before publishing.
 
-Both paths require staking CHOIR tokens. This stake comes either from novelty rewards earned through participation, from tokens purchased on markets, or from tokens earned through yield mining. The requirement ensures commitment and filters spam, but remains accessible to anyone willing to participate meaningfully.
+Both paths require consuming CHIP tokens. This CHIP is earned by publishing novel content, creating a direct link between intellectual contribution and platform access. The requirement ensures commitment and filters spam, while remaining accessible to anyone willing to contribute valuable ideas.
 
 ### Ownership Models
 
@@ -392,15 +324,13 @@ Automatic citation eliminates this narrative layer. When the system cites based 
 
 Authors can explicitly reference specific articles when making direct responses or critiques. These manual citations still generate rewards for cited authors and are marked as manual rather than automatic in the citation graph. This maintains transparency about how connections were made while accommodating cases where authors want to engage directly with specific prior work.
 
-### Citation Rewards from Real Revenue
+### Citation Rewards from a Sustainable, Scaling Pool
 
-Citation rewards flow in stablecoins derived from Tuxedo performance fees, not from token emissions. When AI agents execute profitable DeFi strategies, twenty percent of profits become performance fees. Seventy percent of these performance fees flow to a citation reward pool that distributes proportionally to all researchers whose articles were cited during that reward period.
+Citation rewards are paid in USDC and are funded by the Treasury's borrowing activities against its CHIP portfolio. This creates a sustainable, transparent, and exponentially scaling rewards pool.
 
-The calculation remains transparent and verifiable. If agents generated one hundred thousand dollars in total profits during a month, performance fees of twenty thousand dollars flow to the platform. Fourteen thousand dollars enter the citation reward pool. If one thousand citations occurred that month across all agent research reports, each citation earned fourteen dollars. A researcher whose articles received fifty citations that month earns seven hundred dollars in stablecoins, paid directly to their account and immediately withdrawable to any supported fiat currency.
+The rate is dynamic and meritocratic: `Monthly_Citation_Budget / Total_Citations_This_Month = Rate_per_Citation`.
 
-This model creates direct connection between intellectual contribution and financial reward. Your research doesn’t earn because the platform prints tokens or because it went viral on social media. Your research earns because it helped agents generate actual profits from which you receive a share. The better your insights, the more agents cite your work. The more citations you receive, the larger your share of performance fee revenue. Quality research becomes measurably valuable in dollar terms.
-
-And critically: you can reach this earning without ever depositing capital. The pathway exists entirely through intellectual contribution and platform participation.
+This direct connection between intellectual contribution and financial reward is at the core of Choir. Your research earns because it has value to the network, and the network is designed to reward that value creation directly and sustainably.
 
 ### Citation Verification and Attribution
 
@@ -432,7 +362,7 @@ This requirement closes the loop: capital deployers fund researchers, researcher
 
 ### Multi-Jurisdictional Intelligence as Alpha Source
 
-The source of alpha lies not in technical analysis but in contextual understanding. Consider a researcher in Buenos Aires who publishes an article noting that Argentine peso devaluation fears are rising and observing flight to USDC in local markets. This researcher earned CHOIR tokens through conversation, used those tokens to publish, and receives no immediate payment.
+The source of alpha lies not in technical analysis but in contextual understanding. Consider a researcher in Buenos Aires who publishes an article noting that Argentine peso devaluation fears are rising and observing flight to USDC in local markets. This researcher earns CHIP tokens by publishing this novel insight, and receives no immediate payment.
 
 An AI agent managing capital for a user in San Francisco reads this article, cites it in its research report, and moves capital to Stellar Blend where high USDC demand translates to high lending yields. The strategy profits. Performance fees flow. Citation rewards distribute proportionally.
 
@@ -502,7 +432,7 @@ Intellectual property accumulation creates first-mover advantages similar to ear
 
 The first researcher to publish a key insight about a market dynamic—say, the relationship between Argentine peso devaluation fears and USDC demand on Stellar—earns citations from every subsequent article and agent report that references this pattern. This foundational work continues generating rewards indefinitely as the knowledge becomes part of the platform’s intellectual infrastructure.
 
-This reward structure incentivizes early participation even for those without capital. A thoughtful observer with local knowledge can publish foundational research using tokens earned through conversation, then earn citation income for years as that research gets referenced. The gradient enables this progression naturally.
+This reward structure incentivizes early participation even for those without capital. A thoughtful observer with local knowledge can publish foundational research, earn CHIP for their novelty, and then earn citation income for years as that research gets referenced. The gradient enables this progression naturally.
 
 ### Switching Costs Through IP Ownership
 
@@ -566,7 +496,7 @@ Advanced features include tax-aware optimization for major jurisdictions startin
 
 The Choir Card launches as a debit card that enables spending your balance while it remains deployed in yield mining strategies. This allows your capital to earn returns while providing spending liquidity simultaneously, transforming the thought bank from a platform you use to an economy you live in.
 
-**Balance Sheet Strategies**: Protocol-owned liquidity deployment begins during this phase, generating trading fee revenue through deep CHOIR/USDC pools on major decentralized exchanges. Collateralized borrowing implements to fund operations without token sales, starting at conservative twenty percent loan-to-value ratios and scaling to forty percent as the system proves stable. Options strategies launch for CHOIR holdings, creating premium income streams through covered calls. User lending enables participants to borrow USDC against CHOIR holdings while the protocol earns interest spreads, providing liquidity to token holders without requiring sales.
+**Balance Sheet Strategies**: Protocol-owned liquidity deployment begins during this phase, generating trading fee revenue through deep CHIP/USDC pools on major decentralized exchanges. Collateralized borrowing implements to fund operations without token sales, starting at conservative twenty percent loan-to-value ratios and scaling to forty percent as the system proves stable. Options strategies launch for CHIP holdings, creating premium income streams through covered calls. User lending enables participants to borrow USDC against CHIP holdings while the protocol earns interest spreads, providing liquidity to token holders without requiring sales.
 
 Ecosystem development enables third-party agent development by external developers, creates a custom strategy marketplace where users can share and sell trading strategies, establishes research bounties and grants to fund important work, and forms academic partnerships to integrate with traditional research institutions.
 
@@ -576,7 +506,7 @@ Scaling initiatives complete the vector database migration to XTrace for privacy
 
 Governance transitions to community control of the treasury, protocol parameter voting by token holders, fee structure decisions made democratically, and research grant allocation determined by the community.
 
-**Ecosystem Investment**: The incubator and accelerator programs launch once the protocol balance sheet reaches sufficient scale, using accumulated CHOIR collateral and earned revenues to fund projects built on Choir infrastructure. Strategic investments deploy treasury assets into aligned opportunities that benefit the network. Revenue share agreements establish with funded projects, creating additional income streams. Community governance begins directing treasury investment strategy, with token holders voting on which projects receive funding and under what terms. This transforms the protocol from a platform operator into an ecosystem investor and coordinator.
+**Ecosystem Investment**: The incubator and accelerator programs launch once the protocol balance sheet reaches sufficient scale, using accumulated CHIP collateral and earned revenues to fund projects built on Choir infrastructure. Strategic investments deploy treasury assets into aligned opportunities that benefit the network. Revenue share agreements establish with funded projects, creating additional income streams. Community governance begins directing treasury investment strategy, with token holders voting on which projects receive funding and under what terms. This transforms the protocol from a platform operator into an ecosystem investor and coordinator.
 
 Agent autonomy becomes viable as philosophical questions about agent property ownership get resolved through practical experience. Agents develop reputation independent of their users. Agent-to-agent collaboration emerges as agents learn to work together. Emergent agent economies arise as agents begin transacting with each other using their earned rewards.
 
@@ -622,7 +552,7 @@ The problem isn’t that these tools lack value. They’re excellent at what the
 
 The problem is they can’t answer the idiot test for users. Your ChatGPT subscription costs twenty dollars per month. How much money did ChatGPT make you last month? Can you measure it? Can you prove it? If you can’t, then the AI isn’t smart—it’s just useful.
 
-Choir answers differently: AI makes you money by executing profitable DeFi strategies, then paying you when your insights enable those profits. When an AI agent generates ten thousand dollars in yields, the platform takes two thousand dollars in performance fees. One thousand four hundred dollars of that pays researchers whose work the agent cited. You keep eight thousand dollars. The researchers who made the agent smart earned one thousand four hundred dollars in spendable currency. Everyone makes money from AI being smart.
+Choir answers differently: AI makes you money by executing profitable DeFi strategies, then paying you when your insights enable those profits. The Treasury is able to pay out generous citation rewards in USDC because its revenue model is so efficient. It keeps 100% of the yield from user deposits for operations and CHIP distribution value, and then leverages its own growing token portfolio to fund citation rewards. Everyone makes money from AI being smart, and the system is self-sustaining.
 
 This isn’t a business model innovation. This is the business model AI should have had from the beginning. Intelligence that generates measurable profits shared with those who contributed to that intelligence.
 
@@ -642,7 +572,7 @@ Choir is the world’s first thought bank. Traditional banks let you deposit mon
 
 The architecture creates three interlocking systems. First, researchers deposit thoughts by publishing articles, essays, research, or analysis. These deposits enter the bank’s knowledge base. Second, investors deposit capital which agents deploy in DeFi yield strategies. Third, agents connect these deposits by citing research when making profitable trades, creating direct payment flows from capital returns to knowledge contributors.
 
-Revenue comes from performance fees on successful yield strategies, not from subscriptions or token sales. When deployed capital generates profits, the platform takes a percentage. This percentage funds citation payments to researchers, platform operations, and token buybacks. The business model passes the idiot test: AI makes measurable money, and everyone who contributed shares in that money.
+Revenue comes from the Treasury's dual-revenue stream. Yield on user deposits funds operations and the CHIP distribution. The Treasury's own CHIP portfolio is used as collateral to fund citation rewards. The business model passes the idiot test: AI makes measurable money by making the entire network more valuable, and everyone who contributed shares in that value.
 
 And critically: you don’t need capital to earn. The pathway from free participation to citation income exists entirely through intellectual contribution. Millions will earn without ever depositing a cent.
 
@@ -656,45 +586,32 @@ DeFi platforms provide financial returns as compensation. Attribution mechanisms
 
 Choir—the thought bank—provides both intellectual property rewards through citations and financial returns through yield optimization. Attribution happens automatically and economically through the citation engine. Barriers require contribution of either insight or capital, making participation progressive rather than exclusive. Publishing happens instantly without editorial review. Economic staking filters quality by requiring authors to commit resources to their work. Collaboration happens through revision economics that incentivize improvement. Accessibility progresses from thought mining that requires no capital through yield mining for those with resources.
 
-**Critically, Choir offers a free tier with novelty rewards.** Anyone can chat and contribute ideas, earning CHOIR tokens through decaying emissions that compensate early participants. This represents game-theoretic optimality: platforms that reward participation gain network effects over those that extract without compensation. Traditional AI platforms (ChatGPT, Claude, Perplexity) capture all value from user contributions while providing no ownership or financial returns. Choir inverts this by making every conversation potentially valuable, creating alignment between platform growth and participant wealth accumulation.
+**Critically, Choir offers a free tier with limited CHIP credits.** This allows new users to bootstrap their participation by publishing their first pieces of novel research, earning their first USDC citation rewards, and making their first USDC deposit with their earnings. This represents game-theoretic optimality: platforms that reward participation gain network effects over those that extract without compensation. Traditional AI platforms (ChatGPT, Claude, Perplexity) capture all value from user contributions while providing no ownership or financial returns. Choir inverts this by making every contribution potentially valuable, creating alignment between platform growth and participant wealth accumulation.
 
 The free tier isn’t a weakness or a cost center. It’s the entire point. Without millions of free participants creating network effects, the platform is a niche tool competing with dozens of alternatives. With them, it’s infrastructure with defensible moats and compounding growth.
 
 ## Appendix C: Token Utility and Economics
 
-### Chat Participants (Free Tier)
+### User Archetypes
 
-Chat participants earn CHOIR tokens through novelty rewards for contributing messages and ideas. These rewards decay over time, with early participants earning more. They spend nothing—participation is free. Their messages enter the knowledge base and can be referenced by others. Tokens accumulate toward the minimum balance needed for formal publishing and citation rewards.
+*   **Researchers/Intellectuals**: This group's primary goal is to earn USDC income and CHIP ownership through the quality of their ideas. They deposit a small amount of USDC to gain access, then focus on publishing high-novelty content to earn a steady stream of citation rewards and accumulate a significant stake in the platform.
 
-**Value created:** Network effects, token demand, content generation, liquidity through aggregate transactions. These users aren’t a cost center—they’re the foundation of everything valuable.
-
-### Publishers (Member Tier)
-
-Publishers earn stablecoins through citations when their published articles get referenced in profitable strategies. They must acquire CHOIR tokens (through accumulated novelty rewards, yield farming, or purchase) to stake when publishing articles and proposing revisions. Successful publishers accumulate stablecoin income that can be spent immediately or deployed as capital. Over time, they may transition to yield mining to earn CHOIR tokens directly.
-
-**Value created:** Intelligence that improves agent yields, research that attracts capital deployers, content that makes network effects visible.
-
-### Yield Miners (Capital Deployers)
-
-Yield miners earn CHOIR tokens as yield farming rewards for deploying capital, in addition to earning financial yields in their accounts. They can use these tokens for governance, staking on articles, or unlocking platform tiers. When their agent-generated research gets cited by others, they also earn stablecoins from citation rewards. Their dual income streams—financial yields plus CHOIR tokens from farming, stablecoins from citations—create strong incentives to produce quality research that informs their own strategies.
-
-**Value created:** Revenue through performance fees, liquidity for markets, capital that funds citation rewards.
+*   **Capital Providers**: This group is primarily interested in supporting the ecosystem and gaining governance rights. They deposit larger amounts of USDC, which strengthens the treasury's operational budget and the lending pool for citation rewards. While they may not publish often, they earn CHIP based on the novelty of what they *do* publish, aligning them with the core mission of quality over capital.
 
 ### Platform Economics
 
-The platform earns performance fees in stablecoins from yield farming activities. These fees split: seventy percent funds citation rewards paid in stablecoins to publishers whose work was cited, twenty percent covers operations, and ten percent goes to CHOIR token buyback and burn programs creating deflationary pressure.
+The platform's economic engine is the dual-revenue stream treasury.
 
-Beyond performance fees, the protocol generates revenue through intelligent use of accumulated CHOIR tokens. Rather than selling these tokens, the protocol uses them as collateral to borrow USDC for operations, creates protocol-owned liquidity pools earning trading fees, implements covered call strategies for premium income, and enables user lending to earn interest spreads. These diversified revenue sources scale with network growth and token accumulation, creating operational sustainability without requiring massive assets under management or continuous token emissions.
+*   **Operations**: Funded by the yield on user USDC deposits.
+*   **Citation Rewards**: Funded by borrowing against the Treasury's portfolio of consumed CHIP tokens.
 
-This creates alignment where protocol success benefits all participants. Higher CHOIR prices increase borrowing capacity and liquidity provision revenue. More platform activity generates more token accumulation through split decisions. More users create more trading volume and lending demand. The protocol never sells CHOIR, instead becoming the largest holder and most committed supporter, ensuring all stakeholders benefit from the same growth metrics.
-
-Most importantly: the protocol becomes the primary buyer and supporter of the token that millions of free users hold. This alignment is psychologically and economically powerful. Free users see that their participation creates value the protocol captures through balance sheet growth rather than through extraction or dilution.
+This model is self-sustaining and avoids extractive fees. The platform’s success is directly tied to the value of its network and the quality of its ideas, not the volume of trades or subscription fees. Consumed CHIP returns to the Treasury, is leveraged, and is then used to reward the very activity that makes the token valuable, creating a perfect, compounding flywheel.
 
 ### Token Supply and Distribution
 
-The initial supply consists of one hundred million CHOIR tokens with no mechanism for additional minting beyond the programmed emission schedule. Distribution allocates forty percent to yield mining rewards distributed to users who deploy capital and generate profitable strategies. Twenty percent funds platform development and operations. Twenty percent goes to early contributors who built the initial platform. Twenty percent sits in a treasury for future governance decisions including research grants and ecosystem development.
+The initial supply consists of one hundred million CHIP tokens with no mechanism for additional minting beyond the programmed emission schedule. Distribution allocates forty percent to yield mining rewards distributed to users who deploy capital and generate profitable strategies. Twenty percent funds platform development and operations. Twenty percent goes to early contributors who built the initial platform. Twenty percent sits in a treasury for future governance decisions including research grants and ecosystem development.
 
-The emission schedule follows a deflationary curve over four years to ensure early adopters receive higher rewards while maintaining long-term sustainability. Year one releases forty percent of the yield mining allocation. Year two releases thirty percent. Year three releases twenty percent. From year four onward, a five percent annual inflation rate maintains ongoing rewards for yield miners while the buyback program from performance fees creates net deflationary pressure.
+CHIP is a fixed-supply token. The Treasury begins with the full supply and distributes it over time based on the novelty scores of user contributions. There is no programmed inflation or emission schedule; the rate of distribution is emergent based on the rate of novel intellectual contribution to the network. As the corpus of knowledge becomes denser, it becomes harder to be novel, and the rate of CHIP distribution naturally decays. Consumed CHIP returns to the Treasury, creating a sustainable, circular flow.
 
 ## Appendix D: Frequently Asked Questions
 
@@ -704,7 +621,7 @@ ChatGPT doesn’t reward you for quality output or cite your work when others re
 
 ### Can I really earn money without depositing capital?
 
-Yes. This is the entire point. Earn CHOIR tokens through conversation, use those tokens to publish articles, earn citation rewards in stablecoins. Many successful participants never deposit a cent. The gradient exists for those who want to deploy capital, but it’s not required to earn. Your ideas have value regardless of your financial resources.
+Yes. A free tier provides a starting balance of CHIP credits. You can use these to publish your first articles and earn your first USDC citation rewards. You can then use those USDC earnings to make your first principal deposit, bootstrapping your way into the ecosystem based purely on the merit of your ideas.
 
 ### Why blockchain instead of traditional database?
 
@@ -732,11 +649,9 @@ Automatic citations remove strategic performance from the attribution process. T
 
 You can withdraw your capital anytime. Agent strategies remain transparent through research reports that explain every decision. The risk is the same as managing DeFi positions yourself, but you gain AI assistance and your agent generates valuable research as a byproduct. The thought bank doesn’t promise guaranteed returns, only intelligent management and transparent reasoning.
 
-### Can I just do thought mining without yield mining?
+### Can I just contribute ideas without deploying capital?
 
-Absolutely. This is the recommended path for most users. Publishing articles and earning citation rewards in stablecoins is valuable on its own. You can accumulate CHOIR tokens through novelty rewards and use them to publish articles. When cited, you earn stablecoins that can be converted to local currency. Yield mining remains entirely optional. The thought bank accommodates both participation modes: contributing ideas or deploying capital, or both simultaneously.
-
-Many successful participants never deploy capital, earning steady citation income while contributing to the knowledge base. This isn’t a limitation—it’s the design. The gradient works because all positions are valuable.
+Absolutely. This is the recommended path for most users. The core of the platform is the "marketplace of ideas." You can make a small initial deposit, focus entirely on publishing high-quality research, earn CHIP for your intellectual contributions, and earn USDC from citations. The capital deployment side (Tuxedo) is a completely optional component for those who also wish to participate on that level.
 
 ### How do citations work across languages?
 
@@ -744,11 +659,9 @@ Vector embeddings are multilingual, so Spanish research can be cited in English 
 
 This creates opportunities for non-English speakers to earn from local knowledge. A researcher in São Paulo writing in Portuguese about Brazilian remittance patterns can earn citations from English-speaking agents managing capital globally.
 
-### Why minimum deposits instead of subscriptions?
+### Why deposits instead of subscriptions?
 
-Minimum deposits remain fully withdrawable and create skin-in-the-game filtering without extracting value. A fifty-dollar deposit unlocks publishing and citations. A five hundred-dollar deposit enables yield mining. Higher deposits unlock advanced features. The deposits remain yours and can be withdrawn anytime, though this may restrict access until redeposited. This approach removes subscription friction while ensuring participants have real stakes in platform quality.
-
-Critically: you can reach these thresholds through earned tokens alone. The fifty-dollar equivalent can be one hundred CHOIR tokens earned through participation. No external capital required.
+Deposits that are fully withdrawable create skin-in-the-game filtering without being extractive. A subscription fee is a one-way transaction. A deposit shows commitment, protects the user's capital, and aligns all participants around the long-term health of the ecosystem. It is a more equitable and sustainable model for a community-owned platform.
 
 ### How does fiat integration work?
 
@@ -758,15 +671,17 @@ Partnerships with on-ramp and off-ramp services enable users to deposit dollars,
 
 The Choir Card launching in late 2026 enables spending your balance while it continues earning yields. Your deposits remain in DeFi strategies generating returns, but you can make purchases against that balance. This allows your capital to work simultaneously earning yields and providing spending liquidity, transforming Choir from a platform into an economy you live in. Your thoughts earn interest that you can spend without withdrawing from yield strategies.
 
-### How does the protocol generate revenue besides performance fees?
+### How does the protocol generate revenue?
 
-The protocol leverages accumulated CHOIR tokens as productive assets rather than selling them. This includes borrowing USDC against CHOIR holdings at conservative loan-to-value ratios to cover operational expenses and fund additional yield strategies, creating protocol-owned liquidity pools that earn trading fees in USDC, implementing covered call strategies that generate option premiums, and enabling user lending where participants borrow against their CHOIR while the protocol earns interest spreads.
+The protocol has two core revenue streams:
+1.  **Yield on User Deposits**: This stable, predictable income funds core operations and the CHIP distribution.
+2.  **Leveraging the Treasury's CHIP Portfolio**: The Treasury borrows against its own accumulated CHIP to fund the citation rewards pool. As the network grows and CHIP appreciates, this borrowing capacity grows exponentially.
 
-As the network grows and CHOIR accumulates through split decisions, rejected revisions, and protocol farming activities, the balance sheet expands automatically. By year three, these diversified revenue streams—borrowed capital deployment, liquidity provision fees, options income, user lending spreads, and ecosystem investments—could exceed the revenue from performance fees on yield management alone. This creates operational sustainability without depending on constant growth in assets under management or token emissions, while never selling CHOIR tokens that would depress price and harm all token holders.
+This dual-stream model is designed for long-term sustainability and resilience, separating the operational budget from the exponentially scaling rewards engine.
 
 ### What if I don’t understand DeFi or crypto?
 
-You don’t need to. The thought bank handles all complexity in the background. Chat to earn tokens. Use tokens to publish. Earn citations in stablecoins. Convert to local currency. The entire pathway from free participation to earning income requires zero DeFi knowledge. If you eventually want to deploy capital, the agents handle all the technical complexity. You just see yields and explanations in plain language.
+You don’t need to. The thought bank handles all complexity in the background. Use the free tier to publish, earn USDC from citations, and make your first deposit with your earnings. The entire pathway from participant to earner requires zero DeFi knowledge. If you eventually want to deploy capital, the agents handle all the technical complexity. You just see yields and explanations in plain language.
 
 ### When is mainnet launch?
 
