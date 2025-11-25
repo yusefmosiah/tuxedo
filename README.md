@@ -46,37 +46,12 @@ The core research infrastructure is live. The citation economics and CHIP distri
 
 ---
 
-## Quick Start & Documentation
+## Documentation
 
-For detailed information on the vision, architecture, and how to get started, please see the full documentation:
+For detailed information on the vision, architecture, and economic model, please see the following core documents:
 
-*   **[UNIFIED_VISION.md](./UNIFIED_VISION.md)**: The philosophical and strategic vision.
-*   **[docs/ECONOMIC_MODEL.md](./docs/ECONOMIC_MODEL.md)**: The complete economic model.
-*   **[docs/CHOIR_WHITEPAPER.md](./docs/CHOIR_WHITEPAPER.md)**: A detailed breakdown of all components.
-
----
-## Contributing
-
-We welcome contributions to the learning economy:
-
-**Research & Writing:**
-- Use Ghostwriter to produce quality research
-- Publish to knowledge base (coming soon)
-- Get cited, earn rewards
-
-**Security:**
-- Test user isolation
-- Report vulnerabilities via security@choir.chat
-- Review smart contracts
-- Suggest architectural improvements
-
-**Development:**
-- Fork repository
-- Create feature branch
-- Add tests
-- Submit pull request
-
-**All contributors eligible for CHIP token rewards.**
+*   **[UNIFIED_VISION.md](./UNIFIED_VISION.md)**: The complete strategic, technical, and economic vision for the Choir protocol.
+*   **[docs/ECONOMIC_MODEL.md](./docs/ECONOMIC_MODEL.md)**: A detailed breakdown of the economic engine, including CHIP tokenomics and the dual-stream treasury.
 
 ---
 
