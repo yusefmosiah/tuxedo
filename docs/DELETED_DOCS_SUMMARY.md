@@ -55,7 +55,6 @@ The following files were removed because they were either redundant, outdated, o
 *   **`docs/MULTICHAIN_EVM_MIGRATION_PLAN.md`**: Superseded by the chain-agnostic strategy in `UNIFIED_VISION.md`.
 *   **`docs/AGENTIC_TRANSACTION_IMPLEMENTATION.md`**: Outdated architecture.
 *   **`docs/WALLET_INTEGRATION_PLAN.md`**: Outdated architecture.
-*   **`docs/PHALA_DEPLOYMENT_CHECKLIST.md`**: Outdated architecture.
 
 ### AI Model & API Key Management
 *   **`docs/CLAUDE_SDK_INTEGRATION.md`**: Implementation detail now covered in `UNIFIED_VISION.md`.
@@ -67,5 +66,4 @@ The following files were removed because they were either redundant, outdated, o
 
 ### General Project Documentation
 *   **`TESTING_STRATEGY.md`**: Outdated and superseded by the project's new direction.
-*   **`STYLEGUIDE.md`**: Outdated and superseded by the project's new direction.
 *   **`WEBSEARCH_IMPLEMENTATION_SUMMARY.md`**: Specific implementation detail, not high-level documentation.

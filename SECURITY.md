@@ -5,7 +5,7 @@ The Choir protocol is designed with a multi-layered security architecture that p
 ## Core Security Pillars
 
 ### 1. User Sovereignty & Non-Custodial Vaults
-*   **You Own Your Keys**: All DeFi vaults are non-custodial. Users mint and hold TUX0 shares, representing their portion of a vault's assets. The protocol, and by extension the Choir team, never takes custody of user funds.
+*   **You Own Your Keys**: All DeFi vaults are non-custodial. Users hold shares representing their portion of a vault's assets. The protocol, and by extension the Choir team, never takes custody of user funds.
 *   **Agent-Based Execution**: While AI agents can propose and execute DeFi strategies, they do so with keys managed in a secure enclave, and all operations are verifiable on-chain.
 
 ### 2. Privacy by Default
