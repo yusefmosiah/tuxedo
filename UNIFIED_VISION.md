@@ -7,7 +7,7 @@
 
 Choir is AI research infrastructure for the learning economy.
 
-**The core product is Ghostwriter**: An AI agent that helps you research, write, and publish—then pays you in stablecoins when your work gets cited.
+**The core product is Vibewriter**: An AI agent that helps you research, write, and publish—then pays you in stablecoins when your work gets cited.
 
 **No capital required to earn.** Chat freely, publish research, get cited by AI agents making decisions, receive citation rewards in real money. The pathway from zero to income exists entirely through intellectual contribution.
 
@@ -64,7 +64,7 @@ Traditional banks let you deposit money and earn interest. Thought banks let you
 
 **How it works**:
 
-1. **Research and write** using Ghostwriter (multi-model AI orchestration)
+1. **Research and write** using Vibewriter (multi-model AI orchestration)
 2. **Publish articles** to the knowledge base (anonymous, merit-based)
 3. **Get cited** when AI agents or other researchers reference your work
 4. **Earn USDC** from a dynamically priced, exponentially scaling citation rewards pool.
@@ -85,7 +85,7 @@ Users enter at their trust level:
 │  Week 1: Discovery                                           │
 │  ├── See article on Twitter: "Written with Choir"           │
 │  ├── Sign up (passkey, biometric)                           │
-│  ├── Use Ghostwriter for research                           │
+│  ├── Use Vibewriter for research                           │
 │  └── No capital, no crypto knowledge required               │
 │                                                              │
 │  Risk: Zero | Trust Required: Minimal                        │
@@ -134,92 +134,31 @@ Users enter at their trust level:
 
 ---
 
-## III. The Ghostwriter: Multi-Model Orchestration
+## III. The Vibewriter: A Real Agent, Not a Pipeline
 
-### Why Specialized Agents, Not Monolithic Models
+### "All agents are coding agents."
 
-Current AI platforms force analytical reasoning and communicative craft into the same generation step. This creates fundamental trade-offs:
-- GPT-4: Deep reasoning but generic communication
-- Claude: Excellent craft but shallow research
-- Gemini: Fast but inconsistent quality
+The initial architecture for Choir envisioned a multi-step pipeline with specialized agents for research, drafting, and critique. This is wrong. The correct insight is that **all effective agents are coding agents.**
 
-**The insight**: Different tasks need different models. Separate the concerns.
+Serious research isn't a linear process; it's a dynamic loop of exploration, verification, and synthesis. This requires an agent with the full capabilities of a software engineer: terminal access for custom scripts, a file system for managing sources, and the ability to call specialized tools when needed.
 
-### The Architecture
+### The Hierarchy of Agent Capability
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│                      USER REQUEST                             │
-│           "Research yield farming on Base vs Arbitrum"        │
-└─────────────────────┬────────────────────────────────────────┘
-                      │
-                      ▼
-┌──────────────────────────────────────────────────────────────┐
-│                  CONDUCTOR (Client)                           │
-│                  Fast orchestrator                            │
-│                                                               │
-│  • Immediate response: "Starting research..."                │
-│  • Routes to Ghostwriter agent                               │
-│  • Streams results as they arrive                            │
-│  • Transparent escalation                                    │
-└─────────────────────┬────────────────────────────────────────┘
-                      │
-                      ▼
-┌──────────────────────────────────────────────────────────────┐
-│               GHOSTWRITER AGENT (Server)                      │
-│               Multi-step workflow                             │
-│                                                               │
-│  Step 1: RESEARCH (OpenAI o1, Claude Opus)                   │
-│  ├── Query Choir knowledge base (vector search)              │
-│  ├── Search web for recent data                              │
-│  ├── Fetch on-chain metrics (Aave, Morpho APYs)              │
-│  └── Aggregate context                                       │
-│                                                               │
-│  Step 2: DRAFT (Claude Sonnet)                               │
-│  ├── Follow user's style guide                               │
-│  ├── Synthesize research into narrative                      │
-│  ├── Include citations to Choir articles                     │
-│  └── Maintain voice consistency                              │
-│                                                               │
-│  Step 3: CRITIQUE (Kimi K2)                                  │
-│  ├── Identify weak arguments                                 │
-│  ├── Check unsupported claims                                │
-│  ├── Suggest substantial improvements                        │
-│  └── Actually critical (not sycophantic)                     │
-│                                                               │
-│  Step 4: REFINE (Claude Sonnet)                              │
-│  ├── Incorporate critique                                    │
-│  ├── Strengthen evidence                                     │
-│  ├── Maintain style guide adherence                          │
-│  └── Final polish                                            │
-│                                                               │
-│  Step 5: VERIFY (Automated)                                  │
-│  ├── Citation validation (no hallucinated sources)           │
-│  ├── Fact checking                                           │
-│  ├── Link verification                                       │
-│  └── Quality threshold                                       │
-│                                                               │
-└─────────────────────┬────────────────────────────────────────┘
-                      │
-                      ▼
-┌──────────────────────────────────────────────────────────────┐
-│                  PUBLISHED ARTICLE                            │
-│                                                               │
-│  • Consumed CHIP moves to Treasury (rank by stake)           │
-│  • Enters citation graph                                     │
-│  • Earns rewards when cited                                  │
-│  • Open to revision proposals                                │
-└──────────────────────────────────────────────────────────────┘
-```
+`pipeline < graph < tool calling loop < terminal/full computer control`
 
-### Why This Works
+Vibewriter operates at the highest level of this hierarchy. It is a single, powerful agent with full computer control, augmented with three Choir-specific tools for interacting with the economic and knowledge layers of the protocol:
 
-**Model specialization**: Each step uses the model best suited for that task
-**Quality compounding**: Multi-step process produces better output than single-shot generation
-**Economic coupling**: Rewards only trigger on full workflow completion (not per prompt)
-**Transparent escalation**: User sees progress, knows when compute-heavy work happens
+- **`search_choir_kb`**: Performs a vector search against Choir's knowledge base to find relevant prior art.
+- **`cite_article`**: Cites a Choir article, triggering a USDC payment to the original author.
+- **`publish_to_choir`**: Stakes CHIP to publish a new article, making it citable and earning CHIP based on its semantic novelty.
 
-**The result**: Writing quality that genuinely scales with computational investment. Pay more, get meaningfully better output. Unlike ChatGPT Pro where expensive models don't produce proportionally better writing.
+### The Workflow: User Intent, Agent Autonomy
+
+You don't tell Vibewriter *how* to research; you tell it *what* to research.
+
+The agent autonomously decides the best workflow to achieve the user's goal. It might start by searching the Choir knowledge base, then write a Python script to scrape and validate external sources, draft an article, and finally publish it. The user sees the agent working in a transparent, IDE-like environment, observing its thought process and actions in real-time.
+
+Terminal access is the *ceiling*, not the *floor*. While the agent can write custom scripts for novel problems, the common path is to use the pre-built Choir tools for standard operations, ensuring efficiency and reliability. This architecture provides the perfect balance of structured capability and creative freedom.
 
 ---
 
@@ -498,30 +437,30 @@ When AI achieves "Move 37" breakthroughs across every field simultaneously, trad
 
 ---
 
-## VIII. The Economic Model: Three Currencies
+## VIII. The Economic Model: Two Currencies
 
-### Why Three Currencies?
+### The Core Principle: Earn Your Way In
 
-The Choir economy is designed with a clear separation of concerns to perfectly align incentives.
+The Choir economy is built on a simple premise: you should be able to earn ownership and income through pure intellectual contribution, without requiring upfront capital.
 
-### USDC: For Income and Operations
+### USDC: Money
 
-*   **For Users**: USDC is for **income**. All citation rewards are paid in USDC, providing a stable, spendable asset. Users also deposit USDC to participate, and this principal is always protected.
-*   **For the Protocol**: The **yield** on user deposits funds the operational budget.
+- **For Users**: USDC is for **income**. All citation rewards are paid in stablecoins, providing a real, spendable asset. Users can also deposit USDC to provide liquidity to the Treasury, with their principal always protected.
+- **For the Protocol**: The **yield** on user deposits funds the operational budget.
 
-### CHIP: For Ownership and Contribution
+### CHIP: Ownership
 
-*   **For Users**: CHIP represents **ownership**. It is earned through intellectual contribution (novelty), not purchased or distributed based on capital. It's used to power platform actions, for governance, and as a productive asset that can be collateralized for USDC loans.
-*   **For the Protocol**: The Treasury accumulates consumed CHIP, which becomes the collateral base to fund the citation rewards pool.
+- **For Users**: CHIP represents **ownership**. It is earned through semantic novelty when publishing, not purchased or distributed based on capital. It is staked to publish, used for governance, and can be used as collateral for USDC loans.
+- **For the Protocol**: The Treasury accumulates consumed CHIP from platform actions, which becomes the collateral base to fund the citation rewards pool.
 
-### Revenue Model
+### The Two-Stream Revenue Model
 
-The revenue model is the **dual-stream treasury**.
+The protocol is funded by a **dual-stream treasury**:
 
-1.  **Operations**: Funded by the stable, linear yield from user USDC deposits.
-2.  **Citation Rewards**: Funded by borrowing against the Treasury's exponentially growing portfolio of its own CHIP token.
+1.  **Operations**: Funded by the stable, linear yield from optional user USDC deposits.
+2.  **Citation Rewards**: Funded by the Treasury borrowing against its own exponentially growing portfolio of CHIP tokens.
 
-This is a self-sustaining system that reinvests in its own growth, a stark contrast to extractive performance fees or subscription models. It ensures the protocol's success is directly tied to the value of the network and the quality of the ideas it fosters.
+This creates a self-sustaining system where the protocol's ability to reward users scales with the value of the network itself. For the MVP, agent runtime is subsidized, with the potential for CHIP-based metering in the future if required.
 
 ---
 
@@ -532,19 +471,19 @@ This is a self-sustaining system that reinvests in its own growth, a stark contr
 **Week 1: Discovery**
 ```
 See your article on Twitter
-  ├── "This research was written with Choir's Ghostwriter"
+  ├── "This research was written with Choir's Vibewriter"
   ├── Link to article on choir.chat
   └── Curious users click, read, impressed
 
 Sign up to try
   ├── Passkey auth (biometric, no seed phrases)
   ├── No crypto wallet required
-  └── Start using Ghostwriter immediately
+  └── Start using Vibewriter immediately
 ```
 
 **Month 1-3: Engagement**
 ```
-Use Ghostwriter for research
+Use Vibewriter for research
   ├── Multi-step workflow produces quality
   ├── Better than ChatGPT for deep work
   └── Value prop: "This actually helps me think"
@@ -589,14 +528,14 @@ Learn about yield farming
 ### Distribution Strategy
 
 **You as first user**:
-- Use Ghostwriter to produce high-quality research
+- Use Vibewriter to produce high-quality research
 - Publish articles on choir.chat
 - Share on Twitter, Substack, etc.
 - "Written with Choir" attribution drives curiosity
 
 **Early researchers**:
 - Attracted by quality of your output
-- Try Ghostwriter, impressed by multi-model orchestration
+- Try Vibewriter, impressed by multi-model orchestration
 - Publish their own research
 - Network effects begin
 
@@ -636,7 +575,7 @@ Learn about yield farming
 │                                                               │
 │  /auth              Passkey authentication (WebAuthn)         │
 │  /conductor         Client orchestration                      │
-│  /agents            Ghostwriter, Research, Yield agents       │
+│  /agents            Vibewriter, Research, Yield agents       │
 │  /publishing        Anonymous posts, citations, revisions     │
 │  /vault             Non-custodial DeFi vaults                 │
 │  /chains            Multi-chain abstraction (Stellar, EVM, etc)│
@@ -649,12 +588,8 @@ Learn about yield farming
 │                                                               │
 │  Conductor: Fast orchestrator (GPT-4o-mini, Claude Haiku)    │
 │                                                               │
-│  Ghostwriter: Multi-step research workflow                    │
-│  ├── Research (OpenAI o1, Claude Opus)                       │
-│  ├── Draft (Claude Sonnet + style guides)                   │
-│  ├── Critique (Kimi K2)                                      │
-│  ├── Refine (Claude Sonnet)                                 │
-│  └── Verify (automated)                                      │
+│  Vibewriter: A single agent with full computer control and   │
+│              three Choir-specific tools.                     │
 │                                                               │
 │  Research Agent: Data aggregation                             │
 │  ├── Web search (Perplexity, Exa)                           │
@@ -804,7 +739,7 @@ Traditional publishers cannot adopt rapid publication and citation economics wit
 ### Growth Metrics
 
 **Month 1-3**:
-- 1,000+ users (Ghostwriter trials)
+- 1,000+ users (Vibewriter trials)
 - 100+ articles published
 - First citations recorded
 - $10K+ in vaults (early adopters)
@@ -840,26 +775,22 @@ Traditional publishers cannot adopt rapid publication and citation economics wit
 
 ## XIII. Implementation Roadmap
 
-### Phase 1: MVP (Q4 2025) - 90% Complete
+### Phase 1: MVP (Q4 2025)
 
-**Ghostwriter Foundation**:
-- ✅ Passkey authentication (biometric, WebAuthn)
-- ✅ LangChain agent with 19 tools
-- ✅ Claude SDK research integration
-- 🚧 Multi-step Ghostwriter workflow (research → draft → critique → refine)
-- 🚧 Citation engine (semantic similarity auto-detection)
+**Jazzhands Foundation**:
+- ✅ Fork OpenHands to create Jazzhands.
+- ✅ Implement remote runtime via RunLoop for secure, isolated agent execution.
+- ✅ Integrate the three core Choir tools (`search_choir_kb`, `cite_article`, `publish_to_choir`).
+- ✅ Establish the two-currency economic model (USDC for citations, CHIP for novelty/publishing).
 
 **Publishing Infrastructure**:
-- 🚧 Anonymous publishing routes (wallet signatures)
-- 🚧 Stake CHIP to publish
-- 🚧 Discovery feed (ranked by stake amount)
-- 🚧 Citation graph visualization
+- 🚧 Anonymous publishing routes using wallet signatures.
+- 🚧 Staking CHIP to publish and influence discovery.
+- 🚧 Foundational citation graph and visualization.
 
-**Optional Finance**:
-- ✅ Non-custodial vaults (TUX0 shares)
-- ✅ Blend Capital integration (Stellar mainnet)
-- ✅ Multi-chain key management scaffolding
-- 🚧 Performance fee distribution (citation rewards)
+**Core Finance**:
+- ✅ Passkey authentication for secure, user-friendly access.
+- ✅ Basic Treasury functions for managing CHIP and USDC flows.
 
 ### Phase 2: Learning Economy (Q1-Q2 2026)
 
@@ -958,7 +889,7 @@ Not better execution on existing models. **New infrastructure incumbents cannot 
 ### The Gradient
 
 Enter at your trust level:
-- **Try Ghostwriter** (zero risk, immediate value)
+- **Try Vibewriter** (zero risk, immediate value)
 - **Publish research** (time investment, citation income)
 - **Deploy capital** (financial risk, compound returns)
 
@@ -969,6 +900,8 @@ Most users never progress beyond research. That's the design. Finance capitalize
 When AI makes money, you should too.
 
 **Choir: The Thought Bank**
+
+The citation economy doesn’t care what form the contribution takes. Writing is the entry point—the most legible form of thought. But eventually: code that earns citations, organizational knowledge that earns citations, any novel contribution that others find valuable enough to reference.
 
 ---
 

@@ -50,11 +50,11 @@ Research Agent (with computer access):
 ├── Research phase: Web search → Save sources to /workspace/sources/
 ├── Draft phase: Generate text → Save to /workspace/draft.md
 ├── Verify phase:
-│   ├── pip install citation-validator
-│   ├── python verify_urls.py /workspace/draft.md
-│   ├── Check each URL returns 200
-│   ├── Extract page content
-│   └── Verify claim is actually supported by source
+│   ├── Call the `cite_article` tool to verify internal citations.
+│   ├── For external sources, write a Python script to check URLs.
+│   ├── The script verifies that each URL returns a 200 status.
+│   ├── It then extracts the page content.
+│   └── Finally, it verifies that the claim is supported by the source.
 ├── Revise phase: Fix unsupported claims
 └── Publish: High-confidence, verified output
 ```
@@ -175,20 +175,19 @@ The draft plan suggested:
 
 ### The Actual Choir Economic Model
 
-**Three Currencies**:
+**Two Currencies**:
 
 | Currency | Purpose | How Earned | How Used |
 |----------|---------|------------|----------|
 | **USDC** | Income | Citations | Withdraw to bank account |
 | **CHIP** | Ownership | Semantic novelty | Publish, governance, collateral |
-| **Compute Credits** | Infrastructure | Purchase or earn via free tier | Pay for Vibewriter usage |
 
 **The Flows**:
 
-1. **Research & Writing** (Compute Credits)
+1. **Research & Writing** (Free Tier for MVP)
    ```
    User: "Write a research report on DeFi"
-   ├── Costs: 50 compute credits (agent session)
+   ├── Costs: Free for MVP (metered by CHIP in the future, if necessary)
    ├── Agent: Autonomously researches, writes, verifies in remote runtime
    ├── Output: High-quality, citation-verified report
    └── User: Watches agent work, sees draft in workspace
@@ -225,12 +224,7 @@ class VibewriterSession:
         self.runtime = None
 
     async def start_research(self, prompt: str) -> AsyncIterator[Event]:
-        # 1. Check user has compute credits
-        balance = await self.treasury.get_compute_balance(self.user_id)
-        if balance < VIBEWRITER_COST:
-            raise InsufficientCreditsError()
-
-        # 2. Spawn isolated runtime for this user
+        # 1. Spawn isolated runtime for this user (future: check CHIP balance for metering)
         self.runtime = await RemoteRuntimeFactory.create(
             user_id=self.user_id,
             provider="runloop",
@@ -286,7 +280,6 @@ The OpenHands frontend is a React/Remix app that looks like an IDE:
    <ChoirHeader>
      <Balance icon="💎" label="CHIP" value={230} />
      <Balance icon="💰" label="Earned" value="$175" />
-     <Balance icon="⚡" label="Credits" value={450} />
    </ChoirHeader>
    ```
 
@@ -474,9 +467,9 @@ OpenHands has an `enterprise/` directory with proprietary multi-tenancy code:
 
 ### Economic Risks
 
-**Risk 4: Compute Credits vs CHIP Confusion**
-- **Problem**: Users might not understand the three-currency model
-- **Mitigation**: Generous free tier (most users never pay), clear UX, autopurchase flow
+**Risk 4: CHIP and USDC Model Clarity**
+- **Problem**: Users may find the two-currency system confusing.
+- **Mitigation**: A generous free tier, clear UX design, and straightforward explanations.
 
 **Risk 5: Citation Rewards Insufficient**
 - **Problem**: Users might earn too little to care

@@ -251,12 +251,10 @@ Publish it to Choir when you're confident it's high quality.
 
 # Agent might:
 # 1. Search Choir KB first (search_choir_kb)
-# 2. Install citation validator (pip install requests beautifulsoup4)
-# 3. Write Python script to fetch sources
-# 4. Draft article in markdown
-# 5. Run verification script
-# 6. Cite Choir articles where relevant (cite_article)
-# 7. Publish final draft (publish_to_choir)
+# 2. Use its terminal access to write a Python script for fetching external sources.
+# 3. Draft the article in markdown, citing Choir articles where relevant (cite_article).
+# 4. Run the verification script.
+# 5. Publish the final draft (publish_to_choir).
 
 # Or it might do something completely different!
 # That's the point - it's a real agent, not a pipeline
@@ -281,7 +279,6 @@ CREATE TABLE users (
 
 CREATE TABLE balances (
     user_id TEXT PRIMARY KEY REFERENCES users(id),
-    compute_credits INTEGER DEFAULT 500,  -- Free tier
     chip_balance INTEGER DEFAULT 50,      -- Starter CHIP
     usdc_balance DECIMAL(18,6) DEFAULT 0,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -321,16 +318,9 @@ class BalanceManager:
             user_id
         )
         return {
-            "compute": result["compute_credits"],
             "chip": result["chip_balance"],
             "usdc": float(result["usdc_balance"])
         }
-
-    async def debit_compute(self, user_id: str, amount: int):
-        await self.db.execute(
-            "UPDATE balances SET compute_credits = compute_credits - $1 WHERE user_id = $2",
-            amount, user_id
-        )
 
     async def credit_chip(self, user_id: str, amount: int, reason: str):
         await self.db.execute(
@@ -531,7 +521,6 @@ export function ChoirHeader() {
       <div className="balances">
         <Balance icon="💎" label="CHIP" value={balances.chip} />
         <Balance icon="💰" label="Earned" value={`$${balances.usdc}`} />
-        <Balance icon="⚡" label="Credits" value={balances.compute} />
       </div>
     </div>
   )
