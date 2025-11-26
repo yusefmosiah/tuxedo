@@ -9,6 +9,7 @@ import logging
 import sys
 import os
 from pathlib import Path
+import pytest
 
 # Add the parent directory to path so we can import backend modules
 sys.path.append(str(Path(__file__).parent.parent))
@@ -26,6 +27,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.asyncio
 async def test_supply_simulation():
     """Test 1: Simulate supply transaction construction"""
     print("\n" + "="*80)
@@ -78,7 +80,7 @@ async def test_supply_simulation():
                 params = result['parameters_validated']
                 print(f"   - Validated amount_scaled: {params.get('amount_scaled')}")
                 print(f"   - Validated request_type: {params.get('request_type')}")
-            return True
+            assert True
         elif result.get('error'):
             error_msg = result.get('error', '')
             # Check for expected business logic errors (not parameter encoding errors)
@@ -87,27 +89,23 @@ async def test_supply_simulation():
                 print("   - Parameters encoded correctly")
                 print("   - Contract interaction working (trustline error is expected)")
                 print("   - Expected business logic error: No USDC trustline")
-                return True
+                assert True
             elif 'ScMap was not sorted' in error_msg or 'InvalidInput' in error_msg or 'failed to convert' in error_msg:
-                print(f"❌ Parameter encoding error: {error_msg}")
-                return False
+                pytest.fail(f"Parameter encoding error: {error_msg}")
             else:
                 print(f"⚠️  Business logic error (this is expected): {error_msg}")
                 print("✅ Transaction construction successful - business logic errors are expected")
-                return True
+                assert True
         else:
-            print(f"❌ Unexpected simulation result: {result}")
-            return False
+            pytest.fail(f"Unexpected simulation result: {result}")
 
     except Exception as e:
-        print(f"❌ Exception during simulation: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+        pytest.fail(f"Exception during simulation: {e}")
     finally:
         await soroban_server.close()
 
 
+@pytest.mark.asyncio
 async def test_withdraw_simulation():
     """Test 2: Simulate withdraw transaction construction"""
     print("\n" + "="*80)
@@ -121,8 +119,7 @@ async def test_withdraw_simulation():
     account_id = accounts[0]['id'] if accounts else None
 
     if not account_id:
-        print("⚠️  Skipping (no account from previous test)")
-        return False
+        pytest.skip("Skipping (no account from previous test)")
 
     try:
         result = await blend_withdraw_collateral(
@@ -146,7 +143,7 @@ async def test_withdraw_simulation():
                 params = result['parameters_validated']
                 print(f"   - Validated amount_scaled: {params.get('amount_scaled')}")
                 print(f"   - Validated request_type: {params.get('request_type')}")
-            return True
+            assert True
         elif result.get('error'):
             error_msg = result.get('error', '')
             # Check for expected business logic errors (not parameter encoding errors)
@@ -160,27 +157,23 @@ async def test_withdraw_simulation():
                 print("   - Parameters encoded correctly")
                 print("   - Contract interaction working (insufficient balance error is expected)")
                 print("   - Expected business logic error: No position to withdraw from")
-                return True
+                assert True
             elif 'ScMap was not sorted' in error_msg or 'InvalidInput' in error_msg or 'failed to convert' in error_msg:
-                print(f"❌ Parameter encoding error: {error_msg}")
-                return False
+                pytest.fail(f"Parameter encoding error: {error_msg}")
             else:
                 print(f"⚠️  Business logic error (this is expected): {error_msg}")
                 print("✅ Transaction construction successful - business logic errors are expected")
-                return True
+                assert True
         else:
-            print(f"❌ Unexpected simulation result: {result}")
-            return False
+            pytest.fail(f"Unexpected simulation result: {result}")
 
     except Exception as e:
-        print(f"❌ Exception during simulation: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+        pytest.fail(f"Exception during simulation: {e}")
     finally:
         await soroban_server.close()
 
 
+@pytest.mark.asyncio
 async def test_parameter_encoding():
     """Test 3: Validate parameter encoding for Request struct"""
     print("\n" + "="*80)
@@ -203,9 +196,10 @@ async def test_parameter_encoding():
         if amount_scaled != expected_scaled:
             all_passed = False
 
-    return all_passed
+    assert all_passed
 
 
+@pytest.mark.asyncio
 async def test_request_struct_validation():
     """Test 4: Validate Request struct encoding for both supply and withdraw"""
     print("\n" + "="*80)
@@ -236,69 +230,7 @@ async def test_request_struct_validation():
         print(f"✅ SUPPLY_COLLATERAL = 0")
         print(f"✅ WITHDRAW_COLLATERAL = 1")
 
-        return True
+        assert True
 
     except Exception as e:
-        print(f"❌ Request struct validation failed: {e}")
-        return False
-
-
-async def run_simulation_tests():
-    """Run all simulation tests"""
-    print("\n" + "="*80)
-    print("🧪 BLEND TRANSACTION SIMULATION TEST SUITE")
-    print("="*80)
-    print("Testing transaction construction WITHOUT submitting to network")
-    print("Risk: ZERO | Cost: ZERO | Coverage: Transaction logic\n")
-
-    results = []
-
-    # Test 1: Supply simulation
-    success1 = await test_supply_simulation()
-    results.append(("Supply Simulation", success1))
-
-    # Test 2: Withdraw simulation
-    success2 = await test_withdraw_simulation()
-    results.append(("Withdraw Simulation", success2))
-
-    # Test 3: Parameter encoding
-    success3 = await test_parameter_encoding()
-    results.append(("Parameter Encoding", success3))
-
-    # Test 4: Request struct validation
-    success4 = await test_request_struct_validation()
-    results.append(("Request Struct Validation", success4))
-
-    # Summary
-    print("\n" + "="*80)
-    print("SIMULATION TEST SUMMARY")
-    print("="*80)
-    for test_name, success in results:
-        status = "✅ PASS" if success else "❌ FAIL"
-        print(f"{status} - {test_name}")
-
-    total_passed = sum(1 for _, s in results if s)
-    print(f"\n{total_passed}/{len(results)} simulation tests passed")
-
-    if total_passed == len(results):
-        print("\n🎉 ALL SIMULATION TESTS PASSED!")
-        print("✅ Transaction construction validated")
-        print("✅ Parameter encoding verified")
-        print("✅ Request structure confirmed")
-        print("✅ Ready for mainnet testing (Layer 2)")
-    else:
-        print("\n⚠️  SOME TESTS FAILED!")
-        print("❌ Fix issues before proceeding to mainnet testing")
-
-    return total_passed == len(results)
-
-
-if __name__ == "__main__":
-    print("🧪 BLEND POOLS TRANSACTION SIMULATION TESTS")
-    print("=" * 50)
-    print("Testing Blend transaction construction without broadcasting")
-    print("No real funds will be used - simulation only")
-    print("=" * 50)
-
-    success = asyncio.run(run_simulation_tests())
-    exit(0 if success else 1)
+        pytest.fail(f"Request struct validation failed: {e}")

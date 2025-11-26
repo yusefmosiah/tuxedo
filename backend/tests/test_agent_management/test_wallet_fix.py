@@ -3,14 +3,9 @@
 Test script to verify wallet address injection fix
 """
 
-import asyncio
-import requests
 import json
 
-# Test configuration
-BACKEND_URL = "http://localhost:8000"
-
-async def test_wallet_integration():
+def test_wallet_integration(test_client):
     """Test wallet address integration in chat"""
 
     print("🧪 Testing Wallet Address Integration Fix")
@@ -27,43 +22,31 @@ async def test_wallet_integration():
         "wallet_address": test_wallet
     }
 
-    try:
-        response = requests.post(f"{BACKEND_URL}/chat", json=chat_payload, timeout=30)
+    response = test_client.post("/chat", json=chat_payload)
 
-        if response.status_code == 200:
-            result = response.json()
-            print(f"✅ Chat request successful")
-            print(f"📝 Response: {result['response'][:200]}...")
+    assert response.status_code == 200
+    result = response.json()
+    print(f"✅ Chat request successful")
+    print(f"📝 Response: {result['response'][:200]}...")
 
-            # Check if the response contains wallet address information
-            if test_wallet in result['response'] or "balance" in result['response'].lower():
-                print("✅ Response appears to contain wallet information")
-            else:
-                print("⚠️  Response may not be using the connected wallet")
-
-        else:
-            print(f"❌ Chat request failed: {response.status_code}")
-            print(f"📝 Error: {response.text}")
-
-    except Exception as e:
-        print(f"❌ Exception during chat test: {e}")
+    # Check if the response contains wallet address information
+    if test_wallet in result['response'] or "balance" in result['response'].lower():
+        print("✅ Response appears to contain wallet information")
+    else:
+        print("⚠️  Response may not be using the connected wallet")
 
     # Test 2: Check backend health
     print("\n📍 Test 2: Backend health check")
 
-    try:
-        health_response = requests.get(f"{BACKEND_URL}/health", timeout=10)
+    health_response = test_client.get("/health")
 
-        if health_response.status_code == 200:
-            health_data = health_response.json()
-            print("✅ Backend is healthy")
-            print(f"🔧 Stellar tools ready: {health_data.get('stellar_tools_ready', False)}")
-            print(f"🤖 OpenAI configured: {health_data.get('openai_configured', False)}")
-        else:
-            print(f"❌ Backend health check failed: {health_response.status_code}")
+    assert health_response.status_code == 200
+    health_data = health_response.json()
+    print("✅ Backend is healthy")
+    print(f"🔧 Stellar tools ready: {health_data.get('stellar_tools_ready', False)}")
+    print(f"🤖 OpenAI configured: {health_data.get('openai_configured', False)}")
 
-    except Exception as e:
-        print(f"❌ Exception during health check: {e}")
 
 if __name__ == "__main__":
-    asyncio.run(test_wallet_integration())
+    # This test must be run with pytest
+    print("This test must be run with pytest.")

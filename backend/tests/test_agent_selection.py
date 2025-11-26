@@ -5,11 +5,13 @@ Test agent account functionality without requiring server
 import os
 import sys
 import asyncio
+import pytest
 sys.path.append('/home/ubuntu/blend-pools/backend')
 
 from dotenv import load_dotenv
 load_dotenv()
 
+@pytest.mark.asyncio
 async def test_agent_account_selection():
     """Test agent account selection logic"""
     print("=" * 60)
@@ -62,6 +64,4 @@ async def test_agent_account_selection():
         print(f"❌ ERROR: {e}")
         import traceback
         traceback.print_exc()
-
-if __name__ == "__main__":
-    asyncio.run(test_agent_account_selection())
+        pytest.fail(f"Test failed with exception: {e}")
