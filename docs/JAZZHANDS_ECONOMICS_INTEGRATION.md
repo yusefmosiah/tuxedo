@@ -12,45 +12,15 @@ This document explains how Choir's three-currency economic model integrates with
 
 **The Challenge**: OpenHands is infrastructure (compute, runtimes, agents). Choir is economics (citations, novelty, rewards). How do they fit together?
 
-**The Solution**: A layered architecture where:
-1. **Compute Credits** pay for infrastructure (Jazzhands runtime costs)
-2. **CHIP Tokens** represent ownership (earned via novelty, used for publishing)
-3. **USDC** is income (earned via citations, withdrawn to bank accounts)
+**The Solution**: A two-currency model where:
+1. **CHIP Tokens** represent ownership (earned via novelty, used for publishing)
+2. **USDC** is income (earned via citations, withdrawn to bank accounts)
 
-Each currency has a specific role. Together they create a sustainable learning economy.
+For the MVP, agent runtime is subsidized, with the potential for CHIP-based metering in the future.
 
 ---
 
-## I. The Three Currencies: Role Separation
-
-### Currency 1: Compute Credits (Infrastructure Layer)
-
-**Purpose**: Pay for the computational resources required to run Vibewriter sessions.
-
-**How Acquired**:
-- **Free Tier**: New users get 500 compute credits (enough for ~10 research sessions)
-- **Autopurchase**: $10 = 500 credits (automatic when balance is low)
-- **Earned via Citations**: Every $10 in citation earnings = 100 bonus credits
-
-**What They Buy**:
-```
-Vibewriter Session Costs:
-├── Quick Research (2-3 sources, 500 words)
-│   └── 20 credits (~2 minutes of runtime)
-│
-├── Standard Report (5-7 sources, 1500 words)
-│   └── 50 credits (~5 minutes of runtime)
-│
-└── Deep Research (10+ sources, 3000+ words, verification)
-    └── 150 credits (~15 minutes of runtime)
-```
-
-**Where the Money Goes**:
-- Runtime provider (RunLoop, E2B, AWS Lambda)
-- LLM API calls (Claude, GPT, etc.)
-- Infrastructure overhead (Choir Controller hosting, databases)
-
-**Key Point**: Compute credits are **not blockchain tokens**. They're internal accounting, like AWS credits.
+## I. The Two Currencies: Role Separation
 
 ---
 
@@ -212,15 +182,11 @@ alice.input("Research DeFi yield farming on Base vs Arbitrum")
 
 # Behind the scenes (Jazzhands)
 session = VibewriterSession(
-    user_id="alice_123",
-    compute_balance=500  # Free tier
+    user_id="alice_123"
 )
 
-# 1. Debit compute credits (pre-flight check)
-await session.treasury.check_balance("compute", cost=50)
-# Balance: 500 - 50 = 450 credits remaining
-
-# 2. Spawn remote runtime (isolated container)
+# 1. Spawn remote runtime (isolated container)
+# (Future: Metering could be handled here, likely based on CHIP balance)
 runtime = await RemoteRuntimeFactory.create(
     user_id="alice_123",
     provider="runloop",
@@ -233,8 +199,8 @@ await agent.run("Research DeFi yield farming on Base vs Arbitrum. Write a compre
 
 # Agent actions (Alice sees in OpenHands UI):
 # ├── Web search (5 sources)
-# ├── pip install citation-validator
-# ├── Write verification script
+# ├── Call `cite_article` to verify internal citations.
+# ├── Write verification script for external sources.
 # ├── Draft 1800-word report in /workspace/draft.md
 # ├── Run verification script (5/5 citations valid)
 # └── Agent finishes
@@ -688,8 +654,7 @@ Month 36: Average novelty score = 35
 
 class BalanceManager:
     """
-    Manages the three-currency system:
-    - Compute Credits (PostgreSQL, internal accounting)
+    Manages the two-currency system:
     - CHIP (Sui blockchain, ownership token)
     - USDC (Sui blockchain, stablecoin)
     """
@@ -697,14 +662,6 @@ class BalanceManager:
     def __init__(self, db: Database, sui_client: SuiClient):
         self.db = db
         self.sui = sui_client
-
-    async def get_compute_balance(self, user_id: str) -> int:
-        """Get user's compute credit balance (offchain)"""
-        result = await self.db.query(
-            "SELECT compute_credits FROM users WHERE id = $1",
-            user_id
-        )
-        return result[0]["compute_credits"]
 
     async def get_chip_balance(self, user_id: str) -> int:
         """Get user's CHIP balance (onchain, cached)"""
@@ -728,23 +685,6 @@ class BalanceManager:
             coin_type="0x...::usdc::USDC"
         )
         return Decimal(balance) / Decimal(1_000_000)  # 6 decimals
-
-    async def debit_compute(self, user_id: str, amount: int) -> bool:
-        """
-        Debit compute credits for a Vibewriter session.
-        Returns False if insufficient balance (trigger autopurchase).
-        """
-        current = await self.get_compute_balance(user_id)
-        if current < amount:
-            # Trigger autopurchase flow (Stripe integration)
-            await self.autopurchase_compute(user_id, amount)
-            return False
-
-        await self.db.execute(
-            "UPDATE users SET compute_credits = compute_credits - $1 WHERE id = $2",
-            amount, user_id
-        )
-        return True
 
     async def reward_chip(self, user_id: str, amount: int, reason: str):
         """

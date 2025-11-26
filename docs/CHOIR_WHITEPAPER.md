@@ -9,7 +9,7 @@
 
 Choir is AI research infrastructure for the learning economy.
 
-**The core product is Ghostwriter**: An AI agent that helps you research, write, and publish—then pays you in stablecoins when your work gets cited.
+**The core product is Vibewriter**: An AI agent that helps you research, write, and publish—then pays you in stablecoins when your work gets cited.
 
 **No capital required to earn.** Chat freely, publish research, get cited by AI agents making decisions, receive citation rewards in real money. The pathway from zero to income exists entirely through intellectual contribution.
 
@@ -66,7 +66,7 @@ Traditional banks let you deposit money and earn interest. Thought banks let you
 
 **How it works**:
 
-1. **Research and write** using Ghostwriter (multi-model AI orchestration)
+1. **Research and write** using Vibewriter (multi-model AI orchestration)
 2. **Publish articles** to the knowledge base (anonymous, merit-based)
 3. **Get cited** when AI agents or other researchers reference your work
 4. **Earn USDC** from a dynamically priced, exponentially scaling citation rewards pool.
@@ -102,85 +102,31 @@ The free users aren’t the top of the funnel. They’re the foundation of the e
 
 ---
 
-## III. The Ghostwriter: Multi-Model Orchestration
+## III. The Vibewriter: A Real Agent, Not a Pipeline
 
-### Why Specialized Agents, Not Monolithic Models
+### "All agents are coding agents."
 
-Current AI platforms force analytical reasoning and communicative craft into the same generation step. This creates fundamental trade-offs:
-- GPT-4: Deep reasoning but generic communication
-- Claude: Excellent craft but shallow research
-- Gemini: Fast but inconsistent quality
+The initial architecture for Choir envisioned a multi-step pipeline with specialized agents for research, drafting, and critique. This is wrong. The correct insight is that **all effective agents are coding agents.**
 
-**The insight**: Different tasks need different models. Separate the concerns.
+Serious research isn't a linear process; it's a dynamic loop of exploration, verification, and synthesis. This requires an agent with the full capabilities of a software engineer: terminal access for custom scripts, a file system for managing sources, and the ability to call specialized tools when needed.
 
-### The Architecture
+### The Hierarchy of Agent Capability
 
-The system follows a conductor and instruments pattern. The conductor acts as a fast chatbot that responds immediately to coordinate overall flow. The instruments are slower agentic tools that run complex workflows in the background.
+`pipeline < graph < tool calling loop < terminal/full computer control`
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│                      USER REQUEST                             │
-│           "Research yield farming on Base vs Arbitrum"        │
-└─────────────────────┬────────────────────────────────────────┘
-                      │
-                      ▼
-┌──────────────────────────────────────────────────────────────┐
-│                  CONDUCTOR (Client)                           │
-│                  Fast orchestrator                            │
-│                                                               │
-│  • Immediate response: "Starting research..."                │
-│  • Routes to Ghostwriter agent                               │
-│  • Streams results as they arrive                            │
-│  • Transparent escalation                                    │
-└─────────────────────┬────────────────────────────────────────┘
-                      │
-                      ▼
-┌──────────────────────────────────────────────────────────────┐
-│               GHOSTWRITER AGENT (Server)                      │
-│               Multi-step workflow                             │
-│                                                               │
-│  Step 1: RESEARCH (OpenAI o1, Claude Opus)                   │
-│  ├── Query Choir knowledge base (vector search)              │
-│  ├── Search web for recent data                              │
-│  ├── Fetch on-chain metrics (Aave, Morpho APYs)              │
-│  └── Aggregate context                                       │
-│                                                               │
-│  Step 2: DRAFT (Claude Sonnet)                               │
-│  ├── Follow user's style guide                               │
-│  ├── Synthesize research into narrative                      │
-│  ├── Include citations to Choir articles                     │
-│  └── Maintain voice consistency                              │
-│                                                               │
-│  Step 3: CRITIQUE (Kimi K2)                                  │
-│  ├── Identify weak arguments                                 │
-│  ├── Check unsupported claims                                │
-│  ├── Suggest substantial improvements                        │
-│  └── Actually critical (not sycophantic)                     │
-│                                                               │
-│  Step 4: REFINE (Claude Sonnet)                              │
-│  ├── Incorporate critique                                    │
-│  ├── Strengthen evidence                                     │
-│  ├── Maintain style guide adherence                          │
-│  └── Final polish                                            │
-│                                                               │
-│  Step 5: VERIFY (Automated)                                  │
-│  ├── Citation validation (no hallucinated sources)           │
-│  ├── Fact checking                                           │
-│  ├── Link verification                                       │
-│  └── Quality threshold                                       │
-│                                                               │
-└─────────────────────┬────────────────────────────────────────┘
-                      │
-                      ▼
-┌──────────────────────────────────────────────────────────────┐
-│                  PUBLISHED ARTICLE                            │
-│                                                               │
-│  • Consumed CHIP moves to Treasury (rank by stake)           │
-│  • Enters citation graph                                     │
-│  • Earns rewards when cited                                  │
-│  • Open to revision proposals                                │
-└──────────────────────────────────────────────────────────────┘
-```
+Vibewriter operates at the highest level of this hierarchy. It is a single, powerful agent with full computer control, augmented with three Choir-specific tools for interacting with the economic and knowledge layers of the protocol:
+
+- **`search_choir_kb`**: Performs a vector search against Choir's knowledge base to find relevant prior art.
+- **`cite_article`**: Cites a Choir article, triggering a USDC payment to the original author.
+- **`publish_to_choir`**: Stakes CHIP to publish a new article, making it citable and earning CHIP based on its semantic novelty.
+
+### The Workflow: User Intent, Agent Autonomy
+
+You don't tell Vibewriter *how* to research; you tell it *what* to research.
+
+The agent autonomously decides the best workflow to achieve the user's goal. It might start by searching the Choir knowledge base, then write a Python script to scrape and validate external sources, draft an article, and finally publish it. The user sees the agent working in a transparent, IDE-like environment, observing its thought process and actions in real-time.
+
+Terminal access is the *ceiling*, not the *floor*. While the agent can write custom scripts for novel problems, the common path is to use the pre-built Choir tools for standard operations, ensuring efficiency and reliability. This architecture provides the perfect balance of structured capability and creative freedom.
 
 ---
 
@@ -273,7 +219,7 @@ Choir introduces a novel economic model that functions as a true "marketplace of
 
 The amount of CHIP earned is determined not by the size of the deposit, but by the **intellectual performance** of the user—specifically, the semantic novelty of the content they publish. This creates an environment with asymmetric upside: users can't lose their principal, but they can gain significant ownership and influence in the platform by contributing valuable, novel ideas.
 
-### The Three Currencies: A Separation of Concerns
+### The Two Currencies: A Separation of Concerns
 
 *   **USDC: For Income and Operations.** All citation rewards are paid in USDC. The yield on user deposits funds the operational budget.
 *   **CHIP: For Ownership and Contribution.** Represents ownership. It is earned through intellectual contribution (novelty), not purchased. It's used to power platform actions and for governance.
@@ -317,7 +263,7 @@ This architecture creates a powerful, self-reinforcing flywheel:
 
 ## VII. Go-To-Market: Research First, Finance Last
 
-The user journey is designed to build trust organically, starting with the high-value Ghostwriter product and introducing the financial components only after a user has experienced direct economic benefit from their intellectual contributions. This ensures that capital providers are users who deeply understand and trust the system because they've already profited from it.
+The user journey is designed to build trust organically, starting with the high-value Vibewriter product and introducing the financial components only after a user has experienced direct economic benefit from their intellectual contributions. This ensures that capital providers are users who deeply understand and trust the system because they've already profited from it.
 
 ---
 
@@ -327,7 +273,7 @@ The platform is built on a modern, multi-model, chain-agnostic stack designed fo
 
 *   **Client Layer**: Mobile-first (SwiftUI) and Web (React).
 *   **API Layer**: Python FastAPI.
-*   **Agent Layer**: A "Conductor and Instruments" pattern using best-in-class models (OpenAI, Claude, Kimi) for specialized tasks.
+*   **Agent Layer**: A single, powerful "Vibewriter" agent with full computer control, augmented by specialized Choir tools.
 *   **Data Layer**: A combination of PostgreSQL, a Vector Database (Qdrant, migrating to XTrace for privacy), and the Sui Blockchain for tokenomics and attribution.
 *   **Infrastructure**: Trusted Execution Environments (TEE) on Phala Network for security and multi-chain integration (Stellar, EVM, etc.).
 
@@ -336,7 +282,7 @@ The platform is built on a modern, multi-model, chain-agnostic stack designed fo
 ## IX. Roadmap
 
 ### Phase 1: MVP (Q4 2025)
-Focus on core Ghostwriter, publishing infrastructure, and initial Stellar-based vault functionality.
+Focus on core Vibewriter, publishing infrastructure, and initial Stellar-based vault functionality.
 
 ### Phase 2: Learning Economy (Q1-Q2 2026)
 Roll out the full economic loops: dynamic citation rewards, novelty-based CHIP distribution, and revision markets. Expand to EVM chains.
