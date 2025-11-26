@@ -9,15 +9,20 @@
 ## Philosophy
 
 - **Keep OpenHands UI as-is** - Terminal, code editor, file explorer stay. Users see the coding agent work.
-- **Add Vibewriter tools** - 8-stage research pipeline as OpenHands tools
+- **All agents are coding agents** - Vibewriter isn't a pipeline, it's a real agent with full computer control
+- **Add Choir tools** - Search knowledge base, cite articles, publish (economics layer)
 - **Layer on economics** - CHIP, USDC, citations on top of existing architecture
 - **Polish later** - Day 3 UX improvements, not a rewrite
+
+**Key Insight**: `pipeline < graph < tool calling loop < terminal/full computer control`
+
+OpenHands gives us the highest level - an agent that can use the terminal, write code, install tools, and reason about complex tasks. We just add Choir-specific tools for the knowledge base and economics.
 
 **Timeline**: 3 days (you + coding agents)
 
 ---
 
-## Day 1: Fork + Remote Runtime + Vibewriter Tools
+## Day 1: Fork + Remote Runtime + Choir Tools
 
 ### Hour 1-2: Fork and Clean
 
@@ -91,134 +96,116 @@ assert "Hello from Jazzhands" in result
 print(f"Cost: {await runtime.get_cost()} credits")
 ```
 
-### Hour 5-8: Vibewriter Pipeline as Tools
+### Hour 5-8: Choir-Specific Tools (Not a Pipeline)
+
+**The Realization**: Vibewriter isn't a rigid 8-stage pipeline. It's a **real agent** with full computer control.
+
+**Agent Hierarchy**: `pipeline < graph < tool calling loop < terminal/full computer control`
+
+**What OpenHands Gives Us**: The agent has:
+- Full terminal access (`bash`, `python`, `curl`, etc.)
+- File system control (create, edit, organize files)
+- Ability to install tools (`pip install`, `npm install`)
+- Tool calling when needed
+- Multi-step reasoning
+
+**What We Add**: Choir-specific tools for economics and knowledge base access
 
 ```python
-# choir/tools/vibewriter.py
+# choir/tools/choir_tools.py
 
 from openhands.core.tool import Tool
 
-class ResearchTool(Tool):
-    """Stage 1: Web research and source gathering"""
+class SearchChoirKnowledgeBase(Tool):
+    """Search Choir's published articles (vector similarity)"""
 
-    name = "research_topic"
-    description = "Research a topic using web search and Choir knowledge base"
+    name = "search_choir_kb"
+    description = "Search Choir knowledge base for relevant articles"
 
-    async def run(self, topic: str, num_sources: int = 5) -> dict:
-        # 1. Search Choir knowledge base (vector search)
-        choir_articles = await search_choir_kb(topic, limit=3)
+    async def run(self, query: str, limit: int = 5) -> list:
+        # Vector search in Choir articles
+        embedding = await openai.embeddings.create(
+            model="text-embedding-3-large",
+            input=query
+        )
 
-        # 2. Web search via Tavily
-        web_sources = await tavily.search(topic, num_results=num_sources)
+        results = qdrant.search(
+            collection_name="choir_articles",
+            query_vector=embedding.data[0].embedding,
+            limit=limit
+        )
 
-        # 3. Save to workspace
-        await self.runtime.run(f"mkdir -p /workspace/sources/")
-        for i, source in enumerate(web_sources):
-            await self.runtime.run(
-                f"curl -o /workspace/sources/source_{i}.html {source.url}"
-            )
+        return [
+            {
+                "article_id": r.id,
+                "title": r.payload["title"],
+                "author": r.payload["author_id"],
+                "similarity": r.score,
+                "content_preview": r.payload["content"][:500]
+            }
+            for r in results
+        ]
+
+
+class CiteChoirArticle(Tool):
+    """Cite a Choir article (triggers USDC payment to author)"""
+
+    name = "cite_article"
+    description = "Cite a Choir article in your research (pays author)"
+
+    async def run(self, article_id: str, context: str) -> dict:
+        # Record citation (pays author USDC)
+        citation = await citation_service.record_citation(
+            article_id=article_id,
+            citing_user_id=self.user_id,
+            context=context
+        )
+
+        # Get article details for citation text
+        article = await db.get_article(article_id)
 
         return {
-            "choir_articles": choir_articles,
-            "web_sources": web_sources,
-            "workspace": "/workspace/sources/"
+            "citation_text": f"[{article.title}]({article_id})",
+            "author_rewarded": citation.reward_usdc,
+            "article_url": f"https://choir.chat/article/{article_id}"
         }
 
 
-class DraftTool(Tool):
-    """Stage 2: Draft article from research"""
+class PublishArticle(Tool):
+    """Publish article to Choir (costs CHIP, earns CHIP based on novelty)"""
 
-    name = "draft_article"
-    description = "Draft an article from research sources"
+    name = "publish_to_choir"
+    description = "Publish an article to Choir knowledge base"
 
-    async def run(self, sources_dir: str, style: str = "technical") -> dict:
-        # Load style guide
-        style_guide = await load_style_guide(style)
+    async def run(self, filepath: str) -> dict:
+        # Read article from workspace
+        content = await self.runtime.run(f"cat {filepath}")
 
-        # Read sources
-        sources_content = await self.runtime.run(
-            f"cat {sources_dir}/*.html | html2text"
-        )
+        # Extract title (first H1)
+        title = extract_title(content)
 
-        # Draft with Claude
-        draft = await claude.complete(
-            model="claude-sonnet-4",
-            prompt=f"""
-            Style Guide: {style_guide}
-
-            Sources: {sources_content}
-
-            Write a comprehensive article synthesizing these sources.
-            Include citations as [1], [2], etc.
-            """
-        )
-
-        # Save draft
-        await self.runtime.run(
-            f"cat > /workspace/draft.md <<'EOF'\n{draft}\nEOF"
+        # Publish (handles CHIP stake, novelty scoring, rewards)
+        result = await publishing_service.publish(
+            user_id=self.user_id,
+            title=title,
+            content=content
         )
 
         return {
-            "draft": draft,
-            "word_count": len(draft.split()),
-            "path": "/workspace/draft.md"
+            "article_id": result.article_id,
+            "novelty_score": result.novelty_score,
+            "chip_staked": 100,
+            "chip_rewarded": result.chip_rewarded,
+            "net_chip": result.net_chip,
+            "url": f"https://choir.chat/article/{result.article_id}"
         }
 
 
-class VerifyTool(Tool):
-    """Stage 3: Verify citations"""
-
-    name = "verify_citations"
-    description = "Verify all citations in draft are accurate"
-
-    async def run(self, draft_path: str) -> dict:
-        # Extract citations
-        citations = await extract_citations(draft_path)
-
-        # Verify each
-        results = []
-        for citation in citations:
-            # Check URL is valid
-            valid_url = await check_url(citation.url)
-
-            # Fetch content and verify claim
-            if valid_url:
-                content = await fetch_url(citation.url)
-                claim_supported = await claude.complete(
-                    model="claude-sonnet-4",
-                    prompt=f"""
-                    Claim: {citation.claim}
-                    Source Content: {content}
-
-                    Is the claim supported by the source? Yes/No and explain.
-                    """
-                )
-                results.append({
-                    "citation": citation,
-                    "url_valid": True,
-                    "claim_supported": "Yes" in claim_supported
-                })
-            else:
-                results.append({
-                    "citation": citation,
-                    "url_valid": False,
-                    "claim_supported": False
-                })
-
-        verified_count = sum(1 for r in results if r["url_valid"] and r["claim_supported"])
-
-        return {
-            "total_citations": len(citations),
-            "verified": verified_count,
-            "results": results
-        }
-
-# Register tools with OpenHands
-VIBEWRITER_TOOLS = [
-    ResearchTool(),
-    DraftTool(),
-    VerifyTool(),
-    # ... Add other 5 stages
+# Choir tools (no pipeline, just give agent access to Choir features)
+CHOIR_TOOLS = [
+    SearchChoirKnowledgeBase(),
+    CiteChoirArticle(),
+    PublishArticle(),
 ]
 ```
 
@@ -228,10 +215,10 @@ VIBEWRITER_TOOLS = [
 # choir/agent.py
 
 from openhands.agent import Agent
-from choir.tools.vibewriter import VIBEWRITER_TOOLS
+from choir.tools.choir_tools import CHOIR_TOOLS
 
 class ChoirAgent(Agent):
-    """OpenHands agent with Vibewriter tools"""
+    """OpenHands agent with full computer control + Choir tools"""
 
     def __init__(self, runtime, user_id: str):
         super().__init__(
@@ -240,24 +227,42 @@ class ChoirAgent(Agent):
         )
         self.user_id = user_id
 
-        # Add Vibewriter tools
-        for tool in VIBEWRITER_TOOLS:
+        # Add Choir-specific tools
+        for tool in CHOIR_TOOLS:
+            tool.user_id = user_id  # Inject user context
             self.register_tool(tool)
+
+        # Agent also has full terminal access (bash, python, curl, etc.)
+        # It can install whatever tools it needs
 ```
 
-**Test**: Run full Vibewriter pipeline
+**Test**: Agent decides its own workflow
 
 ```python
-# test_vibewriter.py
+# test_agent.py
 agent = ChoirAgent(runtime, user_id="test")
+
+# Don't tell agent HOW to do it, just WHAT to do
 result = await agent.run("""
 Research DeFi yield farming on Base vs Arbitrum.
-Use the research_topic tool, then draft_article, then verify_citations.
+Write a comprehensive article with verified citations.
+Publish it to Choir when you're confident it's high quality.
 """)
-# Should produce verified draft in /workspace/draft.md
+
+# Agent might:
+# 1. Search Choir KB first (search_choir_kb)
+# 2. Install citation validator (pip install requests beautifulsoup4)
+# 3. Write Python script to fetch sources
+# 4. Draft article in markdown
+# 5. Run verification script
+# 6. Cite Choir articles where relevant (cite_article)
+# 7. Publish final draft (publish_to_choir)
+
+# Or it might do something completely different!
+# That's the point - it's a real agent, not a pipeline
 ```
 
-**End of Day 1 Deliverable**: Fork works, remote runtime spawns, Vibewriter tools produce verified drafts
+**End of Day 1 Deliverable**: Fork works, remote runtime spawns, agent can research and produce drafts with full computer control + Choir tools
 
 ---
 
@@ -727,9 +732,9 @@ async def cite_article(
 ### Day 1 Tests
 - [ ] Fork builds and runs
 - [ ] Remote runtime spawns
-- [ ] Vibewriter research tool fetches sources
-- [ ] Draft tool generates article
-- [ ] Verify tool checks citations
+- [ ] Agent can use terminal (bash, python, curl)
+- [ ] Choir tools registered (search_choir_kb, cite_article, publish_to_choir)
+- [ ] Agent can research topic and produce draft autonomously
 
 ### Day 2 Tests
 - [ ] User gets 500 free compute credits
