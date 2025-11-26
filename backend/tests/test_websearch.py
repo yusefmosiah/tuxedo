@@ -81,6 +81,13 @@ async def test_cli_tool():
     print()
 
     try:
+        # Get the project root by going up two levels from the test file's directory
+        project_root = Path(__file__).parent.parent.resolve()
+
+        # Set PYTHONPATH to include the project root, so that the subprocess can find the `agent` module
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(project_root) + os.pathsep + env.get("PYTHONPATH", "")
+
         # Test as module
         result = subprocess.run(
             [
@@ -89,15 +96,22 @@ async def test_cli_tool():
                 "agent.ghostwriter.websearch_cli",
                 "Stellar blockchain",
                 "--max-results",
-                "2"
+                "2",
             ],
-            cwd=str(Path(__file__).parent),
+            cwd=str(project_root),
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=30,
+            env=env,
         )
 
-        assert result.returncode == 0, f"CLI tool failed with exit code {result.returncode}\nSTDERR: {result.stderr}"
+        # Check the return code and print stdout/stderr for easier debugging
+        if result.returncode != 0:
+            print(f"--- STDOUT ---\n{result.stdout}")
+            print(f"--- STDERR ---\n{result.stderr}")
+            pytest.fail(
+                f"CLI tool failed with exit code {result.returncode}", pytrace=False
+            )
 
         print("✅ CLI tool test passed!")
         print("\nCLI Output:")
@@ -105,4 +119,4 @@ async def test_cli_tool():
         print(result.stdout)
 
     except Exception as e:
-        pytest.fail(f"CLI test failed: {str(e)}")
+        pytest.fail(f"CLI test failed: {str(e)}", pytrace=False)
