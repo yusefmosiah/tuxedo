@@ -5,6 +5,10 @@ import os
 os.environ["OPENAI_API_KEY"] = "dummy_key_for_testing"
 os.environ["ENCRYPTION_MASTER_KEY"] = "dummy_encryption_key_for_testing"
 
+# Apply the OpenHands SDK patch before any tests are collected
+from openhands_utils import apply_openhands_patch
+apply_openhands_patch()
+
 from fastapi.testclient import TestClient
 from app import create_app
 from database_passkeys import db

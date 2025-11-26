@@ -16,15 +16,18 @@ import os
 import asyncio
 import argparse
 import logging
+from pathlib import Path
 
-try:
-    # Try module import first (when run as module)
-    from agent.ghostwriter.openhands_websearch import WebSearchAction, get_websearch_executor
-except ImportError:
-    # Fallback to relative import (when run as script)
-    from pathlib import Path
-    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-    from agent.ghostwriter.openhands_websearch import WebSearchAction, get_websearch_executor
+# To support running as a script and a module, we need to adjust the path
+# This allows us to import our patch utility from the backend root
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from openhands_utils import apply_openhands_patch
+
+# Apply the patch *before* any OpenHands modules are imported
+apply_openhands_patch()
+
+# Now we can safely import the OpenHands-dependent modules
+from agent.ghostwriter.openhands_websearch import WebSearchAction, get_websearch_executor
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

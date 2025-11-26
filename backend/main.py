@@ -25,6 +25,10 @@ os.environ.setdefault("JINJA2_CACHE_DIR", CACHE_DIR)
 # This prevents OpenHands SDK from trying to write to read-only package directories
 os.environ.setdefault("TMPDIR", CACHE_DIR)
 
+# Apply the OpenHands SDK patch
+from openhands_utils import apply_openhands_patch
+apply_openhands_patch()
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
