@@ -6,19 +6,21 @@
 
 ## Executive Summary
 
-**Choir is forking OpenHands to create Jazzhands** - a secure, multi-tenant research and writing infrastructure where AI agents have the computational power they need while users enjoy a clean, focused writing experience.
+**Choir is forking OpenHands to create Jazzhands** - a secure, multi-tenant research and writing infrastructure where AI agents have full computer control to produce high-quality, citation-verified research.
 
-**The Core Insight**: Effective research agents aren't just chatbots with RAG. They need to:
-- Execute complex multi-step workflows with file persistence
-- Install and run verification tools (citation checkers, fact validators)
-- Manage large research contexts across sessions
-- Orchestrate multiple specialized models in parallel
+**The Core Insight**: All agents are coding agents. Effective research requires:
+- Terminal access (bash, python, curl)
+- File system control (organize research, manage drafts)
+- Tool installation (pip install validators, fact-checkers)
+- Multi-step reasoning with persistent state
 
-**This is a coding problem.** But users should never know that.
+**Agent Hierarchy**: `pipeline < graph < tool calling loop < terminal/full computer control`
 
-**What Users See**: A beautiful writing interface (Vibewriter) where they research, draft, cite, and publish.
+OpenHands provides the highest level - agents with full computer access. We add 3 Choir-specific tools for economics and knowledge base integration.
 
-**What Actually Happens**: Behind the scenes, an OpenHands-based agent is running Python scripts, managing file systems, orchestrating LLM calls, and executing verification pipelines in an isolated container.
+**What Users See**: The OpenHands UI - terminal, code editor, file explorer. They watch the agent research, write code to verify citations, and produce high-quality articles.
+
+**What We Add**: Citation economics on top. Publish costs CHIP (earned via semantic novelty), citations pay USDC to authors.
 
 ---
 
@@ -186,10 +188,10 @@ The draft plan suggested:
 1. **Research & Writing** (Compute Credits)
    ```
    User: "Write a research report on DeFi"
-   ├── Costs: 50 compute credits (Vibewriter session)
-   ├── Agent: Runs 8-stage pipeline in remote runtime
+   ├── Costs: 50 compute credits (agent session)
+   ├── Agent: Autonomously researches, writes, verifies in remote runtime
    ├── Output: High-quality, citation-verified report
-   └── User: Saves draft to workspace
+   └── User: Watches agent work, sees draft in workspace
    ```
 
 2. **Publishing** (CHIP Token)
@@ -236,17 +238,17 @@ class VibewriterSession:
             api_headers={"Authorization": f"Bearer {RUNLOOP_API_KEY}"}
         )
 
-        # 3. Run Vibewriter agent in isolated environment
-        agent = VibewriterAgent(
+        # 3. Run agent with Choir tools in isolated environment
+        agent = ChoirAgent(
             runtime=self.runtime,
-            models={"research": "claude-opus", "draft": "claude-sonnet"}
+            user_id=self.user_id
         )
 
-        # 4. Stream events to user (they see progress, not code)
+        # 4. Stream events to user (they see OpenHands UI)
         async for event in agent.run(prompt):
-            # User sees: "Researching sources...", "Drafting section 2..."
-            # Agent does: pip install, file writes, LLM orchestration
-            yield self._sanitize_for_ui(event)
+            # User sees: Terminal output, file operations, agent thinking
+            # Agent: Uses bash, python, Choir tools (search_choir_kb, cite_article, publish_to_choir)
+            yield event
 
         # 5. Debit compute credits ONLY if workflow succeeds
         await self.treasury.debit_compute(self.user_id, VIBEWRITER_COST)
@@ -260,11 +262,11 @@ class VibewriterSession:
 - **CHIP** is earned via novelty, used for publishing and governance
 - **USDC** is citation income
 - **Remote runtime** provides the secure, stateful environment agents need
-- **Users never see code** - they see research progress
+- **Users see the OpenHands UI** - terminal, file explorer, agent working
 
 ---
 
-## IV. The Frontend Transformation
+## IV. Frontend: Keep OpenHands UI, Add Economics
 
 ### What OpenHands Gives Us
 
@@ -273,91 +275,46 @@ The OpenHands frontend is a React/Remix app that looks like an IDE:
 - Center: Terminal, code editor, browser preview
 - Right sidebar: Agent settings, model selection
 
-**This is too developer-focused for Choir.**
+**We keep all of this.** Users see the agent work.
 
-### What Choir Needs
+### What We Add
 
-**The Vibewriter Interface**:
-```
-┌─────────────────────────────────────────────────────────────┐
-│  CHOIR - The Thought Bank                      [CHIP: 1,250]│
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │                                                         │ │
-│  │  Research:  "DeFi yield farming on Base vs Arbitrum"  │ │
-│  │             [Start Research]                            │ │
-│  │                                                         │ │
-│  └────────────────────────────────────────────────────────┘ │
-│                                                              │
-│  Research Progress:                                          │
-│  ✓ Searched 12 sources                                      │
-│  ✓ Drafted 2,400 words                                      │
-│  ⏳ Verifying citations (8/12 complete)                     │
-│  ⏸ Critiquing arguments...                                  │
-│                                                              │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │                    DRAFT PREVIEW                        │ │
-│  │                                                         │ │
-│  │  # DeFi Yield Farming: Base vs Arbitrum                │ │
-│  │                                                         │ │
-│  │  Base offers lower transaction costs...                │ │
-│  │  [Citation: Aerodrome Docs, 2025]                      │ │
-│  │                                                         │ │
-│  │  [Edit] [Publish for 100 CHIP]                         │ │
-│  │                                                         │ │
-│  └────────────────────────────────────────────────────────┘ │
-│                                                              │
-│  My Published Work:                                          │
-│  ├── "DeFi on Stellar vs EVM" - 23 citations - $115 earned │
-│  ├── "Passkey Auth Guide" - 8 citations - $40 earned       │
-│  └── "Learning Economy Thesis" - 51 citations - $255 earned│
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
-```
+**Economic Components** layered on top of OpenHands UI:
 
-**What We Hide**:
-- ❌ Terminal output
-- ❌ File explorer showing Python scripts
-- ❌ Raw agent logs
-- ❌ LLM token counts
-- ❌ Container/runtime details
+1. **Header with Balances**
+   ```typescript
+   <ChoirHeader>
+     <Balance icon="💎" label="CHIP" value={230} />
+     <Balance icon="💰" label="Earned" value="$175" />
+     <Balance icon="⚡" label="Credits" value={450} />
+   </ChoirHeader>
+   ```
 
-**What We Show**:
-- ✅ Clean research progress indicators
-- ✅ Draft preview (markdown rendering)
-- ✅ Citation verification status
-- ✅ Earnings dashboard (citations → USDC)
-- ✅ CHIP balance and publishing costs
+2. **Publish Button** (appears when agent creates draft in workspace)
+   ```typescript
+   {draftExists && (
+     <PublishPrompt
+       draft="/workspace/draft.md"
+       onPublish={handlePublish}
+     />
+   )}
+   ```
 
-### The Changes Required
+3. **My Research Page** (new route showing published articles)
+   ```typescript
+   <ResearchPage>
+     {articles.map(a => (
+       <ArticleCard
+         title={a.title}
+         citations={a.citations}
+         earnings={a.earnings}
+         noveltyScore={a.noveltyScore}
+       />
+     ))}
+   </ResearchPage>
+   ```
 
-**Major Frontend Modifications**:
-
-1. **Remove Developer Tools**
-   - Strip out terminal, file explorer, code editor components
-   - Remove debugging panels, raw event logs
-   - Hide model selection (use smart defaults)
-
-2. **Add Research-Focused UI**
-   - Markdown editor with citation helpers
-   - Research artifact viewer (PDF, sources panel)
-   - Publishing workflow (stake CHIP → novelty score → publish)
-   - Earnings dashboard (your articles → citation count → USDC earned)
-
-3. **Simplify Navigation**
-   - No left sidebar (or move to right if needed for research history)
-   - Focus on current research task
-   - Clean, distraction-free writing environment
-
-4. **Add Economic Components**
-   - CHIP balance header
-   - Compute credits indicator
-   - Citation earnings tracker
-   - Publishing cost preview
-
-**Minor Change** (from your original note):
-- Move nav bar from left to right ← This is trivial compared to above
+**That's it.** No major transformation. OpenHands UI stays. We just add economic features on Day 3.
 
 ---
 
@@ -397,18 +354,16 @@ OpenHands has an `enterprise/` directory with proprietary multi-tenancy code:
 3. **The Build**
    ```
    jazzhands/
-   ├── openhands/          # MIT licensed (forked, we can modify)
+   ├── openhands/          # MIT licensed (forked, minimal modifications)
    │   ├── sdk/
    │   ├── runtime/
    │   ├── agent/
-   │   └── ...
-   ├── choir_controller/   # Our proprietary layer
+   │   └── frontend/       # Keep as-is, just add economic components
+   ├── choir/              # Our proprietary layer
+   │   ├── tools/          # 3 Choir tools (search, cite, publish)
    │   ├── auth/           # Passkey integration
    │   ├── treasury/       # CHIP/USDC economics
-   │   ├── sessions/       # User session management
-   │   └── runtime_manager/# Remote runtime orchestration
-   └── frontend/           # Heavily modified for research UX
-       └── ...
+   │   └── runtime_manager/# Remote runtime orchestration (RunLoop)
    ```
 
 4. **The License File**
