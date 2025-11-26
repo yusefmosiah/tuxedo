@@ -234,9 +234,10 @@ class GhostwriterPipeline:
             tools=[Tool(name=FileEditorTool.name)]
         )
 
+        ws = LocalWorkspace(self.workspace)
         conv = Conversation(
             agent=former,
-            workspace=str(self.workspace)
+            workspace=ws,
         )
 
         # Load hypothesis former prompt
@@ -285,9 +286,10 @@ class GhostwriterPipeline:
             tools=[Tool(name=FileEditorTool.name)]
         )
 
+        ws = LocalWorkspace(self.workspace)
         conv = Conversation(
             agent=designer,
-            workspace=str(self.workspace)
+            workspace=ws,
         )
 
         # Load experimental designer prompt
@@ -353,9 +355,10 @@ class GhostwriterPipeline:
             for i, s in enumerate(assigned_searches)
         ])
 
+        ws = LocalWorkspace(self.workspace)
         conv = Conversation(
             agent=researcher,
-            workspace=str(self.workspace)
+            workspace=ws,
         )
 
         # Load hypothesis researcher prompt
@@ -453,9 +456,10 @@ class GhostwriterPipeline:
             tools=[Tool(name=FileEditorTool.name)]
         )
 
+        ws = LocalWorkspace(self.workspace)
         conv = Conversation(
             agent=updater,
-            workspace=str(self.workspace)
+            workspace=ws,
         )
 
         # Load certitude updater prompt
@@ -504,9 +508,10 @@ class GhostwriterPipeline:
             tools=[Tool(name=FileEditorTool.name)]
         )
 
+        ws = LocalWorkspace(self.workspace)
         conv = Conversation(
             agent=drafter,
-            workspace=str(self.workspace)
+            workspace=ws,
         )
 
         # Load thesis drafter prompt
@@ -572,9 +577,10 @@ class GhostwriterPipeline:
         researcher_workspace.mkdir(parents=True, exist_ok=True)
 
         # Create conversation
+        ws = LocalWorkspace(researcher_workspace)
         conv = Conversation(
             agent=researcher,
-            workspace=str(researcher_workspace)
+            workspace=ws,
         )
 
         # Load researcher prompt
@@ -658,9 +664,10 @@ Please save your research findings to a file named "source_{researcher_id}.md" i
             tools=[Tool(name=FileEditorTool.name)]
         )
 
+        ws = LocalWorkspace(self.workspace)
         conv = Conversation(
             agent=drafter,
-            workspace=str(self.workspace)
+            workspace=ws,
         )
 
         # Read research sources
@@ -706,9 +713,10 @@ Please save your research findings to a file named "source_{researcher_id}.md" i
             tools=[Tool(name=FileEditorTool.name)]
         )
 
+        ws = LocalWorkspace(self.workspace)
         conv = Conversation(
             agent=extractor,
-            workspace=str(self.workspace)
+            workspace=ws,
         )
 
         extractor_prompt = self.load_prompt("extractor.txt")
@@ -756,9 +764,10 @@ Please save your research findings to a file named "source_{researcher_id}.md" i
             ]
         )
 
+        ws = LocalWorkspace(self.workspace)
         conv = Conversation(
             agent=verifier_coord,
-            workspace=str(self.workspace)
+            workspace=ws,
         )
 
         verifier_prompt = self.load_prompt("verifier.txt")
@@ -822,9 +831,10 @@ Aggregate all results to 03_verification/verification_report.json with:
         critic_llm = self.create_llm(self.SONNET)
         critic = Agent(llm=critic_llm, tools=[Tool(name=FileEditorTool.name)])
 
+        ws = LocalWorkspace(self.workspace)
         conv = Conversation(
             agent=critic,
-            workspace=str(self.workspace)
+            workspace=ws,
         )
 
         critic_prompt = self.load_prompt("critic.txt")
@@ -859,9 +869,10 @@ Aggregate all results to 03_verification/verification_report.json with:
             tools=[Tool(name=FileEditorTool.name)]
         )
 
+        ws = LocalWorkspace(self.workspace)
         conv = Conversation(
             agent=reviser,
-            workspace=str(self.workspace)
+            workspace=ws,
         )
 
         reviser_prompt = self.load_prompt("reviser.txt")
@@ -913,9 +924,10 @@ Aggregate all results to 03_verification/verification_report.json with:
         stylist_llm = self.create_llm(self.SONNET)
         stylist = Agent(llm=stylist_llm, tools=[Tool(name=FileEditorTool.name)])
 
+        ws = LocalWorkspace(self.workspace)
         conv = Conversation(
             agent=stylist,
-            workspace=str(self.workspace)
+            workspace=ws,
         )
 
         # Load style guide

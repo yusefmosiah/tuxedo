@@ -16,7 +16,7 @@ from bs4 import BeautifulSoup
 from typing import Dict, Any, List, Optional
 from pathlib import Path
 
-from openhands.sdk import Agent, LLM, Conversation, Tool
+from openhands.sdk import Agent, LLM, Conversation, Tool, LocalWorkspace
 from openhands.tools.file_editor import FileEditorTool
 
 logger = logging.getLogger(__name__)
@@ -113,9 +113,10 @@ class VerificationEngine:
             tools=[] # No tools needed, pure context analysis
         )
 
+        ws = LocalWorkspace(self.workspace_dir)
         conv = Conversation(
             agent=verifier,
-            workspace=str(self.workspace_dir)
+            workspace=ws,
         )
 
         prompt = f"""You are a fact-checker verifying a claim against a source.
@@ -187,9 +188,10 @@ Respond with JSON ONLY:
                 llm=self.llm,
                 tools=[Tool(name=FileEditorTool.name)]
             )
+            ws = LocalWorkspace(self.workspace_dir)
             conv = Conversation(
                 agent=verifier,
-                workspace=str(self.workspace_dir)
+                workspace=ws,
             )
             conv.send_message(prompt_with_file)
             await loop.run_in_executor(None, conv.run)
