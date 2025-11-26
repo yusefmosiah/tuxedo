@@ -16,7 +16,8 @@ from typing import Optional, Dict, Any, List
 from pathlib import Path
 
 # OpenHands SDK imports
-from openhands.sdk import Agent, LLM, Conversation, Tool, LocalWorkspace
+from openhands.sdk import Agent, LLM, Conversation, Tool
+from openhands.workspace import DockerWorkspace
 from openhands.tools.file_editor import FileEditorTool
 from openhands.tools.terminal import TerminalTool
 
@@ -45,7 +46,7 @@ class GhostwriterPipeline:
 
     def __init__(
         self,
-        workspace_root: str = str(Path("ghostwriter_sessions").resolve()),
+        base_image: str = "nikolaik/python-nodejs:python3.12-nodejs22",
         aws_region: str = "us-east-1",
         num_researchers: int = 5,
         max_revision_iterations: int = 3,
@@ -55,13 +56,13 @@ class GhostwriterPipeline:
         Initialize Ghostwriter pipeline.
 
         Args:
-            workspace_root: Root directory for session workspaces
+            base_image: Docker image for the agent's environment
             aws_region: AWS region for Bedrock
             num_researchers: Number of parallel research agents (3-10)
             max_revision_iterations: Maximum revision iterations (1-3)
             verification_threshold: Minimum verification rate (0.0-1.0)
         """
-        self.workspace_root = Path(workspace_root)
+        self.base_image = base_image
         self.aws_region = aws_region
         self.num_researchers = num_researchers
         self.max_revision_iterations = max_revision_iterations
@@ -69,10 +70,7 @@ class GhostwriterPipeline:
 
         # Session tracking
         self.session_id: Optional[str] = None
-        self.workspace: Optional[Path] = None
-
-        # Create workspace root if needed
-        self.workspace_root.mkdir(parents=True, exist_ok=True)
+        self.workspace: Optional[DockerWorkspace] = None
 
         logger.info(f"Ghostwriter pipeline initialized (region: {aws_region})")
 
@@ -88,7 +86,11 @@ class GhostwriterPipeline:
         """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.session_id = f"session_{timestamp}"
-        self.workspace = self.workspace_root / self.session_id
+        self.workspace = DockerWorkspace(
+            base_image=self.base_image,
+            session_id=self.session_id,
+        )
+        self.workspace.start()
 
         # Create stage directories (hypothesis-driven architecture)
         stage_dirs = [
@@ -103,7 +105,7 @@ class GhostwriterPipeline:
         ]
 
         for dir_name in stage_dirs:
-            (self.workspace / dir_name).mkdir(parents=True, exist_ok=True)
+            self.workspace.execute(f"mkdir -p {dir_name}")
 
         # Save session metadata
         metadata = {
@@ -114,8 +116,8 @@ class GhostwriterPipeline:
             "verification_threshold": self.verification_threshold
         }
 
-        with open(self.workspace / "session_metadata.json", "w") as f:
-            json.dump(metadata, f, indent=2)
+        metadata_json = json.dumps(metadata, indent=2)
+        self.workspace.write("session_metadata.json", metadata_json)
 
         logger.info(f"Created session: {self.session_id}")
         return self.session_id
@@ -236,7 +238,7 @@ class GhostwriterPipeline:
 
         conv = Conversation(
             agent=former,
-            workspace=str(self.workspace)
+            workspace=self.workspace
         )
 
         # Load hypothesis former prompt
@@ -253,17 +255,17 @@ class GhostwriterPipeline:
         await loop.run_in_executor(None, conv.run)
 
         # Load generated hypotheses
-        hypotheses_path = self.workspace / "00_hypotheses" / "initial_hypotheses.json"
-        with open(hypotheses_path) as f:
-            hypotheses_data = json.load(f)
-            num_hypotheses = len(hypotheses_data.get("hypotheses", []))
+        hypotheses_path = "00_hypotheses/initial_hypotheses.json"
+        hypotheses_content = self.workspace.read(hypotheses_path)
+        hypotheses_data = json.loads(hypotheses_content)
+        num_hypotheses = len(hypotheses_data.get("hypotheses", []))
 
         print(f"✓ Complete ({num_hypotheses} hypotheses generated)")
 
         return {
             "stage": "hypotheses",
             "num_hypotheses": num_hypotheses,
-            "hypotheses_path": str(hypotheses_path)
+            "hypotheses_path": hypotheses_path
         }
 
     async def run_stage_2_experimental_design(self) -> Dict[str, Any]:
@@ -287,7 +289,7 @@ class GhostwriterPipeline:
 
         conv = Conversation(
             agent=designer,
-            workspace=str(self.workspace)
+            workspace=self.workspace
         )
 
         # Load experimental designer prompt
@@ -303,17 +305,17 @@ class GhostwriterPipeline:
         await loop.run_in_executor(None, conv.run)
 
         # Load search plan
-        search_plan_path = self.workspace / "01_experimental_design" / "search_plan.json"
-        with open(search_plan_path) as f:
-            search_plan = json.load(f)
-            total_searches = search_plan.get("total_searches", 0)
+        search_plan_path = "01_experimental_design/search_plan.json"
+        search_plan_content = self.workspace.read(search_plan_path)
+        search_plan = json.loads(search_plan_content)
+        total_searches = search_plan.get("total_searches", 0)
 
         print(f"✓ Complete ({total_searches} searches planned)")
 
         return {
             "stage": "experimental_design",
             "total_searches": total_searches,
-            "search_plan_path": str(search_plan_path)
+            "search_plan_path": search_plan_path
         }
 
     async def _run_single_hypothesis_researcher(
@@ -355,7 +357,7 @@ class GhostwriterPipeline:
 
         conv = Conversation(
             agent=researcher,
-            workspace=str(self.workspace)
+            workspace=self.workspace
         )
 
         # Load hypothesis researcher prompt
@@ -384,8 +386,8 @@ class GhostwriterPipeline:
             logger.warning(f"Researcher {researcher_id} (Hypothesis {hypothesis_id}) timed out after 300s")
             # We continue anyway, hoping the evidence file was saved
 
-        evidence_path = self.workspace / "02_evidence" / f"evidence_hypothesis_{hypothesis_id}.md"
-        return str(evidence_path)
+        evidence_path = f"02_evidence/evidence_hypothesis_{hypothesis_id}.md"
+        return evidence_path
 
     async def run_stage_3_experimentation(self) -> Dict[str, Any]:
         """
@@ -400,13 +402,13 @@ class GhostwriterPipeline:
         print("[Stage 3/8] Parallel Experimentation... ", end="", flush=True)
 
         # Load search plan
-        search_plan_path = self.workspace / "01_experimental_design" / "search_plan.json"
-        with open(search_plan_path) as f:
-            search_plan = json.load(f)
+        search_plan_path = "01_experimental_design/search_plan.json"
+        search_plan_content = self.workspace.read(search_plan_path)
+        search_plan = json.loads(search_plan_content)
 
         # Create evidence directory
-        evidence_dir = self.workspace / "02_evidence"
-        evidence_dir.mkdir(parents=True, exist_ok=True)
+        evidence_dir = "02_evidence"
+        self.workspace.execute(f"mkdir -p {evidence_dir}")
 
         # Run researchers in parallel - one per hypothesis
         tasks = []
@@ -423,7 +425,8 @@ class GhostwriterPipeline:
         evidence_paths = await asyncio.gather(*tasks)
 
         # Count evidence files
-        evidence_files = list(evidence_dir.glob("evidence_hypothesis_*.md"))
+        evidence_files_str = self.workspace.execute("ls 02_evidence/evidence_hypothesis_*.md")
+        evidence_files = evidence_files_str.split("\n") if evidence_files_str else []
         total_sources = len(evidence_files) * 20 * 4  # Rough estimate: files × max_results × searches
 
         print(f"✓ Complete (~{total_sources} sources, {len(evidence_files)} evidence files)")
@@ -431,7 +434,7 @@ class GhostwriterPipeline:
         return {
             "stage": "experimentation",
             "num_evidence_files": len(evidence_files),
-            "evidence_files": [str(f.name) for f in evidence_files]
+            "evidence_files": evidence_files
         }
 
     async def run_stage_4_update_certitudes(self) -> Dict[str, Any]:
@@ -455,7 +458,7 @@ class GhostwriterPipeline:
 
         conv = Conversation(
             agent=updater,
-            workspace=str(self.workspace)
+            workspace=self.workspace
         )
 
         # Load certitude updater prompt
@@ -471,10 +474,10 @@ class GhostwriterPipeline:
         await loop.run_in_executor(None, conv.run)
 
         # Load certitude updates
-        updates_path = self.workspace / "03_updated_hypotheses" / "certitude_updates.json"
-        with open(updates_path) as f:
-            updates = json.load(f)
-            summary = updates.get("summary", {})
+        updates_path = "03_updated_hypotheses/certitude_updates.json"
+        updates_content = self.workspace.read(updates_path)
+        updates = json.loads(updates_content)
+        summary = updates.get("summary", {})
 
         print(f"✓ Complete ({summary.get('well_supported', 0)} well-supported, "
               f"{summary.get('falsified', 0)} falsified)")
@@ -482,7 +485,7 @@ class GhostwriterPipeline:
         return {
             "stage": "certitude_updates",
             "summary": summary,
-            "updates_path": str(updates_path)
+            "updates_path": updates_path
         }
 
     async def run_stage_5_thesis_draft(self) -> Dict[str, Any]:
@@ -506,7 +509,7 @@ class GhostwriterPipeline:
 
         conv = Conversation(
             agent=drafter,
-            workspace=str(self.workspace)
+            workspace=self.workspace
         )
 
         # Load thesis drafter prompt
@@ -519,23 +522,23 @@ class GhostwriterPipeline:
         await loop.run_in_executor(None, conv.run)
 
         # Load draft and citations
-        draft_path = self.workspace / "04_draft" / "thesis_driven_draft.md"
-        citations_path = self.workspace / "04_draft" / "citations.json"
+        draft_path = "04_draft/thesis_driven_draft.md"
+        citations_path = "04_draft/citations.json"
 
-        with open(citations_path) as f:
-            citations_data = json.load(f)
-            num_citations = len(citations_data.get("citations", []))
+        citations_content = self.workspace.read(citations_path)
+        citations_data = json.loads(citations_content)
+        num_citations = len(citations_data.get("citations", []))
 
         # Get word count
-        with open(draft_path) as f:
-            word_count = len(f.read().split())
+        draft_content = self.workspace.read(draft_path)
+        word_count = len(draft_content.split())
 
         print(f"✓ Complete ({word_count} words, {num_citations} citations)")
 
         return {
             "stage": "thesis_draft",
-            "draft_path": str(draft_path),
-            "citations_path": str(citations_path),
+            "draft_path": draft_path,
+            "citations_path": citations_path,
             "word_count": word_count,
             "num_citations": num_citations
         }
@@ -568,13 +571,13 @@ class GhostwriterPipeline:
         )
 
         # Create dedicated workspace for this researcher
-        researcher_workspace = self.workspace / "00_research"
-        researcher_workspace.mkdir(parents=True, exist_ok=True)
+        researcher_workspace = "00_research"
+        self.workspace.execute(f"mkdir -p {researcher_workspace}")
 
         # Create conversation
         conv = Conversation(
             agent=researcher,
-            workspace=str(researcher_workspace)
+            workspace=self.workspace
         )
 
         # Load researcher prompt
@@ -588,7 +591,7 @@ class GhostwriterPipeline:
         message = f"""
 {researcher_prompt}
 
-Please save your research findings to a file named "source_{researcher_id}.md" in the current workspace.
+Please save your research findings to a file named "00_research/source_{researcher_id}.md" in the current workspace.
 """
 
         conv.send_message(message)
@@ -597,8 +600,8 @@ Please save your research findings to a file named "source_{researcher_id}.md" i
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, conv.run)
 
-        source_path = researcher_workspace / f"source_{researcher_id}.md"
-        return str(source_path)
+        source_path = f"{researcher_workspace}/source_{researcher_id}.md"
+        return source_path
 
     async def run_stage_1_research(self, topic: str) -> Dict[str, Any]:
         """
@@ -618,8 +621,8 @@ Please save your research findings to a file named "source_{researcher_id}.md" i
         logger.info(f"[Stage 1/8] Research (parallel Haiku × {self.num_researchers})")
 
         # Create research directory
-        research_dir = self.workspace / "00_research"
-        research_dir.mkdir(parents=True, exist_ok=True)
+        research_dir = "00_research"
+        self.workspace.execute(f"mkdir -p {research_dir}")
 
         # Run researchers in parallel
         tasks = [
@@ -630,14 +633,15 @@ Please save your research findings to a file named "source_{researcher_id}.md" i
         source_paths = await asyncio.gather(*tasks)
 
         # Check how many sources were created
-        sources = list(research_dir.glob("source_*.md"))
+        sources_str = self.workspace.execute("ls 00_research/source_*.md")
+        sources = sources_str.split("\n") if sources_str else []
 
         logger.info(f"Research complete: {len(sources)} sources gathered")
 
         return {
             "stage": "research",
             "num_sources": len(sources),
-            "sources": [str(s.name) for s in sources]
+            "sources": sources
         }
 
     async def run_stage_2_draft(self) -> Dict[str, Any]:
@@ -660,14 +664,14 @@ Please save your research findings to a file named "source_{researcher_id}.md" i
 
         conv = Conversation(
             agent=drafter,
-            workspace=str(self.workspace)
+            workspace=self.workspace
         )
 
         # Read research sources
-        research_dir = self.workspace / "00_research"
-        sources = sorted(research_dir.glob("source_*.md"))
+        sources_str = self.workspace.execute("ls 00_research/source_*.md")
+        sources = sorted(sources_str.split("\n")) if sources_str else []
         research_sources = "\n\n".join([
-            f"--- {s.name} ---\n{s.read_text()}"
+            f"--- {s} ---\n{self.workspace.read(s)}"
             for s in sources
         ])
 
@@ -679,13 +683,13 @@ Please save your research findings to a file named "source_{researcher_id}.md" i
         conv.send_message(drafter_prompt)
         conv.run()
 
-        draft_path = self.workspace / "01_draft" / "initial_draft.md"
+        draft_path = "01_draft/initial_draft.md"
 
         logger.info(f"Draft complete: {draft_path}")
 
         return {
             "stage": "draft",
-            "draft_path": str(draft_path)
+            "draft_path": draft_path
         }
 
     async def run_stage_3_extract(self) -> Dict[str, Any]:
@@ -708,7 +712,7 @@ Please save your research findings to a file named "source_{researcher_id}.md" i
 
         conv = Conversation(
             agent=extractor,
-            workspace=str(self.workspace)
+            workspace=self.workspace
         )
 
         extractor_prompt = self.load_prompt("extractor.txt")
@@ -716,21 +720,21 @@ Please save your research findings to a file named "source_{researcher_id}.md" i
         conv.send_message(extractor_prompt)
         conv.run()
 
-        claims_path = self.workspace / "02_extraction" / "atomic_claims.json"
-        citations_path = self.workspace / "02_extraction" / "citations.json"
+        claims_path = "02_extraction/atomic_claims.json"
+        citations_path = "02_extraction/citations.json"
 
         # Load and count claims
-        with open(claims_path) as f:
-            claims_data = json.load(f)
-            num_claims = len(claims_data.get("claims", []))
+        claims_content = self.workspace.read(claims_path)
+        claims_data = json.loads(claims_content)
+        num_claims = len(claims_data.get("claims", []))
 
         logger.info(f"Extraction complete: {num_claims} claims extracted")
 
         return {
             "stage": "extraction",
             "num_claims": num_claims,
-            "claims_path": str(claims_path),
-            "citations_path": str(citations_path)
+            "claims_path": claims_path,
+            "citations_path": citations_path
         }
 
     async def run_stage_4_verify(self) -> Dict[str, Any]:
@@ -758,7 +762,7 @@ Please save your research findings to a file named "source_{researcher_id}.md" i
 
         conv = Conversation(
             agent=verifier_coord,
-            workspace=str(self.workspace)
+            workspace=self.workspace
         )
 
         verifier_prompt = self.load_prompt("verifier.txt")
@@ -788,9 +792,9 @@ Aggregate all results to 03_verification/verification_report.json with:
         conv.run()
 
         # Load verification report
-        report_path = self.workspace / "03_verification" / "verification_report.json"
-        with open(report_path) as f:
-            report = json.load(f)
+        report_path = "03_verification/verification_report.json"
+        report_content = self.workspace.read(report_path)
+        report = json.loads(report_content)
 
         verification_rate = report.get("verification_rate", 0.0)
         threshold_met = report.get("threshold_met", False)
@@ -824,7 +828,7 @@ Aggregate all results to 03_verification/verification_report.json with:
 
         conv = Conversation(
             agent=critic,
-            workspace=str(self.workspace)
+            workspace=self.workspace
         )
 
         critic_prompt = self.load_prompt("critic.txt")
@@ -832,13 +836,13 @@ Aggregate all results to 03_verification/verification_report.json with:
         conv.send_message(critic_prompt)
         conv.run()
 
-        critique_path = self.workspace / "04_critique" / "critique.md"
+        critique_path = "04_critique/critique.md"
 
         logger.info(f"Critique complete: {critique_path}")
 
         return {
             "stage": "critique",
-            "critique_path": str(critique_path)
+            "critique_path": critique_path
         }
 
     async def run_stage_6_revise(self) -> Dict[str, Any]:
@@ -861,7 +865,7 @@ Aggregate all results to 03_verification/verification_report.json with:
 
         conv = Conversation(
             agent=reviser,
-            workspace=str(self.workspace)
+            workspace=self.workspace
         )
 
         reviser_prompt = self.load_prompt("reviser.txt")
@@ -869,13 +873,13 @@ Aggregate all results to 03_verification/verification_report.json with:
         conv.send_message(reviser_prompt)
         conv.run()
 
-        revised_draft_path = self.workspace / "05_revision" / "revised_draft.md"
+        revised_draft_path = "05_revision/revised_draft.md"
 
         logger.info(f"Revision complete: {revised_draft_path}")
 
         return {
             "stage": "revision",
-            "revised_draft_path": str(revised_draft_path)
+            "revised_draft_path": revised_draft_path
         }
 
     async def run_stage_7_reverify(self) -> Dict[str, Any]:
@@ -915,15 +919,15 @@ Aggregate all results to 03_verification/verification_report.json with:
 
         conv = Conversation(
             agent=stylist,
-            workspace=str(self.workspace)
+            workspace=self.workspace
         )
 
         # Load style guide
         style_guide_content = self.load_style_guide(style_guide)
 
         # Load revised draft
-        revised_draft_path = self.workspace / "05_revision" / "revised_draft.md"
-        revised_draft = revised_draft_path.read_text()
+        revised_draft_path = "05_revision/revised_draft.md"
+        revised_draft = self.workspace.read(revised_draft_path)
 
         stylist_prompt = self.load_prompt(
             "style_applicator.txt",
@@ -934,14 +938,14 @@ Aggregate all results to 03_verification/verification_report.json with:
         conv.send_message(stylist_prompt)
         conv.run()
 
-        final_report_path = self.workspace / "07_style" / "final_report.md"
+        final_report_path = "07_style/final_report.md"
 
         logger.info(f"Styling complete: {final_report_path}")
 
         return {
             "stage": "style",
             "style_guide": style_guide,
-            "final_report_path": str(final_report_path)
+            "final_report_path": final_report_path
         }
 
     async def run_full_pipeline(
@@ -1003,11 +1007,11 @@ Aggregate all results to 03_verification/verification_report.json with:
             verifier_llm = self.create_llm(self.HAIKU)
             engine = VerificationEngine(verifier_llm, self.workspace)
 
-            claims_path = self.workspace / "02_extraction" / "atomic_claims.json"
-            report_path = self.workspace / "03_verification" / "verification_report.json"
+            claims_path = "02_extraction/atomic_claims.json"
+            report_path = "03_verification/verification_report.json"
 
             # If claims file doesn't exist (e.g. skipped extraction), create dummy
-            if not claims_path.exists():
+            if not self.workspace.path_exists(claims_path):
                 logger.warning("No claims file found, skipping verification")
                 verification_rate = 1.0 # Assume perfect if nothing to verify
                 report = {"verification_rate": 1.0, "verified_claims": 0, "total_claims": 0}
@@ -1021,7 +1025,7 @@ Aggregate all results to 03_verification/verification_report.json with:
                 "stage": "verification",
                 "verification_rate": verification_rate,
                 "threshold_met": verification_rate >= self.verification_threshold,
-                "report_path": str(report_path)
+                "report_path": report_path
             }
 
             # Stage 7: Revision (only if needed)
@@ -1038,23 +1042,22 @@ Aggregate all results to 03_verification/verification_report.json with:
             print(f"[Stage 8/8] Style & Polish ({style_guide})... ", end="", flush=True)
 
             # Copy thesis-driven draft to final location with style applied
-            draft_path = self.workspace / "04_draft" / "thesis_driven_draft.md"
-            final_path = self.workspace / "07_final" / "final_report.md"
+            draft_path = "04_draft/thesis_driven_draft.md"
+            final_path = "07_final/final_report.md"
 
-            if draft_path.exists():
-                import shutil
-                shutil.copy(draft_path, final_path)
+            if self.workspace.path_exists(draft_path):
+                draft_content = self.workspace.read(draft_path)
+                self.workspace.write(final_path, draft_content)
 
                 # Get word count
-                with open(final_path) as f:
-                    word_count = len(f.read().split())
+                word_count = len(draft_content.split())
 
                 print(f"✓ Complete ({word_count} words)")
 
                 results["stages"]["style"] = {
                     "stage": "style",
                     "style_guide": style_guide,
-                    "final_report_path": str(final_path),
+                    "final_report_path": final_path,
                     "word_count": word_count
                 }
             else:
@@ -1066,7 +1069,7 @@ Aggregate all results to 03_verification/verification_report.json with:
                 }
 
             # Final results
-            final_report_path = str(final_path)
+            final_report_path = final_path
 
             results["final_report"] = final_report_path
             results["verification_rate"] = verification_rate
