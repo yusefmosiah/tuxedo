@@ -18,6 +18,8 @@ import sys
 import logging
 from pathlib import Path
 from datetime import datetime
+import pytest
+import os
 
 # Setup logging - only show warnings and errors
 logging.basicConfig(
@@ -29,6 +31,8 @@ logger = logging.getLogger(__name__)
 from agent.ghostwriter.pipeline import GhostwriterPipeline
 
 
+@pytest.mark.asyncio
+@pytest.mark.skipif(not os.getenv("AWS_ACCESS_KEY_ID"), reason="AWS credentials not found")
 async def test_pipeline():
     """Test the full Ghostwriter pipeline."""
 
@@ -140,34 +144,8 @@ async def test_pipeline():
                     print(f"  ... and {len(sources) - 3} more")
                 print()
 
-        if result.get('success'):
-            print("=" * 80)
-            print("✅ PIPELINE TEST PASSED")
-            print("=" * 80)
-            return True
-        else:
-            print("=" * 80)
-            print("❌ PIPELINE TEST FAILED")
-            print(f"Error: {result.get('error', 'Unknown error')}")
-            print("=" * 80)
-            return False
+        assert result.get('success'), f"Pipeline failed: {result.get('error', 'Unknown error')}"
 
     except Exception as e:
         logger.exception("Pipeline test failed with exception")
-        print()
-        print("=" * 80)
-        print("❌ PIPELINE TEST FAILED WITH EXCEPTION")
-        print("=" * 80)
-        print(f"Error: {str(e)}")
-        print()
-        return False
-
-
-async def main():
-    """Main test entry point."""
-    success = await test_pipeline()
-    sys.exit(0 if success else 1)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+        pytest.fail(f"Test failed with exception: {e}")

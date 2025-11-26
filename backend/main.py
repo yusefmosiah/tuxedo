@@ -41,10 +41,11 @@ logger.info(f"tempfile.gettempdir(): {tempfile.gettempdir()}")
 
 # Create app at module level for Docker/uvicorn compatibility
 from app import create_app
-app = create_app()
+app = None
 
 def main():
     """Main entry point for the application"""
+    global app
     try:
         # Import app factory
         from app import create_app
@@ -86,3 +87,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+else:
+    # Create app for uvicorn/gunicorn
+    app = create_app()

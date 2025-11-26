@@ -9,6 +9,8 @@ import asyncio
 import sys
 import logging
 from pathlib import Path
+import pytest
+import os
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -24,6 +26,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.asyncio
+@pytest.mark.skipif(not os.getenv("AWS_ACCESS_KEY_ID"), reason="AWS credentials not found")
 async def test_ghostwriter_pipeline():
     """
     Test the Ghostwriter pipeline with a DeFi research topic.
@@ -69,55 +73,40 @@ async def test_ghostwriter_pipeline():
         logger.info("RESULTS")
         logger.info("=" * 80)
 
-        if result.get("success"):
-            logger.info("✅ Pipeline completed successfully!")
-            logger.info(f"\nSession ID: {result['session_id']}")
-            logger.info(f"Final Report: {result.get('final_report', 'N/A')}")
-            logger.info(f"Verification Rate: {result.get('verification_rate', 0):.1%}")
+        assert result.get("success"), f"Pipeline failed: {result.get('error', 'Unknown error')}"
 
-            # Display stage breakdown
-            logger.info("\n--- Stage Results ---")
-            stages = result.get("stages", {})
+        logger.info("✅ Pipeline completed successfully!")
+        logger.info(f"\nSession ID: {result['session_id']}")
+        logger.info(f"Final Report: {result.get('final_report', 'N/A')}")
+        logger.info(f"Verification Rate: {result.get('verification_rate', 0):.1%}")
 
-            if "research" in stages:
-                logger.info(f"Research: {stages['research']['num_sources']} sources gathered")
+        # Display stage breakdown
+        logger.info("\n--- Stage Results ---")
+        stages = result.get("stages", {})
 
-            if "extract" in stages:
-                logger.info(f"Extraction: {stages['extract']['num_claims']} claims extracted")
+        if "research" in stages:
+            logger.info(f"Research: {stages['research']['num_sources']} sources gathered")
 
-            if "verify" in stages:
-                verify = stages['verify']['report']
-                logger.info(
-                    f"Verification: {verify['verified_claims']}/{verify['total_claims']} "
-                    f"claims verified ({verify['verification_rate']:.1%})"
-                )
+        if "extract" in stages:
+            logger.info(f"Extraction: {stages['extract']['num_claims']} claims extracted")
 
-            # Read and display final report preview
-            final_report_path = Path(result.get('final_report', ''))
-            if final_report_path.exists():
-                logger.info("\n--- Final Report Preview (first 500 chars) ---")
-                report_content = final_report_path.read_text()
-                logger.info(report_content[:500] + "...\n")
+        if "verify" in stages:
+            verify = stages['verify']['report']
+            logger.info(
+                f"Verification: {verify['verified_claims']}/{verify['total_claims']} "
+                f"claims verified ({verify['verification_rate']:.1%})"
+            )
 
-                logger.info(f"Full report available at: {final_report_path}")
-                logger.info(f"Report length: {len(report_content)} characters")
+        # Read and display final report preview
+        final_report_path = Path(result.get('final_report', ''))
+        if final_report_path.exists():
+            logger.info("\n--- Final Report Preview (first 500 chars) ---")
+            report_content = final_report_path.read_text()
+            logger.info(report_content[:500] + "...\n")
 
-        else:
-            logger.error(f"❌ Pipeline failed: {result.get('error', 'Unknown error')}")
-            return 1
-
-        return 0
+            logger.info(f"Full report available at: {final_report_path}")
+            logger.info(f"Report length: {len(report_content)} characters")
 
     except Exception as e:
         logger.error(f"❌ Test failed with exception: {e}", exc_info=True)
-        return 1
-
-
-def main():
-    """Run the test."""
-    exit_code = asyncio.run(test_ghostwriter_pipeline())
-    sys.exit(exit_code)
-
-
-if __name__ == "__main__":
-    main()
+        pytest.fail(f"Test failed with exception: {e}")
