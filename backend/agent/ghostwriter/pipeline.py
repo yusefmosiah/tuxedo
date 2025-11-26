@@ -17,7 +17,7 @@ from pathlib import Path
 
 # OpenHands SDK imports
 from openhands.sdk import Agent, LLM, Conversation, Tool
-from openhands.workspace import DockerWorkspace
+from openhands.workspace import LocalWorkspace
 from openhands.tools.file_editor import FileEditorTool
 from openhands.tools.terminal import TerminalTool
 
@@ -46,33 +46,33 @@ class GhostwriterPipeline:
 
     def __init__(
         self,
-        base_image: str = "nikolaik/python-nodejs:python3.12-nodejs22",
         aws_region: str = "us-east-1",
         num_researchers: int = 5,
         max_revision_iterations: int = 3,
-        verification_threshold: float = 0.90
+        verification_threshold: float = 0.90,
+        user_id: Optional[str] = None
     ):
         """
         Initialize Ghostwriter pipeline.
 
         Args:
-            base_image: Docker image for the agent's environment
             aws_region: AWS region for Bedrock
             num_researchers: Number of parallel research agents (3-10)
             max_revision_iterations: Maximum revision iterations (1-3)
             verification_threshold: Minimum verification rate (0.0-1.0)
+            user_id: User identifier for multi-tenant workspace isolation
         """
-        self.base_image = base_image
         self.aws_region = aws_region
         self.num_researchers = num_researchers
         self.max_revision_iterations = max_revision_iterations
         self.verification_threshold = verification_threshold
+        self.user_id = user_id or "default"
 
         # Session tracking
         self.session_id: Optional[str] = None
-        self.workspace: Optional[DockerWorkspace] = None
+        self.workspace: Optional[LocalWorkspace] = None
 
-        logger.info(f"Ghostwriter pipeline initialized (region: {aws_region})")
+        logger.info(f"Ghostwriter pipeline initialized (region: {aws_region}, user: {self.user_id})")
 
     def create_session(self, topic: str) -> str:
         """
@@ -84,13 +84,22 @@ class GhostwriterPipeline:
         Returns:
             Session ID
         """
+        from backend.utils.path_manager import PersistentPathManager
+
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.session_id = f"session_{timestamp}"
-        self.workspace = DockerWorkspace(
-            base_image=self.base_image,
-            session_id=self.session_id,
+
+        # Get persistent workspace directory
+        workspace_dir = PersistentPathManager.workspace_dir(
+            user_id=self.user_id,
+            session_id=self.session_id
         )
-        self.workspace.start()
+
+        # Create LocalWorkspace (instant, no Docker container needed)
+        # The Phala CVM itself provides the sandbox isolation
+        self.workspace = LocalWorkspace(
+            base_dir=str(workspace_dir)
+        )
 
         # Create stage directories (hypothesis-driven architecture)
         stage_dirs = [
@@ -105,21 +114,25 @@ class GhostwriterPipeline:
         ]
 
         for dir_name in stage_dirs:
-            self.workspace.execute(f"mkdir -p {dir_name}")
+            stage_path = workspace_dir / dir_name
+            stage_path.mkdir(parents=True, exist_ok=True)
 
         # Save session metadata
         metadata = {
             "session_id": self.session_id,
+            "user_id": self.user_id,
             "topic": topic,
             "created_at": timestamp,
             "num_researchers": self.num_researchers,
-            "verification_threshold": self.verification_threshold
+            "verification_threshold": self.verification_threshold,
+            "workspace_dir": str(workspace_dir)
         }
 
         metadata_json = json.dumps(metadata, indent=2)
-        self.workspace.write("session_metadata.json", metadata_json)
+        metadata_path = workspace_dir / "session_metadata.json"
+        metadata_path.write_text(metadata_json)
 
-        logger.info(f"Created session: {self.session_id}")
+        logger.info(f"Created session: {self.session_id} at {workspace_dir}")
         return self.session_id
 
     def create_llm(self, model: str) -> LLM:
@@ -1098,10 +1111,10 @@ Aggregate all results to 03_verification/verification_report.json with:
 async def main():
     """Example usage of Ghostwriter pipeline."""
     pipeline = GhostwriterPipeline(
-        workspace_root="/workspace/ghostwriter_sessions",
         aws_region="us-east-1",
         num_researchers=5,
-        max_revision_iterations=2
+        max_revision_iterations=2,
+        user_id="example_user"
     )
 
     result = await pipeline.run_full_pipeline(
