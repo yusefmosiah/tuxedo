@@ -128,7 +128,7 @@ A researcher with $0 deposited who publishes breakthrough insights earns more CH
 **How Acquired**:
 ```
 Your Article Gets Cited
-  ├── Another user's Vibewriter agent references your work
+  ├── Another user's agent references your work
   ├── OR: Another researcher manually cites you
   ├── Treasury pays you dynamically-priced USDC
   └── You can withdraw to bank account
@@ -227,21 +227,22 @@ runtime = await RemoteRuntimeFactory.create(
     encrypted_volume="s3://choir-workspaces/alice_123/"
 )
 
-# 3. Run Vibewriter agent (8-stage pipeline)
-agent = VibewriterAgent(runtime)
-await agent.research(topic="DeFi yield farming Base vs Arbitrum")
+# 3. Run agent with Choir tools (autonomous, not a pipeline)
+agent = ChoirAgent(runtime, user_id=alice.id)
+await agent.run("Research DeFi yield farming on Base vs Arbitrum. Write a comprehensive article.")
 
-# Agent actions (hidden from Alice):
+# Agent actions (Alice sees in OpenHands UI):
 # ├── Web search (5 sources)
-# ├── Install citation-validator
-# ├── Draft 1800-word report
-# ├── Verify citations (5/5 valid)
-# ├── Save to /workspace/drafts/defi_report_001.md
-# └── Return to Alice
+# ├── pip install citation-validator
+# ├── Write verification script
+# ├── Draft 1800-word report in /workspace/draft.md
+# ├── Run verification script (5/5 citations valid)
+# └── Agent finishes
 
-# 4. Alice sees clean UI
-# "Research complete. 1,847 words. 5 verified citations."
-# [Edit Draft] [Publish for 100 CHIP]
+# 4. Alice sees OpenHands terminal output + draft file
+# Terminal shows: "Draft saved to /workspace/draft.md"
+# Publish button appears in UI
+# [Publish for 100 CHIP]
 ```
 
 **Cost**: 50 compute credits (infrastructure)
@@ -289,7 +290,7 @@ choir_knowledge_base.add(article_id, alice.article)
 #### Month 2-6: Citations Roll In
 
 ```python
-# Other users' Vibewriter agents cite Alice's work
+# Other users' agents cite Alice's work
 # (or human researchers cite it manually)
 
 citations = [
@@ -651,7 +652,7 @@ Month 36: Average novelty score = 35
    └── Earns 180 CHIP (net +80)
 
 4. Article enters citation graph
-   ├── Vibewriter agents cite it (automatic)
+   ├── Other agents cite it (automatic via cite_article tool)
    ├── Human researchers cite it (manual)
    └── Treasury pays USDC per citation
 
