@@ -46,16 +46,25 @@ git remote add origin git@github.com:yusefmosiah/jazzhands.git
 git push -u origin main
 ```
 
-### Hour 3-4: Remote Runtime Integration
+### Hour 3-4: Remote Runtime Integration (Modular Architecture)
+
+**Requirement**: Architect for modularity to support future migration to self-hosted ERA.
 
 ```python
+# choir/runtime/base.py
+class ChoirRuntime(ABC):
+    @abstractmethod
+    async def connect(self): ...
+    @abstractmethod
+    async def run(self, action): ...
+
 # choir/runtime/runloop.py
-
 from openhands.runtime.impl.remote import RemoteRuntime
+from .base import ChoirRuntime
 
-class ChoirRuntime(RemoteRuntime):
+class RunLoopChoirRuntime(RemoteRuntime, ChoirRuntime):
     """
-    Extended RemoteRuntime with:
+    RunLoop implementation of ChoirRuntime.
     - User-specific workspace mounting
     - Cost tracking
     - Suspend/resume support
@@ -805,7 +814,11 @@ flyctl secrets set SUI_RPC_URL=xxx
 
 **Week 2**: Polish UX, add onboarding, invite first users
 **Week 3**: Optimize novelty scoring, tune CHIP rewards
-**Week 4**: Add revision markets, improve citation detection
+**Week 4**: **Refactor Step: ERA Migration**
+   - Goal: Infrastructure Sovereignty (Self-Hosted)
+   - Action: Implement `EraRuntime` adhering to `ChoirRuntime` interface
+   - Benefit: Eliminate SaaS costs, gain full control ("no repercussions")
+   - Reference: `docs/RUNTIME_ARCH_ANALYSIS.md`
 **Month 2+**: Mobile app, TEE, advanced features
 
 ---
