@@ -1,100 +1,154 @@
-# Vibewriter Architecture Update: Deep Agents, MicroVMs, and NATS JetStream
+# Vibewriter Architecture Update: Unified Deep Agent & Skills
 
-**Author:** Manus AI
-**Date:** November 28, 2025
+**Date:** 2025-05-15
+**Status:** Approved for Implementation
 
-## Executive Summary: The Strategic Pivot
+## Executive Summary
 
-The core of the `tuxedo` project's architecture is pivoting from a general-purpose agent framework (the former `jazzhands`/`openhands` fork) to a highly specialized, secure, and autonomous agent built on **LangChain Deep Agents** and isolated within **MicroVMs**. This shift is driven by the need for a **financial delegate** agent that requires hardware-level security and complex, hierarchical planning capabilities. The data infrastructure is being refined with **NATS JetStream** to provide a high-performance, persistent, and secure backbone for agent state and real-time economic signaling.
+We are consolidating the "Code Tuxedo Agent" (DeFi/Stellar) and "Ghostwriter" (Research/Writing) into a single, unified **Deep Agent** named **Vibewriter**. This agent operates within a secure **MicroVM Sandbox** and utilizes a new capability paradigm called **Skills**.
 
-The LangChain Deep Agent *is* the core agent, and the **Vibewriter** is the set of skills, tools, and specialized knowledge that define its function. This unified architecture simplifies the deployment model and ensures the core agent is inherently capable of the Vibewriter's secure, stateful, and economically-integrated research and writing experience.
+Previously, the architecture relied on a complex chain of `Tuxedo -> MCP -> Ghostwriter`. This introduced latency, fragility in JSON schema handoffs, and context loss. The new architecture flattens this into a single agent loop that has "full computer control" of its sandbox, allowing it to read documentation and execute scripts—just like a human engineer.
 
-| Component | Previous State (Vibewriter Fork) | New State (Vibewriter Deep Agent) | Justification |
-| :--- | :--- | :--- | :--- |
-| **Agent Core** | Traditional LangChain Agent/Tool-Calling Loop | **LangChain Deep Agent** | Enables hierarchical planning, long-term memory, and complex, multi-step tasks [1]. |
-| **Sandbox** | Docker Container / Remote Runtime | **MicroVM (Firecracker/ERA)** | Provides hardware-level isolation, essential for protecting the agent's financial keys and assets from container escape [2] [3]. |
-| **Filesystem** | Ephemeral or S3-backed Volume | **Custom `SandboxBackendProtocol`** | Allows integration of the MicroVM's filesystem with the Deep Agent's tools, enabling full computer control and persistent state [1] [4]. |
-| **Data Backbone** | Standard Message Queue (Implied) | **NATS with JetStream** | Offers persistent, high-speed messaging for agent-to-agent communication and state storage, overcoming the speed/persistence trade-off [5] [6]. |
-| **Agent Name** | Ghostwriter | **Vibewriter** | The Deep Agent *is* the Vibewriter. The name now refers to the agent's complete set of capabilities and tools. |},{find:
+## The "Skill" Paradigm
 
-## I. LangChain Deep Agents: The New Agent Core
+A **Skill** is defined not as a function schema (MCP/OpenAI Tool), but as **Docs + Scripts** residing in the sandbox.
 
-LangChain Deep Agents represent a significant evolution in agent architecture, moving beyond simple single-step tool-calling loops. The architecture is modular, built on a middleware pattern, and is ideal for the complex, long-running research tasks required by the Vibewriter.
+### Definition
+A Skill consists of:
+1.  **Documentation (`README.md`):** High-level instructions explaining *how* to use the skill, its parameters, and its expected output.
+2.  **Scripts (`scripts/*.py`):** Robust, standalone Python or Bash scripts that perform the actual logic.
 
-### A. Core Capabilities
+### Interaction Model
+Instead of the LLM formulating a JSON object to match a strict schema, the LLM:
+1.  **Reads** the `skills/<skill_name>/README.md`.
+2.  **Formulates** a bash command to run the script (e.g., `python skills/research/run.py "DeFi Yields" --depth 2`).
+3.  **Executes** the command in the sandbox.
+4.  **Reads** the output (stdout or a generated file).
 
-Deep Agents are characterized by four key pillars [1]:
-1.  **Hierarchical Planning:** They include a built-in `write_todos` tool, allowing the agent to break down a complex prompt into a sequence of discrete, trackable steps. This is crucial for the Vibewriter's role as a financial delegate, which must manage research, citation, and publishing autonomously.
-2.  **Filesystem Backend:** The agent is equipped with a virtual filesystem, which is accessed via tools like `ls`, `read_file`, `write_file`, `edit_file`, `glob`, and `grep`. This provides the "full computer control" required to manage research artifacts, drafts, and user keys within the isolated environment.
-3.  **Subagents:** The architecture supports spawning specialized subagents, enabling a modular approach where a planning agent delegates tasks to a research agent, a verification agent, and a publishing agent.
-4.  **Long-Term Memory:** Deep Agents are designed to maintain state and context across long-running sessions, which is a prerequisite for the Vibewriter's multi-hour research and writing workflows.
+### Benefits
+*   **Resilience:** Scripts are easier to test and debug than prompt-dependent function calls.
+*   **Extensibility:** Adding a new skill is just "dropping files" into the sandbox. No server restart or schema update required.
+*   **Agentic Native:** Aligns with "Agents as Engineers" who use tools via CLI.
 
-### B. Custom Sandbox Integration
+## Proposed Architecture
 
-The user's requirement to connect a self-hosted sandbox (the MicroVM) to the Deep Agent is achieved by implementing the **`SandboxBackendProtocol`** [4].
+### 1. The Unified Deep Agent (Vibewriter)
+The Vibewriter is a single LangGraph/DeepAgents instance. It does not "call" other agents; it *becomes* them by loading the appropriate context/skills.
 
-The Deep Agent's filesystem tools (e.g., `ls`, `write_file`) operate through a pluggable backend. To integrate the MicroVM, the `tuxedo` project must create a custom backend that translates the Deep Agent's filesystem commands into secure remote procedure calls (RPCs) to the MicroVM's execution environment.
+*   **Runtime:** Firecracker MicroVM (via ERA/Sandbox Protocol).
+*   **Interface:** `run_bash_command`, `read_file`, `write_file`.
+*   **Memory:** NATS JetStream (for long-term state).
 
-The custom backend will need to implement the following core methods from the `BackendProtocol` [4]:
+### 2. Directory Structure (In Sandbox)
 
-| Method | Purpose | Implementation Strategy |
-| :--- | :--- | :--- |
-| `ls_info(path)` | List files and directories. | Translate to a shell command (`ls -l`) executed inside the MicroVM, then parse the output. |
-| `read(file_path)` | Read file content. | Translate to a shell command (`cat`) executed inside the MicroVM. |
-| `write(file_path, content)` | Write new file content. | Translate to a secure file transfer or a shell command (`echo "content" > file`) inside the MicroVM. |
-| `grep_raw(pattern, path)` | Search file content using regex. | Translate to a shell command (`grep -r`) executed inside the MicroVM. |
+```text
+/home/agent/
+├── skills/
+│   ├── research/              <-- Former Ghostwriter
+│   │   ├── README.md          <-- "How to research topics"
+│   │   ├── run.py             <-- The orchestration script
+│   │   └── web_search.py      <-- Helper tool
+│   ├── stellar/               <-- Former Tuxedo/Stellar Tools
+│   │   ├── README.md          <-- "How to trade/check balance"
+│   │   ├── check_balance.py
+│   │   └── trade.py
+│   └── writing/
+│       ├── README.md
+│       └── draft.py
+└── workspace/                 <-- User artifacts
+```
 
-This custom backend acts as the **"runloop connector"** mentioned by the user, securely bridging the Deep Agent's logic with the isolated execution environment.
+## Migration Implementation
 
-## II. MicroVMs: The Secure Execution Environment
+### Step 1: Porting Ghostwriter to a Skill
 
-The strategic decision to use MicroVMs is non-negotiable for a financial delegate agent. MicroVMs provide hardware-enforced isolation, which is necessary to protect the agent's signing authority over real assets [2].
+**`skills/research/README.md`**
+```markdown
+# Research Skill
 
-### A. Firecracker and ERA
+Use this skill to research complex topics using web search and synthesis.
 
-**Firecracker** is the industry standard for secure, low-overhead virtualization, developed by AWS. It is purpose-built for creating and managing small virtual machines with minimal overhead, making it ideal for the rapid spin-up and tear-down required for multi-tenant AI agents [3].
+## Usage
+Run the python script with the topic and optional depth.
 
-**ERA (BinSquare/ERA)** is a highly relevant open-source project specifically designed for sandboxing AI-generated code using MicroVMs [7]. ERA is an orchestration layer that sits on top of a core hypervisor like Firecracker.
+```bash
+python skills/research/run.py --topic "Future of Stellar DeFi" --depth 2 --output "report.md"
+```
 
-The most likely architecture for the Vibewriter is a combination:
+## Outputs
+- `report.md`: The final synthesized report.
+- `sources.json`: List of cited sources.
+```
 
-1.  **Hypervisor:** **Firecracker** provides the secure, minimal kernel-level isolation.
-2.  **Orchestrator:** **ERA** (or a custom equivalent) manages the lifecycle of the MicroVMs, handling provisioning, networking, and the secure RPC layer that the custom `SandboxBackendProtocol` will connect to.
+**`skills/research/run.py`**
+```python
+import argparse
+from vibewriter.tools import web_search  # Shared internal lib
 
-This approach addresses the user's need for a secure sandbox backend while leveraging cutting-edge open-source tools.
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--topic", required=True)
+    parser.add_argument("--depth", type=int, default=1)
+    parser.add_argument("--output", default="report.md")
+    args = parser.parse_args()
 
-## III. NATS JetStream and Object Storage
+    print(f"Starting research on: {args.topic}")
+    # ... logic from old ghostwriter pipeline ...
 
-The data infrastructure must support both the high-speed, real-time communication of the Choir protocol and the long-term persistence of agent state and research artifacts. **NATS JetStream** is the ideal solution.
+    with open(args.output, "w") as f:
+        f.write("# Research Report\n...")
 
-### A. JetStream for Agent State Persistence
+if __name__ == "__main__":
+    main()
+```
 
-JetStream is the built-in persistence engine for NATS, providing guaranteed, at-least-once message delivery and storage [5].
+### Step 2: Porting Stellar Tools to a Skill
 
-*   **Agent Memory:** The Deep Agent's long-term memory and state (e.g., the `write_todos` plan, intermediate results) can be modeled as messages in a JetStream **Stream**. This ensures that if a MicroVM is suspended or crashes, the agent can resume its work exactly where it left off by replaying the stream.
-*   **Decoupling:** JetStream decouples the agent's logic from the persistence layer, making the system more resilient and scalable.
+**`skills/stellar/README.md`**
+```markdown
+# Stellar DeFi Skill
 
-### B. Object Store for File Persistence
+Use this skill to interact with the Stellar blockchain.
 
-The user's research artifacts (drafts, evidence, final reports) are too large to store efficiently within the JetStream message payload limits. NATS addresses this with its **Object Store** feature [6].
+## Commands
 
-*   **NATS Object Store:** This feature implements a chunking mechanism, allowing files of any size to be stored and retrieved by associating them with a unique key. It is designed to be a high-performance, S3-like interface built directly into NATS.
-*   **Integration with Object Store:** The Vibewriter's custom `SandboxBackendProtocol` should be designed to use the NATS Object Store for all large file operations (`write_file`, `read_file`). This keeps the entire data plane within the NATS ecosystem, simplifying infrastructure and leveraging NATS's security and performance features.
+### Check Balance
+```bash
+python skills/stellar/balance.py --account <ACCOUNT_ID>
+```
 
-This architecture eliminates the need for a separate S3 or Postgres implementation for file storage, as the NATS Object Store provides the necessary functionality with a unified API.
+### Execute Trade
+```bash
+python skills/stellar/trade.py --buy USDC --sell XLM --amount 100
+```
+```
+
+## Implementation Plan
+
+1.  **Create `backend/vibewriter/`**: This will house the new Deep Agent logic.
+2.  **Create `backend/skills/`**: Source of truth for skills. These will be copied into the Sandbox at runtime.
+3.  **Refactor Ghostwriter**: Move logic from `backend/agent/ghostwriter/` to `backend/skills/research/`.
+4.  **Refactor Stellar Tools**: Move logic from `backend/stellar_tools.py` to `backend/skills/stellar/`.
+5.  **Update Agent System Prompt**: Teach the agent to look in `skills/` for capabilities.
+
+## Code Snippet: Agent System Prompt
+
+```python
+SYSTEM_PROMPT = """
+You are Vibewriter, an autonomous AI researcher and DeFi delegate.
+You run inside a secure sandbox with full terminal access.
+
+Your capabilities are defined as "Skills" located in the `/home/agent/skills/` directory.
+
+To learn how to do something:
+1. List the skills directory: `ls -F /home/agent/skills/`
+2. Read the instructions for a specific skill: `cat /home/agent/skills/<skill_name>/README.md`
+3. Execute the skill using the command line as instructed.
+
+DO NOT hallucinate commands. Always read the README.md first.
+"""
+```
 
 ## Conclusion
 
-The new **Vibewriter** architecture is a robust, production-ready design that meets the stringent security and functional requirements of the `tuxedo` project. By combining the hierarchical planning of **LangChain Deep Agents**, the hardware-level isolation of **MicroVMs**, and the persistent, high-speed data backbone of **NATS JetStream**, the project is well-positioned to implement the secure, autonomous financial delegate agent. The next steps should focus on implementing the custom `SandboxBackendProtocol` to bridge the Deep Agent with the MicroVM orchestrator.
-
-***
-
-## References
-
-[1] LangChain. *Deep Agents*. [Online]. Available: https://blog.langchain.com/deep-agents/
-[2] Provided Document. *tuxedo_infrastructure_v2.md*. Local Path: `/home/ubuntu/upload/tuxedo_infrastructure_v2.md`
-[3] firecracker-microvm. *Firecracker: Secure and fast microVMs*. [Online]. Available: https://github.com/firecracker-microvm/firecracker
-[4] LangChain. *Backends - Docs by LangChain*. [Online]. Available: https://docs.langchain.com/oss/python/deepagents/backends
-[5] NATS. *JetStream - NATS Docs*. [Online]. Available: https://docs.nats.io/nats-concepts/jetstream
-[6] NATS. *Object Store - NATS Docs*. [Online]. Available: https://docs.nats.io/nats-concepts/jetstream/obj_store
-[7] BinSquare. *ERA: Open source local sandboxing for running AI generated code*. [Online]. Available: https://github.com/BinSquare/ERA
+This architecture removes the "Tuxedo vs Ghostwriter" distinction. There is only **Vibewriter**, and it picks up the "Research Skill" or "Stellar Skill" as needed. This simplifies the stack, improves reliability, and leverages the full power of the sandbox environment.
