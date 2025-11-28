@@ -13,6 +13,8 @@ from deepagents.middleware.patch_tool_calls import PatchToolCallsMiddleware
 from .runloop_backend import RunloopBackend
 from .subagents.researcher import get_researcher_agent
 from .subagents.writer import get_writer_agent
+from .subagents.ghostwriter import get_ghostwriter_agent
+from .tools import get_vibewriter_tools
 
 class VibewriterAgent:
     """Vibewriter Deep Agent using Runloop backend and manual subagents."""
@@ -45,6 +47,7 @@ class VibewriterAgent:
         # Initialize subagents
         self.researcher = self._create_subagent(get_researcher_agent())
         self.writer = self._create_subagent(get_writer_agent())
+        self.ghostwriter = self._create_subagent(get_ghostwriter_agent())
 
         # Tools setup
         self.tools = self._setup_tools()
@@ -67,8 +70,9 @@ class VibewriterAgent:
         system_prompt = (
             "You are Vibewriter, a financial delegate agent. You have access to a secure sandbox environment.\n"
             "You can list, read, write files and execute commands.\n"
-            "You also have specialized sub-agents: 'research_task' and 'writing_task'.\n"
-            "Delegate complex research or writing tasks to them.\n"
+            "You also have specialized sub-agents: 'research_task', 'writing_task', 'ghostwriter_task'.\n"
+            "You have tools to manage Stellar accounts: 'agent_create_account', 'agent_list_accounts', 'agent_get_account_info'.\n"
+            "Delegate complex research or writing tasks to sub-agents.\n"
             "Always verify your actions."
         )
 
@@ -146,7 +150,20 @@ class VibewriterAgent:
             except Exception as e:
                 return f"Error in writer: {e}"
 
-        return [ls, read_file, write_file, execute, research_task, writing_task]
+        @tool
+        def ghostwriter_task(description: str) -> str:
+            """Delegate a hypothesis formation or revision task to the Ghostwriter agent.
+            Use this for creating or updating research hypotheses.
+            """
+            try:
+                result = self.ghostwriter.invoke({"messages": [HumanMessage(content=description)]})
+                if result["messages"]:
+                    return result["messages"][-1].content
+                return "No response from ghostwriter."
+            except Exception as e:
+                return f"Error in ghostwriter: {e}"
+
+        return [ls, read_file, write_file, execute, research_task, writing_task, ghostwriter_task] + get_vibewriter_tools()
 
     def invoke(self, input_text: str, config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Invoke the agent with a user message."""

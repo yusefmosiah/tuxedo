@@ -2,6 +2,7 @@ import os
 from typing import Optional
 from langchain_core.tools import tool
 from tavily import TavilyClient
+from .choir_account import get_choir_account_tools
 
 # Initialize Tavily client if key is available
 tavily_api_key = os.environ.get("TAVILY_API_KEY")
@@ -55,4 +56,4 @@ def web_search(query: str) -> str:
         return f"Error performing web search: {str(e)}"
 
 def get_vibewriter_tools():
-    return [search_choir_kb, cite_article, publish_to_choir, web_search]
+    return [search_choir_kb, cite_article, publish_to_choir, web_search] + get_choir_account_tools()

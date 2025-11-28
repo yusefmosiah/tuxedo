@@ -1,0 +1,28 @@
+/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/langchain_core/_api/deprecation.py:26: UserWarning: Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.
+  from pydantic.v1.fields import FieldInfo as FieldInfoV1
+Traceback (most recent call last):
+  File "/Users/wiz/tuxedo/backend/vibewriter/test_ghostwriter.py", line 17, in test_ghostwriter
+    result = agent.invoke(task, config={"recursion_limit": 20})
+  File "/Users/wiz/tuxedo/backend/vibewriter/agent.py", line 172, in invoke
+    return self.graph.invoke({"messages": messages}, config=config)
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/langgraph/pregel/main.py", line 3068, in invoke
+    for chunk in self.stream(
+                 ~~~~~~~~~~~^
+        input,
+        ^^^^^^
+    ...<10 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    ):
+    ^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/langgraph/pregel/main.py", line 2671, in stream
+    raise GraphRecursionError(msg)
+langgraph.errors.GraphRecursionError: Recursion limit of 20 reached without hitting a stop condition. You can increase the limit by setting the `recursion_limit` config key.
+For troubleshooting, visit: https://docs.langchain.com/oss/python/langgraph/errors/GRAPH_RECURSION_LIMIT
+Initializing Vibewriter Agent...
+Task: Use your Ghostwriter agent to form hypotheses about 'The Future of DeFi on Stellar'. Then save the hypotheses to a file named 'hypotheses.json'.
+Invoking agent...
+Error during execution: Recursion limit of 20 reached without hitting a stop condition. You can increase the limit by setting the `recursion_limit` config key.
+For troubleshooting, visit: https://docs.langchain.com/oss/python/langgraph/errors/GRAPH_RECURSION_LIMIT
+Cleaning up...

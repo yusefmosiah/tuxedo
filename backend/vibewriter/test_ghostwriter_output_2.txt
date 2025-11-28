@@ -1,0 +1,181 @@
+/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/langchain_core/_api/deprecation.py:26: UserWarning: Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.
+  from pydantic.v1.fields import FieldInfo as FieldInfoV1
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/wiz/tuxedo/backend/vibewriter/test_ghostwriter.py", line 58, in <module>
+    test_ghostwriter()
+    ~~~~~~~~~~~~~~~~^^
+  File "/Users/wiz/tuxedo/backend/vibewriter/test_ghostwriter.py", line 19, in test_ghostwriter
+    for chunk in agent.graph.stream(
+                 ~~~~~~~~~~~~~~~~~~^
+        {"messages": [HumanMessage(content=task)]},
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        config={"recursion_limit": 50}
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ):
+    ^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/langgraph/pregel/main.py", line 2643, in stream
+    for _ in runner.tick(
+             ~~~~~~~~~~~^
+        [t for t in loop.tasks.values() if not t.writes],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        schedule_task=loop.accept_push,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ):
+    ^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/langgraph/pregel/_runner.py", line 167, in tick
+    run_with_retry(
+    ~~~~~~~~~~~~~~^
+        t,
+        ^^
+    ...<10 lines>...
+        },
+        ^^
+    )
+    ^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/langgraph/pregel/_retry.py", line 42, in run_with_retry
+    return task.proc.invoke(task.input, config)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/langgraph/_internal/_runnable.py", line 656, in invoke
+    input = context.run(step.invoke, input, config, **kwargs)
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/langgraph/_internal/_runnable.py", line 400, in invoke
+    ret = self.func(*args, **kwargs)
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/langchain/agents/factory.py", line 1037, in model_node
+    response = wrap_model_call_handler(request, _execute_model_sync)
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/langchain/agents/factory.py", line 125, in normalized_single
+    result = single_handler(request, handler)
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/langchain/agents/middleware/todo.py", line 206, in wrap_model_call
+    return handler(request)
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/langchain/agents/factory.py", line 1007, in _execute_model_sync
+    output = model_.invoke(messages)
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/langchain_core/runnables/base.py", line 5534, in invoke
+    return self.bound.invoke(
+           ~~~~~~~~~~~~~~~~~^
+        input,
+        ^^^^^^
+        self._merge_configs(config),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        **{**self.kwargs, **kwargs},
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/langchain_core/language_models/chat_models.py", line 398, in invoke
+    self.generate_prompt(
+    ~~~~~~~~~~~~~~~~~~~~^
+        [self._convert_input(input)],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    ).generations[0][0],
+    ^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/langchain_core/language_models/chat_models.py", line 1117, in generate_prompt
+    return self.generate(prompt_messages, stop=stop, callbacks=callbacks, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/langchain_core/language_models/chat_models.py", line 927, in generate
+    self._generate_with_cache(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        m,
+        ^^
+    ...<2 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/langchain_core/language_models/chat_models.py", line 1221, in _generate_with_cache
+    result = self._generate(
+        messages, stop=stop, run_manager=run_manager, **kwargs
+    )
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/langchain_openai/chat_models/base.py", line 1294, in _generate
+    raw_response = self.client.with_raw_response.create(**payload)
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/openai/_legacy_response.py", line 364, in wrapped
+    return cast(LegacyAPIResponse[R], func(*args, **kwargs))
+                                      ~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/openai/_utils/_utils.py", line 286, in wrapper
+    return func(*args, **kwargs)
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/openai/resources/chat/completions/completions.py", line 1156, in create
+    return self._post(
+           ~~~~~~~~~~^
+        "/chat/completions",
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<46 lines>...
+        stream_cls=Stream[ChatCompletionChunk],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/openai/_base_client.py", line 1259, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/openai/_base_client.py", line 982, in request
+    response = self._client.send(
+        request,
+        stream=stream or self._should_stream_response_body(request=request),
+        **kwargs,
+    )
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/httpx/_client.py", line 928, in send
+    raise exc
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/httpx/_client.py", line 922, in send
+    response.read()
+    ~~~~~~~~~~~~~^^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/httpx/_models.py", line 881, in read
+    self._content = b"".join(self.iter_bytes())
+                    ~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/httpx/_models.py", line 897, in iter_bytes
+    for raw_bytes in self.iter_raw():
+                     ~~~~~~~~~~~~~^^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/httpx/_models.py", line 951, in iter_raw
+    for raw_stream_bytes in self.stream:
+                            ^^^^^^^^^^^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/httpx/_client.py", line 153, in __iter__
+    for chunk in self._stream:
+                 ^^^^^^^^^^^^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 127, in __iter__
+    for part in self._httpcore_stream:
+                ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py", line 407, in __iter__
+    raise exc from None
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py", line 403, in __iter__
+    for part in self._stream:
+                ^^^^^^^^^^^^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/httpcore/_sync/http11.py", line 342, in __iter__
+    raise exc
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/httpcore/_sync/http11.py", line 334, in __iter__
+    for chunk in self._connection._receive_response_body(**kwargs):
+                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/httpcore/_sync/http11.py", line 203, in _receive_response_body
+    event = self._receive_event(timeout=timeout)
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/httpcore/_sync/http11.py", line 217, in _receive_event
+    data = self._network_stream.read(
+        self.READ_NUM_BYTES, timeout=timeout
+    )
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/httpcore/_backends/sync.py", line 128, in read
+    return self._sock.recv(max_bytes)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/ssl.py", line 1285, in recv
+    return self.read(buflen)
+           ~~~~~~~~~^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/ssl.py", line 1140, in read
+    return self._sslobj.read(len)
+           ~~~~~~~~~~~~~~~~~^^^^^
+KeyboardInterrupt
+Initializing Vibewriter Agent...
+Task: Use your Ghostwriter agent to form hypotheses about 'The Future of DeFi on Stellar'. Then save the hypotheses to a file named 'hypotheses.json'.
+Streaming agent execution...
+--- Tool Step ---
+Tool Output (write_todos): Updated todo list to [{'content': 'Use Ghostwriter agent to generate hypotheses about the future of DeFi on Stellar', 'status': 'in_progress'}, {'content': 'Save the generated hypotheses to hypotheses...
+--- Tool Step ---
+Tool Output (ghostwriter_task): {
+  "topic": "Future of DeFi on Stellar",
+  "hypotheses": [
+    {
+      "id": 1,
+      "hypothesis": "By 2025, Stellar will become a leading platform for regulated stablecoin issuance, with at least 5...
+--- Tool Step ---
+Tool Output (write_todos): Updated todo list to [{'content': 'Use Ghostwriter agent to generate hypotheses about the future of DeFi on Stellar', 'status': 'completed'}, {'content': 'Save the generated hypotheses to hypotheses.j...
+--- Tool Step ---
+Tool Output (write_file): Error: Traceback (most recent call last):
+  File "<string>", line 19, in <module>
+PermissionError: [Errno 13] Permission denied: '/hypotheses.json'...
+Cleaning up...
