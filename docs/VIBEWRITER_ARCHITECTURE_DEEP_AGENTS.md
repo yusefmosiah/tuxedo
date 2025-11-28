@@ -7,15 +7,15 @@
 
 The core of the `tuxedo` project's architecture is pivoting to a highly specialized, secure, and autonomous agent built on **LangChain Deep Agents** and isolated within **MicroVMs**. This shift is driven by the need for a **financial delegate** agent that requires hardware-level security and complex, hierarchical planning capabilities. The data infrastructure is being refined with **NATS JetStream** to provide a high-performance, persistent, and secure backbone for agent state and real-time economic signaling.
 
-The LangChain Deep Agent *is* the core agent, and the **Vibewriter** is the set of skills, tools, and specialized knowledge that define its function. This unified architecture simplifies the deployment model and ensures the core agent is inherently capable of the Vibewriter's secure, stateful, and economically-integrated research and writing experience.
+The LangChain Deep Agent _is_ the core agent, and the **Vibewriter** is the set of skills, tools, and specialized knowledge that define its function. This unified architecture simplifies the deployment model and ensures the core agent is inherently capable of the Vibewriter's secure, stateful, and economically-integrated research and writing experience.
 
-| Component | New State (Vibewriter Deep Agent) | Justification |
-| :--- | :--- | :--- |
-| **Agent Core** | **LangChain Deep Agent** | Enables hierarchical planning, long-term memory, and complex, multi-step tasks [1]. |
-| **Sandbox** | **MicroVM (Firecracker)** | Provides hardware-level isolation, essential for protecting the agent's financial keys and assets from container escape [2] [3]. |
-| **Filesystem** | **Custom `SandboxBackendProtocol`** | Allows integration of the MicroVM's filesystem with the Deep Agent's tools, enabling full computer control and persistent state [1] [4]. |
-| **Data Backbone** | **NATS with JetStream** | Offers persistent, high-speed messaging for agent-to-agent communication and state storage, overcoming the speed/persistence trade-off [5] [6]. |
-| **Agent Name** | **Vibewriter** | The Deep Agent *is* the Vibewriter. The name now refers to the agent's complete set of capabilities and tools. |
+| Component         | New State (Vibewriter Deep Agent)   | Justification                                                                                                                                   |
+| :---------------- | :---------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Agent Core**    | **LangChain Deep Agent**            | Enables hierarchical planning, long-term memory, and complex, multi-step tasks [1].                                                             |
+| **Sandbox**       | **MicroVM (Firecracker)**           | Provides hardware-level isolation, essential for protecting the agent's financial keys and assets from container escape [2] [3].                |
+| **Filesystem**    | **Custom `SandboxBackendProtocol`** | Allows integration of the MicroVM's filesystem with the Deep Agent's tools, enabling full computer control and persistent state [1] [4].        |
+| **Data Backbone** | **NATS with JetStream**             | Offers persistent, high-speed messaging for agent-to-agent communication and state storage, overcoming the speed/persistence trade-off [5] [6]. |
+| **Agent Name**    | **Vibewriter**                      | The Deep Agent _is_ the Vibewriter. The name now refers to the agent's complete set of capabilities and tools.                                  |
 
 ## I. LangChain Deep Agents: The New Agent Core
 
@@ -92,14 +92,14 @@ class MicroVMBackend(SandboxBackendProtocol):
 
 The Vibewriter merges the former separate `tuxedo` agent and research pipeline into one Deep Agent, which uses **skills** in addition to tools.
 
-*   **Skills vs. Tools:** In the context of modern agent frameworks like LangChain Deep Agents, a **tool** is a simple, atomic function (e.g., `search_web`, `read_file`). A **skill** is a more complex, pre-written, and often multi-step script or piece of documentation that the agent can choose to execute in its sandboxed environment.
+- **Skills vs. Tools:** In the context of modern agent frameworks like LangChain Deep Agents, a **tool** is a simple, atomic function (e.g., `search_web`, `read_file`). A **skill** is a more complex, pre-written, and often multi-step script or piece of documentation that the agent can choose to execute in its sandboxed environment.
 
-*   **Implementation:** The Deep Agent's ability to use skills is tied directly to its **Filesystem Backend** and **Hierarchical Planning**. The agent can:
-    1.  **Plan:** Use the `write_todos` tool to decide which skill is needed.
-    2.  **Access:** Read the skill's script (e.g., a Python file or shell script) from its virtual filesystem (which is the MicroVM).
-    3.  **Execute:** Run the script inside the secure sandbox (the MicroVM).
+- **Implementation:** The Deep Agent's ability to use skills is tied directly to its **Filesystem Backend** and **Hierarchical Planning**. The agent can:
+  1.  **Plan:** Use the `write_todos` tool to decide which skill is needed.
+  2.  **Access:** Read the skill's script (e.g., a Python file or shell script) from its virtual filesystem (which is the MicroVM).
+  3.  **Execute:** Run the script inside the secure sandbox (the MicroVM).
 
-*   **Benefit:** This pattern allows the agent to learn, adapt, and share complex, reusable workflows (like "Perform Financial Due Diligence" or "Generate Citation-Ready Report") without having to reason through every step from scratch. The agent's intelligence is in choosing the right skill and providing the correct inputs, while the skill itself provides the reliable, pre-vetted logic.
+- **Benefit:** This pattern allows the agent to learn, adapt, and share complex, reusable workflows (like "Perform Financial Due Diligence" or "Generate Citation-Ready Report") without having to reason through every step from scratch. The agent's intelligence is in choosing the right skill and providing the correct inputs, while the skill itself provides the reliable, pre-vetted logic.
 
 ## II. MicroVMs: The Secure Execution Environment
 
@@ -110,6 +110,7 @@ The strategic decision to use MicroVMs is non-negotiable for a financial delegat
 **Firecracker** is the industry standard for secure, low-overhead virtualization, developed by AWS. It is purpose-built for creating and managing small virtual machines with minimal overhead, making it ideal for the rapid spin-up and tear-down required for multi-tenant AI agents [3].
 
 **Key Characteristics**:
+
 - **125ms startup time** - Fast enough for on-demand agent spawning
 - **<5MB memory overhead** - High density, 100s-1000s of VMs per host
 - **Production-proven** - Powers AWS Lambda, battle-tested at massive scale
@@ -126,12 +127,14 @@ The strategic decision to use MicroVMs is non-negotiable for a financial delegat
 3. **No heavy orchestration needed for v1** - Keep it simple
 
 **Why Firecracker**:
+
 - Production-proven at AWS Lambda scale
 - Maximum control and transparency
 - Direct API is simple enough for our needs
 - Battle-tested security model
 
 **Orchestration Strategy**:
+
 - **Phase 1 (v1)**: Direct Firecracker API + minimal helpers
 - **Phase 2 (scale)**: Add orchestration only if needed
 - **Principle**: Build what we need, when we need it
@@ -140,12 +143,13 @@ The strategic decision to use MicroVMs is non-negotiable for a financial delegat
 
 When managing financial keys and signing authority, container isolation is insufficient:
 
-| Isolation Method | Security Model | Threat Level | Suitability for Financial Delegation |
-| :--- | :--- | :--- | :--- |
-| **Containers** | Shared Host Kernel | High (Escapes happen monthly) | ❌ Unsuitable. A single escape compromises all user private keys on the host. |
-| **MicroVMs** | Dedicated Guest Kernel + KVM | Low (Escapes are rare hypervisor vulns) | ✅ **Required.** Hardware-enforced isolation is necessary to protect the agent's signing authority over real assets. |
+| Isolation Method | Security Model               | Threat Level                            | Suitability for Financial Delegation                                                                                 |
+| :--------------- | :--------------------------- | :-------------------------------------- | :------------------------------------------------------------------------------------------------------------------- |
+| **Containers**   | Shared Host Kernel           | High (Escapes happen monthly)           | ❌ Unsuitable. A single escape compromises all user private keys on the host.                                        |
+| **MicroVMs**     | Dedicated Guest Kernel + KVM | Low (Escapes are rare hypervisor vulns) | ✅ **Required.** Hardware-enforced isolation is necessary to protect the agent's signing authority over real assets. |
 
 **Firecracker's Multi-Layer Defense:**
+
 1. **Layer 1**: Hardware virtualization (KVM)
 2. **Layer 2**: Jailer process (namespaces, cgroups, seccomp filters)
 3. **Layer 3**: Minimal attack surface (50K LOC, Rust, minimal devices)
@@ -158,8 +162,8 @@ The data infrastructure must support both the high-speed, real-time communicatio
 
 JetStream is the built-in persistence engine for NATS, providing guaranteed, at-least-once message delivery and storage [5].
 
-*   **Agent Memory:** The Deep Agent's long-term memory and state (e.g., the `write_todos` plan, intermediate results) can be modeled as messages in a JetStream **Stream**. This ensures that if a MicroVM is suspended or crashes, the agent can resume its work exactly where it left off by replaying the stream.
-*   **Decoupling:** JetStream decouples the agent's logic from the persistence layer, making the system more resilient and scalable.
+- **Agent Memory:** The Deep Agent's long-term memory and state (e.g., the `write_todos` plan, intermediate results) can be modeled as messages in a JetStream **Stream**. This ensures that if a MicroVM is suspended or crashes, the agent can resume its work exactly where it left off by replaying the stream.
+- **Decoupling:** JetStream decouples the agent's logic from the persistence layer, making the system more resilient and scalable.
 
 Here is a conceptual Python snippet for using NATS JetStream for state persistence:
 
@@ -203,8 +207,8 @@ async def persist_agent_state(js, agent_id, state_data):
 
 The research artifacts (drafts, evidence, final reports) are too large to store efficiently within the JetStream message payload limits. NATS addresses this with its **Object Store** feature [6].
 
-*   **NATS Object Store:** This feature implements a chunking mechanism, allowing files of any size to be stored and retrieved by associating them with a unique key. It is designed to be a high-performance, S3-like interface built directly into NATS.
-*   **Integration with Object Store:** The Vibewriter's custom `SandboxBackendProtocol` should be designed to use the NATS Object Store for all large file operations (`write_file`, `read_file`). This keeps the entire data plane within the NATS ecosystem, simplifying infrastructure and leveraging NATS's security and performance features.
+- **NATS Object Store:** This feature implements a chunking mechanism, allowing files of any size to be stored and retrieved by associating them with a unique key. It is designed to be a high-performance, S3-like interface built directly into NATS.
+- **Integration with Object Store:** The Vibewriter's custom `SandboxBackendProtocol` should be designed to use the NATS Object Store for all large file operations (`write_file`, `read_file`). This keeps the entire data plane within the NATS ecosystem, simplifying infrastructure and leveraging NATS's security and performance features.
 
 Here is a conceptual Python snippet for using NATS Object Store for file persistence:
 
@@ -242,9 +246,9 @@ async def retrieve_file(os, file_path):
 
 The Choir protocol is fundamentally a system of economic signals based on citations. NATS provides a robust backbone for this inter-agent communication:
 
-*   **Citations as Messages:** A citation event (e.g., one agent using another's published work) can be modeled as a message published to a specific NATS subject (e.g., `citation.new.<article_id>`).
-*   **Real-Time Signaling:** The speed of NATS ensures that economic signals (citations) are processed in near real-time, which is vital for the dynamic calculation of citation rewards and the overall responsiveness of the "Thought Bank".
-*   **MicroVM Communication:** NATS is an ideal choice for facilitating communication between the isolated MicroVMs (each running a Vibewriter agent) and the host services (like the Qdrant vector database and the smart contract execution service). This replaces complex, custom networking with a simple, secure publish-subscribe model.
+- **Citations as Messages:** A citation event (e.g., one agent using another's published work) can be modeled as a message published to a specific NATS subject (e.g., `citation.new.<article_id>`).
+- **Real-Time Signaling:** The speed of NATS ensures that economic signals (citations) are processed in near real-time, which is vital for the dynamic calculation of citation rewards and the overall responsiveness of the "Thought Bank".
+- **MicroVM Communication:** NATS is an ideal choice for facilitating communication between the isolated MicroVMs (each running a Vibewriter agent) and the host services (like the Qdrant vector database and the smart contract execution service). This replaces complex, custom networking with a simple, secure publish-subscribe model.
 
 ## IV. Unified Architecture Overview
 
@@ -424,13 +428,15 @@ agent.persist_result(result)
 **Goal**: Build working Deep Agent with Runloop sandbox and basic Vibewriter capabilities
 
 **Tasks** (with coding agents, these happen in hours, not weeks):
-1. Set up LangChain Deep Agents with Runloop sandbox
+
+1. Set up LangChain Deep Agents with Runloop sandbox (API key available in backend env)
 2. Implement basic Vibewriter tools (`search_choir_kb`, `cite_article`, `publish_to_choir`)
 3. Create simple research workflow
 4. Test hierarchical planning and filesystem operations
 5. Validate architecture decisions
 
 **Success Criteria**:
+
 - Deep Agent can complete multi-step research task
 - Planning and memory work across conversation
 - Tools integrate with existing Choir backend
@@ -441,6 +447,7 @@ agent.persist_result(result)
 **Goal**: Replace Runloop with self-hosted Firecracker
 
 **Tasks** (with coding agents):
+
 1. Implement `MicroVMBackend(SandboxBackendProtocol)`
 2. Set up Firecracker locally (direct API usage)
 3. Build minimal VM management (start/stop/snapshot)
@@ -448,6 +455,7 @@ agent.persist_result(result)
 5. Migrate from Runloop to Firecracker
 
 **Success Criteria**:
+
 - Agent executes in Firecracker MicroVM
 - State persists via JetStream
 - Performance validated
@@ -458,6 +466,7 @@ agent.persist_result(result)
 **Goal**: Build Vibewriter skills and citation economics
 
 **Tasks** (with coding agents):
+
 1. Implement citation verification skill
 2. Implement deep research skill (parallel sub-agents)
 3. Integrate with CHIP/USDC reward calculation
@@ -465,6 +474,7 @@ agent.persist_result(result)
 5. Test end-to-end flow
 
 **Success Criteria**:
+
 - Agent produces citation-verified reports
 - Citations trigger economic signals
 - Novelty calculation works
@@ -474,12 +484,14 @@ agent.persist_result(result)
 **Goal**: Deploy production-ready multi-tenant system
 
 **Tasks**:
+
 1. Build MicroVM cluster for horizontal scaling
 2. Deploy NATS cluster for high availability
 3. Security hardening and audit
 4. Load testing and optimization
 
 **Success Criteria**:
+
 - System handles 100+ concurrent agents
 - Production security standards met
 - Monitoring and observability complete
@@ -489,12 +501,14 @@ agent.persist_result(result)
 ### A. MicroVM Isolation
 
 **Private Key Management**:
+
 - Each user's private keys stored only in their dedicated MicroVM
 - Keys never transmitted to host or other VMs
 - Signing operations execute inside MicroVM
 - Hardware isolation prevents cross-user key access
 
 **Network Isolation**:
+
 - MicroVM ↔ Host communication via controlled RPC only
 - No direct internet access from MicroVM (unless explicitly allowed)
 - All external API calls proxied through host with rate limiting
@@ -503,6 +517,7 @@ agent.persist_result(result)
 ### B. Prompt Injection Defense
 
 **Multi-Layer Protection**:
+
 1. **System prompts** clearly delineate agent vs user instructions
 2. **Tool confirmation** for high-stakes operations (publish, sign transaction)
 3. **Human-in-the-loop** approval for financial operations above threshold
@@ -511,6 +526,7 @@ agent.persist_result(result)
 ### C. Secret Management
 
 **Best Practices**:
+
 - API keys injected as environment variables, not stored in filesystem
 - Short-lived secrets rotated automatically
 - No secrets in JetStream state messages (use references)
@@ -537,15 +553,15 @@ agent.persist_result(result)
 
 The new **Vibewriter** architecture is a robust, production-ready design that meets the stringent security and functional requirements of the Choir project. By combining the hierarchical planning of **LangChain Deep Agents**, the hardware-level isolation of **MicroVMs**, and the persistent, high-speed data backbone of **NATS JetStream**, the project is well-positioned to implement the secure, autonomous financial delegate agent that defines the Choir vision.
 
-The Deep Agent *is* the Vibewriter. The architecture enables complex, multi-hour research tasks, citation-verified publishing, and safe financial delegation - all within a hardware-isolated, persistent, and scalable infrastructure.
+The Deep Agent _is_ the Vibewriter. The architecture enables complex, multi-hour research tasks, citation-verified publishing, and safe financial delegation - all within a hardware-isolated, persistent, and scalable infrastructure.
 
 ---
 
 ## References
 
-[1] LangChain. *Deep Agents*. [Online]. Available: https://blog.langchain.com/deep-agents/
-[2] firecracker-microvm. *Firecracker: Secure and fast microVMs*. [Online]. Available: https://github.com/firecracker-microvm/firecracker
-[3] AWS. *Firecracker - Lightweight Virtualization for Serverless*. [Online]. Available: https://aws.amazon.com/blogs/aws/firecracker-lightweight-virtualization-for-serverless-computing/
-[4] LangChain. *Backends - Docs by LangChain*. [Online]. Available: https://docs.langchain.com/oss/python/deepagents/backends
-[5] NATS. *JetStream - NATS Docs*. [Online]. Available: https://docs.nats.io/nats-concepts/jetstream
-[6] NATS. *Object Store - NATS Docs*. [Online]. Available: https://docs.nats.io/nats-concepts/jetstream/obj_store
+[1] LangChain. _Deep Agents_. [Online]. Available: https://blog.langchain.com/deep-agents/
+[2] firecracker-microvm. _Firecracker: Secure and fast microVMs_. [Online]. Available: https://github.com/firecracker-microvm/firecracker
+[3] AWS. _Firecracker - Lightweight Virtualization for Serverless_. [Online]. Available: https://aws.amazon.com/blogs/aws/firecracker-lightweight-virtualization-for-serverless-computing/
+[4] LangChain. _Backends - Docs by LangChain_. [Online]. Available: https://docs.langchain.com/oss/python/deepagents/backends
+[5] NATS. _JetStream - NATS Docs_. [Online]. Available: https://docs.nats.io/nats-concepts/jetstream
+[6] NATS. _Object Store - NATS Docs_. [Online]. Available: https://docs.nats.io/nats-concepts/jetstream/obj_store

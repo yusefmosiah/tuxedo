@@ -42,6 +42,24 @@ Original vision document for the Choir protocol:
 - Anonymous publishing
 - **Status:** 📚 Reference
 
+### [Vibewriter Architecture](./VIBEWRITER_ARCHITECTURE_DEEP_AGENTS.md)
+
+Detailed architecture for the Vibewriter Deep Agent:
+
+- LangChain Deep Agents core
+- MicroVM isolation (Firecracker)
+- NATS JetStream persistence
+- **Status:** 🏗️ Implementation Phase 1 (Runloop)
+
+### [Vibewriter Research](./VIBEWRITER_DEEP_AGENTS_RESEARCH.md)
+
+Research findings supporting the architectural pivot:
+
+- Deep Agents vs Pipelines
+- MicroVM security model
+- Runloop vs Self-Hosted analysis
+- **Status:** ✅ Complete
+
 ## Migration Timeline
 
 ### ✅ Phase 1: Stabilization (Week 1) - COMPLETE

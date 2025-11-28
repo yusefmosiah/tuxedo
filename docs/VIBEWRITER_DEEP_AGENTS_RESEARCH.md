@@ -24,6 +24,7 @@ Deep Agents represent a significant evolution from simple tool-calling loops to 
 #### 1. Hierarchical Planning (`write_todos` tool)
 
 Deep Agents include a built-in planning tool that enables them to:
+
 - Break down complex tasks into discrete, trackable steps
 - Maintain a TODO list in markdown format
 - Mark steps as `pending`, `in_progress`, or `completed`
@@ -35,6 +36,7 @@ Deep Agents include a built-in planning tool that enables them to:
 #### 2. Filesystem Backend
 
 Deep Agents have access to a virtual filesystem through tools:
+
 - `ls` - List files and directories
 - `read_file` - Read file contents
 - `write_file` - Create new files
@@ -43,6 +45,7 @@ Deep Agents have access to a virtual filesystem through tools:
 - `grep` - Search file contents
 
 The filesystem uses **pluggable backends** via `SandboxBackendProtocol`, enabling integration with:
+
 - **StateBackend** (default): Ephemeral files in agent state
 - **FilesystemBackend**: Local disk access
 - **StoreBackend**: Persistent cross-conversation storage
@@ -55,6 +58,7 @@ The filesystem uses **pluggable backends** via `SandboxBackendProtocol`, enablin
 #### 3. Sub-Agent Delegation
 
 Deep Agents can spawn specialized sub-agents with isolated contexts:
+
 - **Orchestrator pattern**: Main agent delegates tasks to specialists
 - **Context isolation**: Each sub-agent has clean, focused context
 - **Task decomposition**: Complex tasks split across multiple agents
@@ -64,6 +68,7 @@ Deep Agents can spawn specialized sub-agents with isolated contexts:
 #### 4. Long-Term Memory
 
 Deep Agents maintain state across long-running sessions:
+
 - **Checkpointing**: State persists across multiple turns
 - **Large result eviction**: Automatically offload oversized tool results to filesystem
 - **Context window management**: Prevent overflow during multi-hour tasks
@@ -75,6 +80,7 @@ Deep Agents maintain state across long-running sessions:
 ### C. Middleware Architecture (LangChain 1.0)
 
 Middleware intercepts the agent loop, providing surgical control over:
+
 - **Before model calls**: Inject context, filter tools
 - **During calls**: Monitor, log, rate-limit
 - **After calls**: Process results, trigger side effects
@@ -92,18 +98,21 @@ Middleware intercepts the agent loop, providing surgical control over:
 LangChain Deep Agents supports three remote sandbox providers:
 
 **Runloop**
+
 - Managed service requiring `RUNLOOP_API_KEY`
 - CLI integration: `uvx deepagents-cli --sandbox runloop`
 - Agent runs locally, code executes remotely
 - Production-ready, commercial service
 
 **Daytona**
+
 - Pivoted in Feb 2025 to AI code execution infrastructure
 - Sub-90ms sandbox creation time
 - Requires `DAYTONA_API_KEY`
 - Focus on minimal latency
 
 **Modal**
+
 - gVisor-based containers (not MicroVMs)
 - Excellent GPU support for ML/AI workloads
 - Python SDK required for image building
@@ -115,6 +124,7 @@ LangChain Deep Agents supports three remote sandbox providers:
 ### B. How Sandboxes Work
 
 **Architecture**:
+
 ```
 ┌─────────────────┐         ┌──────────────────┐
 │  Deep Agent     │         │  Remote Sandbox  │
@@ -127,12 +137,14 @@ LangChain Deep Agents supports three remote sandbox providers:
 ```
 
 The agent maintains **full visibility** into the sandbox:
+
 - Read sandbox filesystem
 - Execute commands in sandbox
 - Stream stdout/stderr back to agent
 - Persist files between executions
 
 **Limitations**:
+
 - Sandboxes provide code isolation but remain vulnerable to prompt injection
 - Recommended safeguards: human-in-the-loop approval, short-lived secrets, trusted setup scripts
 
@@ -171,6 +183,7 @@ class MicroVMBackend(SandboxBackendProtocol):
 ```
 
 **Key Design Principles**:
+
 - Paths are absolute (`/x/y.txt`)
 - Implement `ls_info` and `glob_info` efficiently (server-side listing preferred)
 - Use secure RPC for file transfers (avoid shell injection)
@@ -187,6 +200,7 @@ class MicroVMBackend(SandboxBackendProtocol):
 **Firecracker** is an open-source Virtual Machine Monitor (VMM) developed by AWS, designed specifically for serverless computing. It powers AWS Lambda and Fargate.
 
 **Key Characteristics**:
+
 - **Minimal codebase**: 50,000 lines (96% reduction vs QEMU)
 - **Written in Rust**: Thread safety, memory safety guarantees
 - **KVM-based**: Hardware virtualization via Intel VT-x/AMD-V
@@ -197,12 +211,14 @@ class MicroVMBackend(SandboxBackendProtocol):
 ### B. Security Model
 
 **Hardware-Level Isolation**:
+
 - Each MicroVM has dedicated guest kernel
 - KVM provides hardware-enforced isolation
 - CPU and memory virtualization via hardware extensions (VMX/SVM)
 - **No shared kernel** (unlike containers)
 
 **Multi-Layer Defense**:
+
 1. **Layer 1**: Hardware virtualization (KVM)
 2. **Layer 2**: Jailer process (Linux namespaces, cgroups, seccomp)
    - Thread-specific seccomp filters
@@ -210,6 +226,7 @@ class MicroVMBackend(SandboxBackendProtocol):
    - Resource limits
 
 **Attack Surface Reduction**:
+
 - Minimal device emulation reduces exploit vectors
 - No legacy BIOS, no complex peripherals
 - Binary size: ~3 MB
@@ -220,10 +237,12 @@ class MicroVMBackend(SandboxBackendProtocol):
 ### C. Performance Metrics
 
 **Startup Speed**:
+
 - **125ms** to application code execution
 - **150 MicroVMs/second** creation rate per host
 
 **Resource Efficiency**:
+
 - **<5 MiB** memory overhead per MicroVM
 - High density: 100s-1000s of MicroVMs per host
 - Negligible CPU overhead
@@ -232,13 +251,13 @@ class MicroVMBackend(SandboxBackendProtocol):
 
 ### D. Container vs MicroVM Security
 
-| Aspect | Containers | Firecracker MicroVMs |
-|--------|-----------|---------------------|
-| **Kernel** | Shared host kernel | Dedicated guest kernel per VM |
-| **Isolation** | Namespace/cgroup isolation | Hardware virtualization (KVM) |
-| **Threat Model** | Kernel exploit = all containers compromised | Hypervisor exploit required (rare) |
-| **Escape Frequency** | Monthly (container escapes) | Rare (hypervisor vulnerabilities) |
-| **Use Case** | Trusted code, internal workloads | **Untrusted code, multi-tenant, financial** |
+| Aspect               | Containers                                  | Firecracker MicroVMs                        |
+| -------------------- | ------------------------------------------- | ------------------------------------------- |
+| **Kernel**           | Shared host kernel                          | Dedicated guest kernel per VM               |
+| **Isolation**        | Namespace/cgroup isolation                  | Hardware virtualization (KVM)               |
+| **Threat Model**     | Kernel exploit = all containers compromised | Hypervisor exploit required (rare)          |
+| **Escape Frequency** | Monthly (container escapes)                 | Rare (hypervisor vulnerabilities)           |
+| **Use Case**         | Trusted code, internal workloads            | **Untrusted code, multi-tenant, financial** |
 
 **Critical Insight**: "Container escape = bank robbery" when managing financial keys. For a financial delegate agent, MicroVMs are **non-negotiable**.
 
@@ -247,12 +266,14 @@ class MicroVMBackend(SandboxBackendProtocol):
 ### E. Production Deployments
 
 **Live in Production**:
+
 - AWS Lambda (millions of invocations/day)
 - AWS Fargate
 - Fly.io (edge compute platform)
 - Northflank (2M+ isolated workloads/month since 2019)
 
 **AI Agent Sandboxing**:
+
 - E2B: Open-source cloud runtime for AI agents
 - Manus: Millions of isolated agents
 - Multiple code execution platforms
@@ -270,6 +291,7 @@ class MicroVMBackend(SandboxBackendProtocol):
 **GitHub**: [firecracker-microvm/firecracker](https://github.com/firecracker-microvm/firecracker)
 
 **Why Firecracker**:
+
 - **Battle-tested**: Powers AWS Lambda, proven at massive scale
 - **Security**: Minimal attack surface (50K LOC, Rust)
 - **Performance**: 125ms startup, <5MB overhead
@@ -287,6 +309,7 @@ class MicroVMBackend(SandboxBackendProtocol):
 4. **Network**: TAP devices for VM networking
 
 **Management Needs** (build as needed):
+
 - VM lifecycle (start, stop, pause, resume)
 - Resource allocation (CPU, memory, disk)
 - Network setup (TAP device creation, routing)
@@ -297,6 +320,7 @@ class MicroVMBackend(SandboxBackendProtocol):
 ### C. Firecracker Setup
 
 **Installation (Ubuntu/Debian)**:
+
 ```bash
 # Download latest release
 release_url="https://github.com/firecracker-microvm/firecracker/releases"
@@ -309,6 +333,7 @@ sudo mv release-${latest}-$(uname -m)/firecracker-${latest}-${arch} /usr/local/b
 ```
 
 **Basic Usage**:
+
 ```bash
 # Start API server
 firecracker --api-sock /tmp/firecracker.sock
@@ -337,21 +362,23 @@ curl --unix-socket /tmp/firecracker.sock -i \
 
 **Firecracker vs Alternatives**:
 
-| Aspect | Firecracker (Direct) | Alternatives (krunvm, etc.) |
-|--------|---------------------|----------------------------------|
-| **Maturity** | Production (AWS Lambda) | Early stage or experimental |
-| **Security** | Battle-tested at scale | Less proven |
-| **Complexity** | Simple, direct API | Additional abstraction layers |
-| **Control** | Full transparency | Hidden behind abstractions |
-| **Overhead** | Minimal | Additional layers add overhead |
+| Aspect         | Firecracker (Direct)    | Alternatives (krunvm, etc.)    |
+| -------------- | ----------------------- | ------------------------------ |
+| **Maturity**   | Production (AWS Lambda) | Early stage or experimental    |
+| **Security**   | Battle-tested at scale  | Less proven                    |
+| **Complexity** | Simple, direct API      | Additional abstraction layers  |
+| **Control**    | Full transparency       | Hidden behind abstractions     |
+| **Overhead**   | Minimal                 | Additional layers add overhead |
 
 **Decision**: Use Firecracker directly
+
 - **Simpler**: Fewer moving parts, easier to understand
 - **Proven**: AWS Lambda uses it, billions of invocations
 - **Transparent**: Direct API, no magic
 - **Flexible**: Build exactly what we need, nothing more
 
 **For Vibewriter**:
+
 - Phase 1: Runloop (managed, fast prototyping)
 - Phase 2: Direct Firecracker (production control)
 - No need for heavy orchestration - keep it simple
@@ -363,12 +390,14 @@ curl --unix-socket /tmp/firecracker.sock -i \
 ### A. JetStream for Agent State
 
 **NATS JetStream** is a distributed persistence layer built into NATS, providing:
+
 - **Guaranteed delivery**: At-least-once message delivery
 - **Stream storage**: Messages persist and replay
 - **High performance**: Minimal latency overhead
 - **File-backed storage**: Durable across restarts
 
 **Use Case for Deep Agents**:
+
 ```python
 import asyncio
 from nats.aio.client import Client as NATS
@@ -393,6 +422,7 @@ async def persist_state(js, agent_id, state_data):
 ```
 
 **Benefits**:
+
 - Deep Agent state survives MicroVM restarts
 - Multi-hour research sessions maintain context
 - Replay state for debugging/auditing
@@ -402,11 +432,13 @@ async def persist_state(js, agent_id, state_data):
 ### B. Object Store for Large Files
 
 **NATS Object Store** implements S3-like object storage within NATS:
+
 - **Chunked storage**: Files of any size
 - **Key-value interface**: Simple get/put operations
 - **Built on JetStream**: Same persistence guarantees
 
 **Use Case for Research Artifacts**:
+
 ```python
 async def setup_file_store(js):
     os = await js.object_store("VIBEWRITER_FILES")
@@ -421,6 +453,7 @@ async def retrieve_draft(os, file_path):
 ```
 
 **Benefits**:
+
 - Research drafts, sources, citations stored in NATS
 - Integrates with custom `SandboxBackendProtocol`
 - No external S3/storage dependency
@@ -472,16 +505,19 @@ async def retrieve_draft(os, file_path):
 ### B. Key Integration Points
 
 **1. Deep Agent → MicroVM Backend**
+
 - Implement `SandboxBackendProtocol` with RPC client
 - Translate `ls`, `read_file`, `write_file` to secure MicroVM calls
 - Use NATS Object Store for large file operations
 
 **2. MicroVM → NATS**
+
 - Agent state checkpoints published to JetStream streams
 - Research artifacts stored in Object Store
 - Citation events broadcast via NATS subjects
 
 **3. Security Boundaries**
+
 - **Hardware isolation**: Private keys never leave MicroVM
 - **Network isolation**: MicroVM ↔ Host communication via controlled RPC
 - **Secret management**: Jailer process enforces additional confinement
@@ -489,17 +525,20 @@ async def retrieve_draft(os, file_path):
 ### C. Why This Architecture Works
 
 **For Financial Delegation**:
+
 - ✅ Private keys isolated in hardware-virtualized MicroVM
 - ✅ Container escape cannot compromise other users' keys
 - ✅ Agent has full signing authority within isolated environment
 
 **For Complex Research**:
+
 - ✅ Hierarchical planning breaks down multi-hour tasks
 - ✅ Filesystem backend manages sources, drafts, citations
 - ✅ Long-term memory persists across sessions
 - ✅ Sub-agents handle specialized verification tasks
 
 **For Production Scale**:
+
 - ✅ Firecracker: 150 VMs/second, <5MB overhead
 - ✅ NATS JetStream: High-performance persistence
 - ✅ Proven in production (AWS Lambda, E2B, Northflank)
@@ -511,12 +550,14 @@ async def retrieve_draft(os, file_path):
 ### A. Runloop (Managed Service)
 
 **Pros**:
+
 - Zero infrastructure management
 - Production-ready immediately
 - Commercial support and SLAs
 - Simple API key authentication
 
 **Cons**:
+
 - Data leaves your infrastructure
 - Recurring API costs
 - Less control over security model
@@ -527,6 +568,7 @@ async def retrieve_draft(os, file_path):
 ### B. Self-Hosted Firecracker
 
 **Pros**:
+
 - Complete data sovereignty
 - Full control over security policies
 - No API costs after infrastructure setup
@@ -534,6 +576,7 @@ async def retrieve_draft(os, file_path):
 - Required for financial key isolation
 
 **Cons**:
+
 - Infrastructure complexity
 - Need to build orchestration layer
 - Monitoring and debugging overhead
@@ -544,11 +587,13 @@ async def retrieve_draft(os, file_path):
 ### C. Recommendation for Vibewriter
 
 **Phase 1 (Prototype)**: Runloop
+
 - Get Deep Agents working quickly
 - Validate architecture decisions
 - Test planning and memory features
 
 **Phase 2 (Production)**: Self-Hosted Firecracker
+
 - Implement custom `SandboxBackendProtocol`
 - Build minimal orchestration as needed
 - Integrate NATS for persistence
@@ -567,13 +612,15 @@ async def retrieve_draft(os, file_path):
 pip install deepagents
 
 # Set up Runloop sandbox
-export RUNLOOP_API_KEY="your-key"
+# Note: RUNLOOP_API_KEY is already configured in the backend environment
+# export RUNLOOP_API_KEY="your-key"
 
 # Create simple Vibewriter prototype
 uvx deepagents-cli --sandbox runloop
 ```
 
 **Goals**:
+
 - Validate hierarchical planning for research tasks
 - Test filesystem backend for managing sources
 - Prove out sub-agent delegation for verification
@@ -615,6 +662,7 @@ uvx deepagents-cli --sandbox runloop
 ## X. Sources and Further Reading
 
 ### LangChain Deep Agents
+
 - [Deep Agents - LangChain Blog](https://blog.langchain.com/deep-agents/)
 - [Deep Agents CLI](https://docs.langchain.com/oss/python/deepagents/cli)
 - [Backends Documentation](https://docs.langchain.com/oss/python/deepagents/backends)
@@ -623,6 +671,7 @@ uvx deepagents-cli --sandbox runloop
 - [GitHub - langchain-ai/deepagents](https://github.com/langchain-ai/deepagents)
 
 ### Firecracker MicroVMs
+
 - [Firecracker - GitHub](https://github.com/firecracker-microvm/firecracker)
 - [Firecracker - AWS Blog](https://aws.amazon.com/blogs/aws/firecracker-lightweight-virtualization-for-serverless-computing/)
 - [How AWS's Firecracker VMs Work](https://www.amazon.science/blog/how-awss-firecracker-virtual-machines-work)
@@ -630,10 +679,12 @@ uvx deepagents-cli --sandbox runloop
 - [Secure Runtime for AI - Northflank](https://northflank.com/blog/secure-runtime-for-codegen-tools-microvms-sandboxing-and-execution-at-scale)
 
 ### NATS JetStream
+
 - [JetStream - NATS Docs](https://docs.nats.io/nats-concepts/jetstream)
 - [Object Store - NATS Docs](https://docs.nats.io/nats-concepts/jetstream/obj_store)
 - [Streaming for Personal.ai](https://www.synadia.com/blog/streaming-messaging-and-persistence-for-personal-ai)
 
 ### Additional Resources
+
 - [awesome-sandbox - GitHub](https://github.com/restyler/awesome-sandbox)
 - [gVisor vs Kata vs Firecracker](https://onidel.com/gvisor-kata-firecracker-2025/)
