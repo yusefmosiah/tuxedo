@@ -12,7 +12,7 @@ The LangChain Deep Agent *is* the core agent, and the **Vibewriter** is the set 
 | Component | New State (Vibewriter Deep Agent) | Justification |
 | :--- | :--- | :--- |
 | **Agent Core** | **LangChain Deep Agent** | Enables hierarchical planning, long-term memory, and complex, multi-step tasks [1]. |
-| **Sandbox** | **MicroVM (Firecracker/ERA)** | Provides hardware-level isolation, essential for protecting the agent's financial keys and assets from container escape [2] [3]. |
+| **Sandbox** | **MicroVM (Firecracker)** | Provides hardware-level isolation, essential for protecting the agent's financial keys and assets from container escape [2] [3]. |
 | **Filesystem** | **Custom `SandboxBackendProtocol`** | Allows integration of the MicroVM's filesystem with the Deep Agent's tools, enabling full computer control and persistent state [1] [4]. |
 | **Data Backbone** | **NATS with JetStream** | Offers persistent, high-speed messaging for agent-to-agent communication and state storage, overcoming the speed/persistence trade-off [5] [6]. |
 | **Agent Name** | **Vibewriter** | The Deep Agent *is* the Vibewriter. The name now refers to the agent's complete set of capabilities and tools. |
@@ -48,7 +48,7 @@ from typing import List, Dict, Any
 class MicroVMBackend(SandboxBackendProtocol):
     """
     A custom backend to connect the Deep Agent's filesystem operations
-    to a remote MicroVM orchestrator (e.g., ERA or custom Firecracker manager).
+    to the Firecracker MicroVM API.
     """
     def __init__(self, microvm_rpc_client):
         self.client = microvm_rpc_client
@@ -125,7 +125,7 @@ The strategic decision to use MicroVMs is non-negotiable for a financial delegat
    - Resource allocation (CPU, memory limits)
 3. **No heavy orchestration needed for v1** - Keep it simple
 
-**Why Firecracker (not ERA/krunvm)**:
+**Why Firecracker**:
 - Production-proven at AWS Lambda scale
 - Maximum control and transparency
 - Direct API is simple enough for our needs
@@ -549,4 +549,3 @@ The Deep Agent *is* the Vibewriter. The architecture enables complex, multi-hour
 [4] LangChain. *Backends - Docs by LangChain*. [Online]. Available: https://docs.langchain.com/oss/python/deepagents/backends
 [5] NATS. *JetStream - NATS Docs*. [Online]. Available: https://docs.nats.io/nats-concepts/jetstream
 [6] NATS. *Object Store - NATS Docs*. [Online]. Available: https://docs.nats.io/nats-concepts/jetstream/obj_store
-[7] BinSquare. *ERA: Open source local sandboxing for running AI generated code*. [Online]. Available: https://github.com/BinSquare/ERA

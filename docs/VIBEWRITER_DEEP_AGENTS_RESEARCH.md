@@ -5,7 +5,7 @@
 
 ## Executive Summary
 
-This document presents comprehensive research findings on **LangChain Deep Agents**, **Firecracker MicroVMs**, **ERA sandboxing**, and **NATS JetStream** - the core technologies for building the Vibewriter agent architecture. The research confirms that the stack pivot from pipeline-based agents to Deep Agents in MicroVMs is the correct architectural decision for building a secure, autonomous financial delegate agent.
+This document presents comprehensive research findings on **LangChain Deep Agents**, **Firecracker MicroVMs**, and **NATS JetStream** - the core technologies for building the Vibewriter agent architecture. The research confirms that the stack pivot from pipeline-based agents to Deep Agents in MicroVMs is the correct architectural decision for building a secure, autonomous financial delegate agent.
 
 **Key Finding**: LangChain Deep Agents with custom MicroVM backends provide the exact capabilities needed for Vibewriter: hierarchical planning, filesystem access, long-term memory, and secure isolation for financial operations.
 
@@ -140,7 +140,7 @@ The agent maintains **full visibility** into the sandbox:
 
 ### C. Self-Hosted Option: Custom `SandboxBackendProtocol`
 
-For self-hosted MicroVM integration (Firecracker/ERA), implement the `SandboxBackendProtocol`:
+For self-hosted Firecracker integration, implement the `SandboxBackendProtocol`:
 
 ```python
 from deepagents.backends.base import SandboxBackendProtocol
@@ -148,8 +148,7 @@ from typing import List, Dict, Any
 
 class MicroVMBackend(SandboxBackendProtocol):
     """
-    Custom backend connecting Deep Agent to self-hosted MicroVM
-    (e.g., Firecracker via ERA orchestrator)
+    Custom backend connecting Deep Agent to self-hosted Firecracker MicroVM
     """
     def __init__(self, microvm_rpc_client):
         self.client = microvm_rpc_client
@@ -338,7 +337,7 @@ curl --unix-socket /tmp/firecracker.sock -i \
 
 **Firecracker vs Alternatives**:
 
-| Aspect | Firecracker (Direct) | Alternatives (ERA, krunvm, etc.) |
+| Aspect | Firecracker (Direct) | Alternatives (krunvm, etc.) |
 |--------|---------------------|----------------------------------|
 | **Maturity** | Production (AWS Lambda) | Early stage or experimental |
 | **Security** | Battle-tested at scale | Less proven |
@@ -551,7 +550,7 @@ async def retrieve_draft(os, file_path):
 
 **Phase 2 (Production)**: Self-Hosted Firecracker
 - Implement custom `SandboxBackendProtocol`
-- Build orchestration layer (inspired by ERA)
+- Build minimal orchestration as needed
 - Integrate NATS for persistence
 - Deploy to production with financial key isolation
 
@@ -609,7 +608,7 @@ uvx deepagents-cli --sandbox runloop
 
 5. **Runloop provides rapid prototyping path** while self-hosted Firecracker is the production target.
 
-6. **ERA offers valuable orchestration patterns** but production deployment should use battle-tested Firecracker.
+6. **Production deployment uses direct Firecracker** - battle-tested, simple, transparent.
 
 ---
 
@@ -630,8 +629,6 @@ uvx deepagents-cli --sandbox runloop
 - [Firecracker vs Docker](https://huggingface.co/blog/agentbox-master/firecracker-vs-docker-tech-boundary)
 - [Secure Runtime for AI - Northflank](https://northflank.com/blog/secure-runtime-for-codegen-tools-microvms-sandboxing-and-execution-at-scale)
 
-### ERA MicroVMs
-- [BinSquare/ERA - GitHub](https://github.com/BinSquare/ERA)
 - [Show HN: Era - Hacker News](https://news.ycombinator.com/item?id=46065997)
 
 ### NATS JetStream
