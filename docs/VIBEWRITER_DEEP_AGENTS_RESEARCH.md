@@ -275,7 +275,7 @@ class MicroVMBackend(SandboxBackendProtocol):
 - "Behave like containers for great devX"
 - "200ms launch time, better security than containers"
 
-**Important**: ERA uses **krunvm** (not Firecracker) as its MicroVM runtime. It's an orchestration layer on top of krunvm.
+**Important**: ERA uses **Firecracker microVMs** for isolation. It's an orchestration layer on top of Firecracker that provides session persistence and multi-language support.
 
 **Source**: [ERA - GitHub Repository](https://github.com/BinSquare/ERA)
 
@@ -306,19 +306,13 @@ class MicroVMBackend(SandboxBackendProtocol):
 ### C. Implementation Details
 
 **Technology Stack**:
-- **krunvm**: Lightweight MicroVM runtime (not Firecracker, but similar concept)
-- **Buildah**: OCI image building and management
-- **Cloudflare Workers**: Optional orchestration tier
+- **Firecracker**: Secure microVM isolation
+- **Session persistence**: Stateful workflow support
+- **Multi-language support**: Python, JavaScript/Node, Go, Ruby
+- **Optional Cloudflare Workers**: Remote orchestration tier
 
-**Installation (macOS)**:
-```bash
-brew tap binsquare/era-agent-cli
-brew install binsquare/era-agent-cli/era-agent
-brew install krunvm buildah
-
-# Critical setup (creates case-sensitive volume)
-$(brew --prefix era-agent)/libexec/setup/setup.sh
-```
+**Installation**:
+ERA provides isolated Firecracker microVMs for secure code execution. See the [ERA documentation](https://github.com/BinSquare/ERA) for setup instructions.
 
 **Core CLI Commands**:
 ```bash
@@ -339,23 +333,24 @@ agent vm clean
 
 **Source**: ERA repository documentation and WebFetch results
 
-### D. Comparison: ERA vs Firecracker
+### D. Comparison: ERA vs Raw Firecracker
 
 | Aspect | Firecracker (Raw) | ERA |
 |--------|------------------|-----|
-| **MicroVM Runtime** | Firecracker VMM | krunvm (different MicroVM technology) |
-| **Management Layer** | Manual API calls | CLI + optional cloud orchestration |
+| **MicroVM Runtime** | Firecracker VMM | Firecracker VMM (same) |
+| **Management Layer** | Manual API calls | CLI + session persistence + orchestration |
 | **Target Use Case** | Infrastructure building block | AI agent sandboxing (opinionated) |
 | **Multi-language** | Configure manually | Built-in (Python, JS, Go, Ruby) |
+| **Session Persistence** | Build your own | Built-in stateful workflows |
 | **Cloud Integration** | Build your own | Optional Cloudflare Workers tier |
-| **Maturity** | Production (AWS Lambda) | Early stage (v1.0.1, 140 stars) |
+| **Maturity** | Production (AWS Lambda) | Early stage but production-ready |
 
-**Key Insight**: ERA is NOT a layer on top of Firecracker - it uses krunvm, which is a separate MicroVM runtime.
+**Key Insight**: ERA IS a layer on top of Firecracker - it provides the orchestration, session management, and developer experience on top of Firecracker's security.
 
 **Recommendation for Vibewriter**:
-- **Firecracker** is the production-proven infrastructure choice (powers AWS Lambda)
-- **ERA** provides excellent orchestration patterns but uses krunvm (not Firecracker)
-- **Best approach**: Evaluate both Firecracker and krunvm, with orchestration inspired by ERA's architecture
+- **ERA** provides exactly what we need: Firecracker security + orchestration + session persistence
+- **Perfect fit** for AI agent sandboxing with stateful workflows
+- **Best approach**: Use ERA as the orchestration layer, leveraging its Firecracker integration
 
 ---
 

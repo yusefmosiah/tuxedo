@@ -109,14 +109,14 @@ The strategic decision to use MicroVMs is non-negotiable for a financial delegat
 
 **Firecracker** is the industry standard for secure, low-overhead virtualization, developed by AWS. It is purpose-built for creating and managing small virtual machines with minimal overhead, making it ideal for the rapid spin-up and tear-down required for multi-tenant AI agents [3].
 
-**ERA (BinSquare/ERA)** is an open-source project specifically designed for sandboxing AI-generated code using MicroVMs [7]. ERA uses **krunvm** (not Firecracker) as its MicroVM runtime and provides an orchestration layer on top.
+**ERA (BinSquare/ERA)** is an open-source project specifically designed for sandboxing AI-generated code using **Firecracker microVMs** [7]. ERA provides an orchestration layer on top of Firecracker with session persistence and multi-language support.
 
 The most likely architecture for the Vibewriter:
 
-1.  **MicroVM Runtime:** **Firecracker** (production-proven, powers AWS Lambda) or **krunvm** (used by ERA)
-2.  **Orchestrator:** **ERA-inspired custom layer** manages the lifecycle of the MicroVMs, handling provisioning, networking, and the secure RPC layer that the custom `SandboxBackendProtocol` will connect to.
+1.  **MicroVM Runtime:** **Firecracker** (production-proven, powers AWS Lambda)
+2.  **Orchestrator:** **ERA** provides the orchestration layer, managing VM lifecycle, session persistence, and the secure RPC layer that the custom `SandboxBackendProtocol` will connect to.
 
-This approach leverages ERA's excellent orchestration patterns while choosing the best MicroVM runtime for our needs.
+This approach leverages ERA's Firecracker-based security with built-in orchestration and session management - exactly what we need for stateful agent workflows.
 
 ### B. Security Model: Container Escape = Bank Robbery
 
@@ -420,14 +420,14 @@ agent.persist_result(result)
 
 ### Phase 2: Self-Hosted MicroVM Backend (Next Session)
 
-**Goal**: Replace Runloop with self-hosted Firecracker/krunvm
+**Goal**: Replace Runloop with self-hosted ERA (Firecracker orchestration)
 
 **Tasks** (with coding agents):
 1. Implement `MicroVMBackend(SandboxBackendProtocol)`
-2. Set up local Firecracker or krunvm environment
-3. Build minimal orchestration layer (VM lifecycle)
-4. Integrate NATS JetStream for state persistence
-5. Migrate from Runloop to self-hosted
+2. Set up local ERA environment (Firecracker + orchestration)
+3. Configure ERA for session persistence
+4. Integrate NATS JetStream for agent state
+5. Migrate from Runloop to ERA
 
 **Success Criteria**:
 - Agent executes in self-hosted MicroVM
