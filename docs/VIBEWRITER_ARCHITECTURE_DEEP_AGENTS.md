@@ -109,14 +109,23 @@ The strategic decision to use MicroVMs is non-negotiable for a financial delegat
 
 **Firecracker** is the industry standard for secure, low-overhead virtualization, developed by AWS. It is purpose-built for creating and managing small virtual machines with minimal overhead, making it ideal for the rapid spin-up and tear-down required for multi-tenant AI agents [3].
 
-**ERA (BinSquare/ERA)** is an open-source project specifically designed for sandboxing AI-generated code using **Firecracker microVMs** [7]. ERA provides an orchestration layer on top of Firecracker with session persistence and multi-language support.
+**ERA (BinSquare/ERA)** is an open-source project specifically designed for sandboxing AI-generated code using **krunvm microVMs** [7]. ERA uses krunvm, which is built on libkrun - a library that incorporates code from Firecracker, rust-vmm, and Cloud-Hypervisor.
 
 The most likely architecture for the Vibewriter:
 
-1.  **MicroVM Runtime:** **Firecracker** (production-proven, powers AWS Lambda)
-2.  **Orchestrator:** **ERA** provides the orchestration layer, managing VM lifecycle, session persistence, and the secure RPC layer that the custom `SandboxBackendProtocol` will connect to.
+**Option 1: ERA (krunvm/libkrun)**
+- **MicroVM Runtime:** krunvm (libkrun with Firecracker components)
+- **Orchestrator:** ERA provides session persistence, multi-language support
+- **Pros:** Faster development, built-in orchestration
+- **Cons:** Less battle-tested than direct Firecracker
 
-This approach leverages ERA's Firecracker-based security with built-in orchestration and session management - exactly what we need for stateful agent workflows.
+**Option 2: Direct Firecracker**
+- **MicroVM Runtime:** Firecracker (AWS Lambda production stack)
+- **Orchestrator:** Custom layer (more work, more control)
+- **Pros:** Production-proven, maximum control
+- **Cons:** More infrastructure work
+
+**Recommendation**: Start with ERA for rapid v1 development, evaluate migration to direct Firecracker for production scale.
 
 ### B. Security Model: Container Escape = Bank Robbery
 

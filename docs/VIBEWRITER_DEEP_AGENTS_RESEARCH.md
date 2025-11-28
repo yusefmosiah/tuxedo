@@ -275,7 +275,7 @@ class MicroVMBackend(SandboxBackendProtocol):
 - "Behave like containers for great devX"
 - "200ms launch time, better security than containers"
 
-**Important**: ERA uses **Firecracker microVMs** for isolation. It's an orchestration layer on top of Firecracker that provides session persistence and multi-language support.
+**Important**: ERA uses **krunvm** for MicroVM isolation. krunvm uses **libkrun**, which incorporates code from Firecracker, rust-vmm, and Cloud-Hypervisor. So ERA benefits from Firecracker's technology but through the libkrun abstraction layer.
 
 **Source**: [ERA - GitHub Repository](https://github.com/BinSquare/ERA)
 
@@ -306,13 +306,26 @@ class MicroVMBackend(SandboxBackendProtocol):
 ### C. Implementation Details
 
 **Technology Stack**:
-- **Firecracker**: Secure microVM isolation
+- **krunvm**: MicroVM runtime (built on libkrun)
+- **libkrun**: VMM incorporating Firecracker, rust-vmm, Cloud-Hypervisor code
+- **buildah**: OCI image building and management
 - **Session persistence**: Stateful workflow support
 - **Multi-language support**: Python, JavaScript/Node, Go, Ruby
 - **Optional Cloudflare Workers**: Remote orchestration tier
 
-**Installation**:
-ERA provides isolated Firecracker microVMs for secure code execution. See the [ERA documentation](https://github.com/BinSquare/ERA) for setup instructions.
+**Installation (macOS)**:
+```bash
+brew tap binsquare/era-agent-cli
+brew install binsquare/era-agent-cli/era-agent
+brew install krunvm buildah
+
+# Critical setup (creates case-sensitive volume)
+$(brew --prefix era-agent)/libexec/setup/setup.sh
+```
+
+**Requirements**:
+- krunvm (MicroVM runtime using libkrun)
+- buildah (OCI image handling)
 
 **Core CLI Commands**:
 ```bash
@@ -333,24 +346,25 @@ agent vm clean
 
 **Source**: ERA repository documentation and WebFetch results
 
-### D. Comparison: ERA vs Raw Firecracker
+### D. Comparison: Firecracker vs krunvm/libkrun vs ERA
 
-| Aspect | Firecracker (Raw) | ERA |
-|--------|------------------|-----|
-| **MicroVM Runtime** | Firecracker VMM | Firecracker VMM (same) |
-| **Management Layer** | Manual API calls | CLI + session persistence + orchestration |
-| **Target Use Case** | Infrastructure building block | AI agent sandboxing (opinionated) |
-| **Multi-language** | Configure manually | Built-in (Python, JS, Go, Ruby) |
-| **Session Persistence** | Build your own | Built-in stateful workflows |
-| **Cloud Integration** | Build your own | Optional Cloudflare Workers tier |
-| **Maturity** | Production (AWS Lambda) | Early stage but production-ready |
+| Aspect | Firecracker (Direct) | krunvm/libkrun | ERA |
+|--------|---------------------|----------------|-----|
+| **VMM Technology** | Firecracker (AWS) | libkrun (incorporates Firecracker/rust-vmm/Cloud-Hypervisor code) | krunvm (libkrun-based) |
+| **Management Layer** | Manual API calls | CLI for OCI images | Full orchestration + session persistence |
+| **Target Use Case** | Infrastructure building block | Lightweight VMs from OCI images | AI agent sandboxing |
+| **Multi-language** | Configure manually | Configure manually | Built-in (Python, JS, Go, Ruby) |
+| **Session Persistence** | Build your own | Build your own | Built-in stateful workflows |
+| **Cloud Integration** | Build your own | None | Optional Cloudflare Workers tier |
+| **Maturity** | Production (AWS Lambda) | Production (containers ecosystem) | Early stage |
 
-**Key Insight**: ERA IS a layer on top of Firecracker - it provides the orchestration, session management, and developer experience on top of Firecracker's security.
+**Key Insight**: ERA uses krunvm, which uses libkrun, which incorporates Firecracker code. So ERA benefits from Firecracker's technology but through multiple abstraction layers.
 
 **Recommendation for Vibewriter**:
-- **ERA** provides exactly what we need: Firecracker security + orchestration + session persistence
-- **Perfect fit** for AI agent sandboxing with stateful workflows
-- **Best approach**: Use ERA as the orchestration layer, leveraging its Firecracker integration
+- **ERA** provides excellent orchestration + session persistence for AI agents
+- **libkrun** offers lighter weight than full Firecracker with similar security
+- **Trade-off**: ERA's convenience vs more control with direct Firecracker
+- **Best approach**: Start with ERA for rapid development, evaluate direct Firecracker for production if needed
 
 ---
 
