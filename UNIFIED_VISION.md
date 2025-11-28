@@ -1,4 +1,5 @@
 # Choir: The Thought Bank
+
 **Intelligence that creates value should share in that value**
 
 ---
@@ -24,6 +25,7 @@ This is not social media (no feeds, no followers, no engagement farming). This i
 ### Academic Publishing: Credentialism Over Insight
 
 Academic publishing exploits non-prestige scholars while rewarding institutional affiliation over merit:
+
 - 18-month peer review cycles when AI achieves "Move 37" breakthroughs daily
 - Paywalls extracting billions while compensating authors nothing
 - Tenure committees valuing journal prestige over intellectual contribution
@@ -35,6 +37,7 @@ When AI makes fundamental breakthroughs across every field simultaneously, the t
 ### Social Media: Attention Extraction
 
 Social platforms optimize for engagement, degrading discourse:
+
 - Viral content rewards outrage over insight
 - Follower counts determine distribution, not quality
 - Algorithmic feeds bury depth under volume
@@ -46,6 +49,7 @@ The attention economy makes individual contributions worthless as volume increas
 ### AI Platforms: Training Data Extraction
 
 Current AI platforms capture all value from your intellectual contributions:
+
 - ChatGPT: You make it smarter, OpenAI captures billions
 - Claude: Your conversations improve the model, Anthropic owns the value
 - Perplexity: Your queries refine search, you get answers worth nothing
@@ -154,11 +158,11 @@ Vibewriter operates at the highest level of this hierarchy. It is a single, powe
 
 ### The Workflow: User Intent, Agent Autonomy
 
-You don't tell Vibewriter *how* to research; you tell it *what* to research.
+You don't tell Vibewriter _how_ to research; you tell it _what_ to research.
 
 The agent autonomously decides the best workflow to achieve the user's goal. It might start by searching the Choir knowledge base, then write a Python script to scrape and validate external sources, draft an article, and finally publish it. The user sees the agent working in a transparent, IDE-like environment, observing its thought process and actions in real-time.
 
-Terminal access is the *ceiling*, not the *floor*. While the agent can write custom scripts for novel problems, the common path is to use the pre-built Choir tools for standard operations, ensuring efficiency and reliability. This architecture provides the perfect balance of structured capability and creative freedom.
+Terminal access is the _ceiling_, not the _floor_. While the agent can write custom scripts for novel problems, the common path is to use the pre-built Choir tools for standard operations, ensuring efficiency and reliability. This architecture provides the perfect balance of structured capability and creative freedom.
 
 ---
 
@@ -167,11 +171,13 @@ Terminal access is the *ceiling*, not the *floor*. While the agent can write cus
 ### The Problem with Identity-Based Systems
 
 Traditional publishing couples ideas with identity:
+
 - **Academia**: Institutional affiliation determines credibility
 - **Social media**: Follower counts determine distribution
 - **Substack**: Early adopters capture network effects, newcomers invisible
 
 This creates systematic bias against:
+
 - Non-prestige institutions
 - Junior researchers
 - Unconventional thinking
@@ -202,6 +208,7 @@ This creates systematic bias against:
 Traditional academia has a catastrophic track record of marginalizing correct-but-unconventional thinkers:
 
 **Historical examples**:
+
 - **Ignaz Semmelweis** (1840s): Proved handwashing prevented infections. Mocked by medical establishment, died in asylum. Vindicated posthumously.
 - **Alfred Wegener** (1912): Proposed continental drift. Ridiculed for decades. Plate tectonics confirmed 50 years later.
 - **Lynn Margulis** (1967): Endosymbiotic theory (mitochondria as ancient bacteria). Rejected by 15 journals. Now textbook biology.
@@ -252,6 +259,7 @@ Traditional academia has a catastrophic track record of marginalizing correct-bu
 **Human and AI collaboration**: AI agents achieve certainty. Humans who had the insight first receive economic compensation. Both benefit.
 
 **The vindication cycle**:
+
 1. Human publishes fringe idea (no credentials, just insight)
 2. Idea gets ignored/marginalized by establishment
 3. AI researches independently, achieves certainty
@@ -269,6 +277,7 @@ Traditional academia has a catastrophic track record of marginalizing correct-bu
 ### The Problem with Static Publications
 
 Traditional publishing treats articles as final:
+
 - **Academia**: No mechanism for improvement after peer review
 - **Social media**: Edits rare, no economic incentive for quality
 - **Wikipedia**: Edit wars, admin gatekeeping, no compensation
@@ -409,6 +418,7 @@ Treasury Accumulates CHIP
 When AI achieves "Move 37" breakthroughs across every field simultaneously, traditional publishing becomes a bottleneck:
 
 **Academic timeline**:
+
 - Research (6 months)
 - Write (2 months)
 - Submit (1 month)
@@ -417,6 +427,7 @@ When AI achieves "Move 37" breakthroughs across every field simultaneously, trad
 - Publication (18-24 months total)
 
 **AI timeline**:
+
 - Breakthrough discovery (daily)
 - Immediate obsolescence of prior work
 - Need for rapid iteration
@@ -469,6 +480,7 @@ This creates a self-sustaining system where the protocol's ability to reward use
 ### The Honest User Journey
 
 **Week 1: Discovery**
+
 ```
 See your article on Twitter
   ├── "This research was written with Choir's Vibewriter"
@@ -482,6 +494,7 @@ Sign up to try
 ```
 
 **Month 1-3: Engagement**
+
 ```
 Use Vibewriter for research
   ├── Multi-step workflow produces quality
@@ -500,6 +513,7 @@ First citations arrive
 ```
 
 **Month 3-6: Trust Building**
+
 ```
 Citation rewards compound
   ├── $50-200/month from research
@@ -513,6 +527,7 @@ Learn about yield farming
 ```
 
 **Year 1+: Optional Finance**
+
 ```
 10-20% of users deploy capital
   ├── Deep trust earned through citation rewards
@@ -528,18 +543,21 @@ Learn about yield farming
 ### Distribution Strategy
 
 **You as first user**:
+
 - Use Vibewriter to produce high-quality research
 - Publish articles on choir.chat
 - Share on Twitter, Substack, etc.
 - "Written with Choir" attribution drives curiosity
 
 **Early researchers**:
+
 - Attracted by quality of your output
 - Try Vibewriter, impressed by multi-model orchestration
 - Publish their own research
 - Network effects begin
 
 **Investors arrive later**:
+
 - See growing knowledge base
 - Recognize citation quality
 - Deploy capital to capitalize the system
@@ -650,30 +668,35 @@ Learn about yield farming
 ### Key Architectural Decisions
 
 **1. Conductor Pattern**
+
 - Fast client-side orchestrator
 - Heavy server-side specialists
 - Transparent escalation
 - User always sees responsive interface
 
 **2. Multi-Model Optimization**
+
 - Each task routed to best-suited model
 - Research ≠ Drafting ≠ Critique
 - Quality scales with compute investment
 - Economic coupling to workflow completion
 
 **3. Chain Agnosticism**
+
 - Blockchains as commodity infrastructure
 - Agent handles all chain complexity
 - User sees yields, not gas fees
 - Capital flows to best risk-adjusted returns
 
 **4. Privacy by Default**
+
 - TEE hardware isolation
 - Homomorphic encryption (future)
 - Anonymous publishing
 - Zero personal data collection
 
 **5. Economic Sovereignty**
+
 - Non-custodial vaults (users own shares)
 - Passkey authentication (biometric, no seed phrases)
 - Multi-chain key management in TEE
@@ -690,6 +713,7 @@ Learn about yield farming
 OpenAI/Anthropic extract via subscriptions ($20/month). Choir pays users for contributions.
 
 Switching their model would:
+
 - Invalidate current valuations
 - Require new revenue sources
 - Conflict with training data extraction
@@ -739,18 +763,21 @@ Traditional publishers cannot adopt rapid publication and citation economics wit
 ### Growth Metrics
 
 **Month 1-3**:
+
 - 1,000+ users (Vibewriter trials)
 - 100+ articles published
 - First citations recorded
 - $10K+ in vaults (early adopters)
 
 **Month 3-6**:
+
 - 10,000+ users
 - 500+ articles
 - Citation rewards > $1K/month total
 - $100K+ in vaults
 
 **Month 6-12**:
+
 - 100,000+ users
 - 2,000+ articles
 - Citation rewards > $10K/month
@@ -758,6 +785,7 @@ Traditional publishers cannot adopt rapid publication and citation economics wit
 - Multi-chain expansion live
 
 **Year 2**:
+
 - 1,000,000+ users
 - 10,000+ published articles
 - Citation rewards > $100K/month
@@ -777,30 +805,41 @@ Traditional publishers cannot adopt rapid publication and citation economics wit
 
 ### Phase 1: MVP (Q4 2025)
 
-**Jazzhands Foundation**:
-- ✅ Fork OpenHands to create Jazzhands.
-- ✅ Implement remote runtime via RunLoop for secure, isolated agent execution.
-- ✅ Integrate the three core Choir tools (`search_choir_kb`, `cite_article`, `publish_to_choir`).
-- ✅ Establish the two-currency economic model (USDC for citations, CHIP for novelty/publishing).
+**Vibewriter Core (LangChain Deep Agent)**:
+
+- 🚧 LangChain Deep Agent with hierarchical planning (`write_todos`)
+- 🚧 MicroVM sandbox (Firecracker) for hardware-level security
+- 🚧 Custom `SandboxBackendProtocol` for Deep Agent ↔ MicroVM integration
+- 🚧 Integrate the three core Choir tools (`search_choir_kb`, `cite_article`, `publish_to_choir`)
+- 🚧 Establish the two-currency economic model (USDC for citations, CHIP for novelty/publishing)
 
 **Publishing Infrastructure**:
-- 🚧 Anonymous publishing routes using wallet signatures.
-- 🚧 Staking CHIP to publish and influence discovery.
-- 🚧 Foundational citation graph and visualization.
+
+- 🚧 Anonymous publishing routes using wallet signatures
+- 🚧 Staking CHIP to publish and influence discovery
+- 🚧 Foundational citation graph and visualization
+
+**Data & Communication**:
+
+- 🚧 NATS JetStream for persistent, high-speed agent-to-agent messaging
+- 🚧 Agent state management across long-running sessions
 
 **Core Finance**:
-- ✅ Passkey authentication for secure, user-friendly access.
-- ✅ Basic Treasury functions for managing CHIP and USDC flows.
+
+- ✅ Passkey authentication for secure, user-friendly access
+- ✅ Basic Treasury functions for managing CHIP and USDC flows
 
 ### Phase 2: Learning Economy (Q1-Q2 2026)
 
 **Economic Loops**:
+
 - [ ] Dynamic Citation Rewards (USDC, from Treasury borrowing)
 - [ ] Novelty-based CHIP distribution (emergent decay)
 - [ ] Revision markets (unanimous approval, Treasury capture)
 - [ ] Consumed CHIP flows to Treasury (not burned)
 
 **Multi-Chain Expansion**:
+
 - [ ] EVM integration (Base, Arbitrum, Mainnet)
 - [ ] Aave/Morpho yield farming
 - [ ] Aerodrome liquidity strategies
@@ -808,6 +847,7 @@ Traditional publishers cannot adopt rapid publication and citation economics wit
 - [ ] Solana/SVM scaffolding
 
 **Quality Mechanisms**:
+
 - [ ] Temporal validation scoring
 - [ ] Plagiarism detection (semantic similarity)
 - [ ] Collaborative filtering
@@ -816,23 +856,27 @@ Traditional publishers cannot adopt rapid publication and citation economics wit
 ### Phase 3: Advanced Features (Q3-Q4 2026)
 
 **TEE Deployment**:
+
 - [ ] Phala Network production deployment
 - [ ] User-specific encrypted filesystems
 - [ ] Hardware attestation
 - [ ] Multi-chain key isolation
 
 **Privacy Enhancements**:
+
 - [ ] Homomorphic encryption (XTrace migration)
 - [ ] Query privacy (search without revealing)
 - [ ] Anonymous citations (zero-knowledge proofs)
 
 **Premium Features**:
+
 - [ ] Tax-aware optimization (multi-jurisdiction)
 - [ ] Custom agent strategies
 - [ ] Choir Card (spend while earning yield)
 - [ ] API access for developers
 
 **Mobile Excellence**:
+
 - [ ] iOS app refinement (SwiftUI, carbon fiber kintsugi)
 - [ ] Android app (community-built, open source)
 - [ ] Low-bandwidth optimization
@@ -841,12 +885,14 @@ Traditional publishers cannot adopt rapid publication and citation economics wit
 ### Phase 4: Decentralization (2027+)
 
 **Governance Transition**:
+
 - [ ] Community treasury control
 - [ ] Protocol parameter voting
 - [ ] Fee structure decisions
 - [ ] Research grant allocation
 
 **Ecosystem Investment**:
+
 - [ ] Incubator/accelerator program
 - [ ] Strategic protocol investments
 - [ ] Revenue share agreements
@@ -869,6 +915,7 @@ Intelligence that creates value should share in that value.
 ### The Opportunity
 
 When AI achieves "Move 37" breakthroughs across every field, traditional academic publishing becomes a bottleneck. We need infrastructure for:
+
 - Rapid publication (not 18-month review)
 - Merit-based evaluation (not credential verification)
 - Economic rewards (not prestige hierarchies)
@@ -889,6 +936,7 @@ Not better execution on existing models. **New infrastructure incumbents cannot 
 ### The Gradient
 
 Enter at your trust level:
+
 - **Try Vibewriter** (zero risk, immediate value)
 - **Publish research** (time investment, citation income)
 - **Deploy capital** (financial risk, compound returns)

@@ -5,17 +5,17 @@
 
 ## Executive Summary: The Strategic Pivot
 
-The core of the `tuxedo` project's architecture is pivoting from a general-purpose agent framework (the former `jazzhands`/`openhands` fork) to a highly specialized, secure, and autonomous agent built on **LangChain Deep Agents** and isolated within **MicroVMs**. This shift is driven by the need for a **financial delegate** agent that requires hardware-level security and complex, hierarchical planning capabilities. The data infrastructure is being refined with **NATS JetStream** to provide a high-performance, persistent, and secure backbone for agent state and real-time economic signaling.
+The core of the `tuxedo` project's architecture is pivoting from a general-purpose agent framework to a highly specialized, secure, and autonomous agent built on **LangChain Deep Agents** and isolated within **MicroVMs**. This shift is driven by the need for a **financial delegate** agent that requires hardware-level security and complex, hierarchical planning capabilities. The data infrastructure is being refined with **NATS JetStream** to provide a high-performance, persistent, and secure backbone for agent state and real-time economic signaling.
 
-The LangChain Deep Agent *is* the core agent, and the **Vibewriter** is the set of skills, tools, and specialized knowledge that define its function. This unified architecture simplifies the deployment model and ensures the core agent is inherently capable of the Vibewriter's secure, stateful, and economically-integrated research and writing experience.
+The LangChain Deep Agent _is_ the core agent, and the **Vibewriter** is the set of skills, tools, and specialized knowledge that define its function. This unified architecture simplifies the deployment model and ensures the core agent is inherently capable of the Vibewriter's secure, stateful, and economically-integrated research and writing experience.
 
-| Component | Previous State (Vibewriter Fork) | New State (Vibewriter Deep Agent) | Justification |
-| :--- | :--- | :--- | :--- |
-| **Agent Core** | Traditional LangChain Agent/Tool-Calling Loop | **LangChain Deep Agent** | Enables hierarchical planning, long-term memory, and complex, multi-step tasks [1]. |
-| **Sandbox** | Docker Container / Remote Runtime | **MicroVM (Firecracker/ERA)** | Provides hardware-level isolation, essential for protecting the agent's financial keys and assets from container escape [2] [3]. |
-| **Filesystem** | Ephemeral or S3-backed Volume | **Custom `SandboxBackendProtocol`** | Allows integration of the MicroVM's filesystem with the Deep Agent's tools, enabling full computer control and persistent state [1] [4]. |
-| **Data Backbone** | Standard Message Queue (Implied) | **NATS with JetStream** | Offers persistent, high-speed messaging for agent-to-agent communication and state storage, overcoming the speed/persistence trade-off [5] [6]. |
-| **Agent Name** | Ghostwriter | **Vibewriter** | The Deep Agent *is* the Vibewriter. The name now refers to the agent's complete set of capabilities and tools. |
+| Component         | Previous State (Vibewriter Fork)              | New State (Vibewriter Deep Agent)   | Justification                                                                                                                                   |
+| :---------------- | :-------------------------------------------- | :---------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Agent Core**    | Traditional LangChain Agent/Tool-Calling Loop | **LangChain Deep Agent**            | Enables hierarchical planning, long-term memory, and complex, multi-step tasks [1].                                                             |
+| **Sandbox**       | Docker Container / Remote Runtime             | **MicroVM (Firecracker/ERA)**       | Provides hardware-level isolation, essential for protecting the agent's financial keys and assets from container escape [2] [3].                |
+| **Filesystem**    | Ephemeral or S3-backed Volume                 | **Custom `SandboxBackendProtocol`** | Allows integration of the MicroVM's filesystem with the Deep Agent's tools, enabling full computer control and persistent state [1] [4].        |
+| **Data Backbone** | Standard Message Queue (Implied)              | **NATS with JetStream**             | Offers persistent, high-speed messaging for agent-to-agent communication and state storage, overcoming the speed/persistence trade-off [5] [6]. |
+| **Agent Name**    | Ghostwriter                                   | **Vibewriter**                      | The Deep Agent _is_ the Vibewriter. The name now refers to the agent's complete set of capabilities and tools.                                  |
 
 ## I. LangChain Deep Agents: The New Agent Core
 
@@ -24,6 +24,7 @@ LangChain Deep Agents represent a significant evolution in agent architecture, m
 ### A. Core Capabilities
 
 Deep Agents are characterized by four key pillars [1]:
+
 1.  **Hierarchical Planning:** They include a built-in `write_todos` tool, allowing the agent to break down a complex prompt into a sequence of discrete, trackable steps. This is crucial for the Vibewriter's role as a financial delegate, which must manage research, citation, and publishing autonomously.
 2.  **Filesystem Backend:** The agent is equipped with a virtual filesystem, which is accessed via tools like `ls`, `read_file`, `write_file`, `edit_file`, `glob`, and `grep`. This provides the "full computer control" required to manage research artifacts, drafts, and user keys within the isolated environment.
 3.  **Subagents:** The architecture supports spawning specialized subagents, enabling a modular approach where a planning agent delegates tasks to a research agent, a verification agent, and a publishing agent.
@@ -88,12 +89,12 @@ class MicroVMBackend(SandboxBackendProtocol):
 
 The instructions mention the need to merge the `tuxedo` agent and `ghostwriter` into one Deep Agent, which will use **skills** instead of just tools.
 
-*   **Skills vs. Tools:** In the context of modern agent frameworks like LangChain Deep Agents (and similar to Anthropic's pattern), a **tool** is a simple, atomic function (e.g., `search_web`, `read_file`). A **skill** is a more complex, pre-written, and often multi-step script or piece of documentation that the agent can choose to execute in its sandboxed environment.
-*   **Implementation:** The Deep Agent's ability to use skills is tied directly to its **Filesystem Backend** and **Hierarchical Planning**. The agent can:
-    1.  **Plan:** Use the `write_todos` tool to decide which skill is needed.
-    2.  **Access:** Read the skill's script (e.g., a Python file or shell script) from its virtual filesystem (which is the MicroVM).
-    3.  **Execute:** Run the script inside the secure sandbox (the MicroVM).
-*   **Benefit:** This pattern allows the agent to learn, adapt, and share complex, reusable workflows (like "Perform Financial Due Diligence" or "Generate Citation-Ready Report") without having to reason through every step from scratch. The agent's intelligence is in choosing the right skill and providing the correct inputs, while the skill itself provides the reliable, pre-vetted logic.
+- **Skills vs. Tools:** In the context of modern agent frameworks like LangChain Deep Agents (and similar to Anthropic's pattern), a **tool** is a simple, atomic function (e.g., `search_web`, `read_file`). A **skill** is a more complex, pre-written, and often multi-step script or piece of documentation that the agent can choose to execute in its sandboxed environment.
+- **Implementation:** The Deep Agent's ability to use skills is tied directly to its **Filesystem Backend** and **Hierarchical Planning**. The agent can:
+  1.  **Plan:** Use the `write_todos` tool to decide which skill is needed.
+  2.  **Access:** Read the skill's script (e.g., a Python file or shell script) from its virtual filesystem (which is the MicroVM).
+  3.  **Execute:** Run the script inside the secure sandbox (the MicroVM).
+- **Benefit:** This pattern allows the agent to learn, adapt, and share complex, reusable workflows (like "Perform Financial Due Diligence" or "Generate Citation-Ready Report") without having to reason through every step from scratch. The agent's intelligence is in choosing the right skill and providing the correct inputs, while the skill itself provides the reliable, pre-vetted logic.
 
 ## II. MicroVMs: The Secure Execution Environment
 
@@ -120,8 +121,8 @@ The data infrastructure must support both the high-speed, real-time communicatio
 
 JetStream is the built-in persistence engine for NATS, providing guaranteed, at-least-once message delivery and storage [5].
 
-*   **Agent Memory:** The Deep Agent's long-term memory and state (e.g., the `write_todos` plan, intermediate results) can be modeled as messages in a JetStream **Stream**. This ensures that if a MicroVM is suspended or crashes, the agent can resume its work exactly where it left off by replaying the stream.
-*   **Decoupling:** JetStream decouples the agent's logic from the persistence layer, making the system more resilient and scalable.
+- **Agent Memory:** The Deep Agent's long-term memory and state (e.g., the `write_todos` plan, intermediate results) can be modeled as messages in a JetStream **Stream**. This ensures that if a MicroVM is suspended or crashes, the agent can resume its work exactly where it left off by replaying the stream.
+- **Decoupling:** JetStream decouples the agent's logic from the persistence layer, making the system more resilient and scalable.
 
 Here is a conceptual Python snippet for using NATS JetStream for state persistence:
 
@@ -165,8 +166,8 @@ async def persist_agent_state(js, agent_id, state_data):
 
 The user's research artifacts (drafts, evidence, final reports) are too large to store efficiently within the JetStream message payload limits. NATS addresses this with its **Object Store** feature [6].
 
-*   **NATS Object Store:** This feature implements a chunking mechanism, allowing files of any size to be stored and retrieved by associating them with a unique key. It is designed to be a high-performance, S3-like interface built directly into NATS.
-*   **Integration with Object Store:** The Vibewriter's custom `SandboxBackendProtocol` should be designed to use the NATS Object Store for all large file operations (`write_file`, `read_file`). This keeps the entire data plane within the NATS ecosystem, simplifying infrastructure and leveraging NATS's security and performance features.
+- **NATS Object Store:** This feature implements a chunking mechanism, allowing files of any size to be stored and retrieved by associating them with a unique key. It is designed to be a high-performance, S3-like interface built directly into NATS.
+- **Integration with Object Store:** The Vibewriter's custom `SandboxBackendProtocol` should be designed to use the NATS Object Store for all large file operations (`write_file`, `read_file`). This keeps the entire data plane within the NATS ecosystem, simplifying infrastructure and leveraging NATS's security and performance features.
 
 Here is a conceptual Python snippet for using NATS Object Store for file persistence:
 
@@ -176,7 +177,7 @@ from nats.js.client import JetStreamContext
 async def setup_object_store(js: JetStreamContext):
     """Sets up a NATS Object Store for file persistence."""
     store_name = "VIBEWRITER_FILES"
-    
+
     # Create the object store if it doesn't exist
     await js.add_object_store(name=store_name)
     print(f"NATS Object Store '{store_name}' configured for file persistence.")
@@ -204,14 +205,14 @@ async def retrieve_file(os, file_path):
 
 The new **Vibewriter** architecture is a robust, production-ready design that meets the stringent security and functional requirements of the `tuxedo` project. By combining the hierarchical planning of **LangChain Deep Agents**, the hardware-level isolation of **MicroVMs**, and the persistent, high-speed data backbone of **NATS JetStream**, the project is well-positioned to implement the secure, autonomous financial delegate agent. The next steps should focus on implementing the custom `SandboxBackendProtocol` to bridge the Deep Agent with the MicroVM orchestrator.
 
-***
+---
 
 ## References
 
-[1] LangChain. *Deep Agents*. [Online]. Available: https://blog.langchain.com/deep-agents/
-[2] Provided Document. *tuxedo_infrastructure_v2.md*. Local Path: `/home/ubuntu/upload/tuxedo_infrastructure_v2.md`
-[3] firecracker-microvm. *Firecracker: Secure and fast microVMs*. [Online]. Available: https://github.com/firecracker-microvm/firecracker
-[4] LangChain. *Backends - Docs by LangChain*. [Online]. Available: https://docs.langchain.com/oss/python/deepagents/backends
-[5] NATS. *JetStream - NATS Docs*. [Online]. Available: https://docs.nats.io/nats-concepts/jetstream
-[6] NATS. *Object Store - NATS Docs*. [Online]. Available: https://docs.nats.io/nats-concepts/jetstream/obj_store
-[7] BinSquare. *ERA: Open source local sandboxing for running AI generated code*. [Online]. Available: https://github.com/BinSquare/ERA
+[1] LangChain. _Deep Agents_. [Online]. Available: https://blog.langchain.com/deep-agents/
+[2] Provided Document. _tuxedo_infrastructure_v2.md_. Local Path: `/home/ubuntu/upload/tuxedo_infrastructure_v2.md`
+[3] firecracker-microvm. _Firecracker: Secure and fast microVMs_. [Online]. Available: https://github.com/firecracker-microvm/firecracker
+[4] LangChain. _Backends - Docs by LangChain_. [Online]. Available: https://docs.langchain.com/oss/python/deepagents/backends
+[5] NATS. _JetStream - NATS Docs_. [Online]. Available: https://docs.nats.io/nats-concepts/jetstream
+[6] NATS. _Object Store - NATS Docs_. [Online]. Available: https://docs.nats.io/nats-concepts/jetstream/obj_store
+[7] BinSquare. _ERA: Open source local sandboxing for running AI generated code_. [Online]. Available: https://github.com/BinSquare/ERA
