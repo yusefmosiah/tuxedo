@@ -5,21 +5,21 @@
 
 ## Executive Summary
 
-The user's instructions and provided documents reveal a highly sophisticated, converging strategy across three domains: **Agent Architecture**, **Sandbox Security**, and **Decentralized Economics**. The core insight is the shift from a container-based, pipeline-driven agent model to a **MicroVM-isolated, full-computer-control agent** that acts as a **financial delegate** within a **Citation Economy**. The decision to skip the "openhands rebase" in favor of "LangChain deep agents in a microvm" is a strategic pivot that aligns perfectly with the security and functional requirements of the `tuxedo` (Choir/Vibewriter) project. The introduction of **NATS** as the primary data infrastructure further refines this architecture, providing a high-performance, persistent, and secure messaging layer for agent-to-agent communication and state management.
+The user's instructions and provided documents reveal a highly sophisticated, converging strategy across three domains: **Agent Architecture**, **Sandbox Security**, and **Decentralized Economics**. The core insight is the shift from a container-based, pipeline-driven agent model to a **MicroVM-isolated, full-computer-control agent** that acts as a **financial delegate** within a **Citation Economy**. The decision to pivot to **LangChain Deep Agents in a microvm** aligns perfectly with the security and functional requirements of the `tuxedo` (Choir/Vibewriter) project. The introduction of **NATS** as the primary data infrastructure further refines this architecture, providing a high-performance, persistent, and secure messaging layer for agent-to-agent communication and state management.
 
 | Component | Current State (Tuxedo/Choir) | Strategic Pivot/Justification | External Context |
 | :--- | :--- | :--- | :--- |
-| **Agent Model** | Vibewriter (Jazzhands Fork) | Moving towards **LangChain Deep Agents** | Deep Agents offer hierarchical planning, memory, and a filesystem backend, aligning with the "full computer control" requirement [1]. |
+| **Agent Model** | Vibewriter | Moving towards **LangChain Deep Agents** | Deep Agents offer hierarchical planning, memory, and a filesystem backend, aligning with the "full computer control" requirement [1]. |
 | **Sandbox** | MicroVMs (e.g., Firecracker) | Essential for **hardware-level isolation** of private keys and financial assets [2]. | MicroVMs (like Firecracker) are the industry standard for secure, low-overhead sandboxing of untrusted code [3]. ERA is a new entrant leveraging this for AI agents [4]. |
 | **Data Infrastructure** | **NEW: NATS with JetStream** | Provides **persistent memory** for Deep Agents and a **secure, high-speed backbone** for agent-to-agent citation communication [7] [8]. | NATS JetStream offers guaranteed, persistent messaging, overcoming the speed/persistence trade-off of traditional brokers [7]. |
 | **Economics** | Citation Economy (CHIP/USDC) | Rewards **semantic novelty** (CHIP) and **citations** (USDC), funded by a dual-stream treasury [5]. | The Citation Economy is positioned as the inevitable successor to the Attention Economy, solving the AI value extraction problem [6]. |
-| **Rebase Decision** | Skip OpenHands Rebase | Focus on integrating **Deep Agent** capabilities directly into the MicroVM-isolated Jazzhands fork. | OpenHands is a general-purpose coding agent platform; the pivot prioritizes the specialized financial delegation and planning required by Vibewriter [1]. |
+| **Rebase Decision** | Skip OpenHands Rebase | Focus on integrating **Deep Agent** capabilities directly into the MicroVM-isolated architecture. | OpenHands is a general-purpose coding agent platform; the pivot prioritizes the specialized financial delegation and planning required by Vibewriter [1]. |
 
 ---
 
 ## I. The Strategic Pivot: Deep Agents in a MicroVM
 
-The core of the user's plan is a strategic pivot away from a general-purpose agent framework (implied by the "openhands rebase") toward a highly specialized, secure, and autonomous agent.
+The core of the user's plan is a strategic pivot away from a general-purpose agent framework toward a highly specialized, secure, and autonomous agent.
 
 ### A. Agent Architecture: From Pipeline to Financial Delegate
 
@@ -27,12 +27,12 @@ The `tuxedo` documentation (`UNIFIED_VISION.md`) explicitly rejects the multi-st
 
 The move to **LangChain Deep Agents** is a direct implementation of this vision. Deep Agents are characterized by:
 *   **Hierarchical Planning:** They use a `write_todos` tool to break down complex tasks, which is essential for a "financial delegate" that must autonomously manage research, publishing, and DeFi transactions [1].
-*   **Filesystem Backend:** This is crucial for managing "unpublished drafts" and "user's keys" within the isolated environment, as outlined in the `jazzhands_infrastructure_v2.md` threat model [2].
+*   **Filesystem Backend:** This is crucial for managing "unpublished drafts" and "user's keys" within the isolated environment, as outlined in the threat model [2].
 *   **Tool-Use Specialization:** The Vibewriter agent is augmented with three core tools (`search_choir_kb`, `cite_article`, `publish_to_choir`) that are the interface to the Choir protocol's economic layer [5].
 
 ### B. Sandbox Security: MicroVMs as a Financial Prerequisite
 
-The `jazzhands_infrastructure_v2.md` document provides a clear and compelling justification for the shift to MicroVMs: **Container escape = bank robbery** [2].
+The infrastructure documentation provides a clear and compelling justification for the shift to MicroVMs: **Container escape = bank robbery** [2].
 
 | Isolation Method | Security Model | Threat Level | Suitability for Financial Delegation |
 | :--- | :--- | :--- | :--- |
@@ -94,13 +94,13 @@ The economic model necessitates the secure agent architecture:
 
 The user provided a link to an `awesome-sandbox` list of MicroVM options, confirming the need for a practical implementation choice.
 
-| MicroVM Option | Key Characteristics | Relevance to Vibewriter/Jazzhands |
+| MicroVM Option | Key Characteristics | Relevance to Vibewriter |
 | :--- | :--- | :--- |
 | **Firecracker** | Developed by AWS. Focus on security, speed, and low overhead. | High. Excellent for serverless functions and multi-tenant environments, aligning with the need for rapid, isolated agent execution [3]. |
 | **Cloud Hypervisor** | Developed by Intel/Arm. Focus on running cloud workloads. | Medium. A strong, production-ready alternative to Firecracker, but potentially higher overhead than the minimal Firecracker [3]. |
 | **ERA** | New entrant, specifically for AI agent sandboxing. | High. Directly addresses the user's problem space. Worth close monitoring and evaluation as a potential orchestration layer [4]. |
 
-The architecture described in `jazzhands_infrastructure_v2.md` explicitly mentions a **"SANDBOX ORCHESTRATOR (microsandbox)"** running on the host machine, which manages the user MicroVMs [2]. This suggests the user is already planning to use an orchestration layer (like the one ERA is building) on top of a core hypervisor (like Firecracker) to manage the agent's lifecycle.
+The architecture explicitly mentions a **"SANDBOX ORCHESTRATOR (microsandbox)"** running on the host machine, which manages the user MicroVMs [2]. This suggests the user is already planning to use an orchestration layer (like the one ERA is building) on top of a core hypervisor (like Firecracker) to manage the agent's lifecycle.
 
 ## Conclusion
 
@@ -118,4 +118,3 @@ The user's plan is a coherent, high-security, and economically-driven strategy. 
 [6] Provided Document. *citation_economy_analysis.md*. Local Path: `/home/ubuntu/upload/citation_economy_analysis.md`
 [7] NATS. *JetStream - NATS Docs*. [Online]. Available: https://docs.nats.io/nats-concepts/jetstream
 [8] Synadia. *Streaming, messaging and persistence for Personal.ai*. [Online]. Available: https://www.synadia.com/blog/streaming-messaging-and-persistence-for-personal-ai
- 

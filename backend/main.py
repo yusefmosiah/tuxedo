@@ -1,92 +1,45 @@
-#!/usr/bin/env python3
-"""
-Tuxedo AI Backend - Simplified Entry Point
-Uses the app factory pattern for clean modular architecture.
-"""
-
 import os
+import asyncio
 import logging
-import uvicorn
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
-
-# Configure cache directories for LiteLLM/OpenHands before any imports
-# This prevents permission errors when writing to package directories
-CACHE_DIR = os.getenv("CACHE_DIR", "/tmp/tuxedo_cache")
-os.makedirs(CACHE_DIR, exist_ok=True)
-os.environ.setdefault("XDG_CACHE_HOME", CACHE_DIR)
-os.environ.setdefault("LITELLM_CACHE_DIR", CACHE_DIR)
-os.environ.setdefault("JINJA2_CACHE_DIR", CACHE_DIR)
-
-# Configure Jinja2 bytecode cache directory
-# Jinja2 uses tempfile.gettempdir() which respects TMPDIR
-# This prevents OpenHands SDK from trying to write to read-only package directories
-os.environ.setdefault("TMPDIR", CACHE_DIR)
+# Import the new Vibewriter agent
+from backend.vibewriter.agent.main import run_vibewriter_task
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Log cache configuration for debugging
-logger.info(f"Cache directory configured: {CACHE_DIR}")
-logger.info(f"TMPDIR: {os.environ.get('TMPDIR')}")
-logger.info(f"XDG_CACHE_HOME: {os.environ.get('XDG_CACHE_HOME')}")
-logger.info(f"LITELLM_CACHE_DIR: {os.environ.get('LITELLM_CACHE_DIR')}")
-logger.info(f"JINJA2_CACHE_DIR: {os.environ.get('JINJA2_CACHE_DIR')}")
+load_dotenv()
 
-import tempfile
-logger.info(f"tempfile.gettempdir(): {tempfile.gettempdir()}")
+async def main():
+    """
+    Main entry point for the Vibewriter Agent.
+    """
+    # Get configuration from environment
+    topic = os.getenv("RESEARCH_TOPIC", "The future of Agentic Economics")
+    vm_id = os.getenv("ERA_VM_ID", "default_session")
 
-# Create app at module level for Docker/uvicorn compatibility
-from app import create_app
-app = None
+    logger.info(f"Starting Vibewriter Agent")
+    logger.info(f"Target VM: {vm_id}")
+    logger.info(f"Topic: {topic}")
 
-def main():
-    """Main entry point for the application"""
-    global app
     try:
-        # Import app factory
-        from app import create_app
+        result = await run_vibewriter_task(topic, vm_id)
 
-        # Create FastAPI application
-        app = create_app()
-
-        # Get configuration from environment or use defaults
-        host = os.getenv("HOST", "0.0.0.0")
-        port = int(os.getenv("PORT", "8000"))
-        debug = os.getenv("DEBUG", "false").lower() == "true"
-
-        logger.info(f"Starting Tuxedo AI Backend on {host}:{port}")
-        logger.info(f"Debug mode: {debug}")
-
-        # Run the application
-        if debug:
-            # Use import string for reload mode
-            uvicorn.run(
-                "main:app",
-                host=host,
-                port=port,
-                reload=debug,
-                log_level="info"
-            )
-        else:
-            # Direct app import for production mode
-            uvicorn.run(
-                app,
-                host=host,
-                port=port,
-                reload=False,
-                log_level="info"
-            )
+        last_message = result["messages"][-1]
+        print("\n--- Final Agent Output ---")
+        print(last_message.content)
 
     except Exception as e:
-        logger.error(f"Failed to start application: {e}")
-        raise
+        logger.error(f"Agent execution failed: {e}", exc_info=True)
+        sys.exit(1)
 
 if __name__ == "__main__":
-    main()
-else:
-    # Create app for uvicorn/gunicorn
-    app = create_app()
+    import sys
+    # Check for required API keys
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        logger.error("ANTHROPIC_API_KEY environment variable is not set.")
+        sys.exit(1)
+
+    asyncio.run(main())
