@@ -105,27 +105,36 @@ The Vibewriter merges the former separate `tuxedo` agent and research pipeline i
 
 The strategic decision to use MicroVMs is non-negotiable for a financial delegate agent. MicroVMs provide hardware-enforced isolation, which is necessary to protect the agent's signing authority over real assets [2].
 
-### A. Firecracker and ERA
+### A. Firecracker MicroVMs
 
 **Firecracker** is the industry standard for secure, low-overhead virtualization, developed by AWS. It is purpose-built for creating and managing small virtual machines with minimal overhead, making it ideal for the rapid spin-up and tear-down required for multi-tenant AI agents [3].
 
-**ERA (BinSquare/ERA)** is an open-source project specifically designed for sandboxing AI-generated code using **krunvm microVMs** [7]. ERA uses krunvm, which is built on libkrun - a library that incorporates code from Firecracker, rust-vmm, and Cloud-Hypervisor.
+**Key Characteristics**:
+- **125ms startup time** - Fast enough for on-demand agent spawning
+- **<5MB memory overhead** - High density, 100s-1000s of VMs per host
+- **Production-proven** - Powers AWS Lambda, battle-tested at massive scale
+- **Minimal attack surface** - 50K LOC, Rust, minimal device emulation
+- **KVM-based** - Hardware-enforced isolation via Intel VT-x/AMD-V
 
-The most likely architecture for the Vibewriter:
+**The Vibewriter Architecture**:
 
-**Option 1: ERA (krunvm/libkrun)**
-- **MicroVM Runtime:** krunvm (libkrun with Firecracker components)
-- **Orchestrator:** ERA provides session persistence, multi-language support
-- **Pros:** Faster development, built-in orchestration
-- **Cons:** Less battle-tested than direct Firecracker
+1. **MicroVM Runtime:** Firecracker (direct API usage)
+2. **Management:** Minimal custom layer as needed
+   - VM lifecycle (start, stop, snapshot)
+   - Network setup (TAP devices, firewall rules)
+   - Resource allocation (CPU, memory limits)
+3. **No heavy orchestration needed for v1** - Keep it simple
 
-**Option 2: Direct Firecracker**
-- **MicroVM Runtime:** Firecracker (AWS Lambda production stack)
-- **Orchestrator:** Custom layer (more work, more control)
-- **Pros:** Production-proven, maximum control
-- **Cons:** More infrastructure work
+**Why Firecracker (not ERA/krunvm)**:
+- Production-proven at AWS Lambda scale
+- Maximum control and transparency
+- Direct API is simple enough for our needs
+- Battle-tested security model
 
-**Recommendation**: Start with ERA for rapid v1 development, evaluate migration to direct Firecracker for production scale.
+**Orchestration Strategy**:
+- **Phase 1 (v1)**: Direct Firecracker API + minimal helpers
+- **Phase 2 (scale)**: Add orchestration only if needed
+- **Principle**: Build what we need, when we need it
 
 ### B. Security Model: Container Escape = Bank Robbery
 
@@ -427,21 +436,22 @@ agent.persist_result(result)
 - Tools integrate with existing Choir backend
 - **v1 ships today**
 
-### Phase 2: Self-Hosted MicroVM Backend (Next Session)
+### Phase 2: Self-Hosted Firecracker Backend (Next Session)
 
-**Goal**: Replace Runloop with self-hosted ERA (Firecracker orchestration)
+**Goal**: Replace Runloop with self-hosted Firecracker
 
 **Tasks** (with coding agents):
 1. Implement `MicroVMBackend(SandboxBackendProtocol)`
-2. Set up local ERA environment (Firecracker + orchestration)
-3. Configure ERA for session persistence
+2. Set up Firecracker locally (direct API usage)
+3. Build minimal VM management (start/stop/snapshot)
 4. Integrate NATS JetStream for agent state
-5. Migrate from Runloop to ERA
+5. Migrate from Runloop to Firecracker
 
 **Success Criteria**:
-- Agent executes in self-hosted MicroVM
+- Agent executes in Firecracker MicroVM
 - State persists via JetStream
 - Performance validated
+- No unnecessary complexity
 
 ### Phase 3: Skills and Economic Integration (Next Session)
 

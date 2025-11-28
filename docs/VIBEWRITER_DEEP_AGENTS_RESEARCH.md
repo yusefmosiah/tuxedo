@@ -262,109 +262,100 @@ class MicroVMBackend(SandboxBackendProtocol):
 
 ---
 
-## IV. ERA: MicroVM Orchestration for AI Agents
+## IV. MicroVM Options: Firecracker vs Alternatives
 
-### A. What Is ERA?
+### A. Firecracker: The Production Choice
 
-**ERA** (Execution Runtime Agent) is an open-source project from BinSquare specifically designed for sandboxing AI-generated code using MicroVMs.
+**Firecracker** is AWS's open-source VMM, purpose-built for serverless and multi-tenant workloads.
 
-**GitHub**: [BinSquare/ERA](https://github.com/BinSquare/ERA)
+**GitHub**: [firecracker-microvm/firecracker](https://github.com/firecracker-microvm/firecracker)
 
-**Value Proposition**:
-- "Run untrusted or AI-generated code locally inside microVMs"
-- "Behave like containers for great devX"
-- "200ms launch time, better security than containers"
+**Why Firecracker**:
+- **Battle-tested**: Powers AWS Lambda, proven at massive scale
+- **Security**: Minimal attack surface (50K LOC, Rust)
+- **Performance**: 125ms startup, <5MB overhead
+- **Simplicity**: Clean API, no unnecessary complexity
 
-**Important**: ERA uses **krunvm** for MicroVM isolation. krunvm uses **libkrun**, which incorporates code from Firecracker, rust-vmm, and Cloud-Hypervisor. So ERA benefits from Firecracker's technology but through the libkrun abstraction layer.
+**Source**: [Firecracker - GitHub](https://github.com/firecracker-microvm/firecracker)
 
-**Source**: [ERA - GitHub Repository](https://github.com/BinSquare/ERA)
+### B. Direct Firecracker API
 
-### B. Architecture
+**Simple Architecture**:
 
-**Three-Layer Design**:
+1. **Firecracker VMM**: Hypervisor managing microVMs
+2. **API Server**: Unix socket for control plane
+3. **Guest Kernel**: Minimal Linux kernel in each VM
+4. **Network**: TAP devices for VM networking
 
-1. **Local Layer** (Developer Workstation):
-   - Agent CLI (Go binary)
-   - Buildah (container image management)
-   - krunvm (MicroVM runtime - not Firecracker directly)
-   - Case-sensitive storage volume (required on macOS)
+**Management Needs** (build as needed):
+- VM lifecycle (start, stop, pause, resume)
+- Resource allocation (CPU, memory, disk)
+- Network setup (TAP device creation, routing)
+- Snapshot/restore for state management
 
-2. **MicroVM Layer**:
-   - Isolated execution per workload
-   - Multi-language support: Python, JavaScript/Node, Go, Ruby
-   - Resource constraints (CPU, memory limits)
-   - 200ms launch time
+**Key Principle**: Start simple, add complexity only when needed
 
-3. **Optional Remote Layer** (Cloudflare Workers):
-   - Session management (Durable Objects)
-   - REST + WebSocket endpoints
-   - Job dispatch and artifact retrieval
-   - Delegates execution back to local runners
+### C. Firecracker Setup
 
-**Key Design Principle**: "Developer workstation in control" - cloud integration is optional
-
-### C. Implementation Details
-
-**Technology Stack**:
-- **krunvm**: MicroVM runtime (built on libkrun)
-- **libkrun**: VMM incorporating Firecracker, rust-vmm, Cloud-Hypervisor code
-- **buildah**: OCI image building and management
-- **Session persistence**: Stateful workflow support
-- **Multi-language support**: Python, JavaScript/Node, Go, Ruby
-- **Optional Cloudflare Workers**: Remote orchestration tier
-
-**Installation (macOS)**:
+**Installation (Ubuntu/Debian)**:
 ```bash
-brew tap binsquare/era-agent-cli
-brew install binsquare/era-agent-cli/era-agent
-brew install krunvm buildah
+# Download latest release
+release_url="https://github.com/firecracker-microvm/firecracker/releases"
+latest=$(basename $(curl -fsSLI -o /dev/null -w  %{url_effective} ${release_url}/latest))
+arch=`uname -m`
+curl -L ${release_url}/download/${latest}/firecracker-${latest}-${arch}.tgz | tar -xz
 
-# Critical setup (creates case-sensitive volume)
-$(brew --prefix era-agent)/libexec/setup/setup.sh
+# Move to PATH
+sudo mv release-${latest}-$(uname -m)/firecracker-${latest}-${arch} /usr/local/bin/firecracker
 ```
 
-**Requirements**:
-- krunvm (MicroVM runtime using libkrun)
-- buildah (OCI image handling)
-
-**Core CLI Commands**:
+**Basic Usage**:
 ```bash
-# Persistent VM with resource constraints
-agent vm create --lang python --mem 512 --cpus 2
+# Start API server
+firecracker --api-sock /tmp/firecracker.sock
 
-# Execute code in VM
-agent vm exec --vm <id> --cmd "python script.py"
+# Configure VM (via API)
+curl --unix-socket /tmp/firecracker.sock -i \
+  -X PUT 'http://localhost/machine-config' \
+  -H 'Accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "vcpu_count": 2,
+    "mem_size_mib": 1024
+  }'
 
-# Ephemeral one-off execution
-agent vm temp --lang python --cmd "import requests; ..."
-
-# Lifecycle management
-agent vm list
-agent vm stop <id>
-agent vm clean
+# Start VM
+curl --unix-socket /tmp/firecracker.sock -i \
+  -X PUT 'http://localhost/actions' \
+  -H 'Accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{"action_type": "InstanceStart"}'
 ```
 
-**Source**: ERA repository documentation and WebFetch results
+**Source**: [Firecracker Getting Started](https://github.com/firecracker-microvm/firecracker/blob/main/docs/getting-started.md)
 
-### D. Comparison: Firecracker vs krunvm/libkrun vs ERA
+### D. Why Direct Firecracker (Not Abstraction Layers)
 
-| Aspect | Firecracker (Direct) | krunvm/libkrun | ERA |
-|--------|---------------------|----------------|-----|
-| **VMM Technology** | Firecracker (AWS) | libkrun (incorporates Firecracker/rust-vmm/Cloud-Hypervisor code) | krunvm (libkrun-based) |
-| **Management Layer** | Manual API calls | CLI for OCI images | Full orchestration + session persistence |
-| **Target Use Case** | Infrastructure building block | Lightweight VMs from OCI images | AI agent sandboxing |
-| **Multi-language** | Configure manually | Configure manually | Built-in (Python, JS, Go, Ruby) |
-| **Session Persistence** | Build your own | Build your own | Built-in stateful workflows |
-| **Cloud Integration** | Build your own | None | Optional Cloudflare Workers tier |
-| **Maturity** | Production (AWS Lambda) | Production (containers ecosystem) | Early stage |
+**Firecracker vs Alternatives**:
 
-**Key Insight**: ERA uses krunvm, which uses libkrun, which incorporates Firecracker code. So ERA benefits from Firecracker's technology but through multiple abstraction layers.
+| Aspect | Firecracker (Direct) | Alternatives (ERA, krunvm, etc.) |
+|--------|---------------------|----------------------------------|
+| **Maturity** | Production (AWS Lambda) | Early stage or experimental |
+| **Security** | Battle-tested at scale | Less proven |
+| **Complexity** | Simple, direct API | Additional abstraction layers |
+| **Control** | Full transparency | Hidden behind abstractions |
+| **Overhead** | Minimal | Additional layers add overhead |
 
-**Recommendation for Vibewriter**:
-- **ERA** provides excellent orchestration + session persistence for AI agents
-- **libkrun** offers lighter weight than full Firecracker with similar security
-- **Trade-off**: ERA's convenience vs more control with direct Firecracker
-- **Best approach**: Start with ERA for rapid development, evaluate direct Firecracker for production if needed
+**Decision**: Use Firecracker directly
+- **Simpler**: Fewer moving parts, easier to understand
+- **Proven**: AWS Lambda uses it, billions of invocations
+- **Transparent**: Direct API, no magic
+- **Flexible**: Build exactly what we need, nothing more
+
+**For Vibewriter**:
+- Phase 1: Runloop (managed, fast prototyping)
+- Phase 2: Direct Firecracker (production control)
+- No need for heavy orchestration - keep it simple
 
 ---
 
