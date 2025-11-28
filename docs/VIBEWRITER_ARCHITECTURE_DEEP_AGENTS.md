@@ -109,14 +109,14 @@ The strategic decision to use MicroVMs is non-negotiable for a financial delegat
 
 **Firecracker** is the industry standard for secure, low-overhead virtualization, developed by AWS. It is purpose-built for creating and managing small virtual machines with minimal overhead, making it ideal for the rapid spin-up and tear-down required for multi-tenant AI agents [3].
 
-**ERA (BinSquare/ERA)** is an open-source project specifically designed for sandboxing AI-generated code using MicroVMs [7]. ERA is an orchestration layer that sits on top of a core hypervisor.
+**ERA (BinSquare/ERA)** is an open-source project specifically designed for sandboxing AI-generated code using MicroVMs [7]. ERA uses **krunvm** (not Firecracker) as its MicroVM runtime and provides an orchestration layer on top.
 
-The most likely architecture for the Vibewriter is a combination:
+The most likely architecture for the Vibewriter:
 
-1.  **Hypervisor:** **Firecracker** provides the secure, minimal kernel-level isolation.
-2.  **Orchestrator:** **ERA-inspired custom layer** (or ERA itself) manages the lifecycle of the MicroVMs, handling provisioning, networking, and the secure RPC layer that the custom `SandboxBackendProtocol` will connect to.
+1.  **MicroVM Runtime:** **Firecracker** (production-proven, powers AWS Lambda) or **krunvm** (used by ERA)
+2.  **Orchestrator:** **ERA-inspired custom layer** manages the lifecycle of the MicroVMs, handling provisioning, networking, and the secure RPC layer that the custom `SandboxBackendProtocol` will connect to.
 
-This approach addresses the need for a secure sandbox backend while leveraging cutting-edge open-source tools.
+This approach leverages ERA's excellent orchestration patterns while choosing the best MicroVM runtime for our needs.
 
 ### B. Security Model: Container Escape = Bank Robbery
 
@@ -399,75 +399,71 @@ agent.persist_result(result)
 
 ## VI. Implementation Roadmap
 
-### Phase 1: Prototype with Runloop (2 weeks)
+**Timeline Note**: We're using coding agents (Claude Code, etc.) to build this. The first working version will be built in ONE SESSION, not weeks/months. The phases below are iterations, not sequential weeks.
 
-**Goal**: Validate Deep Agents architecture with managed sandbox
+### Phase 1: First Working Version (THIS SESSION)
 
-**Tasks**:
+**Goal**: Build working Deep Agent with Runloop sandbox and basic Vibewriter capabilities
+
+**Tasks** (with coding agents, these happen in hours, not weeks):
 1. Set up LangChain Deep Agents with Runloop sandbox
 2. Implement basic Vibewriter tools (`search_choir_kb`, `cite_article`, `publish_to_choir`)
 3. Create simple research workflow
-4. Test hierarchical planning and sub-agents
-5. Measure performance and context limits
+4. Test hierarchical planning and filesystem operations
+5. Validate architecture decisions
 
 **Success Criteria**:
 - Deep Agent can complete multi-step research task
-- Planning and memory work across long sessions
+- Planning and memory work across conversation
 - Tools integrate with existing Choir backend
+- **v1 ships today**
 
-### Phase 2: Custom Backend Development (4 weeks)
+### Phase 2: Self-Hosted MicroVM Backend (Next Session)
 
-**Goal**: Build self-hosted MicroVM integration
+**Goal**: Replace Runloop with self-hosted Firecracker/krunvm
 
-**Tasks**:
+**Tasks** (with coding agents):
 1. Implement `MicroVMBackend(SandboxBackendProtocol)`
-2. Set up local Firecracker development environment
-3. Build minimal orchestration layer (VM lifecycle management)
+2. Set up local Firecracker or krunvm environment
+3. Build minimal orchestration layer (VM lifecycle)
 4. Integrate NATS JetStream for state persistence
-5. Integrate NATS Object Store for file operations
-6. Migrate from Runloop to self-hosted sandbox
+5. Migrate from Runloop to self-hosted
 
 **Success Criteria**:
-- Agent executes in self-hosted Firecracker MicroVM
-- State persists across VM restarts via JetStream
-- Large files handled via Object Store
-- Performance matches or exceeds Runloop
+- Agent executes in self-hosted MicroVM
+- State persists via JetStream
+- Performance validated
 
-### Phase 3: Skills and Economic Integration (3 weeks)
+### Phase 3: Skills and Economic Integration (Next Session)
 
-**Goal**: Build Vibewriter-specific skills and integrate citation economics
+**Goal**: Build Vibewriter skills and citation economics
 
-**Tasks**:
+**Tasks** (with coding agents):
 1. Implement citation verification skill
 2. Implement deep research skill (parallel sub-agents)
-3. Implement style application skill
-4. Integrate with CHIP/USDC reward calculation
-5. Build citation event publishing via NATS
-6. Test end-to-end: research → publish → cite → earn
+3. Integrate with CHIP/USDC reward calculation
+4. Build citation event publishing via NATS
+5. Test end-to-end flow
 
 **Success Criteria**:
-- Agent can produce citation-verified research reports
-- Publications appear in knowledge base
+- Agent produces citation-verified reports
 - Citations trigger economic signals
-- Novelty calculation awards CHIP correctly
+- Novelty calculation works
 
-### Phase 4: Production Infrastructure (4 weeks)
+### Phase 4: Production Hardening (Ongoing)
 
 **Goal**: Deploy production-ready multi-tenant system
 
 **Tasks**:
-1. Build Firecracker cluster for horizontal scaling
+1. Build MicroVM cluster for horizontal scaling
 2. Deploy NATS cluster for high availability
-3. Implement monitoring and observability
-4. Security hardening (jailer config, network policies)
-5. Load testing and performance optimization
-6. Documentation and operational runbooks
+3. Security hardening and audit
+4. Load testing and optimization
 
 **Success Criteria**:
 - System handles 100+ concurrent agents
-- 99.9% uptime for NATS and MicroVM infrastructure
-- Complete security audit passed
-- Operational team trained
+- Production security standards met
+- Monitoring and observability complete
 
 ## VII. Security Considerations
 
