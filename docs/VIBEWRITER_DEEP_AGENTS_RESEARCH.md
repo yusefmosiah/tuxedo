@@ -629,8 +629,6 @@ uvx deepagents-cli --sandbox runloop
 - [Firecracker vs Docker](https://huggingface.co/blog/agentbox-master/firecracker-vs-docker-tech-boundary)
 - [Secure Runtime for AI - Northflank](https://northflank.com/blog/secure-runtime-for-codegen-tools-microvms-sandboxing-and-execution-at-scale)
 
-- [Show HN: Era - Hacker News](https://news.ycombinator.com/item?id=46065997)
-
 ### NATS JetStream
 - [JetStream - NATS Docs](https://docs.nats.io/nats-concepts/jetstream)
 - [Object Store - NATS Docs](https://docs.nats.io/nats-concepts/jetstream/obj_store)
