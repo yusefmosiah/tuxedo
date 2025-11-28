@@ -1,0 +1,51 @@
+/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/langchain_core/_api/deprecation.py:26: UserWarning: Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.
+  from pydantic.v1.fields import FieldInfo as FieldInfoV1
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/wiz/tuxedo/backend/vibewriter/test_subagents.py", line 49, in <module>
+    test_subagents()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/wiz/tuxedo/backend/vibewriter/test_subagents.py", line 11, in test_subagents
+    agent = VibewriterAgent()
+  File "/Users/wiz/tuxedo/backend/vibewriter/agent.py", line 44, in __init__
+    self.graph = create_deep_agent(
+                 ~~~~~~~~~~~~~~~~~^
+        model=self.model,
+        ^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+        system_prompt="You are Vibewriter, a financial delegate agent. You have access to a secure sandbox environment. Delegate tasks to your sub-agents (Researcher, Writer) when appropriate.",
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/deepagents/graph.py", line 104, in create_deep_agent
+    SubAgentMiddleware(
+    ~~~~~~~~~~~~~~~~~~^
+        default_model=model,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<14 lines>...
+        general_purpose_agent=True,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ),
+    ^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/deepagents/middleware/subagents.py", line 453, in __init__
+    task_tool = _create_task_tool(
+        default_model=default_model,
+    ...<5 lines>...
+        task_description=task_description,
+    )
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/deepagents/middleware/subagents.py", line 305, in _create_task_tool
+    subagent_graphs, subagent_descriptions = _get_subagents(
+                                             ~~~~~~~~~~~~~~^
+        default_model=default_model,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+        general_purpose_agent=general_purpose_agent,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/deepagents/middleware/subagents.py", line 272, in _get_subagents
+    system_prompt=agent_["system_prompt"],
+                  ~~~~~~^^^^^^^^^^^^^^^^^
+KeyError: 'system_prompt'
+Initializing Vibewriter Agent with Subagents...

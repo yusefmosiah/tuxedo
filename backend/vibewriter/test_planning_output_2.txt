@@ -1,0 +1,12 @@
+/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/langchain_core/_api/deprecation.py:26: UserWarning: Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.
+  from pydantic.v1.fields import FieldInfo as FieldInfoV1
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/wiz/tuxedo/backend/vibewriter/test_planning.py", line 7, in <module>
+    from vibewriter.agent import VibewriterAgent
+  File "/Users/wiz/tuxedo/backend/vibewriter/agent.py", line 7, in <module>
+    from .runloop_backend import RunloopBackend
+  File "/Users/wiz/tuxedo/backend/vibewriter/runloop_backend.py", line 13, in <module>
+    from runloop_api_client.types import Devbox
+ImportError: cannot import name 'Devbox' from 'runloop_api_client.types' (/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/runloop_api_client/types/__init__.py)

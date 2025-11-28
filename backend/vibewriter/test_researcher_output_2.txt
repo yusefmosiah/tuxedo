@@ -1,0 +1,14 @@
+/Users/wiz/tuxedo/backend/venv/lib/python3.14/site-packages/langchain_core/_api/deprecation.py:26: UserWarning: Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.
+  from pydantic.v1.fields import FieldInfo as FieldInfoV1
+Testing Researcher Agent Standalone...
+Task: Find the current price of Bitcoin.
+Result:
+HumanMessage: Find the current price of Bitcoin.
+AIMessage: I'll search for the current Bitcoin price using the web search function.
+ToolMessage: Web Search Results for 'current Bitcoin BTC price':
+- BTC USD — Bitcoin Price and Chart - TradingView (https://www.tradingview.com/symbols/BTCUSD/): The current price of Bitcoin (BTC) is 92,280 USD — it has risen 0.39% in the past 24 hours. Try placing this info into the context by checking out what coins...
+- Bitcoin price today - BTC price chart & live trends - Kraken (https://www.kraken.com/prices/bitcoin): Bitcoin price today is $92,828.00. In the last 24 hours Bitcoin's price moved +2.26%. The current BTC to USD conversion rate is $92,828.00 per BTC....
+- Bitcoin BTC (BTC-USD) Live Price, News, Chart & Price History (https://finance.yahoo.com/quote/BTC-USD/): Bitcoin has a current supply of 19,954,790. The last known price of Bitcoin is 91,569.07808359 USD and is down -0.10 over the last 24 hours. It is currently...
+AIMessage: Based on the real-time search results, Bitcoin (BTC) is currently trading at approximately $92,280-$92,828 USD. There are slight variations in the price across different trading platforms, which is normal for cryptocurrency markets. The price has shown some positive movement in the last 24 hours, with most sources indicating a slight increase.
+
+Note that cryptocurrency prices are highly volatile and can change rapidly, so this information represents the price at the moment of the search.

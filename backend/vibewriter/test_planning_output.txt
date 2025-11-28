@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/wiz/tuxedo/backend/vibewriter/test_planning.py", line 7, in <module>
+    from vibewriter.agent import VibewriterAgent
+ModuleNotFoundError: No module named 'vibewriter'
