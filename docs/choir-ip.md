@@ -90,7 +90,7 @@ We are bootstrapping the interface by forking `daedalOS`, a web-based desktop en
 
 ## V. Checklist: Next Steps
 
-### Phase 1: Setup & Cleanup (Day 1-2)
+### Phase 1: Setup & Cleanup (Morning)
 
 - [ ] **Fork Repo:** Clone `DustinBrett/daedalOS` to a private repo `choir-os`.
 - [ ] **Purge Apps:** Delete `games`, `emulators`, `webamp` from `/components/apps`.
@@ -98,7 +98,7 @@ We are bootstrapping the interface by forking `daedalOS`, a web-based desktop en
 - [ ] **Local Test:** Ensure `yarn dev` runs a clean, empty desktop.
 - [ ] **Deploy:** Set up AWS deployment on `choir-ip.com` (dev). Phala TEE is the production target.
 
-### Phase 2: The Visuals (Day 3)
+### Phase 2: The Visuals (Midday)
 
 - [ ] **Assets:** Generate "Carbon Fiber" background and "Gold Kintsugi" UI assets (using Midjourney/DALL-E).
 - [ ] **Theme Engine:** Modify `styled-components` theme (`/styles/defaultTheme.ts`).
@@ -107,14 +107,14 @@ We are bootstrapping the interface by forking `daedalOS`, a web-based desktop en
   - [ ] Taskbar: Frosted Glass (Blur).
 - [ ] **Branding:** Replace the "Start Button" icon with the Choir logo.
 
-### Phase 3: The Architecture (Day 4-7)
+### Phase 3: The Architecture (Afternoon)
 
 - [ ] **Database:** Install `sql.js` (SQLite WASM).
 - [ ] **Schema:** Create the `workspace` table structure (id, blob, metadata).
 - [ ] **Adapter:** Write `ChoirFS` adapter to intercept file reads/writes from the OS and route them to SQLite.
 - [ ] **Hard Routing:** Implement logic in `pages/index.tsx` to parse `/app/uuid` and auto-open the corresponding window on load.
 
-### Phase 4: The Agent Entanglement (Week 2)
+### Phase 4: The Agent Entanglement (Evening)
 
 - [ ] **Backend:** Set up a simple Python/FastAPI backend (The Conductor).
 - [ ] **Sync:** Implement S3 signed URL upload/download for the SQLite file.
