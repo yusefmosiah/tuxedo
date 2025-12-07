@@ -92,11 +92,11 @@ We are bootstrapping the interface by forking `daedalOS`, a web-based desktop en
 
 ### Phase 1: Setup & Cleanup (Day 1-2)
 
-- [ ] **Acquire Domain:** Buy `choiriq.com` (secure the future) and configure `choir-ip.com` (deployment target).
 - [ ] **Fork Repo:** Clone `DustinBrett/daedalOS` to a private repo `choir-os`.
 - [ ] **Purge Apps:** Delete `games`, `emulators`, `webamp` from `/components/apps`.
 - [ ] **Clean Menu:** Remove "Start Menu" entries for deleted apps in `/utils/initialContextState.ts`.
 - [ ] **Local Test:** Ensure `yarn dev` runs a clean, empty desktop.
+- [ ] **Deploy:** Set up AWS deployment on `choir-ip.com` (dev). Phala TEE is the production target.
 
 ### Phase 2: The Visuals (Day 3)
 
@@ -119,9 +119,15 @@ We are bootstrapping the interface by forking `daedalOS`, a web-based desktop en
 - [ ] **Backend:** Set up a simple Python/FastAPI backend (The Conductor).
 - [ ] **Sync:** Implement S3 signed URL upload/download for the SQLite file.
 - [ ] **Vibewriter:** Connect the Monaco Editor app to the backend for "Autocomplete" or "Refactor" requests (Agent initiation).
+- [ ] **Soft URLs:** Implement `/q/` semantic query routing (URL → LLM → SQL → Dynamic View).
+
+### Phase 5: The Rebrand
+
+- [ ] **Acquire Domain:** Buy `choiriq.com` once soft URLs are working.
+- [ ] **Migrate:** Point `choiriq.com` to production deployment.
 
 ---
 
 ### Immediate Action Item
 
-**Execute Phase 1, Step 1 & 2:** Buy the domains and clone the repo.
+**Execute Phase 1, Step 1:** Fork `DustinBrett/daedalOS` → `choir-os`.
